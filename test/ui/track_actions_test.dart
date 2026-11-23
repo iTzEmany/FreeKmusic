@@ -601,6 +601,36 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('an action whose label changed while the menu was open still runs, row gone', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final opener = ValueNotifier(true);
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+      opener: opener,
+    );
+    opener.value = false;
+    await tester.pump();
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => h.db.customStatement("UPDATE tracks SET kind = 0, saved = 0, path = '${file.path}' WHERE id = (SELECT MIN(id) FROM tracks)"));
+    await tester.runAsync(() => index.add('abc', file.path));
+    ProviderScope.containerOf(tester.element(find.text('Scarica'))).invalidate(downloadIndexProvider);
+    await _settle(tester); // the labels changed: «Scarica» gone, «Elimina dal dispositivo» in
+    await tester.ensureVisible(find.text('Elimina dal dispositivo'));
+    await tester.pump();
+    await tester.tap(find.text('Elimina dal dispositivo'));
+    await _settle(tester);
+    await tester.tap(find.descendant(of: find.byType(AlertDialog), matching: find.text('Elimina')));
+    await _settle(tester);
+    await _settle(tester);
+    expect(await tester.runAsync(() => h.db.select(h.db.tracks).get()), isEmpty);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('the overlay host of the menu is removed when it closes, with or without an action', (tester) async {
     final downloads = _Downloads();
     final h = await openSheet(
@@ -875,6 +905,18 @@ void main() {
     await _settle(tester);
     final row = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
     expect(row.kind, kStreamKind);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Libera spazio» is there from the first frame of the menu, and a double tap opens one sheet', (tester) async {
+    final h = await openDownloaded(tester);
+    expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget);
+    await tester.tapAt(const Offset(5, 5)); // the barrier
+    await _settle(tester);
+    await tester.tap(find.text('open'));
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget, reason: 'a second sheet would list it twice');
     await h.dispose(tester);
   });
 

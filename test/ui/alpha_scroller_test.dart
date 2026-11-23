@@ -1,4 +1,6 @@
+import 'package:codecore/app.dart' show AppScrollBehavior;
 import 'package:codecore/ui/widgets/alpha_scroller.dart';
+import 'package:flutter/foundation.dart' show TargetPlatform, debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -93,5 +95,24 @@ void main() {
     await g.up();
     await tester.pump();
     expect(find.textContaining(' / 200'), findsNothing);
+  });
+
+  testWidgets('desktop: the Material scrollbar is off where the strip is active, on below the threshold', (tester) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    Widget app(int n) => MaterialApp(
+      scrollBehavior: const AppScrollBehavior(),
+      home: Scaffold(
+        body: AlphaScroller(
+          controller: ScrollController(),
+          itemCount: n,
+          child: ListView.builder(itemExtent: 50, itemCount: n, itemBuilder: (_, i) => Text('row $i')),
+        ),
+      ),
+    );
+    await tester.pumpWidget(app(alphaScrollerMinItems));
+    expect(find.byType(Scrollbar), findsNothing);
+    await tester.pumpWidget(app(alphaScrollerMinItems - 1));
+    expect(find.byType(Scrollbar), findsOneWidget);
+    debugDefaultTargetPlatformOverride = null;
   });
 }

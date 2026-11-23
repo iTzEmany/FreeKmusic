@@ -476,6 +476,8 @@ List<TrackActionGroup> trackActions(
   ];
 }
 
+bool _opening = false;
+
 /// The track sheet; [lead] goes first (e.g. «Rimuovi dalla playlist»). Also the
 /// desktop right click, and the ⋮ of a selection through [showTrackActionGroups].
 Future<void> showTrackActions(
@@ -483,7 +485,25 @@ Future<void> showTrackActions(
   WidgetRef ref,
   Track track, {
   TrackAction? lead,
-}) {
+}) async {
+  if (_opening) return; // a double tap while the first check runs
+  _opening = true;
+  var isDownloadedFile = false;
+  try {
+    // «Libera spazio» needs the file to be the very one downloaded: checked (a stat) before the sheet
+    // opens, so it does not appear under an open menu and push the entries down.
+    if (track.kind == kMusicKind) {
+      final index = await ProviderScope.containerOf(context, listen: false)
+          .read(downloadIndexProvider.future)
+          .timeout(const Duration(milliseconds: 500)); // a slow index must not hold the menu back
+      isDownloadedFile = await index.signatureMatchesPath(track.path);
+    }
+  } on Object catch (e, st) {
+    AppLog.w('track menu: download check failed', e, st);
+  } finally {
+    _opening = false;
+  }
+  if (!context.mounted) return;
   // The menu follows the state of the song, not the Track it was opened with: a download
   // or a save swaps it for the library row and the groups are rebuilt (D-697).
   final entryKey = ref.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
@@ -517,44 +537,14 @@ Future<void> showTrackActions(
   // «Libera spazio» needs the file to be the very one downloaded: checked off the UI thread, not while building.
   Future<bool> pristine() async =>
       (await container.read(downloadIndexProvider.future)).signatureMatchesPath(live.path);
-  var isDownloadedFile = false;
-  List<TrackActionGroup> build() {
-    final alive = context.mounted;
-    return [
-      if (lead != null) TrackActionGroup('', [lead]),
-      ...trackActions(
-        alive ? context : hostContext!,
-        alive ? ref : hostRef!,
-        live,
-        row: liveRow,
-        isDownloadedFile: isDownloadedFile,
-      ),
-    ];
-  }
-
-  // An action runs once the sheet is closed, maybe with the caller gone since the groups were built:
-  // it is then taken again from a build with the host's context and ref.
-  List<TrackActionGroup> lazy(List<TrackActionGroup> gs) => [
-    for (final g in gs)
-      TrackActionGroup(g.title, [
-        for (final a in g.actions)
-          TrackAction(
-            a.icon,
-            a.label,
-            () {
-              if (context.mounted || hostRef == null) return a.run();
-              final fresh = [for (final g in build()) ...g.actions].where((x) => x.label == a.label).firstOrNull;
-              return (fresh ?? a).run();
-            },
-            destructive: a.destructive,
-            onStreamRow: a.onStreamRow,
-            onOnlineEntry: a.onOnlineEntry,
-          ),
-      ]),
+  // Always built with the host's context and ref: the caller (a row) may be gone by the time an action runs.
+  List<TrackActionGroup> build() => [
+    if (lead != null) TrackActionGroup('', [lead]),
+    ...trackActions(hostContext ?? context, hostRef ?? ref, live, row: liveRow, isDownloadedFile: isDownloadedFile),
   ];
 
   late List<TrackActionGroup> last;
-  List<TrackActionGroup> groups() => context.mounted || hostContext?.mounted == true ? last = lazy(build()) : last;
+  List<TrackActionGroup> groups() => hostContext?.mounted == true ? last = build() : last;
   final changed = ValueNotifier(0);
   var closed = false;
   var calls = 0; // only the last call counts: an older lookup finishing late must not undo a newer one
@@ -587,10 +577,14 @@ Future<void> showTrackActions(
       : container.listen(trackStateProvider(key), (_, _) => follow());
   // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
   final indexSub = container.listen(downloadIndexProvider, (_, _) => follow());
-  last = lazy(build());
-  // The row of an entry saved before the sheet opened, and «Libera spazio» for a file (its check is async).
+  // The host builds on the next frame: until then the caller's context stands in, then the groups are rebuilt.
+  last = build();
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!closed) changed.value++;
+  });
+  // The row of an entry saved before the sheet opened, and a later change of «Libera spazio».
   if (track.kind == kMusicKind || ref.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow());
-  return showTrackActionGroups(
+  await showTrackActionGroups(
     context,
     last,
     header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
