@@ -31,7 +31,7 @@ YtResult _song(String id) => YtResult(
 );
 
 void main() {
-  testWidgets('genre: title and both pills fit at 360 dp, 200 % text', (
+  testWidgets('genre: title and both icons fit at 360 dp, 200 % text', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(360, 800);
@@ -60,8 +60,8 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(tester.takeException(), isNull);
     expect(find.byKey(const ValueKey('collection-name')), findsOneWidget);
-    expect(find.text('Riproduci'), findsOneWidget);
-    expect(find.text('Casuale'), findsOneWidget);
+    expect(find.byTooltip('Riproduci'), findsOneWidget);
+    expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
     await h.dispose(tester);
   });
 
@@ -188,7 +188,7 @@ void main() {
         ],
       );
       await tester.pump(const Duration(milliseconds: 50));
-      await tester.tap(find.text('Riproduci'));
+      await tester.tap(find.byTooltip('Riproduci'));
       for (var i = 0; i < 100 && h.handler.queueIds.isEmpty; i++) {
         await tester.runAsync(
           () => Future<void>.delayed(const Duration(milliseconds: 20)),
