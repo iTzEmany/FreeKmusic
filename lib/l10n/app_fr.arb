@@ -1965,7 +1965,6 @@
       }
     }
   },
-  "playlistSourceNone": "Aucune",
   "playlistSourceEmpty": "Il n’y a aucune vidéo à télécharger ici.",
   "playlistSourceGo": "Télécharger dans une playlist ({count})",
   "@playlistSourceGo": {

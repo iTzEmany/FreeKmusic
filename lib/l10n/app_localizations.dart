@@ -5428,12 +5428,6 @@ abstract class AppLocalizations {
   /// **'Sono {count} video: ci vorrà {time}.'**
   String playlistSourceLong(int count, String time);
 
-  /// No description provided for @playlistSourceNone.
-  ///
-  /// In it, this message translates to:
-  /// **'Nessuno'**
-  String get playlistSourceNone;
-
   /// No description provided for @playlistSourceEmpty.
   ///
   /// In it, this message translates to:

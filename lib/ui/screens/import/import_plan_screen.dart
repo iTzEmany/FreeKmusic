@@ -169,10 +169,13 @@ class _PlanTile extends ConsumerWidget {
         chosen != null &&
         known?.pathFor(chosen.id, source: chosen.source) != null;
     return ExpansionTile(
-      leading: Checkbox(
-        key: ValueKey('plan-check-${it.rowIndex}'),
-        value: selected,
-        onChanged: (v) => onSelected(v ?? false),
+      leading: Semantics(
+        label: '${it.title}, ${it.artistList.join(', ')}',
+        child: Checkbox(
+          key: ValueKey('plan-check-${it.rowIndex}'),
+          value: selected,
+          onChanged: (v) => onSelected(v ?? false),
+        ),
       ),
       title: Text(
         '${it.title}, ${it.artistList.join(', ')}',

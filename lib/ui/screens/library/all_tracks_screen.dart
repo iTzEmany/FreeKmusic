@@ -257,10 +257,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
       controller: _scroll,
       itemExtent: rowHeight,
       topInset: () => _header.visible,
-      start: () {
-        _header.hide();
-        return _header.extent;
-      },
+      start: () => _header.extent,
       letters: [
         if (byTitle || byArtist)
           for (final t in shown) leadingLetter(byTitle ? t.title : t.artist),

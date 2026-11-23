@@ -76,22 +76,4 @@ void main() {
     await _expectJump(t, header);
     await h.dispose(t);
   });
-
-  testWidgets('a backward jump hides a partly shown header: the row is fully visible', (t) async {
-    final h = await _open(t);
-    final header = _headerHeight(t);
-    final p = TestPointer(1, PointerDeviceKind.mouse);
-    await t.sendEventToBinding(p.hover(const Offset(200, 600)));
-    await t.sendEventToBinding(p.scroll(const Offset(0, 1000)));
-    await t.pump();
-    // Wheel up a little: the header is partly shown again.
-    await t.sendEventToBinding(p.scroll(const Offset(0, -40)));
-    await t.pump();
-    await t.pump(); // the strip catches up with the header
-    expect(_headerHeight(t), 40);
-    await _expectJump(t, header, 0.4, 16);
-    await t.pump();
-    expect(_headerHeight(t), 0);
-    await h.dispose(t);
-  });
 }

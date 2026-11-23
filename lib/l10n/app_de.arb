@@ -1807,7 +1807,6 @@
       }
     }
   },
-  "playlistSourceNone": "Keines",
   "playlistSourceEmpty": "Hier gibt es keine Videos zum Herunterladen.",
   "playlistSourceGo": "In eine Playlist herunterladen ({count})",
   "@playlistSourceGo": {

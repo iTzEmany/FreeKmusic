@@ -1807,7 +1807,6 @@
       }
     }
   },
-  "playlistSourceNone": "None",
   "playlistSourceEmpty": "There are no videos to download here.",
   "playlistSourceGo": "Download into a playlist ({count})",
   "@playlistSourceGo": {

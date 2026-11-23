@@ -2168,7 +2168,6 @@
       }
     }
   },
-  "playlistSourceNone": "Nessuno",
   "playlistSourceEmpty": "Non ci sono video da scaricare qui.",
   "playlistSourceGo": "Scarica in una playlist ({count})",
   "@playlistSourceGo": {

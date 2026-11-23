@@ -3420,9 +3420,6 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get playlistSourceNone => 'Keines';
-
-  @override
   String get playlistSourceEmpty =>
       'Hier gibt es keine Videos zum Herunterladen.';
 

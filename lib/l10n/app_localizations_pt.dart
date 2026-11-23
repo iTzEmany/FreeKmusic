@@ -3415,9 +3415,6 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get playlistSourceNone => 'Nenhum';
-
-  @override
   String get playlistSourceEmpty => 'Não há vídeos para descarregar aqui.';
 
   @override
