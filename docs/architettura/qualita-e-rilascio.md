@@ -130,6 +130,10 @@ Se un job della release fallisce, il tag esiste ma la release no. È successo co
 
 `/obiettivo` esegue il piano a fasi: una PR per fase, un commit per task, check "Analyze and test", poi `gh pr merge --auto --squash`. Il profilo (verifiche, aree a rischio per la review, regole dei telefoni) sta in `.claude/obiettivo.md`. Con `git config core.hooksPath .githooks` si attiva l'hook `pre-push` che lancia `guardie.sh`.
 
+### Worker delle segnalazioni
+
+Il Worker Cloudflare che trasforma una segnalazione anonima in una issue GitHub (etichetta `da-triage`) vive in `tools/report-worker/` ([D-701](../decisioni.md)). Valida lunghezze, limita a 5 invii l'ora per IP (in memoria, debole fra istanze) e non inoltra l'IP a GitHub. Si prova con `cd tools/report-worker && node --test` (GitHub finto, niente rete). Si pubblica con `cd tools/report-worker && npx wrangler deploy`, e lo fa l'utente. Il token GitHub è solo il segreto `GITHUB_TOKEN` del Worker (`wrangler secret put`): mai nel repo né nell'APK.
+
 ## Invarianti da non rompere
 
 - Su `master` si entra solo con PR in auto-merge (squash). Il check obbligatorio è "Analyze and test".
