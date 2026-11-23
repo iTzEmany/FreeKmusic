@@ -45,7 +45,11 @@ class ImportPreviewDialog extends StatefulWidget {
     required this.known,
     required this.existing,
     this.syncPreview,
+    this.streaming = false,
   });
+
+  /// Streaming mode: files are written only with «Scarica anche» (D-665).
+  final bool streaming;
 
   /// What a sync of the file into an existing playlist would change; without
   /// it the «Sincronizza» choice is not offered.
@@ -86,6 +90,9 @@ class _State extends State<ImportPreviewDialog> {
   bool _fetchCovers = false;
   bool _downloadToo = false;
 
+  /// Files are written: always in device mode, with «Scarica anche» in streaming.
+  bool get _toDisk => !widget.streaming || _downloadToo;
+
   @override
   void dispose() {
     _name.dispose();
@@ -101,115 +108,120 @@ class _State extends State<ImportPreviewDialog> {
     return null;
   }
 
-
   List<Widget> _optionTiles(AppLocalizations l, int todo) => [
-            if (kEnableYoutube && todo > bigImportRows && !_linkOnly)
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.csvImportBlocks(importBlockSize)),
-                subtitle: Text(l.csvImportBigWarning(todo)),
-                value: _blocks,
-                onChanged: (v) => setState(() => _blocks = v ?? false),
-              ),
-            if (kEnableYoutube && todo > 0) ...[
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l.csvImportLinkOnly),
-                subtitle: Text(l.csvImportLinkOnlyHint),
-                value: _linkOnly,
-                onChanged: (v) => setState(() => _linkOnly = v),
-              ),
-              if (!_linkOnly) ...[
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.csvImportDownloadToo),
-                  subtitle: Text(l.csvImportDownloadTooHint),
-                  value: _downloadToo,
-                  onChanged: (v) => setState(() => _downloadToo = v),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.csvImportPlanFirst),
-                  subtitle: Text(l.csvImportPlanFirstHint),
-                  value: _planFirst,
-                  onChanged: (v) => setState(() => _planFirst = v),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.csvImportOwnFolder),
-                  subtitle: Text(l.csvImportOwnFolderHint),
-                  value: _ownFolder,
-                  onChanged: (v) => setState(() => _ownFolder = v),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.csvImportFetchCovers),
-                  subtitle: Text(l.csvImportFetchCoversHint),
-                  value: _fetchCovers,
-                  onChanged: (v) => setState(() => _fetchCovers = v),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(l.csvImportNumberFiles),
-                  subtitle: Text(l.csvImportNumberFilesHint),
-                  value: _numberFiles,
-                  onChanged: (v) => setState(() => _numberFiles = v),
-                ),
-              ],
-            ],
+    if (kEnableYoutube && todo > bigImportRows && !_linkOnly)
+      CheckboxListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l.csvImportBlocks(importBlockSize)),
+        subtitle: Text(l.csvImportBigWarning(todo)),
+        value: _blocks,
+        onChanged: (v) => setState(() => _blocks = v ?? false),
+      ),
+    if (kEnableYoutube && todo > 0) ...[
+      SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text(l.csvImportLinkOnly),
+        subtitle: Text(l.csvImportLinkOnlyHint),
+        value: _linkOnly,
+        onChanged: (v) => setState(() => _linkOnly = v),
+      ),
+      if (!_linkOnly) ...[
+        if (widget.streaming)
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.csvImportDownloadToo),
+            subtitle: Text(l.csvImportDownloadTooHint),
+            value: _downloadToo,
+            onChanged: (v) => setState(() {
+              _downloadToo = v;
+              if (!v) _ownFolder = _numberFiles = false;
+            }),
+          ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l.csvImportPlanFirst),
+          subtitle: Text(l.csvImportPlanFirstHint),
+          value: _planFirst,
+          onChanged: (v) => setState(() => _planFirst = v),
+        ),
+        if (_toDisk)
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.csvImportOwnFolder),
+            subtitle: Text(l.csvImportOwnFolderHint),
+            value: _ownFolder,
+            onChanged: (v) => setState(() => _ownFolder = v),
+          ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l.csvImportFetchCovers),
+          subtitle: Text(l.csvImportFetchCoversHint),
+          value: _fetchCovers,
+          onChanged: (v) => setState(() => _fetchCovers = v),
+        ),
+        if (_toDisk)
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l.csvImportNumberFiles),
+            subtitle: Text(l.csvImportNumberFilesHint),
+            value: _numberFiles,
+            onChanged: (v) => setState(() => _numberFiles = v),
+          ),
+      ],
+    ],
   ];
 
   List<Widget> _existsSection(AppLocalizations l, int? same) {
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
     return [
-            if (same != null) ...[
-              const SizedBox(height: 16),
-              Text(l.csvImportExists, style: theme.titleSmall),
-              const SizedBox(height: 8),
-              _NoIntrinsics(
-                child: SegmentedBlocks<_Existing>(
-                  selected: _existing,
-                  onChanged: (v) => setState(() => _existing = v),
-                  items: [
-                    BlockItem(
-                      value: _Existing.addNew,
-                      icon: Icons.playlist_add_rounded,
-                      label: l.csvImportUpdate,
-                    ),
-                    if (widget.syncPreview != null)
-                      BlockItem(
-                        value: _Existing.sync,
-                        icon: Icons.sync_rounded,
-                        label: l.csvImportSync,
-                      ),
-                    BlockItem(
-                      value: _Existing.create,
-                      icon: Icons.add_rounded,
-                      label: l.csvImportNew,
-                    ),
-                  ],
-                ),
+      if (same != null) ...[
+        const SizedBox(height: 16),
+        Text(l.csvImportExists, style: theme.titleSmall),
+        const SizedBox(height: 8),
+        _NoIntrinsics(
+          child: SegmentedBlocks<_Existing>(
+            selected: _existing,
+            onChanged: (v) => setState(() => _existing = v),
+            items: [
+              BlockItem(
+                value: _Existing.addNew,
+                icon: Icons.playlist_add_rounded,
+                label: l.csvImportUpdate,
               ),
-
-              if (_existing == _Existing.sync && widget.syncPreview != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: CcDims.gap8),
-                  child: FutureBuilder<ImportDiff>(
-                    key: ValueKey(same),
-                    future: _diffFor(same),
-                    builder: (context, snap) => Text(
-                      snap.hasData
-                          ? l.csvImportSyncCounts(
-                              snap.data!.added.length,
-                              snap.data!.removed.length,
-                            )
-                          : l.csvImportSyncChecking,
-                      style: theme.bodySmall?.copyWith(color: cc.textMuted),
-                    ),
-                  ),
+              if (widget.syncPreview != null)
+                BlockItem(
+                  value: _Existing.sync,
+                  icon: Icons.sync_rounded,
+                  label: l.csvImportSync,
                 ),
+              BlockItem(
+                value: _Existing.create,
+                icon: Icons.add_rounded,
+                label: l.csvImportNew,
+              ),
             ],
+          ),
+        ),
+
+        if (_existing == _Existing.sync && widget.syncPreview != null)
+          Padding(
+            padding: const EdgeInsets.only(top: CcDims.gap8),
+            child: FutureBuilder<ImportDiff>(
+              key: ValueKey(same),
+              future: _diffFor(same),
+              builder: (context, snap) => Text(
+                snap.hasData
+                    ? l.csvImportSyncCounts(
+                        snap.data!.added.length,
+                        snap.data!.removed.length,
+                      )
+                    : l.csvImportSyncChecking,
+                style: theme.bodySmall?.copyWith(color: cc.textMuted),
+              ),
+            ),
+          ),
+      ],
     ];
   }
 
@@ -277,10 +289,10 @@ class _State extends State<ImportPreviewDialog> {
                     ImportOptions(
                       linkOnly: _linkOnly,
                       planFirst: _planFirst && !_linkOnly,
-                      folderPath: _ownFolder && !_linkOnly
+                      folderPath: _ownFolder && _toDisk && !_linkOnly
                           ? _name.text.trim()
                           : null,
-                      numberFiles: _numberFiles && !_linkOnly,
+                      numberFiles: _numberFiles && _toDisk && !_linkOnly,
                       fetchCovers: _fetchCovers && !_linkOnly,
                       downloadToo: _downloadToo && !_linkOnly,
                     ),

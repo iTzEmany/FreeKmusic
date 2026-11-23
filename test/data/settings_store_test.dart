@@ -12,8 +12,7 @@ void main() {
   test('storageMode: nothing stored reads stream (D-665, even an install from before the choice); a stored choice wins; the choice and prefetchOnMobile round trip', () async {
     SharedPreferences.setMockInitialValues({'onboardingFinished': true});
     var store = await SettingsStore.open();
-    expect(store.readSettings().storageMode, kDefaultStorageMode);
-    expect(kDefaultStorageMode, StorageMode.stream);
+    expect(store.readSettings().storageMode, StorageMode.stream);
     expect(store.readSettings().prefetchOnMobile, isTrue);
     await store.writeSettings(
       store.readSettings().copyWith(storageMode: StorageMode.stream, prefetchOnMobile: false),
@@ -21,6 +20,8 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().storageMode, StorageMode.stream);
     expect(store.readSettings().prefetchOnMobile, isFalse);
+    SharedPreferences.setMockInitialValues({'storageMode': 'device'});
+    expect((await SettingsStore.open()).readSettings().storageMode, StorageMode.device);
   });
 
   test('qualities: High when absent, round trip', () async {

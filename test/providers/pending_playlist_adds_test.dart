@@ -158,6 +158,23 @@ void main() {
       expect(queue.added, isEmpty);
     });
 
+    test('alreadyThere: streaming counts a saved stream, device mode only a downloaded file', () async {
+      for (final mode in StorageMode.values) {
+        final c = await container(mode);
+        c.listen(savedStreamKeysProvider, (_, _) {});
+        await c.read(libraryAdderProvider).saveStreamNow(_song);
+        await c.read(savedStreamKeysProvider.future);
+        await Future<void>.delayed(Duration.zero);
+        expect(c.read(libraryAdderProvider).alreadyThere('v1', MediaSource.youtube), mode == StorageMode.stream, reason: '$mode');
+      }
+      final file = File('${dir.path}/a.m4a')..writeAsStringSync('x');
+      await index.add('v1', file.path);
+      final c = await container(StorageMode.device);
+      c.listen(downloadIndexProvider, (_, _) {});
+      await c.read(downloadIndexProvider.future);
+      expect(c.read(libraryAdderProvider).alreadyThere('v1', MediaSource.youtube), isTrue);
+    });
+
     test('a failed save is reported (null), never turned into a download', () async {
       final c = await container(StorageMode.stream, repo: (db) => _FailingTracks(db));
       expect(await c.read(libraryAdderProvider).add(_song), isNull);

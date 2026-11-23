@@ -1,12 +1,16 @@
 import '../settings/auto_backup_tile.dart';
+
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as pth;
 
+import '../../../core/app_log.dart';
+import '../../../core/constants.dart' show kEnableYoutube;
 import '../../../core/permissions.dart';
-import '../../../core/platform.dart' show isAndroid;
+import '../../../core/platform.dart' show isAndroid, resolveDefaultFolders;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/exportify_providers.dart';
 import '../../../providers/folder_actions.dart';
@@ -42,10 +46,14 @@ class _Page extends StatelessWidget {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     const total = onboardingPageCount;
-    final label = l.onboardingPageOf(index + 1, total);
-    final step = l.onboardingStepOf(index + 1, total);
+    // Lite has no storage page (index 2): the pages after it move up.
+    final pos = !kEnableYoutube && index > 2 ? index - 1 : index;
+    final label = l.onboardingPageOf(pos + 1, total);
+    final step = l.onboardingStepOf(pos + 1, total);
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: CcDims.margin + CcDims.gap8),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CcDims.margin + CcDims.gap8,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -59,12 +67,17 @@ class _Page extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   TweenAnimationBuilder<double>(
-                    tween: Tween(end: (index + 1) / total),
+                    tween: Tween(end: (pos + 1) / total),
                     duration: ccDuration(context, CcMotion.enter),
                     curve: CcMotion.curveIn,
                     builder: (_, v, _) => CustomPaint(
                       size: const Size.square(140),
-                      painter: _PageRing(v, cc.accent, cc.surface3, cc.surface2),
+                      painter: _PageRing(
+                        v,
+                        cc.accent,
+                        cc.surface3,
+                        cc.surface2,
+                      ),
                     ),
                   ),
                   Icon(icon, size: 44, color: cc.accentSoft),
@@ -101,13 +114,22 @@ class _PageRing extends CustomPainter {
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
     canvas.drawCircle(c, r, line..color = rest);
-    canvas.drawArc(Rect.fromCircle(center: c, radius: r), -math.pi / 2, 2 * math.pi * fraction, false, line..color = arc);
+    canvas.drawArc(
+      Rect.fromCircle(center: c, radius: r),
+      -math.pi / 2,
+      2 * math.pi * fraction,
+      false,
+      line..color = arc,
+    );
     canvas.drawCircle(c, r - stroke, Paint()..color = disc);
   }
 
   @override
   bool shouldRepaint(_PageRing o) =>
-      o.fraction != fraction || o.arc != arc || o.rest != rest || o.disc != disc;
+      o.fraction != fraction ||
+      o.arc != arc ||
+      o.rest != rest ||
+      o.disc != disc;
 }
 
 /// A list row with the 1 px separator under it (folders).
@@ -115,7 +137,9 @@ Widget _row(BuildContext context, Widget child) => Container(
   constraints: const BoxConstraints(minHeight: 48),
   alignment: Alignment.centerLeft,
   decoration: BoxDecoration(
-    border: Border(bottom: BorderSide(color: context.cc.separator, width: CcDims.rHair)),
+    border: Border(
+      bottom: BorderSide(color: context.cc.separator, width: CcDims.rHair),
+    ),
   ),
   child: child,
 );
@@ -165,9 +189,27 @@ class _FoldersPageState extends ConsumerState<FoldersPage> {
   /// D-666: on desktop the downloads go in `FreeKmusic` inside the first folder chosen here (Android: always `Music/FreeKmusic`).
   Future<void> _addFolder() async {
     final path = await addFolderAndScan(ref);
-    if (path == null || isAndroid || ref.read(settingsProvider).downloadLocation.isNotEmpty) return;
+    if (path == null ||
+        isAndroid ||
+        ref.read(settingsProvider).downloadLocation.isNotEmpty) {
+      return;
+    }
     if (!mounted) return;
-    ref.read(settingsProvider.notifier).update((s) => s.copyWith(downloadLocation: pth.join(path, 'FreeKmusic')));
+    final dir = pth.join(path, 'FreeKmusic');
+    // The default already is `<Music>/FreeKmusic`: nothing to store then.
+    if (pth.equals(dir, (await resolveDefaultFolders(create: false)).downloads)) {
+      return;
+    }
+    try {
+      await Directory(dir).create(recursive: true);
+    } on FileSystemException catch (e, st) {
+      AppLog.w('onboarding: downloads folder not created: $dir', e, st);
+      return;
+    }
+    if (!mounted) return;
+    ref
+        .read(settingsProvider.notifier)
+        .update((s) => s.copyWith(downloadLocation: dir));
   }
 
   @override
@@ -209,7 +251,10 @@ class _FoldersPageState extends ConsumerState<FoldersPage> {
           label: Text(l.addFolder),
         ),
         const SizedBox(height: 8),
-        TextButton(onPressed: () => addDefaultFolderAndScan(ref), child: Text(l.useDefaultFolder)),
+        TextButton(
+          onPressed: () => addDefaultFolderAndScan(ref),
+          child: Text(l.useDefaultFolder),
+        ),
         if (scan.running) _ScanProgress(scan.progress),
         if (folders.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -250,8 +295,9 @@ class StoragePage extends ConsumerStatefulWidget {
 }
 
 class _StoragePageState extends ConsumerState<StoragePage> {
-  void _set(StorageMode m) =>
-      ref.read(settingsProvider.notifier).update((s) => s.copyWith(storageMode: m));
+  void _set(StorageMode m) => ref
+      .read(settingsProvider.notifier)
+      .update((s) => s.copyWith(storageMode: m));
 
   @override
   Widget build(BuildContext context) {
@@ -259,14 +305,20 @@ class _StoragePageState extends ConsumerState<StoragePage> {
     final free = ref.watch(musicDiskSpaceProvider).value?.freeBytes;
     final mode = ref.watch(settingsProvider.select((s) => s.storageMode));
     final sds = ref.watch(sdVolumesProvider).value ?? const <String>[];
-    final sdChosen = sds.contains(ref.watch(settingsProvider.select((s) => s.downloadLocation)));
+    final sdChosen = sds.contains(
+      ref.watch(settingsProvider.select((s) => s.downloadLocation)),
+    );
     return _Page(
       index: 2,
       icon: Icons.storage_rounded,
       title: l.onboardingStorageTitle,
       children: [
         _body(context, l.onboardingStorageBody),
-        if (free != null) _body(context, l.onboardingStorageFree(formatBytes(free, l.localeName))),
+        if (free != null)
+          _body(
+            context,
+            l.onboardingStorageFree(formatBytes(free, l.localeName)),
+          ),
         RadioGroup<StorageMode>(
           groupValue: mode,
           onChanged: (m) {
@@ -293,12 +345,18 @@ class _StoragePageState extends ConsumerState<StoragePage> {
         if (mode == StorageMode.device && sds.isNotEmpty)
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: Text(l.downloadMemorySd(pth.basename(sdRootOf(sds.first) ?? sds.first))),
+            title: Text(
+              l.downloadMemorySd(
+                pth.basename(sdRootOf(sds.first) ?? sds.first),
+              ),
+            ),
             subtitle: Text(l.onboardingStorageSdHint),
             value: sdChosen,
             onChanged: (v) => ref
                 .read(settingsProvider.notifier)
-                .update((s) => s.copyWith(downloadLocation: v ? sds.first : '')),
+                .update(
+                  (s) => s.copyWith(downloadLocation: v ? sds.first : ''),
+                ),
           ),
         const AutoBackupTile(onboarding: true),
       ],
@@ -324,7 +382,9 @@ class _ScanProgress extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              known ? '${context.l10n.scanning} ${p.done} / ${p.total}' : context.l10n.scanning,
+              known
+                  ? '${context.l10n.scanning} ${p.done} / ${p.total}'
+                  : context.l10n.scanning,
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: CcDims.gap8),
@@ -385,7 +445,8 @@ class OnlinePage extends ConsumerWidget {
           title: Text(l.creditsDetails),
           subtitle: Text('${l.creditsDetailsHint}\n${l.creditsDetailsNote}'),
           value: s.creditsDetails,
-          onChanged: (v) => notifier.update((c) => c.copyWith(creditsDetails: v)),
+          onChanged: (v) =>
+              notifier.update((c) => c.copyWith(creditsDetails: v)),
         ),
       ],
     );

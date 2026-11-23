@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants.dart' show kEnableYoutube;
 import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/settings_providers.dart';
 import '../../theme/tokens.dart';
 import 'onboarding_pages.dart';
 
-const onboardingPageCount = 6;
+/// The lite build has no streaming, so no «where the music lives» page.
+const onboardingPageCount = kEnableYoutube ? 6 : 5;
 
 /// The guide of the first start: welcome, music folders (and, on Android, the
 /// audio permission), where the music is kept, the online features (off by default), the optional
@@ -43,12 +45,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     // Whoever read the last page has seen the download notice.
     ref
         .read(settingsProvider.notifier)
-        .update(
-          (s) => s.copyWith(
-            onboardingDone: true,
-            ytNoticeSeen: true,
-          ),
-        );
+        .update((s) => s.copyWith(onboardingDone: true, ytNoticeSeen: true));
     widget.onFinished?.call();
   }
 
@@ -83,7 +80,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: [
                       const WelcomePage(),
                       FoldersPage(askAudioPermission: askPermission),
-                      const StoragePage(),
+                      if (kEnableYoutube) const StoragePage(),
                       const OnlinePage(),
                       const SpotifyPage(),
                       const SharePage(),
@@ -101,7 +98,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     children: [
                       Text(
                         l.onboardingPageOf(_page + 1, onboardingPageCount),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: cc.textMuted),
+                        style: Theme.of(context).textTheme.bodySmall
+                            ?.copyWith(color: cc.textMuted),
                       ),
                       const Spacer(),
                       FilledButton(

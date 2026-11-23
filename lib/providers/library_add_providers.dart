@@ -30,6 +30,13 @@ class LibraryAdder {
 
   bool get streaming => _ref.read(settingsProvider).storageMode == StorageMode.stream;
 
+  /// What «Aggiungi»/«Scarica» of [id] must not repeat: in streaming a downloaded file or a saved stream, in
+  /// device mode only a downloaded file (a saved stream still has to be downloaded, D-695).
+  bool alreadyThere(String id, MediaSource source) {
+    if (streaming) return _ref.read(inLibraryOfProvider)(id, source);
+    return _ref.read(downloadIndexProvider).value?.contains(id, source: source) ?? false;
+  }
+
   /// Streaming mode and not downloaded yet: saves the shadow row and returns its id.
   /// Null means the caller must download (device mode, or an already downloaded song, so no
   /// second row appears next to its file) or, in streaming mode, that saving failed (logged).

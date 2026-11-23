@@ -1,3 +1,7 @@
+import 'package:codecore/providers/import_providers.dart';
+import 'package:codecore/services/import/import_options.dart';
+import 'package:codecore/services/import/playlist_import_service.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
@@ -33,12 +37,26 @@ final _album = YtmAlbum(
   ],
 );
 
+class _RecordingImports implements PlaylistImportService {
+  ImportOptions? options;
+
+  @override
+  Future<int> startFromResults(String name, List<YtResult> results,
+      {ImportOptions options = const ImportOptions(), String sourceKind = 'youtube'}) async {
+    this.options = options;
+    return 1;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
 void main() {
-  Future<Harness> show(WidgetTester tester, Widget page, List<Override> overrides) async {
+  Future<Harness> show(WidgetTester tester, Widget page, List<Override> overrides, {bool streamDefault = false}) async {
     tester.view.physicalSize = const Size(500, 1400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    final h = await Harness.create(tester);
+    final h = await Harness.create(tester, streamDefault: streamDefault);
     await h.pump(tester, page, extraOverrides: overrides);
     await _settle(tester);
     return h;
@@ -66,6 +84,27 @@ void main() {
     await tester.tap(find.text('Annulla'));
     await _settle(tester);
     expect(find.text('Scaricare «The Wall»?'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('album page in streaming: «Scarica album» imports with «scarica anche», so the files are downloaded', (tester) async {
+    final svc = _RecordingImports();
+    final h = await show(
+      tester,
+      const OnlineAlbumScreen(browseId: 'MPREb_wall'),
+      [
+        onlineAlbumProvider.overrideWith((ref, id) async => CatalogResult(_album, DateTime(2026, 10, 22))),
+        playlistImportServiceProvider.overrideWithValue(svc),
+      ],
+      streamDefault: true,
+    );
+    await tester.tap(find.byKey(const ValueKey('album-more')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey<Object>('album-menu-download')));
+    await _settle(tester);
+    await tester.tap(find.text('Scarica').last);
+    await _settle(tester);
+    expect(svc.options?.downloadToo, isTrue);
     await h.dispose(tester);
   });
 

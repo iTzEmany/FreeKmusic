@@ -1011,8 +1011,9 @@ class PlaylistImportService {
         return;
       }
     }
-    // Without «scarica anche» the row is saved (streaming), with it the file is downloaded as always.
-    final downloadToo = await _wantsDownloadToo(importId);
+    // Without «scarica anche» the row is saved (streaming), with it the file is downloaded as always. A file
+    // the index has but no row (scan pending) cannot be saved as a stream: the download path links it.
+    final downloadToo = existing != null || await _wantsDownloadToo(importId);
     final saved = downloadToo ? null : await saveNow?.call(r);
     if (saved != null) {
       await _tagSaved(importId, row, saved);

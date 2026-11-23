@@ -135,6 +135,7 @@ void main() {
   late PlaylistImportService service;
   Future<int?> Function(YtResult)? saveNowHook;
   var streamingMode = false;
+  String? existingFile;
   var cancelCalls = 0;
   final coverCalls = <String>[];
   var coverFails = false;
@@ -175,7 +176,7 @@ void main() {
       trackDurationMs: (id) async => (await tracks.getById(id))?.durationMs,
       settled: settled.stream,
       trackIdForPath: tracks.idForPath,
-      pathForVideo: (_) async => null,
+      pathForVideo: (_) async => existingFile,
       applyTags: (id, r) async {
         tagged.add('$id:${r.title}');
         trackNumbers.add(r.trackNumber);
@@ -245,6 +246,7 @@ void main() {
     waits = [];
     saveNowHook = null;
     streamingMode = false;
+    existingFile = null;
     service = build();
   });
   tearDown(() async {
@@ -586,6 +588,16 @@ void main() {
       await idle();
       expect(queued.map((q) => q.$1.id), ['a1']);
       expect(await db.select(db.tracks).get(), isEmpty);
+    });
+
+    test('streaming mode: a file in the index but not yet in the library is not an error: the download path links it', () async {
+      streamingMode = true;
+      existingFile = '/nowhere/a1.m4a';
+      saveNowHook = (r) async => null;
+      final id = await service.startFromResults('Mix', [video('a1', 'One', 'Band', 100)]);
+      await idle();
+      expect(queued.map((q) => q.$1.id), ['a1']);
+      expect((await imports.item(id, 0))!.state, isNot(ImportItemStatus.failed));
     });
 
     test('streaming mode: a song that cannot be saved fails its item and is never downloaded', () async {

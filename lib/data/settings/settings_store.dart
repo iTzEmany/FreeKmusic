@@ -511,11 +511,13 @@ class SettingsStore {
     downloadLocation: _prefs.getString('downloadLocation') ?? '',
     autoBackup: _prefs.getBool('autoBackup') ?? false,
     backupFolder: _prefs.getString('backupFolder') ?? '',
-    // Absent = an install from before the choice: it keeps its files (D-598).
-    storageMode: StorageMode.values.firstWhere(
-      (m) => m.name == _prefs.getString('storageMode'),
-      orElse: () => kDefaultStorageMode,
-    ),
+    // Absent = streaming first (D-665); the lite build has no streaming, whatever was stored (a restored backup).
+    storageMode: !kEnableYoutube
+        ? StorageMode.device
+        : StorageMode.values.firstWhere(
+            (m) => m.name == _prefs.getString('storageMode'),
+            orElse: () => kDefaultStorageMode,
+          ),
     prefetchOnMobile: _prefs.getBool('prefetchOnMobile') ?? true,
     // The old «downloadOriginal» switch is not read: MP3 was only ever the
     // default, so everyone moves to M4A.

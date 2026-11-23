@@ -70,6 +70,29 @@ void main() {
     await h.dispose(tester);
   }, skip: _noYoutube);
 
+  testWidgets('streaming: folder and numbering options appear only with «Scarica anche i file»; device mode always shows them', (tester) async {
+    tester.view.physicalSize = const Size(600, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    for (final streaming in [true, false]) {
+      await h.pump(
+          tester,
+          Scaffold(
+              body: SingleChildScrollView(
+                  child: ImportPreviewDialog(csv: fixture(), known: 1, existing: const {}, streaming: streaming))));
+      expect(find.text('Scarica anche i file'), streaming ? findsOneWidget : findsNothing);
+      expect(find.text('Numera i file'), streaming ? findsNothing : findsOneWidget);
+      if (streaming) {
+        await tester.tap(find.text('Scarica anche i file'));
+        await tester.pump();
+        expect(find.text('Numera i file'), findsOneWidget);
+        expect(find.text('Cartella per questa playlist'), findsOneWidget);
+      }
+    }
+    await h.dispose(tester);
+  }, skip: _noYoutube);
+
   testWidgets('same-name playlist offers update or new and returns the choice',
       (tester) async {
     tester.view.physicalSize = const Size(600, 1600);

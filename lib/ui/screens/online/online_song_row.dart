@@ -41,7 +41,7 @@ void startOnlineDownloads(
   Iterable<YtResult> picked,
 ) {
   final l = context.l10n;
-  final inLibrary = ref.read(inLibraryOfProvider);
+  final adder = ref.read(libraryAdderProvider);
   final streaming = ref.read(settingsProvider).storageMode == StorageMode.stream;
   final busy = {
     for (final d in ref.read(downloadsProvider))
@@ -52,11 +52,11 @@ void startOnlineDownloads(
   };
   var started = 0, skipped = 0;
   for (final r in picked) {
-    if (inLibrary(r.id, r.source) || busy.contains(r.id)) {
+    if (adder.alreadyThere(r.id, r.source) || busy.contains(r.id)) {
       skipped++;
       continue;
     }
-    ref.read(libraryAdderProvider).add(r);
+    adder.add(r);
     started++;
   }
   showMsg(
