@@ -130,7 +130,7 @@ Tutti in `lib/services/` salvo diversa indicazione.
 
 ### Aggiornamento dall'app (fase 132, D-640..D-646, D-656)
 
-«Aggiorna» (Impostazioni › Aggiornamenti e azione dello snackbar all'avvio, che apre lo stesso dialog) sostituisce il link da copiare.
+«Aggiorna» (Impostazioni › Aggiornamenti e azione dello snackbar all'avvio, che apre lo stesso dialog) sostituisce il link da copiare. Dalla fase 137 (D-682) anche un tocco sul testo dello snackbar apre il dialog; il controllo all'avvio segna il giorno (`lastUpdateCheckDay`) solo se è riuscito (`newer` o `upToDate`), così un controllo fallito si ripete al prossimo avvio.
 
 - **File giusto**: `detectUpdateTarget` dà `UpdateTarget(kind, abi)` (Android full/lite + ABI dal canale `codecore/update`; Windows; macOS; su Linux AppImage, Flatpak, `.deb` o zip). `pickUpdateAsset` sceglie l'asset per nome (i nomi di `release.yml`); `selfInstalls` dice se l'app si installa da sola (Android, Windows, AppImage) o se si apre il browser (`.deb`, Flatpak, zip, macOS, via `LinkOpener`).
 - **Download**: `UpdateInstaller` con `dio` in `<cache>/updates/`, avanzamento a flusso, annullabile; SHA-256 (`crypto`, in un isolate) confrontato con il `digest` di GitHub, normalizzato (`sha256:` e maiuscole). File diverso: cancellato ed errore. Asset senza `digest`: non si installa, si apre il browser.

@@ -280,8 +280,58 @@ void main() {
       TrackUserData(ref: ref('ghost'), favorite: true),
       TrackUserData(ref: ref('a')),
     ]));
-    expect(r.notFound, ['ghost']);
+    expect(r.notFound.map((t) => t.title), ['ghost']);
     expect((await db.select(db.tracks).get()).length, before);
+  });
+
+  test('a local track the library lacks is not created and its title is reported', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: ref('ghost'), favorite: true)]));
+    expect(r.notFound.map((t) => (t.title, t.artist)), [('ghost', ref('ghost').artist)]);
+    expect(await (db.select(db.tracks)..where((t) => t.title.equals('ghost'))).get(), isEmpty);
+  });
+
+  test('local tracks missing only from a playlist are reported, once each', () async {
+    final r = await merge(UserData(createdAt: 1, playlists: [
+      PlaylistData(name: 'P', createdAt: 1, items: [ref('g1'), ref('g2')]),
+    ]));
+    expect(r.notFound.map((t) => t.title), ['g1', 'g2']);
+    expect(r.playlistItemsSkipped, 2);
+  });
+
+  test('a missing track with neither title nor artist is not listed', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: const TrackRef(title: ' ', relPath: '', artist: ''), favorite: true),
+    ]));
+    expect(r.notFound, isEmpty);
+  });
+
+  test('a missing track with no title or artist but a path is listed by its file name', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: const TrackRef(title: '', relPath: 'Sub/song one.mp3'), favorite: true),
+    ]));
+    expect(r.notFound.map((t) => t.title), ['song one']);
+  });
+
+  test('a track missing from both tracks and a playlist is one entry', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: ref('ghost'), favorite: true),
+    ], playlists: [
+      PlaylistData(name: 'P', createdAt: 1, items: [ref('ghost')]),
+    ]));
+    expect(r.notFound, hasLength(1));
+  });
+
+  test('a playlist already here keeps its tracks and their order', () async {
+    final id = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
+    final uuid = (await (db.select(db.playlists)..where((p) => p.id.equals(id))).getSingle()).uuid;
+    for (final (pos, t) in [(0, 3), (1, 1)]) {
+      await db.into(db.playlistTracks).insert(PlaylistTracksCompanion.insert(playlistId: id, trackId: t, position: pos));
+    }
+    await merge(UserData(createdAt: 1, playlists: [
+      PlaylistData(name: 'Mix', uuid: uuid, createdAt: 1, items: [ref('a'), ref('c')]),
+    ]));
+    final items = await (db.select(db.playlistTracks)..orderBy([(t) => OrderingTerm.asc(t.position)])).get();
+    expect(items.map((i) => i.trackId), [3, 1]);
   });
 
   group('saved radio stations', () {

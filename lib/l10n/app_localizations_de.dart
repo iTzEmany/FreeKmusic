@@ -8138,4 +8138,31 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get instrumentalTrack => 'Instrumentalstück';
+
+  @override
+  String get backupContents =>
+      'Das Backup enthält: Bibliothek, Cover, Playlists (auch intelligente) und Favoriten, Wiedergaben, Tags, Songtexte, Radios, Podcasts, gefolgte Künstler, Einstellungen und Designs. Die Musik selbst ist nicht dabei.';
+
+  @override
+  String get backupExportPlaylists => 'Playlists exportieren';
+
+  @override
+  String get backupExportPlaylistsHint =>
+      'Eine Datei pro Playlist, zur Nutzung anderswo.';
+
+  @override
+  String get backupImportPlaylists => 'Playlists importieren';
+
+  @override
+  String get backupImportPlaylistsHint => 'Aus einer Playlist-Datei (CSV).';
+
+  @override
+  String get restoreRestarting =>
+      'Bereit: Die App startet neu, um die Wiederherstellung abzuschließen.';
+
+  @override
+  String get restoreSearchOnline => 'Online suchen';
+
+  @override
+  String get restoreListCopied => 'Liste in die Zwischenablage kopiert';
 }

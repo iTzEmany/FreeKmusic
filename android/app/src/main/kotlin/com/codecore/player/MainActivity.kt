@@ -74,6 +74,7 @@ class MainActivity : AudioServiceActivity() {
         JamBeaconBridge.register(flutterEngine.dartExecutor.binaryMessenger, this)
         SeparationBridge.register(flutterEngine.dartExecutor.binaryMessenger)
         UpdateChannel.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
+        RestartChannel.register(flutterEngine.dartExecutor.binaryMessenger, applicationContext)
         NotifyBridge.handleIntent(intent)
         IncomingBridge.register(flutterEngine.dartExecutor.binaryMessenger)
         if (!restored) IncomingBridge.handleIntent(applicationContext, intent)

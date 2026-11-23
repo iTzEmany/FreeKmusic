@@ -45,12 +45,22 @@ class MergeReport {
   /// condition as [romanizations].
   final Set<int> handWritten = {};
 
-  /// Titles of the tracks the backup mentions that this library does not have.
-  final List<String> notFound = [];
+  /// The tracks the backup mentions that this library does not have.
+  final List<MissingTrack> notFound = [];
 
   @override
   String toString() => 'MergeReport($recognized recognized, ${notFound.length} not found, '
       '$favoritesAdded favourites, $playlistsCreated playlists)';
+}
+
+/// A track of the backup this library lacks.
+class MissingTrack {
+  const MissingTrack({required this.title, this.artist});
+  final String title;
+  final String? artist;
+
+  @override
+  String toString() => 'MissingTrack($title, $artist)';
 }
 
 bool _blank(String? s) => s == null || s.trim().isEmpty;
@@ -72,12 +82,25 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
     {Directory? coversDir}) {
   final report = MergeReport();
   final trackRepo = TrackRepository(db);
+  // One entry per missing track, whether it comes from the tracks or from a playlist.
+  final missingSeen = <String>{};
+  void missing(TrackRef r) {
+    final rel = r.relPath ?? '';
+    var title = r.title;
+    if (title.trim().isEmpty && (r.artist ?? '').trim().isEmpty) {
+      if (rel.isEmpty) return;
+      title = p.basenameWithoutExtension(rel);
+    }
+    final key = rel.isNotEmpty ? rel : '${r.title}|${r.artist ?? ''}'.toLowerCase();
+    if (missingSeen.add(key)) report.notFound.add(MissingTrack(title: title, artist: r.artist));
+  }
+
   return db.transaction(() async {
     for (final u in data.tracks) {
       // A streamed track has no file to find: its shadow row is made here, and marked saved when the backup says so.
       final id = u.ref.streamKey == null ? resolver.resolve(u.ref) : await _resolveItem(trackRepo, resolver, u.ref);
       if (id == null) {
-        report.notFound.add(u.ref.title);
+        missing(u.ref);
         continue;
       }
       final key = u.ref.streamKey;
@@ -179,6 +202,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         final id = await _resolveItem(trackRepo, resolver, ref);
         if (id == null) {
           report.playlistItemsSkipped++;
+          missing(ref);
         } else if (seen.add(id)) {
           ids.add(id);
         }

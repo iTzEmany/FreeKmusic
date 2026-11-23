@@ -3927,5 +3927,13 @@
   "karaokeTurnOff": "Ausschalten",
   "enrichOnMetered": "Auch im getakteten Netz anreichern",
   "enrichOnMeteredHint": "Standardmäßig wartet die Hintergrundanreicherung auf ein ungetaktetes Netz.",
-  "instrumentalTrack": "Instrumentalstück"
+  "instrumentalTrack": "Instrumentalstück",
+  "backupContents": "Das Backup enthält: Bibliothek, Cover, Playlists (auch intelligente) und Favoriten, Wiedergaben, Tags, Songtexte, Radios, Podcasts, gefolgte Künstler, Einstellungen und Designs. Die Musik selbst ist nicht dabei.",
+  "backupExportPlaylists": "Playlists exportieren",
+  "backupExportPlaylistsHint": "Eine Datei pro Playlist, zur Nutzung anderswo.",
+  "backupImportPlaylists": "Playlists importieren",
+  "backupImportPlaylistsHint": "Aus einer Playlist-Datei (CSV).",
+  "restoreRestarting": "Bereit: Die App startet neu, um die Wiederherstellung abzuschließen.",
+  "restoreSearchOnline": "Online suchen",
+  "restoreListCopied": "Liste in die Zwischenablage kopiert"
 }

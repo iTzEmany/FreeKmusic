@@ -3,9 +3,11 @@ import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../core/app_log.dart';
 import '../core/paths.dart';
 import '../data/repositories/backup_merge.dart' show MergeReport;
 import '../services/backup/restore_service.dart';
+import 'app_restart_provider.dart';
 import 'backup_providers.dart';
 import 'database_providers.dart';
 import 'daylist_providers.dart';
@@ -20,9 +22,12 @@ import 'update_providers.dart';
 
 /// Backups: create, look inside, replace the library or merge into it.
 class BackupOps {
-  BackupOps(this._ref);
+  BackupOps(this._ref, {this.closeTimeout = const Duration(seconds: 2)});
 
   final Ref _ref;
+
+  /// drift's close() waits for every stream, and paused Riverpod listeners never end them.
+  final Duration closeTimeout;
 
   /// Writes a backup zip to [path].
   Future<void> create(String path) async {
@@ -43,6 +48,21 @@ class BackupOps {
   /// Unpacks the zip for the full restore that runs at the next start.
   Future<void> stageReplace(File zip) async =>
       stageFullRestore(zip, await restoreStagingDir());
+
+  /// Closes the database (a Windows rename of an open file fails; elsewhere the old process
+  /// stops writing), then restarts the app. False: no restart possible, the user reopens.
+  Future<bool> restartAfterRestore() async {
+    try {
+      await _ref.read(databaseProvider).close().timeout(closeTimeout);
+    } on Object catch (e, st) {
+      // Also a timeout: the restart ends the process anyway.
+      AppLog.w('database not closed before restart', e, st);
+    }
+    return _ref.read(appRestartProvider).restart();
+  }
+
+  /// Ends the process (the staged restore applies at the next launch).
+  Future<void> quit() => _ref.read(appRestartProvider).quit();
 
   /// Merges the zip into the live library.
   Future<MergeReport> merge(File zip) async {

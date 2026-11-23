@@ -160,6 +160,26 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('a tap on the text of the start-up notice opens the dialog too', (tester) async {
+    final h = await Harness.create(tester);
+    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
+      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+      child: const Text('go'),
+    ))), extraOverrides: [
+      updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
+    ]);
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    await tester.tap(find.text('Disponibile la versione 9.9.9'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('File: $_apk, 84 MB'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1)); // the snack bar's exit animation
+    expect(find.byType(SnackBar), findsNothing); // the dialog repeats the text, so look for the snack bar itself
+    await h.dispose(tester);
+  });
+
   testWidgets('the start-up notice times out', (tester) async {
     final h = await Harness.create(tester);
     await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(

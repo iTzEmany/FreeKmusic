@@ -8102,4 +8102,31 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get instrumentalTrack => 'Brano strumentale';
+
+  @override
+  String get backupContents =>
+      'Il backup contiene: libreria, copertine, playlist (anche intelligenti) e preferiti, ascolti, etichette, testi, radio, podcast, artisti seguiti, impostazioni e temi. La musica non c’è.';
+
+  @override
+  String get backupExportPlaylists => 'Esporta playlist';
+
+  @override
+  String get backupExportPlaylistsHint =>
+      'Un file per playlist, per usarle altrove.';
+
+  @override
+  String get backupImportPlaylists => 'Importa playlist';
+
+  @override
+  String get backupImportPlaylistsHint => 'Da un file di playlist (CSV).';
+
+  @override
+  String get restoreRestarting =>
+      'Pronto: l’app si riavvia per completare il ripristino.';
+
+  @override
+  String get restoreSearchOnline => 'Cerca online';
+
+  @override
+  String get restoreListCopied => 'Elenco copiato negli appunti';
 }

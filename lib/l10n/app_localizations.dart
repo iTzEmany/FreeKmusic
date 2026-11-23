@@ -12816,6 +12816,54 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Brano strumentale'**
   String get instrumentalTrack;
+
+  /// No description provided for @backupContents.
+  ///
+  /// In it, this message translates to:
+  /// **'Il backup contiene: libreria, copertine, playlist (anche intelligenti) e preferiti, ascolti, etichette, testi, radio, podcast, artisti seguiti, impostazioni e temi. La musica non c’è.'**
+  String get backupContents;
+
+  /// No description provided for @backupExportPlaylists.
+  ///
+  /// In it, this message translates to:
+  /// **'Esporta playlist'**
+  String get backupExportPlaylists;
+
+  /// No description provided for @backupExportPlaylistsHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Un file per playlist, per usarle altrove.'**
+  String get backupExportPlaylistsHint;
+
+  /// No description provided for @backupImportPlaylists.
+  ///
+  /// In it, this message translates to:
+  /// **'Importa playlist'**
+  String get backupImportPlaylists;
+
+  /// No description provided for @backupImportPlaylistsHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Da un file di playlist (CSV).'**
+  String get backupImportPlaylistsHint;
+
+  /// No description provided for @restoreRestarting.
+  ///
+  /// In it, this message translates to:
+  /// **'Pronto: l’app si riavvia per completare il ripristino.'**
+  String get restoreRestarting;
+
+  /// No description provided for @restoreSearchOnline.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca online'**
+  String get restoreSearchOnline;
+
+  /// No description provided for @restoreListCopied.
+  ///
+  /// In it, this message translates to:
+  /// **'Elenco copiato negli appunti'**
+  String get restoreListCopied;
 }
 
 class _AppLocalizationsDelegate

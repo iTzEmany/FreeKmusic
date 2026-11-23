@@ -243,6 +243,38 @@ void main() {
       expect(staging.existsSync(), isFalse);
     });
 
+    test('a hot -journal next to the database moves with the old one, none stays next to the new one', () async {
+      File('${dbFile.path}-journal').writeAsBytesSync([1]);
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isTrue);
+      expect(File('${dbFile.path}-journal').existsSync(), isFalse);
+      expect(File('${dbFile.path}.before-restore-journal').existsSync(), isTrue);
+    });
+
+    test('a failure after the original moved puts the database and its -journal back', () async {
+      File('${dbFile.path}-journal').writeAsBytesSync([1]);
+      File('${dbFile.path}-wal').writeAsBytesSync([2]);
+      // A directory where the -wal would go makes that rename fail, after the journal moved.
+      Directory('${dbFile.path}.before-restore-wal').createSync();
+      File(p.join('${dbFile.path}.before-restore-wal', 'x')).writeAsBytesSync([3]);
+      final before = dbFile.readAsBytesSync();
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isFalse);
+      expect(dbFile.readAsBytesSync(), before);
+      expect(File('${dbFile.path}-journal').readAsBytesSync(), [1]);
+      expect(File('${dbFile.path}.before-restore-journal').existsSync(), isFalse);
+    });
+
+    test('a stale <backup>-journal is not put next to the original by a rollback', () async {
+      File('${dbFile.path}.before-restore-journal').writeAsBytesSync([9]);
+      Directory('${dbFile.path}.before-restore-wal').createSync();
+      File(p.join('${dbFile.path}.before-restore-wal', 'x')).writeAsBytesSync([3]);
+      File('${dbFile.path}-wal').writeAsBytesSync([2]);
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isFalse);
+      expect(File('${dbFile.path}-journal').existsSync(), isFalse);
+    });
+
     test('unsyncedLyrics is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
       await prefs.setStringList('unsyncedLyrics', ['9']);
       await stageFullRestore(await makeBackup(['n1']), staging);
@@ -678,6 +710,16 @@ void main() {
       File(p.join(staging.path, 'ready')).writeAsStringSync('1');
       expect(await apply(), isFalse);
       expect(await titles(dbFile), ['old']);
+    });
+
+    test('a complete extraction leaves the ready marker; a zip without a database removes the staging folder', () async {
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(File(p.join(staging.path, 'ready')).existsSync(), isTrue);
+      expect(File(p.join(staging.path, 'codecore.sqlite')).existsSync(), isTrue);
+      final zip = File(p.join(dir.path, 'nodb2.zip'))
+        ..writeAsBytesSync(ZipEncoder().encode(Archive()..addFile(ArchiveFile.bytes('settings.json', [123, 125]))));
+      await expectLater(stageFullRestore(zip, staging), throwsA(isA<RestoreException>()));
+      expect(staging.existsSync(), isFalse);
     });
 
     test('a zip without a database cannot be staged; unexpected entries are never extracted', () async {

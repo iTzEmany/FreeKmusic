@@ -5,8 +5,11 @@ import 'package:codecore/core/network_kind.dart';
 import 'package:codecore/providers/issue_providers.dart' show linkOpenerProvider;
 import 'package:codecore/services/issue/link_opener.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/startup_providers.dart';
 import 'package:codecore/providers/update_providers.dart';
+import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/update_checker.dart';
 import 'package:codecore/services/update/android_update.dart';
 import 'package:codecore/services/update/desktop_update.dart';
@@ -15,6 +18,24 @@ import 'package:codecore/services/update/update_target.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _NoWeb implements WebClient {
+  @override
+  dynamic noSuchMethod(Invocation i) => super.noSuchMethod(i);
+}
+
+class _Checker extends UpdateChecker {
+  _Checker(this.status, this.info) : super(_NoWeb(), repo: 'x/y', current: '1.0.0');
+  final UpdateStatus status;
+  final UpdateInfo info;
+  int calls = 0;
+  @override
+  Future<UpdateResult> check() async {
+    calls++;
+    return UpdateResult(status, status == UpdateStatus.newer ? info : null);
+  }
+}
 
 class _Probe extends NetworkProbe {
   _Probe(this.metered, {this.boom = false});
@@ -406,5 +427,39 @@ void main() {
     expect(d.existsSync(), isTrue);
     gate.complete();
     await run;
+  });
+
+  Future<(ProviderContainer, SettingsStore, _Checker)> startup(UpdateStatus status, {int day = 0}) async {
+    SharedPreferences.setMockInitialValues({'checkUpdatesOnStart': true, if (day != 0) 'lastUpdateCheckDay': day});
+    final store = SettingsStore(await SharedPreferences.getInstance());
+    final checker = _Checker(status, info);
+    final c = ProviderContainer(overrides: [
+      settingsStoreProvider.overrideWithValue(store),
+      startupSettledProvider.overrideWith((_) async {}),
+      updateCheckerProvider.overrideWithValue(checker),
+    ]);
+    addTearDown(c.dispose);
+    return (c, store, checker);
+  }
+
+  final today = DateTime.now().toUtc().millisecondsSinceEpoch ~/ Duration.millisecondsPerDay;
+  for (final (status, written) in [
+    (UpdateStatus.failed, false),
+    (UpdateStatus.rateLimited, false),
+    (UpdateStatus.upToDate, true),
+    (UpdateStatus.newer, true),
+  ]) {
+    test('start-up check $status: the day is ${written ? '' : 'not '}recorded', () async {
+      final (c, store, _) = await startup(status);
+      final r = await c.read(updateOnStartProvider.future);
+      expect(store.readLastUpdateCheckDay(), written ? today : 0);
+      expect(r == null, status != UpdateStatus.newer);
+    });
+  }
+
+  test('start-up check already made today: no new check', () async {
+    final (c, _, checker) = await startup(UpdateStatus.newer, day: today);
+    expect(await c.read(updateOnStartProvider.future), isNull);
+    expect(checker.calls, 0);
   });
 }

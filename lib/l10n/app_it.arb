@@ -4656,5 +4656,13 @@
   "karaokeTurnOff": "Spegni",
   "enrichOnMetered": "Arricchisci anche con rete a consumo",
   "enrichOnMeteredHint": "Di default l'arricchimento in background aspetta una rete senza limiti.",
-  "instrumentalTrack": "Brano strumentale"
+  "instrumentalTrack": "Brano strumentale",
+  "backupContents": "Il backup contiene: libreria, copertine, playlist (anche intelligenti) e preferiti, ascolti, etichette, testi, radio, podcast, artisti seguiti, impostazioni e temi. La musica non c’è.",
+  "backupExportPlaylists": "Esporta playlist",
+  "backupExportPlaylistsHint": "Un file per playlist, per usarle altrove.",
+  "backupImportPlaylists": "Importa playlist",
+  "backupImportPlaylistsHint": "Da un file di playlist (CSV).",
+  "restoreRestarting": "Pronto: l’app si riavvia per completare il ripristino.",
+  "restoreSearchOnline": "Cerca online",
+  "restoreListCopied": "Elenco copiato negli appunti"
 }

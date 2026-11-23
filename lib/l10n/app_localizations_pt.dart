@@ -8113,4 +8113,31 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get instrumentalTrack => 'Faixa instrumental';
+
+  @override
+  String get backupContents =>
+      'O backup contém: biblioteca, capas, playlists (também inteligentes) e favoritos, reproduções, etiquetas, letras, rádios, podcasts, artistas seguidos, definições e temas. A música não está incluída.';
+
+  @override
+  String get backupExportPlaylists => 'Exportar playlists';
+
+  @override
+  String get backupExportPlaylistsHint =>
+      'Um ficheiro por playlist, para usar noutro lado.';
+
+  @override
+  String get backupImportPlaylists => 'Importar playlists';
+
+  @override
+  String get backupImportPlaylistsHint => 'De um ficheiro de playlist (CSV).';
+
+  @override
+  String get restoreRestarting =>
+      'Pronto: a app reinicia para concluir o restauro.';
+
+  @override
+  String get restoreSearchOnline => 'Pesquisar online';
+
+  @override
+  String get restoreListCopied => 'Lista copiada para a área de transferência';
 }

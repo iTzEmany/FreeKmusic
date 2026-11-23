@@ -11,6 +11,10 @@ typedef ProcessRunner = Future<ProcessResult> Function(
   List<String> args,
 );
 
+/// Default [DetachedStarter]: the child outlives this process.
+Future<void> startDetached(String exe, List<String> args) =>
+    Process.start(exe, args, mode: ProcessStartMode.detached);
+
 /// Installs a downloaded update on desktop: silent Inno Setup on Windows,
 /// in-place AppImage swap on Linux; every other package opens the browser.
 class DesktopUpdate {
@@ -20,7 +24,7 @@ class DesktopUpdate {
     void Function(int code)? exitApp,
     Map<String, String>? env,
     String? browserCommand,
-  }) : _start = start ?? _startDetached,
+  }) : _start = start ?? startDetached,
        _run = run ?? Process.run,
        _exit = exitApp ?? exit,
        _env = env ?? Platform.environment,
@@ -37,9 +41,6 @@ class DesktopUpdate {
   final void Function(int) _exit;
   final Map<String, String> _env;
   final String _browser;
-
-  static Future<void> _startDetached(String exe, List<String> args) =>
-      Process.start(exe, args, mode: ProcessStartMode.detached);
 
   /// True when the update started (the app then exits); false when it fell
   /// back to the browser ([fallback], the asset URL) or could not run.

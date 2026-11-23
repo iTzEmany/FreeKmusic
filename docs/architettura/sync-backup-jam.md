@@ -106,6 +106,8 @@ Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `us
 
 Dopo l'unione i provider vengono ricaricati. Lo zip non porta `downloads.sig.json`.
 
+Dopo «Sostituisci» (fase 137, D-680) l'app si riavvia da sola: `BackupOps.restartAfterRestore` chiude il DB (timeout 2 s: gli stream in pausa bloccherebbero `close()`) e chiama `AppRestart.restart()` (`lib/services/restart/app_restart.dart`: Android con il canale `codecore/restart`, desktop rilanciando `$APPIMAGE` o `Platform.resolvedExecutable`; Flatpak o errore → false e il dialogo dice «chiudi e riapri», il cui pulsante chiama `AppRestart.quit()`; stesso ripiego se dopo 5 s il processo vive ancora; `$APPIMAGE` conta solo se `detectUpdateTarget` lo riconosce). `applyPendingRestore` sposta `-journal`, `-wal` e `-shm` accanto a `*.before-restore` invece di lasciarli al DB nuovo. Dopo «Unisci» `MergeReport.notFound` elenca i brani non trovati (`MissingTrack`: titolo e artista, dai brani con dati utente e dalle voci delle playlist, senza doppioni); il dialogo (`merge_report_dialog.dart`) offre «Cerca online» per riga e «Copia elenco»: il backup non porta un videoId per i brani locali (D-681). La sezione Backup dice cosa contiene lo zip e porta «Esporta playlist» / «Importa playlist» (gli stessi flussi della schermata Playlist).
+
 Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.zip` come `.part` e lo rinomina a zip finito; ne tiene 3 (`kBackupsKept`), i backup manuali non si toccano mai. Dopo un errore riprova al prossimo avvio; non parte durante l'onboarding. Le chiavi `autoBackup`, `backupFolder`, `backupLastAt` e `streamCacheVolume` sono in `kDeviceBoundKeys`. `isBackupDue` è in `backup_service.dart`.
 
 ### Jam
@@ -150,6 +152,8 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - **Nuovo file grande verso l'utente**: `saveFileAt`, mai `Uint8List` sul canale.
 
 ## Trappole
+- **`SystemNavigator.pop()` non chiude il processo** su Android (chiude solo l'Activity): un ripristino preparato non si applica finché il processo vive. Per ripartire davvero c'è `AppRestart` (fase 137).
+- **Ucciso a metà scrittura, SQLite lascia un `-journal` caldo** (il DB è in `journal_mode` DELETE): se resta accanto a un DB diverso, al prossimo avvio viene applicato a quello. Va spostato insieme al file a cui appartiene.
 - **`JamUiState.remote` è solo l'ospite remoto**: l'host che invita ha `inviting`, e un'uscita in LAN di una Jam mista vede i remoti solo nel roster. Dove serve «Jam con ospiti remoti» (karaoke, microfono, nota dell'host) usa `JamUiState.remoteJam` (`remote || inviting || roster con un remoto`), mai `remote` da solo.
 - **Riverpod: `ref` in `State.dispose()` lancia `StateError`** (il contesto è già smontato): leggi in `initState` il notifier o il container e invia da quelli (foglio del karaoke, `flush` dello throttle). In un test il `dispose` con invio pendente si prova con `pumpWidget(const SizedBox())`, non con un pop animato (il timer da 250 ms scatta prima).
 - **`SharedPreferencesAsync` su desktop** scrive nello stesso `shared_preferences.json` delle preferenze, che finisce nel backup: i segreti della Jam stanno in `jam_secrets.json` con `FileJamSecretStore` (D-269).
