@@ -31,6 +31,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:codecore/ui/widgets/track_actions.dart' show TrackMenuHost;
+
 import 'fake_backend.dart';
 
 class Harness {
@@ -133,7 +135,7 @@ class Harness {
               child: w!),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: child,
+          home: TrackMenuHost(child: child),
         )));
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump(const Duration(milliseconds: 100));

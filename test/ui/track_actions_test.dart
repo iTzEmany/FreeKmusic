@@ -632,28 +632,6 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('the overlay host of the menu is removed when it closes, with or without an action', (tester) async {
-    final downloads = _Downloads();
-    final h = await openSheet(
-      tester,
-      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', title: 'Streamed'),
-      mode: StorageMode.stream,
-      extra: [downloadsProvider.overrideWith(() => downloads)],
-    );
-    int hosts() => find.byType(Consumer, skipOffstage: false).evaluate().length;
-    await tester.tapAt(const Offset(5, 5)); // the barrier: closed without an action
-    await _settle(tester);
-    expect(find.text('Aggiungi alla libreria'), findsNothing);
-    final base = hosts();
-    await tester.tap(find.text('open'));
-    await _settle(tester);
-    expect(hosts(), greaterThan(base));
-    await tester.tap(find.text('Aggiungi alla libreria')); // closed by an action
-    await _settle(tester);
-    expect(hosts(), base);
-    await h.dispose(tester);
-  });
-
   testWidgets('a late, older row lookup does not undo the newer one', (tester) async {
     final lookups = <Completer<Track?>>[];
     final h = await openSheet(
@@ -991,7 +969,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a row inside a nested overlay opens the sheet, its host goes to the root overlay and leaves with it', (tester) async {
+  testWidgets('a row inside a nested overlay opens the sheet, the host stays', (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 1);
     final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
@@ -1009,14 +987,9 @@ void main() {
         ),
       ),
     );
-    final base = find.byType(Consumer, skipOffstage: false).evaluate().length;
     await tester.tap(find.text('open'));
     await _settle(tester);
     expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
-    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, greaterThan(base), reason: 'the host is in the tree');
-    await tester.tapAt(const Offset(5, 5));
-    await _settle(tester);
-    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, base, reason: 'closed without an action: host removed');
     await h.dispose(tester);
   });
 

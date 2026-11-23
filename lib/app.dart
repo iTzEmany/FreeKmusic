@@ -32,6 +32,7 @@ import 'providers/releases_providers.dart' show releaseCheckControllerProvider;
 import 'ui/screens/settings/update_tiles.dart' show updateSnackBar;
 import 'ui/shell/app_shell.dart';
 import 'ui/widgets/app_icon_sync.dart';
+import 'ui/widgets/track_actions.dart' show TrackMenuHost;
 import 'ui/widgets/user_activity_scope.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/theme/tokens.dart' show CcTiming;
@@ -157,7 +158,7 @@ class CodecoreApp extends ConsumerWidget {
           child: UserActivityScope(child: child ?? const SizedBox.shrink()),
         ),
       ),
-      home: AppIconSync(
+      home: TrackMenuHost(child: AppIconSync(
         child: OnboardingGate(
           ensureFolder: () => ensureDefaultFolder(
             ref.read(folderRepositoryProvider),
@@ -165,7 +166,7 @@ class CodecoreApp extends ConsumerWidget {
           ),
           child: const AppShell(),
         ),
-      ),
+      )),
     );
   }
 }
