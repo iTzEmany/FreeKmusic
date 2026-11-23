@@ -257,4 +257,27 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 50));
     expect(other.exists(chineseDictionaryProvider), isFalse);
   });
+
+  test('downloadOnly: a failure rethrows and is an error state', () async {
+    final n = c.read(chineseDictionaryProvider.notifier);
+    await expectLater(n.downloadOnly(), throwsA(isA<DioException>()));
+    expect(c.read(chineseDictionaryProvider).status, ChineseDictionaryStatus.error);
+    expect(down.calls, 1);
+  });
+
+  test('downloadOnly with the file already there does not touch the network', () async {
+    file.parent.createSync(recursive: true);
+    file.writeAsBytesSync([1, 2, 3]);
+    await c.read(chineseDictionaryProvider.notifier).downloadOnly();
+    expect(down.calls, 0);
+  });
+
+  test('«Elimina» that cannot remove the file throws instead of saying done', () async {
+    file.parent.createSync(recursive: true);
+    file.writeAsBytesSync([1, 2, 3]);
+    await Process.run('chmod', ['555', file.parent.path]);
+    addTearDown(() => Process.run('chmod', ['755', file.parent.path]));
+    await expectLater(c.read(chineseDictionaryProvider.notifier).delete(), throwsA(isA<FileSystemException>()));
+    expect(file.existsSync(), isTrue);
+  });
 }

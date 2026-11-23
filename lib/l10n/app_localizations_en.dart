@@ -4118,15 +4118,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get translationModels => 'Translation models';
 
   @override
-  String get translationModelsNone =>
-      'No model downloaded. They are downloaded from the lyrics screen, with “Translate”.';
-
-  @override
-  String translationModelDelete(String language) {
-    return 'Delete the $language model';
-  }
-
-  @override
   String get scanCode => 'Scan code';
 
   @override
@@ -7559,38 +7550,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chineseDictionary => 'Chinese dictionary';
 
   @override
-  String get chineseDictionaryHint =>
-      'Used to transliterate Chinese lyrics when none is found online.';
-
-  @override
-  String get chineseDictionaryNone => 'Not downloaded';
-
-  @override
   String get chineseDictionaryDownload => 'Download';
-
-  @override
-  String get chineseDictionaryDownloading => 'Downloading…';
-
-  @override
-  String get chineseDictionaryError => 'Download failed';
-
-  @override
-  String get chineseDictionaryDelete => 'Delete the Chinese dictionary';
-
-  @override
-  String get chineseDictionaryDeleteTitle => 'Delete the Chinese dictionary?';
-
-  @override
-  String get chineseDictionaryDeleteBody =>
-      'You can download it again from here.';
 
   @override
   String get aboutCedictBody =>
       'CC-CEDICT, the Chinese dictionary from MDBG used for transliteration. License CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Source: https://www.mdbg.net/chinese/dictionary?page=cedict';
-
-  @override
-  String get chineseDictionaryDeleteFailed =>
-      'Could not delete the Chinese dictionary';
 
   @override
   String get editorDiscardBody => 'Your changes have not been saved.';
@@ -8094,7 +8058,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'The microphone appears in Now Playing and on the lyrics page (Android).';
 
   @override
-  String get karaokeCostModel => 'Downloads 78 MB the first time';
+  String karaokeCostModel(int mb) {
+    return 'Downloads $mb MB the first time';
+  }
 
   @override
   String get karaokeCostTrack => 'The track has to be downloaded in full';
@@ -8248,9 +8214,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get modelsDownloading => 'Downloading…';
 
   @override
-  String modelsSelect(String name) {
-    return 'Select $name';
-  }
+  String get modelsQueued => 'Queued';
 
   @override
   String modelsDeleteOne(String name) {

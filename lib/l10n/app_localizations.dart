@@ -6381,18 +6381,6 @@ abstract class AppLocalizations {
   /// **'Modelli di traduzione'**
   String get translationModels;
 
-  /// No description provided for @translationModelsNone.
-  ///
-  /// In it, this message translates to:
-  /// **'Nessun modello scaricato. Si scaricano dalla schermata dei testi, con «Traduci».'**
-  String get translationModelsNone;
-
-  /// No description provided for @translationModelDelete.
-  ///
-  /// In it, this message translates to:
-  /// **'Elimina il modello {language}'**
-  String translationModelDelete(String language);
-
   /// No description provided for @scanCode.
   ///
   /// In it, this message translates to:
@@ -12037,65 +12025,17 @@ abstract class AppLocalizations {
   /// **'Dizionario cinese'**
   String get chineseDictionary;
 
-  /// No description provided for @chineseDictionaryHint.
-  ///
-  /// In it, this message translates to:
-  /// **'Serve per la traslitterazione dei testi cinesi quando non se ne trova una online.'**
-  String get chineseDictionaryHint;
-
-  /// No description provided for @chineseDictionaryNone.
-  ///
-  /// In it, this message translates to:
-  /// **'Non scaricato'**
-  String get chineseDictionaryNone;
-
   /// No description provided for @chineseDictionaryDownload.
   ///
   /// In it, this message translates to:
   /// **'Scarica'**
   String get chineseDictionaryDownload;
 
-  /// No description provided for @chineseDictionaryDownloading.
-  ///
-  /// In it, this message translates to:
-  /// **'Scarico…'**
-  String get chineseDictionaryDownloading;
-
-  /// No description provided for @chineseDictionaryError.
-  ///
-  /// In it, this message translates to:
-  /// **'Download non riuscito'**
-  String get chineseDictionaryError;
-
-  /// No description provided for @chineseDictionaryDelete.
-  ///
-  /// In it, this message translates to:
-  /// **'Elimina il dizionario cinese'**
-  String get chineseDictionaryDelete;
-
-  /// No description provided for @chineseDictionaryDeleteTitle.
-  ///
-  /// In it, this message translates to:
-  /// **'Eliminare il dizionario cinese?'**
-  String get chineseDictionaryDeleteTitle;
-
-  /// No description provided for @chineseDictionaryDeleteBody.
-  ///
-  /// In it, this message translates to:
-  /// **'Si può scaricare di nuovo da qui.'**
-  String get chineseDictionaryDeleteBody;
-
   /// No description provided for @aboutCedictBody.
   ///
   /// In it, this message translates to:
   /// **'CC-CEDICT, dizionario cinese di MDBG usato per la traslitterazione. Licenza CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fonte: https://www.mdbg.net/chinese/dictionary?page=cedict'**
   String get aboutCedictBody;
-
-  /// No description provided for @chineseDictionaryDeleteFailed.
-  ///
-  /// In it, this message translates to:
-  /// **'Impossibile eliminare il dizionario cinese'**
-  String get chineseDictionaryDeleteFailed;
 
   /// No description provided for @editorDiscardBody.
   ///
@@ -12850,8 +12790,8 @@ abstract class AppLocalizations {
   /// No description provided for @karaokeCostModel.
   ///
   /// In it, this message translates to:
-  /// **'Scarica 78 MB la prima volta'**
-  String get karaokeCostModel;
+  /// **'Scarica {mb} MB la prima volta'**
+  String karaokeCostModel(int mb);
 
   /// No description provided for @karaokeCostTrack.
   ///
@@ -13057,11 +12997,11 @@ abstract class AppLocalizations {
   /// **'In scaricamento…'**
   String get modelsDownloading;
 
-  /// No description provided for @modelsSelect.
+  /// No description provided for @modelsQueued.
   ///
   /// In it, this message translates to:
-  /// **'Seleziona {name}'**
-  String modelsSelect(String name);
+  /// **'In coda'**
+  String get modelsQueued;
 
   /// No description provided for @modelsDeleteOne.
   ///

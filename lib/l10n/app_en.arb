@@ -2311,15 +2311,6 @@
   "translateFailed": "Translation failed.",
   "translateSameLanguage": "The lyrics are already in this language.",
   "translationModels": "Translation models",
-  "translationModelsNone": "No model downloaded. They are downloaded from the lyrics screen, with “Translate”.",
-  "translationModelDelete": "Delete the {language} model",
-  "@translationModelDelete": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "scanCode": "Scan code",
   "scanTitle": "Point at the QR code",
   "scanNotCodecore": "This code is not from FreeKmusic.",
@@ -3778,16 +3769,8 @@
   "romanizationUnavailable": "Transliteration not available for this text",
   "romanizationDownloading": "Downloading the Chinese dictionary…",
   "chineseDictionary": "Chinese dictionary",
-  "chineseDictionaryHint": "Used to transliterate Chinese lyrics when none is found online.",
-  "chineseDictionaryNone": "Not downloaded",
   "chineseDictionaryDownload": "Download",
-  "chineseDictionaryDownloading": "Downloading…",
-  "chineseDictionaryError": "Download failed",
-  "chineseDictionaryDelete": "Delete the Chinese dictionary",
-  "chineseDictionaryDeleteTitle": "Delete the Chinese dictionary?",
-  "chineseDictionaryDeleteBody": "You can download it again from here.",
   "aboutCedictBody": "CC-CEDICT, the Chinese dictionary from MDBG used for transliteration. License CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Source: https://www.mdbg.net/chinese/dictionary?page=cedict",
-  "chineseDictionaryDeleteFailed": "Could not delete the Chinese dictionary",
   "editorDiscardBody": "Your changes have not been saved.",
   "queueUpNext": "Up next in queue",
   "queueThen": "Then",
@@ -3940,7 +3923,14 @@
   "karaokeHighQualityFailed": "Separation failed: the original keeps playing.",
   "showKaraoke": "Show karaoke",
   "showKaraokeHint": "The microphone appears in Now Playing and on the lyrics page (Android).",
-  "karaokeCostModel": "Downloads 78 MB the first time",
+  "karaokeCostModel": "Downloads {mb} MB the first time",
+  "@karaokeCostModel": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
   "karaokeCostTrack": "The track has to be downloaded in full",
   "karaokeStart": "Start",
   "karaokeRetry": "Retry",
@@ -4037,14 +4027,7 @@
     }
   },
   "modelsDownloading": "Downloading…",
-  "modelsSelect": "Select {name}",
-  "@modelsSelect": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
+  "modelsQueued": "Queued",
   "modelsDeleteOne": "Delete {name}",
   "@modelsDeleteOne": {
     "placeholders": {

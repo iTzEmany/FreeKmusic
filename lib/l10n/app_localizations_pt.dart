@@ -4126,15 +4126,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get translationModels => 'Modelos de tradução';
 
   @override
-  String get translationModelsNone =>
-      'Nenhum modelo baixado. Eles são baixados na tela das letras, com «Traduzir».';
-
-  @override
-  String translationModelDelete(String language) {
-    return 'Excluir o modelo $language';
-  }
-
-  @override
   String get scanCode => 'Ler código';
 
   @override
@@ -7591,38 +7582,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get chineseDictionary => 'Dicionário chinês';
 
   @override
-  String get chineseDictionaryHint =>
-      'Serve para transliterar letras chinesas quando não se encontra uma online.';
-
-  @override
-  String get chineseDictionaryNone => 'Não transferido';
-
-  @override
   String get chineseDictionaryDownload => 'Transferir';
-
-  @override
-  String get chineseDictionaryDownloading => 'A transferir…';
-
-  @override
-  String get chineseDictionaryError => 'Falha na transferência';
-
-  @override
-  String get chineseDictionaryDelete => 'Eliminar o dicionário chinês';
-
-  @override
-  String get chineseDictionaryDeleteTitle => 'Eliminar o dicionário chinês?';
-
-  @override
-  String get chineseDictionaryDeleteBody =>
-      'Pode transferi-lo de novo a partir daqui.';
 
   @override
   String get aboutCedictBody =>
       'CC-CEDICT, o dicionário chinês da MDBG usado para a transliteração. Licença CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fonte: https://www.mdbg.net/chinese/dictionary?page=cedict';
-
-  @override
-  String get chineseDictionaryDeleteFailed =>
-      'Não foi possível eliminar o dicionário chinês';
 
   @override
   String get editorDiscardBody => 'As alterações não foram guardadas.';
@@ -8129,7 +8093,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'O microfone aparece em «A tocar» e na letra (Android).';
 
   @override
-  String get karaokeCostModel => 'Baixa 78 MB na primeira vez';
+  String karaokeCostModel(int mb) {
+    return 'Baixa $mb MB na primeira vez';
+  }
 
   @override
   String get karaokeCostTrack => 'A faixa precisa ser baixada por inteiro';
@@ -8283,9 +8249,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get modelsDownloading => 'A transferir…';
 
   @override
-  String modelsSelect(String name) {
-    return 'Selecionar $name';
-  }
+  String get modelsQueued => 'Na fila';
 
   @override
   String modelsDeleteOne(String name) {

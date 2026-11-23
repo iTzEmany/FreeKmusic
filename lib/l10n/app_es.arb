@@ -2311,15 +2311,6 @@
   "translateFailed": "No se pudo traducir.",
   "translateSameLanguage": "La letra ya está en este idioma.",
   "translationModels": "Modelos de traducción",
-  "translationModelsNone": "Ningún modelo descargado. Se descargan desde la pantalla de letras, con «Traducir».",
-  "translationModelDelete": "Eliminar el modelo {language}",
-  "@translationModelDelete": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "scanCode": "Escanear código",
   "scanTitle": "Apunta al código QR",
   "scanNotCodecore": "Este código no es de FreeKmusic.",
@@ -3778,16 +3769,8 @@
   "romanizationUnavailable": "Transliteración no disponible para esta letra",
   "romanizationDownloading": "Descargando el diccionario chino…",
   "chineseDictionary": "Diccionario chino",
-  "chineseDictionaryHint": "Sirve para transliterar letras chinas cuando no se encuentra una en línea.",
-  "chineseDictionaryNone": "No descargado",
   "chineseDictionaryDownload": "Descargar",
-  "chineseDictionaryDownloading": "Descargando…",
-  "chineseDictionaryError": "Descarga fallida",
-  "chineseDictionaryDelete": "Eliminar el diccionario chino",
-  "chineseDictionaryDeleteTitle": "¿Eliminar el diccionario chino?",
-  "chineseDictionaryDeleteBody": "Se puede descargar de nuevo desde aquí.",
   "aboutCedictBody": "CC-CEDICT, el diccionario chino de MDBG usado para la transliteración. Licencia CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fuente: https://www.mdbg.net/chinese/dictionary?page=cedict",
-  "chineseDictionaryDeleteFailed": "No se pudo eliminar el diccionario chino",
   "editorDiscardBody": "Los cambios no se han guardado.",
   "queueUpNext": "A continuación en la cola",
   "queueThen": "Después",
@@ -3940,7 +3923,14 @@
   "karaokeHighQualityFailed": "Separación fallida: sigue el original.",
   "showKaraoke": "Mostrar el karaoke",
   "showKaraokeHint": "El micrófono aparece en «Reproduciendo» y en las letras (Android).",
-  "karaokeCostModel": "Descarga 78 MB la primera vez",
+  "karaokeCostModel": "Descarga {mb} MB la primera vez",
+  "@karaokeCostModel": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
   "karaokeCostTrack": "La canción debe descargarse completa",
   "karaokeStart": "Iniciar",
   "karaokeRetry": "Reintentar",
@@ -4037,14 +4027,7 @@
     }
   },
   "modelsDownloading": "Descargando…",
-  "modelsSelect": "Seleccionar {name}",
-  "@modelsSelect": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
+  "modelsQueued": "En cola",
   "modelsDeleteOne": "Eliminar {name}",
   "@modelsDeleteOne": {
     "placeholders": {

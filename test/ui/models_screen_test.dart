@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:codecore/core/network_kind.dart';
 import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/l10n/app_localizations.dart';
+import 'package:codecore/providers/chinese_dictionary_providers.dart';
 import 'package:codecore/providers/model_catalog_providers.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart' show networkProbeProvider;
 import 'package:codecore/ui/screens/settings/models_screen.dart';
@@ -26,7 +27,10 @@ class _Fake extends ModelCatalogNotifier {
   Completer<void>? hold;
 
   @override
-  Future<List<ModelEntry>> build() async => entries;
+  Future<List<ModelEntry>> build() async {
+    ref.keepAlive(); // as the real one while it works
+    return entries;
+  }
 
   void _set(ModelEntry e, bool installed) {
     entries = [
@@ -61,6 +65,13 @@ class _Fake extends ModelCatalogNotifier {
   }
 }
 
+class _Dict extends ChineseDictionaryNotifier {
+  _Dict(this.initial);
+  final ChineseDictionaryState initial;
+  @override
+  ChineseDictionaryState build() => initial;
+}
+
 ModelEntry _e(ModelKind k, String id, String name, {bool installed = false}) =>
     ModelEntry(kind: k, id: id, name: name, estimatedBytes: 10 * kMb, installed: installed);
 
@@ -71,6 +82,8 @@ void main() {
     bool metered = false,
     bool failDelete = false,
     bool failDownload = false,
+    ChineseDictionaryState? dict,
+    bool pushed = false,
   }) async {
     final fake = _Fake(entries, failDelete: failDelete, failDownload: failDownload);
     await tester.pumpWidget(
@@ -78,16 +91,28 @@ void main() {
         overrides: [
           modelCatalogProvider.overrideWith(() => fake),
           networkProbeProvider.overrideWithValue(_Probe(metered)),
+          if (dict != null) chineseDictionaryProvider.overrideWith(() => _Dict(dict)),
         ],
         child: MaterialApp(
           locale: const Locale('it'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
-          home: const ModelsScreen(),
+          home: pushed
+              ? Builder(
+                  builder: (c) => TextButton(
+                    onPressed: () => Navigator.of(c).push(MaterialPageRoute<void>(builder: (_) => const ModelsScreen())),
+                    child: const Text('apri'),
+                  ),
+                )
+              : const ModelsScreen(),
         ),
       ),
     );
     await tester.pumpAndSettle();
+    if (pushed) {
+      await tester.tap(find.text('apri'));
+      await tester.pumpAndSettle();
+    }
     return fake;
   }
 
@@ -200,5 +225,94 @@ void main() {
     await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
     sem.dispose();
+  });
+
+  testWidgets('«Elimina selezionati» and a mixed selection with its two counters', (tester) async {
+    final f = await pump(tester, all);
+    await tester.tap(find.byKey(const ValueKey('model-dictionary:cedict')));
+    await tester.tap(find.byKey(const ValueKey('model-translation:fr')));
+    await tester.pump();
+    expect(find.text('Scarica selezionati (1)'), findsOneWidget);
+    expect(find.text('Elimina selezionati (1)'), findsOneWidget);
+    await tester.tap(find.text('Elimina selezionati (1)'));
+    await tester.pumpAndSettle();
+    await confirm(tester, 'Elimina');
+    expect(f.deleted, ['cedict']);
+    // The one deleted leaves the selection, the other stays picked.
+    expect(find.text('Scarica selezionati (1)'), findsOneWidget);
+    expect(find.text('Elimina selezionati (0)'), findsOneWidget);
+  });
+
+  testWidgets('a failed delete keeps the entry selected', (tester) async {
+    await pump(tester, all, failDelete: true);
+    await tester.tap(find.byKey(const ValueKey('model-dictionary:cedict')));
+    await tester.pump();
+    await tester.tap(find.text('Elimina selezionati (1)'));
+    await tester.pumpAndSettle();
+    await confirm(tester, 'Elimina');
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.text('Elimina selezionati (1)'), findsOneWidget);
+  });
+
+  testWidgets('only the running entry says «In scaricamento», the others «In coda»', (tester) async {
+    final f = await pump(tester, all);
+    f.hold = Completer<void>();
+    await tester.tap(find.byKey(const ValueKey('model-translation:fr')));
+    await tester.tap(find.byKey(const ValueKey('model-karaoke:spleeter')));
+    await tester.pump();
+    await tester.tap(find.text('Scarica selezionati (2)'));
+    await tester.pumpAndSettle();
+    await confirm(tester, 'Scarica');
+    expect(find.text('In scaricamento…'), findsOneWidget);
+    expect(find.text('In coda'), findsOneWidget);
+    f.hold!.complete();
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('leaving the page during a download: no false failure, the rest is not started', (tester) async {
+    final f = await pump(tester, all, pushed: true);
+    f.hold = Completer<void>();
+    await tester.tap(find.byKey(const ValueKey('model-translation:fr')));
+    await tester.tap(find.byKey(const ValueKey('model-karaoke:spleeter')));
+    await tester.pump();
+    await tester.tap(find.text('Scarica selezionati (2)'));
+    await tester.pumpAndSettle();
+    await confirm(tester, 'Scarica');
+    tester.state<NavigatorState>(find.byType(Navigator)).pop();
+    await tester.pumpAndSettle();
+    f.hold!.complete();
+    await tester.pumpAndSettle();
+    expect(f.downloaded, ['fr']);
+    expect(find.textContaining('non riuscito'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the trash is a button of its own, apart from the checkbox', (tester) async {
+    final sem = tester.ensureSemantics();
+    await pump(tester, all);
+    final node = tester.getSemantics(find.byType(IconButton));
+    expect('${node.label}|${node.tooltip}', contains('Elimina CC-CEDICT'));
+    expect(node.label, isNot(contains('CC-CEDICT, ')));
+    expect(node.flagsCollection.isButton, isTrue);
+    sem.dispose();
+  });
+
+  testWidgets('the trash is off while something runs, also a download started elsewhere', (tester) async {
+    await pump(
+      tester,
+      all,
+      dict: const ChineseDictionaryState(ChineseDictionaryStatus.downloading, progress: 0.3),
+    );
+    expect(find.text('In scaricamento…'), findsOneWidget);
+    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('models-download'))).onPressed, isNull);
+    expect(tester.widget<OutlinedButton>(find.byKey(const ValueKey('models-delete'))).onPressed, isNull);
+    final row = find.ancestor(of: find.text('CC-CEDICT'), matching: find.byType(ListTile));
+    expect(tester.widget<Checkbox>(find.descendant(of: row, matching: find.byType(Checkbox))).onChanged, isNull);
+  });
+
+  testWidgets('a dictionary in error says it in its row', (tester) async {
+    final notInstalled = [...all]..[2] = _e(ModelKind.dictionary, 'cedict', 'CC-CEDICT');
+    await pump(tester, notInstalled, dict: const ChineseDictionaryState(ChineseDictionaryStatus.error));
+    expect(find.text('Download non riuscito: CC-CEDICT'), findsOneWidget);
   });
 }

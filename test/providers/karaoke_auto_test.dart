@@ -341,9 +341,9 @@ void main() {
     await s.h.dispose(t);
   });
 
-  test('queued tracks are not prefetched when the model is missing on a metered network', () async {
+  test('queued tracks are not prefetched when the model is missing (also unmetered: «Elimina» sticks)', () async {
     final t = _T();
-    final s = await setup(t, metered: true, modelMissing: true, on: true);
+    final s = await setup(t, metered: false, modelMissing: true, on: true);
     await t.runAsync(() async {
       await s.h.handler.playQueue([s.ids[0]], 0);
       s.h.handler.addToQueue(s.ids[1]);

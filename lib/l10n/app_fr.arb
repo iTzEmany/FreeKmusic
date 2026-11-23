@@ -2469,15 +2469,6 @@
   "translateFailed": "La traduction a échoué.",
   "translateSameLanguage": "Les paroles sont déjà dans cette langue.",
   "translationModels": "Modèles de traduction",
-  "translationModelsNone": "Aucun modèle téléchargé. Ils se téléchargent depuis l’écran des paroles, avec « Traduire ».",
-  "translationModelDelete": "Supprimer le modèle {language}",
-  "@translationModelDelete": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "scanCode": "Scanner le code",
   "scanTitle": "Vise le code QR",
   "scanNotCodecore": "Ce code n’est pas de FreeKmusic.",
@@ -3999,16 +3990,8 @@
   "romanizationUnavailable": "Translittération indisponible pour ces paroles",
   "romanizationDownloading": "Téléchargement du dictionnaire chinois…",
   "chineseDictionary": "Dictionnaire chinois",
-  "chineseDictionaryHint": "Sert à translittérer les paroles chinoises quand aucune n’est trouvée en ligne.",
-  "chineseDictionaryNone": "Non téléchargé",
   "chineseDictionaryDownload": "Télécharger",
-  "chineseDictionaryDownloading": "Téléchargement…",
-  "chineseDictionaryError": "Échec du téléchargement",
-  "chineseDictionaryDelete": "Supprimer le dictionnaire chinois",
-  "chineseDictionaryDeleteTitle": "Supprimer le dictionnaire chinois ?",
-  "chineseDictionaryDeleteBody": "Vous pourrez le télécharger de nouveau d’ici.",
   "aboutCedictBody": "CC-CEDICT, le dictionnaire chinois de MDBG utilisé pour la translittération. Licence CC BY-SA 4.0 : https://creativecommons.org/licenses/by-sa/4.0/ Source : https://www.mdbg.net/chinese/dictionary?page=cedict",
-  "chineseDictionaryDeleteFailed": "Impossible de supprimer le dictionnaire chinois",
   "editorDiscardBody": "Les modifications n’ont pas été enregistrées.",
   "queueUpNext": "Ensuite dans la file",
   "queueThen": "Puis",
@@ -4161,7 +4144,14 @@
   "karaokeHighQualityFailed": "Séparation échouée : l’original continue.",
   "showKaraoke": "Afficher le karaoké",
   "showKaraokeHint": "Le micro apparaît dans « Lecture en cours » et sur les paroles (Android).",
-  "karaokeCostModel": "Télécharge 78 Mo la première fois",
+  "karaokeCostModel": "Télécharge {mb} Mo la première fois",
+  "@karaokeCostModel": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
   "karaokeCostTrack": "Le titre doit être téléchargé en entier",
   "karaokeStart": "Lancer",
   "karaokeRetry": "Réessayer",
@@ -4258,14 +4248,7 @@
     }
   },
   "modelsDownloading": "Téléchargement…",
-  "modelsSelect": "Sélectionner {name}",
-  "@modelsSelect": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
+  "modelsQueued": "En attente",
   "modelsDeleteOne": "Supprimer {name}",
   "@modelsDeleteOne": {
     "placeholders": {

@@ -6,7 +6,8 @@ import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/chinese_dictionary_providers.dart';
 import '../../../providers/model_catalog_providers.dart';
-import '../../../providers/shuffle_plus_providers.dart' show networkProbeProvider;
+import '../../../providers/shuffle_plus_providers.dart'
+    show networkProbeProvider;
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -55,37 +56,60 @@ class ModelsScreen extends ConsumerStatefulWidget {
 
 class _ModelsScreenState extends ConsumerState<ModelsScreen> {
   final _selected = <String>{};
-  final _busy = <String>{};
+
+  /// The download queue (all the picked ones) and the one running now.
+  final _queued = <String>{};
+  String? _running;
+  var _asking = false; // network probe or confirm dialog open
+  var _deleting = false;
 
   Future<void> _download(List<ModelEntry> targets) async {
+    if (_asking) return;
     final l = context.l10n;
     final locale = Localizations.localeOf(context).toString();
     final size = formatBytes(targets.fold(0, (s, e) => s + e.bytes), locale);
-    // D-656: on a metered network the size is asked before downloading.
-    final metered = (await ref.read(networkProbeProvider).current()).metered;
-    if (!mounted) return;
-    final ok = await showConfirm(
-      context,
-      title: l.modelsDownloadTitle,
-      body: metered ? l.modelsDownloadMeteredBody(size) : l.modelsDownloadBody(size),
-      confirmLabel: l.chineseDictionaryDownload,
-    );
-    if (!ok || !mounted) return;
+    setState(() => _asking = true);
+    try {
+      // D-656: on a metered network the size is asked before downloading.
+      var metered = false;
+      try {
+        metered = (await ref.read(networkProbeProvider).current()).metered;
+      } on Object catch (e, st) {
+        AppLog.w('models screen: network probe failed', e, st);
+      }
+      if (!mounted) return;
+      final ok = await showConfirm(
+        context,
+        title: l.modelsDownloadTitle,
+        body: metered
+            ? l.modelsDownloadMeteredBody(size)
+            : l.modelsDownloadBody(size),
+        confirmLabel: l.chineseDictionaryDownload,
+      );
+      if (!ok || !mounted) return;
+    } finally {
+      if (mounted) setState(() => _asking = false);
+    }
     final messenger = ScaffoldMessenger.of(context);
     final notifier = ref.read(modelCatalogProvider.notifier);
-    setState(() => _busy.addAll(targets.map(_key)));
+    setState(() => _queued.addAll(targets.map(_key)));
     // One at a time: the models are large and share the network.
     for (final e in targets) {
+      if (!mounted) return; // the notifier finishes the one running by itself
+      setState(() => _running = _key(e));
+      var done = false;
       try {
         await notifier.download(e);
+        done = true;
       } on Object catch (_) {
         // Already logged by the catalog; tell the user and go on with the rest.
         showMsgOn(messenger, l.modelsDownloadFailed(e.name));
       }
       if (mounted) {
         setState(() {
-          _busy.remove(_key(e));
-          _selected.remove(_key(e));
+          _queued.remove(_key(e));
+          _running = null;
+          if (done) _selected.remove(_key(e));
         });
       }
     }
@@ -105,14 +129,21 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     if (!ok || !mounted) return;
     final messenger = ScaffoldMessenger.of(context);
     final notifier = ref.read(modelCatalogProvider.notifier);
-    for (final e in targets) {
-      try {
-        await notifier.delete(e);
-      } on Object catch (err, st) {
-        AppLog.w('models screen: delete ${e.id} failed', err, st);
-        showMsgOn(messenger, l.modelsDeleteFailed(e.name));
+    setState(() => _deleting = true);
+    try {
+      for (final e in targets) {
+        var done = false;
+        try {
+          await notifier.delete(e);
+          done = true;
+        } on Object catch (err, st) {
+          AppLog.w('models screen: delete ${e.id} failed', err, st);
+          showMsgOn(messenger, l.modelsDeleteFailed(e.name));
+        }
+        if (done && mounted) setState(() => _selected.remove(_key(e)));
       }
-      if (mounted) setState(() => _selected.remove(_key(e)));
+    } finally {
+      if (mounted) setState(() => _deleting = false);
     }
   }
 
@@ -129,10 +160,16 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
         body: const Center(child: CircularProgressIndicator()),
       );
     }
-    final picked = [for (final e in entries) if (_selected.contains(_key(e))) e];
+    _selected.retainAll(entries.map(_key));
+    final dictBusy = dict.status == ChineseDictionaryStatus.downloading;
+    final picked = [
+      for (final e in entries)
+        if (_selected.contains(_key(e))) e,
+    ];
     final toDownload = picked.where((e) => !e.installed).toList();
     final toDelete = picked.where((e) => e.installed).toList();
-    final working = _busy.isNotEmpty;
+    // Also a dictionary fetched by a lyrics page counts as «in progress».
+    final working = _queued.isNotEmpty || _asking || _deleting || dictBusy;
 
     Widget section(String title, ModelKind kind) {
       final items = entries.where((e) => e.kind == kind).toList();
@@ -141,8 +178,16 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, CcDims.gap4),
-            child: Semantics(header: true, child: Text(title, style: theme.titleSmall)),
+            padding: const EdgeInsets.fromLTRB(
+              CcDims.margin,
+              CcDims.gap16,
+              CcDims.margin,
+              CcDims.gap4,
+            ),
+            child: Semantics(
+              header: true,
+              child: Text(title, style: theme.titleSmall),
+            ),
           ),
           for (final e in items) _row(l, locale, e, dict),
         ],
@@ -157,9 +202,16 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
             child: ListView(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, 0),
+                  padding: const EdgeInsets.fromLTRB(
+                    CcDims.margin,
+                    CcDims.gap16,
+                    CcDims.margin,
+                    0,
+                  ),
                   child: Text(
-                    l.modelsUsed(formatBytes(installedModelsBytes(entries), locale)),
+                    l.modelsUsed(
+                      formatBytes(installedModelsBytes(entries), locale),
+                    ),
                     key: const ValueKey('models-used'),
                     style: theme.bodyLarge,
                   ),
@@ -179,12 +231,16 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
                 children: [
                   FilledButton(
                     key: const ValueKey('models-download'),
-                    onPressed: toDownload.isEmpty || working ? null : () => _download(toDownload),
+                    onPressed: toDownload.isEmpty || working
+                        ? null
+                        : () => _download(toDownload),
                     child: Text(l.modelsDownloadSelected(toDownload.length)),
                   ),
                   OutlinedButton(
                     key: const ValueKey('models-delete'),
-                    onPressed: toDelete.isEmpty || working ? null : () => _delete(toDelete),
+                    onPressed: toDelete.isEmpty || working
+                        ? null
+                        : () => _delete(toDelete),
                     child: Text(l.modelsDeleteSelected(toDelete.length)),
                   ),
                 ],
@@ -196,42 +252,67 @@ class _ModelsScreenState extends ConsumerState<ModelsScreen> {
     );
   }
 
-  Widget _row(AppLocalizations l, String locale, ModelEntry e, ChineseDictionaryState dict) {
+  Widget _row(
+    AppLocalizations l,
+    String locale,
+    ModelEntry e,
+    ChineseDictionaryState dict,
+  ) {
     final k = _key(e);
-    final busy = _busy.contains(k);
+    final fromElsewhere =
+        e.kind == ModelKind.dictionary &&
+        dict.status == ChineseDictionaryStatus.downloading;
+    final running = _running == k || fromElsewhere;
+    final queued = _queued.contains(k) && !running;
+    final busy = running || queued;
     final size = formatBytes(e.bytes, locale);
-    return CheckboxListTile(
-      key: ValueKey('model-$k'),
-      value: _selected.contains(k),
-      onChanged: busy
-          ? null
-          : (v) => setState(() => v == true ? _selected.add(k) : _selected.remove(k)),
-      controlAffinity: ListTileControlAffinity.leading,
-      title: Text(e.name),
-      subtitle: Text(
-        busy
-            ? l.modelsDownloading
+    final failed =
+        e.kind == ModelKind.dictionary &&
+        dict.status == ChineseDictionaryStatus.error &&
+        !e.installed;
+    final status = running
+        ? l.modelsDownloading
+        : queued
+        ? l.modelsQueued
+        : failed
+        ? l.modelsDownloadFailed(e.name)
+        : e.installed
+        ? l.modelsInstalledSize(size)
+        : l.modelsNotInstalledSize(size);
+    final working = _queued.isNotEmpty || _asking || _deleting || fromElsewhere;
+    void toggle(bool? v) =>
+        setState(() => v == true ? _selected.add(k) : _selected.remove(k));
+    final picked = _selected.contains(k);
+    // One stop for the row (name, state, checked); the trash stays a button of its own.
+    return Semantics(
+      checked: picked,
+      child: ListTile(
+        key: ValueKey('model-$k'),
+        leading: ExcludeSemantics(
+          child: Checkbox(value: picked, onChanged: busy ? null : toggle),
+        ),
+        onTap: busy ? null : () => toggle(!picked),
+        title: Text(e.name),
+        subtitle: Semantics(liveRegion: true, child: Text(status)),
+        // The trash is a button of its own (a merged checkbox tile hid it from TalkBack).
+        trailing: running
+            ? SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  // Only the dictionary reports progress.
+                  value: e.kind == ModelKind.dictionary ? dict.progress : null,
+                  semanticsLabel: l.modelsDownloading,
+                ),
+              )
             : e.installed
-            ? l.modelsInstalledSize(size)
-            : l.modelsNotInstalledSize(size),
+            ? IconButton(
+                tooltip: l.modelsDeleteOne(e.name),
+                icon: const Icon(Icons.delete_outline_rounded),
+                onPressed: working ? null : () => _delete([e]),
+              )
+            : null,
       ),
-      secondary: busy
-          ? SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(
-                // Only the dictionary reports progress.
-                value: e.kind == ModelKind.dictionary ? dict.progress : null,
-                semanticsLabel: l.modelsDownloading,
-              ),
-            )
-          : e.installed
-          ? IconButton(
-              tooltip: l.modelsDeleteOne(e.name),
-              icon: const Icon(Icons.delete_outline_rounded),
-              onPressed: () => _delete([e]),
-            )
-          : null,
     );
   }
 }

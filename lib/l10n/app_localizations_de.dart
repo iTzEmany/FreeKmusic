@@ -4139,15 +4139,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get translationModels => 'Übersetzungsmodelle';
 
   @override
-  String get translationModelsNone =>
-      'Kein Modell geladen. Sie werden im Textbildschirm über „Übersetzen“ geladen.';
-
-  @override
-  String translationModelDelete(String language) {
-    return 'Modell $language löschen';
-  }
-
-  @override
   String get scanCode => 'Code scannen';
 
   @override
@@ -7613,38 +7604,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chineseDictionary => 'Chinesisches Wörterbuch';
 
   @override
-  String get chineseDictionaryHint =>
-      'Wird für die Transliteration chinesischer Songtexte gebraucht, wenn online keine zu finden ist.';
-
-  @override
-  String get chineseDictionaryNone => 'Nicht geladen';
-
-  @override
   String get chineseDictionaryDownload => 'Herunterladen';
-
-  @override
-  String get chineseDictionaryDownloading => 'Wird geladen…';
-
-  @override
-  String get chineseDictionaryError => 'Download fehlgeschlagen';
-
-  @override
-  String get chineseDictionaryDelete => 'Chinesisches Wörterbuch löschen';
-
-  @override
-  String get chineseDictionaryDeleteTitle => 'Chinesisches Wörterbuch löschen?';
-
-  @override
-  String get chineseDictionaryDeleteBody =>
-      'Du kannst es hier erneut herunterladen.';
 
   @override
   String get aboutCedictBody =>
       'CC-CEDICT, das chinesische Wörterbuch von MDBG für die Transliteration. Lizenz CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Quelle: https://www.mdbg.net/chinese/dictionary?page=cedict';
-
-  @override
-  String get chineseDictionaryDeleteFailed =>
-      'Chinesisches Wörterbuch konnte nicht gelöscht werden';
 
   @override
   String get editorDiscardBody => 'Deine Änderungen wurden nicht gespeichert.';
@@ -8153,7 +8117,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Mikrofon erscheint in „Aktuelle Wiedergabe“ und bei den Songtexten (Android).';
 
   @override
-  String get karaokeCostModel => 'Lädt beim ersten Mal 78 MB herunter';
+  String karaokeCostModel(int mb) {
+    return 'Lädt beim ersten Mal $mb MB herunter';
+  }
 
   @override
   String get karaokeCostTrack =>
@@ -8308,9 +8274,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get modelsDownloading => 'Wird geladen…';
 
   @override
-  String modelsSelect(String name) {
-    return '$name auswählen';
-  }
+  String get modelsQueued => 'In der Warteschlange';
 
   @override
   String modelsDeleteOne(String name) {

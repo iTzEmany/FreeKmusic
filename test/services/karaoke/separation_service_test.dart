@@ -353,4 +353,77 @@ void main() {
       expect(files(), isEmpty);
     });
   });
+
+  group('model operations of the catalogue', () {
+    final hashes = {
+      'a.onnx': sha256.convert('model:a.onnx'.codeUnits).toString(),
+      'b.onnx': sha256.convert('model:b.onnx'.codeUnits).toString(),
+    };
+    Completer<void>? hold;
+
+    SeparationService withModels() => SeparationService(
+      cache: cache,
+      separator: sep,
+      modelsRoot: () async => root,
+      models: hashes,
+      download: (url, dest, token, onProgress) async {
+        downloads++;
+        if (hold != null) {
+          await Future.any([hold!.future, token.whenCancel]);
+          if (token.isCancelled) throw DioException.requestCancelled(requestOptions: RequestOptions(), reason: 'x');
+        }
+        File(dest).writeAsStringSync('model:${url.split('/').last}');
+      },
+    );
+
+    Directory modelsDir() => Directory(p.join(root.path, 'models', 'spleeter-2stems-7001ba31'));
+    setUp(() => hold = null);
+
+    test('a second download while one runs shares it: each file is fetched once', () async {
+      hold = Completer<void>();
+      final s = withModels();
+      final a = s.downloadModels();
+      final b = s.downloadModels();
+      expect(identical(a, b), isTrue);
+      hold!.complete();
+      await a;
+      expect(downloads, 2);
+      expect(await s.modelsMissing(), isFalse);
+    });
+
+    test('a delete during a download cancels it and leaves no file', () async {
+      hold = Completer<void>();
+      final s = withModels();
+      final d = s.downloadModels();
+      final failed = expectLater(d, throwsA(isA<DioException>()));
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await s.deleteModels();
+      await failed;
+      expect(modelsDir().existsSync(), isFalse);
+      expect(await s.modelsMissing(), isTrue);
+    });
+
+    test('a delete during a separation stops it first', () async {
+      final s = withModels();
+      await s.downloadModels();
+      sep.gate = Completer<void>();
+      final job = s.request('karaoke:k', '/in.mp3');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      expect(s.busy, isTrue);
+      await s.deleteModels();
+      await job;
+      expect(s.busy, isFalse);
+      expect(s.stateOf('karaoke:k').phase, isNot(SeparationPhase.ready));
+      expect(modelsDir().existsSync(), isFalse);
+    });
+
+    test('a delete that cannot remove the files throws', () async {
+      final s = withModels();
+      await s.downloadModels();
+      await Process.run('chmod', ['555', modelsDir().parent.path]);
+      addTearDown(() => Process.run('chmod', ['755', modelsDir().parent.path]));
+      await expectLater(s.deleteModels(), throwsA(isA<FileSystemException>()));
+      expect(modelsDir().existsSync(), isTrue);
+    });
+  });
 }

@@ -463,8 +463,8 @@ final karaokeAutoProvider = Provider<void>((ref) {
       if (phase != SeparationPhase.ready) return;
     }
     if (service.busy) return;
-    final metered = (await ref.read(networkProbeProvider).current()).metered;
-    if (disposed || (metered && await service.modelsMissing())) return;
+    // The models come back only with an explicit start: «Elimina» (models page) must stick.
+    if (disposed || await service.modelsMissing()) return;
     for (final t in queued) {
       if (service.stateOf(t.key).phase == SeparationPhase.idle) {
         start(t);

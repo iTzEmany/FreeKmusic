@@ -2672,15 +2672,6 @@
   "translateFailed": "Traduzione non riuscita.",
   "translateSameLanguage": "Il testo è già in questa lingua.",
   "translationModels": "Modelli di traduzione",
-  "translationModelsNone": "Nessun modello scaricato. Si scaricano dalla schermata dei testi, con «Traduci».",
-  "translationModelDelete": "Elimina il modello {language}",
-  "@translationModelDelete": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "scanCode": "Scansiona codice",
   "scanTitle": "Inquadra il codice QR",
   "scanNotCodecore": "Questo codice non è di FreeKmusic.",
@@ -4480,16 +4471,8 @@
   "romanizationUnavailable": "Traslitterazione non disponibile per questo testo",
   "romanizationDownloading": "Scarico il dizionario cinese…",
   "chineseDictionary": "Dizionario cinese",
-  "chineseDictionaryHint": "Serve per la traslitterazione dei testi cinesi quando non se ne trova una online.",
-  "chineseDictionaryNone": "Non scaricato",
   "chineseDictionaryDownload": "Scarica",
-  "chineseDictionaryDownloading": "Scarico…",
-  "chineseDictionaryError": "Download non riuscito",
-  "chineseDictionaryDelete": "Elimina il dizionario cinese",
-  "chineseDictionaryDeleteTitle": "Eliminare il dizionario cinese?",
-  "chineseDictionaryDeleteBody": "Si può scaricare di nuovo da qui.",
   "aboutCedictBody": "CC-CEDICT, dizionario cinese di MDBG usato per la traslitterazione. Licenza CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fonte: https://www.mdbg.net/chinese/dictionary?page=cedict",
-  "chineseDictionaryDeleteFailed": "Impossibile eliminare il dizionario cinese",
   "editorDiscardBody": "Le modifiche non sono state salvate.",
   "queueUpNext": "Prossimi in coda",
   "queueThen": "Poi",
@@ -4669,7 +4652,14 @@
   "karaokeHighQualityFailed": "Separazione non riuscita: resta l’originale.",
   "showKaraoke": "Mostra il karaoke",
   "showKaraokeHint": "Il microfono compare in «In riproduzione» e nei testi (Android).",
-  "karaokeCostModel": "Scarica 78 MB la prima volta",
+  "karaokeCostModel": "Scarica {mb} MB la prima volta",
+  "@karaokeCostModel": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
   "karaokeCostTrack": "Il brano va scaricato per intero",
   "karaokeStart": "Avvia",
   "karaokeRetry": "Riprova",
@@ -4766,14 +4756,7 @@
     }
   },
   "modelsDownloading": "In scaricamento…",
-  "modelsSelect": "Seleziona {name}",
-  "@modelsSelect": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
+  "modelsQueued": "In coda",
   "modelsDeleteOne": "Elimina {name}",
   "@modelsDeleteOne": {
     "placeholders": {

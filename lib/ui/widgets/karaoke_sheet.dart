@@ -223,7 +223,7 @@ class _SeparationRow extends ConsumerWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (cost.model) Text(l.karaokeCostModel, style: muted),
+          if (cost.model) Text(l.karaokeCostModel(kKaraokeModelMegabytes), style: muted),
           if (cost.track) Text(l.karaokeCostTrack, style: muted),
           // A stream not in the cache yet has nothing to confirm: it starts once the file lands.
           if (input == null)
