@@ -77,6 +77,9 @@ jobs:
         run: python3 scripts/check_docs_links.py
       - name: Performance script labels
         run: python3 scripts/check_perf_labels.py
+      # node is preinstalled on ubuntu-latest.
+      - name: Report Worker tests
+        run: node --test tools/report-worker/test/*.test.js
       # Covers lib, test, test/live, test_shots and integration_test.
       - if: steps.scope.outputs.docs != 'true'
         run: flutter analyze

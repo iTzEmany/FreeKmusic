@@ -109,6 +109,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 | Memoria dei download (D-579) | `effectiveLocation` (`lib/core/storage_volumes.dart`): scheda tolta = interna. Android 11+: `<SD>/Music/FreeKmusic` con MediaStore; Android 10: cartella dell'app sul volume | cartella scelta dall'utente, aggiunta alla libreria | non verificato |
 | Backup automatico | `Documents/FreeKmusic` (ripiego: cartella dell'app) | cartella scelta | non verificato |
 | Filtro della voce (karaoke, D-603, D-617) | `AudioProcessor` Media3 nella copia di `just_audio` | Linux: `lavfi` di mpv (`af`); Windows: assente (libmpv senza filtri) | assente (anche iOS) |
+| Modelli e dizionari (D-673) | traduzione (ML Kit, 20 lingue) e modello karaoke Spleeter: sezioni presenti (`lyricsTranslatorProvider` e `separationServiceProvider` non nulli); dizionario CC-CEDICT presente | solo il dizionario: le sezioni Traduzione e Karaoke non compaiono | come desktop |
 | Orientamento | bloccato in verticale, salvo lo schermo intero del video karaoke (orizzontale e immersivo, poi ripristinato) | libero | libero |
 | Video karaoke (D-632, D-637) | libmpv da `media_kit_libs_android_video`, nella full (circa +5,6 MB per ABI), assente nella lite | Windows: `media_kit_libs_windows_video`; Linux: libmpv di sistema | `media_kit_libs_macos_video` (compilato solo in CI); iOS: nessuna libreria, non supportato |
 | Scoperta in LAN (`discovery.dart`) | senza `reusePort` | `reusePort` solo su Linux | `reusePort` |

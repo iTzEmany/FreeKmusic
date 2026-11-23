@@ -4162,15 +4162,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get translationModels => 'Modèles de traduction';
 
   @override
-  String get translationModelsNone =>
-      'Aucun modèle téléchargé. Ils se téléchargent depuis l’écran des paroles, avec « Traduire ».';
-
-  @override
-  String translationModelDelete(String language) {
-    return 'Supprimer le modèle $language';
-  }
-
-  @override
   String get scanCode => 'Scanner le code';
 
   @override
@@ -7642,39 +7633,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get chineseDictionary => 'Dictionnaire chinois';
 
   @override
-  String get chineseDictionaryHint =>
-      'Sert à translittérer les paroles chinoises quand aucune n’est trouvée en ligne.';
-
-  @override
-  String get chineseDictionaryNone => 'Non téléchargé';
-
-  @override
   String get chineseDictionaryDownload => 'Télécharger';
-
-  @override
-  String get chineseDictionaryDownloading => 'Téléchargement…';
-
-  @override
-  String get chineseDictionaryError => 'Échec du téléchargement';
-
-  @override
-  String get chineseDictionaryDelete => 'Supprimer le dictionnaire chinois';
-
-  @override
-  String get chineseDictionaryDeleteTitle =>
-      'Supprimer le dictionnaire chinois ?';
-
-  @override
-  String get chineseDictionaryDeleteBody =>
-      'Vous pourrez le télécharger de nouveau d’ici.';
 
   @override
   String get aboutCedictBody =>
       'CC-CEDICT, le dictionnaire chinois de MDBG utilisé pour la translittération. Licence CC BY-SA 4.0 : https://creativecommons.org/licenses/by-sa/4.0/ Source : https://www.mdbg.net/chinese/dictionary?page=cedict';
-
-  @override
-  String get chineseDictionaryDeleteFailed =>
-      'Impossible de supprimer le dictionnaire chinois';
 
   @override
   String get editorDiscardBody =>
@@ -8188,7 +8151,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Le micro apparaît dans « Lecture en cours » et sur les paroles (Android).';
 
   @override
-  String get karaokeCostModel => 'Télécharge 78 Mo la première fois';
+  String karaokeCostModel(int mb) {
+    return 'Télécharge $mb Mo la première fois';
+  }
 
   @override
   String get karaokeCostTrack => 'Le titre doit être téléchargé en entier';
@@ -8307,5 +8272,98 @@ class AppLocalizationsFr extends AppLocalizations {
       one: '1 titre',
     );
     return 'Tu es sur un réseau limité. $_temp0, environ $mb Mo : télécharger ?';
+  }
+
+  @override
+  String get modelsTitle => 'Modèles et dictionnaires';
+
+  @override
+  String modelsSummary(int count, String size) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count installés, $size',
+      one: '1 installé, $size',
+      zero: 'Aucun installé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String modelsUsed(String size) {
+    return 'Espace occupé : $size';
+  }
+
+  @override
+  String modelsInstalledSize(String size) {
+    return 'Installé, $size';
+  }
+
+  @override
+  String modelsNotInstalledSize(String size) {
+    return 'Non installé, environ $size';
+  }
+
+  @override
+  String get modelsDownloading => 'Téléchargement…';
+
+  @override
+  String get modelsQueued => 'En attente';
+
+  @override
+  String get modelsOffline =>
+      'Une connexion est nécessaire pour télécharger les modèles.';
+
+  @override
+  String get modelsLoadFailed => 'Impossible de lire les modèles.';
+
+  @override
+  String get modelsCancelled =>
+      'Annulé. Le téléchargement d’une langue déjà lancé ne peut pas être arrêté.';
+
+  @override
+  String modelsDeleteOne(String name) {
+    return 'Supprimer $name';
+  }
+
+  @override
+  String modelsDownloadSelected(int count) {
+    return 'Télécharger la sélection ($count)';
+  }
+
+  @override
+  String modelsDeleteSelected(int count) {
+    return 'Supprimer la sélection ($count)';
+  }
+
+  @override
+  String get modelsDownloadTitle => 'Télécharger les modèles sélectionnés ?';
+
+  @override
+  String modelsDownloadBody(String size) {
+    return 'Environ $size seront téléchargés.';
+  }
+
+  @override
+  String modelsDownloadMeteredBody(String size) {
+    return 'Vous êtes sur un réseau limité. Environ $size seront téléchargés : continuer ?';
+  }
+
+  @override
+  String get modelsDeleteTitle => 'Supprimer les modèles sélectionnés ?';
+
+  @override
+  String modelsDeleteBody(String size) {
+    return 'Environ $size seront libérés. Vous pourrez les retélécharger ici.';
+  }
+
+  @override
+  String modelsDownloadFailed(String name) {
+    return 'Échec du téléchargement : $name';
+  }
+
+  @override
+  String modelsDeleteFailed(String name) {
+    return 'Suppression impossible : $name';
   }
 }

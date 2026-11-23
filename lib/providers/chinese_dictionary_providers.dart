@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -158,6 +159,11 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     final gen = _generation;
     final gate = ref.read(cedictAutoGateProvider);
     final path = await _path;
+    final pending = _onlyRun;
+    if (pending != null) {
+      await pending.then((_) {}, onError: (_) {});
+      if (gen != _generation) return null; // «Elimina» came in meanwhile
+    }
     var downloading = false;
     // The download goes on when the page that asked for it is left.
     void Function()? closeKeep;
@@ -218,6 +224,41 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     );
   }
 
+  /// «Scarica» of the models page: downloads the file without parsing it into
+  /// memory. Throws when it fails (state `error`).
+  Future<void> downloadOnly() =>
+      _onlyRun ??= _downloadOnly().whenComplete(() => _onlyRun = null);
+
+  /// The «Scarica» run in progress: [_run] waits for it, one `.tmp` file only.
+  Future<void>? _onlyRun;
+
+  Future<void> _downloadOnly() async {
+    final running = _loading;
+    if (running != null) await running;
+    final path = await _path;
+    if (await cedictInstalledSize(path) > 0) return;
+    final gen = _generation;
+    final closeKeep = ref.keepAlive().close;
+    try {
+      await _download(path);
+      ref.read(cedictAutoGateProvider).succeeded();
+      final size = await cedictInstalledSize(path);
+      if (!_disposed && gen == _generation) {
+        state = ChineseDictionaryState(ChineseDictionaryStatus.ready, sizeBytes: size);
+      }
+    } on Object catch (e, st) {
+      if (!(e is DioException && CancelToken.isCancel(e))) {
+        AppLog.w('Chinese dictionary download failed', e, st);
+      }
+      if (!_disposed && gen == _generation) {
+        state = const ChineseDictionaryState(ChineseDictionaryStatus.error);
+      }
+      rethrow;
+    } finally {
+      closeKeep();
+    }
+  }
+
   /// «Elimina»: deletes the file and frees the map; a download or a load that
   /// is running is dropped.
   Future<void> delete() async {
@@ -225,7 +266,11 @@ class ChineseDictionaryNotifier extends Notifier<ChineseDictionaryState> {
     _cancel?.cancel();
     _dict = null;
     _loading = null;
-    await deleteCedict(await _path);
+    final path = await _path;
+    await deleteCedict(path); // logs a failure
+    if (await cedictInstalledSize(path) > 0) {
+      throw FileSystemException('cannot delete the dictionary', path);
+    }
     if (!_disposed) {
       state = const ChineseDictionaryState(
         ChineseDictionaryStatus.notDownloaded,

@@ -2311,15 +2311,6 @@
   "translateFailed": "Übersetzung fehlgeschlagen.",
   "translateSameLanguage": "Der Text ist bereits in dieser Sprache.",
   "translationModels": "Übersetzungsmodelle",
-  "translationModelsNone": "Kein Modell geladen. Sie werden im Textbildschirm über „Übersetzen“ geladen.",
-  "translationModelDelete": "Modell {language} löschen",
-  "@translationModelDelete": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "scanCode": "Code scannen",
   "scanTitle": "QR-Code anvisieren",
   "scanNotCodecore": "Dieser Code ist nicht von FreeKmusic.",
@@ -3778,16 +3769,8 @@
   "romanizationUnavailable": "Transliteration für diesen Text nicht verfügbar",
   "romanizationDownloading": "Chinesisches Wörterbuch wird geladen…",
   "chineseDictionary": "Chinesisches Wörterbuch",
-  "chineseDictionaryHint": "Wird für die Transliteration chinesischer Songtexte gebraucht, wenn online keine zu finden ist.",
-  "chineseDictionaryNone": "Nicht geladen",
   "chineseDictionaryDownload": "Herunterladen",
-  "chineseDictionaryDownloading": "Wird geladen…",
-  "chineseDictionaryError": "Download fehlgeschlagen",
-  "chineseDictionaryDelete": "Chinesisches Wörterbuch löschen",
-  "chineseDictionaryDeleteTitle": "Chinesisches Wörterbuch löschen?",
-  "chineseDictionaryDeleteBody": "Du kannst es hier erneut herunterladen.",
   "aboutCedictBody": "CC-CEDICT, das chinesische Wörterbuch von MDBG für die Transliteration. Lizenz CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Quelle: https://www.mdbg.net/chinese/dictionary?page=cedict",
-  "chineseDictionaryDeleteFailed": "Chinesisches Wörterbuch konnte nicht gelöscht werden",
   "editorDiscardBody": "Deine Änderungen wurden nicht gespeichert.",
   "queueUpNext": "Als Nächstes in der Warteschlange",
   "queueThen": "Danach",
@@ -3940,7 +3923,14 @@
   "karaokeHighQualityFailed": "Trennung fehlgeschlagen: das Original spielt weiter.",
   "showKaraoke": "Karaoke anzeigen",
   "showKaraokeHint": "Das Mikrofon erscheint in „Aktuelle Wiedergabe“ und bei den Songtexten (Android).",
-  "karaokeCostModel": "Lädt beim ersten Mal 78 MB herunter",
+  "karaokeCostModel": "Lädt beim ersten Mal {mb} MB herunter",
+  "@karaokeCostModel": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
   "karaokeCostTrack": "Der Titel muss vollständig heruntergeladen werden",
   "karaokeStart": "Starten",
   "karaokeRetry": "Wiederholen",
@@ -3997,6 +3987,113 @@
       },
       "mb": {
         "type": "int"
+      }
+    }
+  },
+  "modelsTitle": "Modelle und Wörterbücher",
+  "modelsSummary": "{count, plural, =0{Nichts installiert} one{1 installiert, {size}} other{{count} installiert, {size}}}",
+  "@modelsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsUsed": "Belegter Speicher: {size}",
+  "@modelsUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsInstalledSize": "Installiert, {size}",
+  "@modelsInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsNotInstalledSize": "Nicht installiert, etwa {size}",
+  "@modelsNotInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloading": "Wird geladen…",
+  "modelsQueued": "In der Warteschlange",
+  "modelsOffline": "Zum Herunterladen der Modelle ist eine Verbindung nötig.",
+  "modelsLoadFailed": "Die Modelle konnten nicht gelesen werden.",
+  "modelsCancelled": "Abgebrochen. Ein bereits gestarteter Sprachdownload lässt sich nicht stoppen.",
+  "modelsDeleteOne": "{name} löschen",
+  "@modelsDeleteOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadSelected": "Auswahl laden ({count})",
+  "@modelsDownloadSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDeleteSelected": "Auswahl löschen ({count})",
+  "@modelsDeleteSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDownloadTitle": "Ausgewählte Modelle laden?",
+  "modelsDownloadBody": "Es werden etwa {size} geladen.",
+  "@modelsDownloadBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadMeteredBody": "Du bist in einem getakteten Netz. Es werden etwa {size} geladen: fortfahren?",
+  "@modelsDownloadMeteredBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteTitle": "Ausgewählte Modelle löschen?",
+  "modelsDeleteBody": "Es werden etwa {size} frei. Du kannst sie hier erneut laden.",
+  "@modelsDeleteBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadFailed": "Download fehlgeschlagen: {name}",
+  "@modelsDownloadFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteFailed": "Löschen nicht möglich: {name}",
+  "@modelsDeleteFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   }

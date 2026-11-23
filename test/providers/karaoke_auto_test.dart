@@ -322,6 +322,23 @@ void main() {
     await s.h.dispose(t);
   });
 
+  test('«Elimina» with karaoke on and a track playing: nothing restarts by itself; switching on again does (D-707)', () async {
+    final t = _T();
+    final s = await setup(t, modelMissing: true, on: true);
+    await t.runAsync(() async {
+      await s.svc.deleteModels();
+      await s.h.handler.playQueue([s.ids[0]], 0);
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+      expect(s.sep.inputs, isEmpty);
+      setKaraoke(s.c, false);
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      setKaraoke(s.c, true);
+      await until(() => s.sep.inputs.isNotEmpty);
+    });
+    expect(s.sep.inputs, ['${tmp.path}/t0.mp3']);
+    await s.h.dispose(t);
+  });
+
   test('queued by hand: separated in queue order after the current, skipping what has no file', () async {
     final t = _T();
     final s = await setup(t, on: true, missing: {1});
@@ -341,9 +358,9 @@ void main() {
     await s.h.dispose(t);
   });
 
-  test('queued tracks are not prefetched when the model is missing on a metered network', () async {
+  test('queued tracks are not prefetched when the model is missing (also unmetered: «Elimina» sticks)', () async {
     final t = _T();
-    final s = await setup(t, metered: true, modelMissing: true, on: true);
+    final s = await setup(t, metered: false, modelMissing: true, on: true);
     await t.runAsync(() async {
       await s.h.handler.playQueue([s.ids[0]], 0);
       s.h.handler.addToQueue(s.ids[1]);

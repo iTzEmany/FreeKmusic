@@ -103,7 +103,7 @@ class TranslationModelsNotifier extends AsyncNotifier<List<String>> {
     } on Object catch (e, st) {
       AppLog.e('translation model delete failed', e, st);
       state = AsyncData(await _ready());
-      return;
+      rethrow; // the page says it (modelsDeleteFailed)
     }
     state = AsyncData([
       for (final l in state.value ?? const <String>[])

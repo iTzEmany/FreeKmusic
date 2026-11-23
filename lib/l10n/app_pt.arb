@@ -2469,15 +2469,6 @@
   "translateFailed": "A tradução falhou.",
   "translateSameLanguage": "A letra já está neste idioma.",
   "translationModels": "Modelos de tradução",
-  "translationModelsNone": "Nenhum modelo baixado. Eles são baixados na tela das letras, com «Traduzir».",
-  "translationModelDelete": "Excluir o modelo {language}",
-  "@translationModelDelete": {
-    "placeholders": {
-      "language": {
-        "type": "String"
-      }
-    }
-  },
   "scanCode": "Ler código",
   "scanTitle": "Aponta ao código QR",
   "scanNotCodecore": "Este código não é do FreeKmusic.",
@@ -3964,16 +3955,8 @@
   "romanizationUnavailable": "Transliteração não disponível para esta letra",
   "romanizationDownloading": "A transferir o dicionário chinês…",
   "chineseDictionary": "Dicionário chinês",
-  "chineseDictionaryHint": "Serve para transliterar letras chinesas quando não se encontra uma online.",
-  "chineseDictionaryNone": "Não transferido",
   "chineseDictionaryDownload": "Transferir",
-  "chineseDictionaryDownloading": "A transferir…",
-  "chineseDictionaryError": "Falha na transferência",
-  "chineseDictionaryDelete": "Eliminar o dicionário chinês",
-  "chineseDictionaryDeleteTitle": "Eliminar o dicionário chinês?",
-  "chineseDictionaryDeleteBody": "Pode transferi-lo de novo a partir daqui.",
   "aboutCedictBody": "CC-CEDICT, o dicionário chinês da MDBG usado para a transliteração. Licença CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fonte: https://www.mdbg.net/chinese/dictionary?page=cedict",
-  "chineseDictionaryDeleteFailed": "Não foi possível eliminar o dicionário chinês",
   "editorDiscardBody": "As alterações não foram guardadas.",
   "queueUpNext": "A seguir na fila",
   "queueThen": "Depois",
@@ -4126,7 +4109,14 @@
   "karaokeHighQualityFailed": "Separação falhou: continua o original.",
   "showKaraoke": "Mostrar o karaokê",
   "showKaraokeHint": "O microfone aparece em «A tocar» e na letra (Android).",
-  "karaokeCostModel": "Baixa 78 MB na primeira vez",
+  "karaokeCostModel": "Baixa {mb} MB na primeira vez",
+  "@karaokeCostModel": {
+    "placeholders": {
+      "mb": {
+        "type": "int"
+      }
+    }
+  },
   "karaokeCostTrack": "A faixa precisa ser baixada por inteiro",
   "karaokeStart": "Iniciar",
   "karaokeRetry": "Tentar de novo",
@@ -4183,6 +4173,113 @@
       },
       "mb": {
         "type": "int"
+      }
+    }
+  },
+  "modelsTitle": "Modelos e dicionários",
+  "modelsSummary": "{count, plural, =0{Nenhum instalado} one{1 instalado, {size}} other{{count} instalados, {size}}}",
+  "@modelsSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsUsed": "Espaço ocupado: {size}",
+  "@modelsUsed": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsInstalledSize": "Instalado, {size}",
+  "@modelsInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsNotInstalledSize": "Não instalado, cerca de {size}",
+  "@modelsNotInstalledSize": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloading": "A transferir…",
+  "modelsQueued": "Na fila",
+  "modelsOffline": "É preciso ligação para transferir os modelos.",
+  "modelsLoadFailed": "Não foi possível ler os modelos.",
+  "modelsCancelled": "Cancelado. A transferência de um idioma já iniciada não pode ser parada.",
+  "modelsDeleteOne": "Eliminar {name}",
+  "@modelsDeleteOne": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadSelected": "Transferir selecionados ({count})",
+  "@modelsDownloadSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDeleteSelected": "Eliminar selecionados ({count})",
+  "@modelsDeleteSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "modelsDownloadTitle": "Transferir os modelos selecionados?",
+  "modelsDownloadBody": "Serão transferidos cerca de {size}.",
+  "@modelsDownloadBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadMeteredBody": "Estás numa rede com consumo limitado. Serão transferidos cerca de {size}: continuar?",
+  "@modelsDownloadMeteredBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteTitle": "Eliminar os modelos selecionados?",
+  "modelsDeleteBody": "Serão libertados cerca de {size}. Podes transferi-los de novo aqui.",
+  "@modelsDeleteBody": {
+    "placeholders": {
+      "size": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDownloadFailed": "Falha na transferência: {name}",
+  "@modelsDownloadFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "modelsDeleteFailed": "Não foi possível eliminar: {name}",
+  "@modelsDeleteFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
       }
     }
   }

@@ -12,6 +12,9 @@ import '../stream/stream_cache.dart';
 import '../stream/stream_key.dart';
 
 const _modelDir = 'spleeter-2stems-7001ba31';
+
+/// Size of the two ONNX files, announced to the user (karaoke sheet, models page).
+const int kKaraokeModelMegabytes = 78;
 const _modelBase =
     'https://huggingface.co/csukuangfj/sherpa-onnx-spleeter-2stems/resolve/7001ba316a615cacddb3f9ef3ec416661a277e26';
 
@@ -222,10 +225,13 @@ class SeparationService extends ChangeNotifier {
 
   /// Starts the job for [key] on [input] (a file path), replacing any running one.
   /// Follow it with [stateOf]; a base already in the cache makes no job.
-  Future<void> request(String key, String input) async {
+  /// [explicit] (the user's own start, not the automatic one) lifts «models
+  /// removed» (D-707).
+  Future<void> request(String key, String input, {bool explicit = false}) async {
     if (_activeKey == key) return;
     int? gen;
     try {
+      if (explicit) await allowModels();
       final existing = await cache.fileFor(karaokeFileKey('base', key));
       final voice = await cache.fileFor(karaokeFileKey('voice', key));
       if (_activeKey == key) return;
@@ -461,13 +467,98 @@ class SeparationService extends ChangeNotifier {
     _expiryTimer ??= Timer.periodic(every, (_) => unawaited(expire()));
   }
 
-  /// True when the models are not on the device yet (the first run downloads 78 MB).
+  /// True when the models are not on the device yet (the first run downloads [kKaraokeModelMegabytes] MB).
   Future<bool> modelsMissing() async {
-    final dir = p.join((await modelsRoot()).path, 'models', _modelDir);
+    final dir = await _modelsDir();
     for (final n in models.keys) {
-      if (!await File(p.join(dir, n)).exists()) return true;
+      if (!await File(p.join(dir.path, n)).exists()) return true;
     }
     return false;
+  }
+
+  /// D-707: after «Elimina» the automatic start must not bring the models back.
+  /// A marker file beside the models folder, so it outlives a restart.
+  Future<File> _removedMark() async =>
+      File(p.join((await modelsRoot()).path, 'models', '$_modelDir.removed'));
+
+  Future<bool> modelsRemovedByUser() async => (await _removedMark()).exists();
+
+  /// The user started karaoke on purpose: the models may be fetched again.
+  Future<void> allowModels() => _setModelsRemoved(false);
+
+  Future<void> _setModelsRemoved(bool removed) async {
+    try {
+      final mark = await _removedMark();
+      if (removed) {
+        await mark.create(recursive: true);
+      } else if (await mark.exists()) {
+        await mark.delete();
+      }
+    } on Object catch (e, st) {
+      AppLog.w('separation: cannot update the «models removed» mark', e, st);
+    }
+  }
+
+  Future<Directory> _modelsDir() async =>
+      Directory(p.join((await modelsRoot()).path, 'models', _modelDir));
+
+  /// Bytes of the model files on the device (0 when none).
+  Future<int> modelsSize() async {
+    final dir = await _modelsDir();
+    var total = 0;
+    for (final n in models.keys) {
+      final f = File(p.join(dir.path, n));
+      if (await f.exists()) total += await f.length();
+    }
+    return total;
+  }
+
+  Future<void>? _downloading;
+  CancelToken? _downloadToken;
+  Future<void> _modelsChain = Future.value();
+
+  /// Runs [f] after every model operation asked before it (one at a time: the
+  /// downloads share the `.part` files and a delete must not cut one).
+  Future<T> _exclusive<T>(Future<T> Function() f) {
+    // Listeners (the models catalog) look again when the files changed.
+    final run = _modelsChain
+        .then((_) => f())
+        .whenComplete(() => _disposed ? null : notifyListeners());
+    _modelsChain = run.then((_) {}, onError: (_) {});
+    return run;
+  }
+
+  /// Downloads the missing models (the catalogue's «Scarica»); throws when it
+  /// fails. A second call while one runs shares it.
+  Future<void> downloadModels([void Function(double)? onProgress]) {
+    unawaited(allowModels());
+    return _downloading ??= ensureModels(
+      _downloadToken = CancelToken(),
+      onProgress ?? (_) {},
+    ).then((_) {}).whenComplete(() {
+      _downloading = null;
+      _downloadToken = null;
+    });
+  }
+
+  /// Deletes the models; they are downloaded again by the next separation. A job
+  /// or a download in progress is stopped first. Throws when the files stay.
+  Future<void> deleteModels() async {
+    await _setModelsRemoved(true);
+    _downloadToken?.cancel();
+    if (_activeKey != null) {
+      _stop();
+      await _last;
+    }
+    await _exclusive(() async {
+      try {
+        final dir = await _modelsDir();
+        if (await dir.exists()) await dir.delete(recursive: true);
+      } on Object catch (e, st) {
+        AppLog.w('separation: cannot delete the models', e, st);
+        rethrow;
+      }
+    });
   }
 
   void _drop(String key) => _set(key, SeparationState.idle);
@@ -481,10 +572,15 @@ class SeparationService extends ChangeNotifier {
   Future<Directory> ensureModels(
     CancelToken token,
     void Function(double) onProgress,
+  ) => _exclusive(() => _ensureModels(token, onProgress));
+
+  Future<Directory> _ensureModels(
+    CancelToken token,
+    void Function(double) onProgress,
   ) async {
-    final dir = Directory(
-      p.join((await modelsRoot()).path, 'models', _modelDir),
-    );
+    // Asked before a delete that cancelled it: do not bring the files back.
+    if (token.isCancelled) throw const SeparationCancelled();
+    final dir = await _modelsDir();
     await dir.create(recursive: true);
     var i = 0;
     for (final e in models.entries) {

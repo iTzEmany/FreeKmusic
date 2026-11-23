@@ -456,6 +456,9 @@ final karaokeAutoProvider = Provider<void>((ref) {
             !ref.read(karaokeConfirmedProvider).contains(cur.key)) {
           return;
         }
+        // «Elimina» of the models (D-707): only an explicit start brings them back.
+        if (await service.modelsRemovedByUser() && await service.modelsMissing()) return;
+        if (disposed) return;
         if (cur.key == ref.read(karaokeTargetProvider).value?.key) start(cur);
         return;
       }
@@ -463,8 +466,8 @@ final karaokeAutoProvider = Provider<void>((ref) {
       if (phase != SeparationPhase.ready) return;
     }
     if (service.busy) return;
-    final metered = (await ref.read(networkProbeProvider).current()).metered;
-    if (disposed || (metered && await service.modelsMissing())) return;
+    // The models come back only with an explicit start: «Elimina» (models page) must stick.
+    if (disposed || await service.modelsMissing()) return;
     for (final t in queued) {
       if (service.stateOf(t.key).phase == SeparationPhase.idle) {
         start(t);
@@ -506,9 +509,17 @@ final karaokeAutoProvider = Provider<void>((ref) {
       unawaited(pump());
     });
   }
-  ref.listen(karaokeProvider.select((k) => k.on), (_, _) => unawaited(pump()));
+  // Switching on or «Avvia» is an explicit start (D-707): the models may come back.
+  Future<void> explicitStart() async {
+    await service.allowModels();
+    unawaited(pump());
+  }
+
+  ref.listen(karaokeProvider.select((k) => k.on), (prev, on) {
+    unawaited(on && prev == false ? explicitStart() : pump());
+  });
   ref.listen(karaokeTargetProvider, (_, _) => unawaited(pump()));
-  ref.listen(karaokeConfirmedProvider, (_, _) => unawaited(pump()));
+  ref.listen(karaokeConfirmedProvider, (_, _) => unawaited(explicitStart()));
   ref.listen(jamProvider.select((s) => s.active), (_, _) => unawaited(pump()));
   ref.onDispose(() {
     disposed = true;

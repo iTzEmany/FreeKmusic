@@ -6381,18 +6381,6 @@ abstract class AppLocalizations {
   /// **'Modelli di traduzione'**
   String get translationModels;
 
-  /// No description provided for @translationModelsNone.
-  ///
-  /// In it, this message translates to:
-  /// **'Nessun modello scaricato. Si scaricano dalla schermata dei testi, con «Traduci».'**
-  String get translationModelsNone;
-
-  /// No description provided for @translationModelDelete.
-  ///
-  /// In it, this message translates to:
-  /// **'Elimina il modello {language}'**
-  String translationModelDelete(String language);
-
   /// No description provided for @scanCode.
   ///
   /// In it, this message translates to:
@@ -12037,65 +12025,17 @@ abstract class AppLocalizations {
   /// **'Dizionario cinese'**
   String get chineseDictionary;
 
-  /// No description provided for @chineseDictionaryHint.
-  ///
-  /// In it, this message translates to:
-  /// **'Serve per la traslitterazione dei testi cinesi quando non se ne trova una online.'**
-  String get chineseDictionaryHint;
-
-  /// No description provided for @chineseDictionaryNone.
-  ///
-  /// In it, this message translates to:
-  /// **'Non scaricato'**
-  String get chineseDictionaryNone;
-
   /// No description provided for @chineseDictionaryDownload.
   ///
   /// In it, this message translates to:
   /// **'Scarica'**
   String get chineseDictionaryDownload;
 
-  /// No description provided for @chineseDictionaryDownloading.
-  ///
-  /// In it, this message translates to:
-  /// **'Scarico…'**
-  String get chineseDictionaryDownloading;
-
-  /// No description provided for @chineseDictionaryError.
-  ///
-  /// In it, this message translates to:
-  /// **'Download non riuscito'**
-  String get chineseDictionaryError;
-
-  /// No description provided for @chineseDictionaryDelete.
-  ///
-  /// In it, this message translates to:
-  /// **'Elimina il dizionario cinese'**
-  String get chineseDictionaryDelete;
-
-  /// No description provided for @chineseDictionaryDeleteTitle.
-  ///
-  /// In it, this message translates to:
-  /// **'Eliminare il dizionario cinese?'**
-  String get chineseDictionaryDeleteTitle;
-
-  /// No description provided for @chineseDictionaryDeleteBody.
-  ///
-  /// In it, this message translates to:
-  /// **'Si può scaricare di nuovo da qui.'**
-  String get chineseDictionaryDeleteBody;
-
   /// No description provided for @aboutCedictBody.
   ///
   /// In it, this message translates to:
   /// **'CC-CEDICT, dizionario cinese di MDBG usato per la traslitterazione. Licenza CC BY-SA 4.0: https://creativecommons.org/licenses/by-sa/4.0/ Fonte: https://www.mdbg.net/chinese/dictionary?page=cedict'**
   String get aboutCedictBody;
-
-  /// No description provided for @chineseDictionaryDeleteFailed.
-  ///
-  /// In it, this message translates to:
-  /// **'Impossibile eliminare il dizionario cinese'**
-  String get chineseDictionaryDeleteFailed;
 
   /// No description provided for @editorDiscardBody.
   ///
@@ -12850,8 +12790,8 @@ abstract class AppLocalizations {
   /// No description provided for @karaokeCostModel.
   ///
   /// In it, this message translates to:
-  /// **'Scarica 78 MB la prima volta'**
-  String get karaokeCostModel;
+  /// **'Scarica {mb} MB la prima volta'**
+  String karaokeCostModel(int mb);
 
   /// No description provided for @karaokeCostTrack.
   ///
@@ -13020,6 +12960,126 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Sei su una rete a consumo. {n, plural, one{1 brano} other{{n} brani}}, circa {mb} MB: scaricare?'**
   String keepOfflineMeteredAsk(int n, int mb);
+
+  /// No description provided for @modelsTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Modelli e dizionari'**
+  String get modelsTitle;
+
+  /// No description provided for @modelsSummary.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, =0{Nessuno installato} one{1 installato, {size}} other{{count} installati, {size}}}'**
+  String modelsSummary(int count, String size);
+
+  /// No description provided for @modelsUsed.
+  ///
+  /// In it, this message translates to:
+  /// **'Spazio occupato: {size}'**
+  String modelsUsed(String size);
+
+  /// No description provided for @modelsInstalledSize.
+  ///
+  /// In it, this message translates to:
+  /// **'Installato, {size}'**
+  String modelsInstalledSize(String size);
+
+  /// No description provided for @modelsNotInstalledSize.
+  ///
+  /// In it, this message translates to:
+  /// **'Non installato, circa {size}'**
+  String modelsNotInstalledSize(String size);
+
+  /// No description provided for @modelsDownloading.
+  ///
+  /// In it, this message translates to:
+  /// **'In scaricamento…'**
+  String get modelsDownloading;
+
+  /// No description provided for @modelsQueued.
+  ///
+  /// In it, this message translates to:
+  /// **'In coda'**
+  String get modelsQueued;
+
+  /// No description provided for @modelsOffline.
+  ///
+  /// In it, this message translates to:
+  /// **'Serve la connessione per scaricare i modelli.'**
+  String get modelsOffline;
+
+  /// No description provided for @modelsLoadFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile leggere i modelli.'**
+  String get modelsLoadFailed;
+
+  /// No description provided for @modelsCancelled.
+  ///
+  /// In it, this message translates to:
+  /// **'Annullato. Il download già partito di una lingua non si può fermare.'**
+  String get modelsCancelled;
+
+  /// No description provided for @modelsDeleteOne.
+  ///
+  /// In it, this message translates to:
+  /// **'Elimina {name}'**
+  String modelsDeleteOne(String name);
+
+  /// No description provided for @modelsDownloadSelected.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarica selezionati ({count})'**
+  String modelsDownloadSelected(int count);
+
+  /// No description provided for @modelsDeleteSelected.
+  ///
+  /// In it, this message translates to:
+  /// **'Elimina selezionati ({count})'**
+  String modelsDeleteSelected(int count);
+
+  /// No description provided for @modelsDownloadTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Scaricare i modelli selezionati?'**
+  String get modelsDownloadTitle;
+
+  /// No description provided for @modelsDownloadBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Si scaricano circa {size}.'**
+  String modelsDownloadBody(String size);
+
+  /// No description provided for @modelsDownloadMeteredBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Sei su una rete a consumo. Si scaricano circa {size}: continuare?'**
+  String modelsDownloadMeteredBody(String size);
+
+  /// No description provided for @modelsDeleteTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Eliminare i modelli selezionati?'**
+  String get modelsDeleteTitle;
+
+  /// No description provided for @modelsDeleteBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Si liberano circa {size}. Si possono scaricare di nuovo da qui.'**
+  String modelsDeleteBody(String size);
+
+  /// No description provided for @modelsDownloadFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Download non riuscito: {name}'**
+  String modelsDownloadFailed(String name);
+
+  /// No description provided for @modelsDeleteFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Impossibile eliminare: {name}'**
+  String modelsDeleteFailed(String name);
 }
 
 class _AppLocalizationsDelegate
