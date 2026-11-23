@@ -21,7 +21,10 @@ import '../../widgets/cover_image.dart';
 import '../../widgets/cover_picker_sheet.dart';
 import '../../../providers/cover_ops.dart';
 import '../../widgets/async_body.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/selection_bar.dart';
+import '../online/online_song_row.dart';
+import '../../../providers/ytm_catalog_providers.dart' show albumMissingTracksProvider;
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
 import '../devices/devices_sheet.dart';
@@ -169,8 +172,38 @@ EntranceScope(
             loading: rows,
             data: (_) => rows,
           ),
+          _MissingSongs(albumKey: album.albumKey),
         ],
       ),
+    );
+  }
+}
+
+/// F-22: the album's songs that are not in the library, from the online album; they play and save like
+/// any online row. Nothing (no header either) while loading, offline or when the album is not found.
+class _MissingSongs extends ConsumerWidget {
+  const _MissingSongs({required this.albumKey});
+
+  final String albumKey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final songs = ref.watch(albumMissingTracksProvider(albumKey)).value ?? const [];
+    if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    final selectionKey = 'album-missing:$albumKey';
+    return SliverMainAxisGroup(
+      slivers: [
+        // shortcut: «Altro» stands in for «Altri brani dell'album» until its ARB key is added.
+        SliverToBoxAdapter(child: SectionHeader(context.l10n.ytmMore, count: context.l10n.tracksCount(songs.length))),
+        SliverList.builder(
+          itemCount: songs.length,
+          itemBuilder: (_, i) => OnlineSongTile(
+            result: songs[i],
+            index: i,
+            selectionKey: selectionKey,
+          ),
+        ),
+      ],
     );
   }
 }
