@@ -36,6 +36,7 @@ Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchett
 | `SaveFileBridge.kt` | `codecore/save`: copia a flusso verso un file scelto dall'utente. |
 | `MediaDeleteBridge.kt` | `codecore/media`: elimina dal dispositivo. |
 | `MediaPublishBridge.kt` | `codecore/publish`: `sdk`, `publish` (copia in `Music/FreeKmusic` con `MediaStore.Audio`, `IS_PENDING`, MIME audio, sottocartelle), `replace` (riscrive un file pubblicato con "wt", per i tag). Accetta `volume` (nome MediaStore del volume SD): `publish` fallisce sulla SD se manca `DATA`. Solo da Android 11 (D-567). Dart: `lib/services/online/media_publisher.dart`. |
+| `RestartChannel.kt`, `RestartActivity.kt` | `codecore/restart`: `restart` avvia `RestartActivity` nel processo `:restart` con il pid di quello principale; l'activity uccide il processo principale, riapre l'app in un task nuovo ed esce (schema di ProcessPhoenix, senza dipendenze). Un `startActivity` seguito dal kill nello stesso processo lascia l'app chiusa sui telefoni veloci. Dart: `lib/services/restart/app_restart.dart` (fase 137). |
 | `UpdateChannel.kt` | `codecore/update`: `abi` (`SUPPORTED_ABIS[0]`), `canInstall`, `openInstallSettings`, `sameSigner(path)`, `install(path)` (`FileProvider` + `ACTION_VIEW`). Dart: `lib/services/update/android_update.dart`. |
 | `NotifyBridge.kt` | `codecore/notify`: notifica «Nuove uscite», `takeLaunchTarget`. |
 | `LinkBridge.kt` | `codecore/link`: `openUrl`, `deviceInfo`. |
