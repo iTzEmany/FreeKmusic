@@ -300,9 +300,16 @@ void main() {
 
   test('a missing track with neither title nor artist is not listed', () async {
     final r = await merge(UserData(createdAt: 1, tracks: [
-      TrackUserData(ref: const TrackRef(title: ' ', relPath: 'x.mp3', artist: ''), favorite: true),
+      TrackUserData(ref: const TrackRef(title: ' ', relPath: '', artist: ''), favorite: true),
     ]));
     expect(r.notFound, isEmpty);
+  });
+
+  test('a missing track with no title or artist but a path is listed by its file name', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: const TrackRef(title: '', relPath: 'Sub/song one.mp3'), favorite: true),
+    ]));
+    expect(r.notFound.map((t) => t.title), ['song one']);
   });
 
   test('a track missing from both tracks and a playlist is one entry', () async {

@@ -260,6 +260,7 @@ Future<bool> applyPendingRestore({
   }
   final backup = File('${dbFile.path}.before-restore');
   var movedOriginal = false;
+  var dbReplaced = false;
   try {
     await _checkStagedDatabase(stagedDb, schemaVersion);
     if (backup.existsSync()) backup.deleteSync();
@@ -271,12 +272,14 @@ Future<bool> applyPendingRestore({
     // database by SQLite: it travels with the old one instead.
     for (final ext in ['-journal', '-wal', '-shm']) {
       final side = File('${dbFile.path}$ext');
-      if (!side.existsSync()) continue;
       final kept = File('${backup.path}$ext');
+      // Also when there is nothing to move: a stale one must not come back with a rollback.
       if (kept.existsSync()) kept.deleteSync();
+      if (!side.existsSync()) continue;
       side.renameSync(kept.path);
     }
     stagedDb.renameSync(dbFile.path);
+    dbReplaced = true;
     // The restored rows may be older: the recognition pass must run again.
     await prefs.remove(recogPassAfterKey);
     await prefs.remove(recogPassDoneKey);
@@ -345,13 +348,21 @@ Future<bool> applyPendingRestore({
     AppLog.i('restore applied; the previous database is in ${backup.path}');
     return true;
   } on Object catch (e, st) {
-    AppLog.e('restore failed, keeping the current database', e, st);
-    if (movedOriginal && !dbFile.existsSync() && backup.existsSync()) {
-      backup.renameSync(dbFile.path);
-      for (final ext in ['-journal', '-wal', '-shm']) {
-        final kept = File('${backup.path}$ext');
-        if (kept.existsSync()) kept.renameSync('${dbFile.path}$ext');
+    if (dbReplaced) {
+      AppLog.e('restore applied partially: database restored, a later step failed', e, st);
+    } else {
+      AppLog.e('restore failed, keeping the current database', e, st);
+    }
+    try {
+      if (movedOriginal && !dbFile.existsSync() && backup.existsSync()) {
+        backup.renameSync(dbFile.path);
+        for (final ext in ['-journal', '-wal', '-shm']) {
+          final kept = File('${backup.path}$ext');
+          if (kept.existsSync()) kept.renameSync('${dbFile.path}$ext');
+        }
       }
+    } on Object catch (e2, st2) {
+      AppLog.e('rollback failed, the original database is in ${backup.path}', e2, st2);
     }
     _quietDelete(staging);
     return false;

@@ -265,6 +265,16 @@ void main() {
       expect(File('${dbFile.path}.before-restore-journal').existsSync(), isFalse);
     });
 
+    test('a stale <backup>-journal is not put next to the original by a rollback', () async {
+      File('${dbFile.path}.before-restore-journal').writeAsBytesSync([9]);
+      Directory('${dbFile.path}.before-restore-wal').createSync();
+      File(p.join('${dbFile.path}.before-restore-wal', 'x')).writeAsBytesSync([3]);
+      File('${dbFile.path}-wal').writeAsBytesSync([2]);
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isFalse);
+      expect(File('${dbFile.path}-journal').existsSync(), isFalse);
+    });
+
     test('unsyncedLyrics is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
       await prefs.setStringList('unsyncedLyrics', ['9']);
       await stageFullRestore(await makeBackup(['n1']), staging);
