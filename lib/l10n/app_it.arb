@@ -4685,5 +4685,16 @@
         "type": "int"
       }
     }
+  },
+  "keepOfflineMeteredAsk": "Sei su una rete a consumo. {n, plural, one{1 brano} other{{n} brani}}, circa {mb} MB: scaricare?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

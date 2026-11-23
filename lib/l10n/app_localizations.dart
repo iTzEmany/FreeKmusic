@@ -12906,6 +12906,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{n, plural, one{1 brano in streaming} other{{n} brani in streaming}}'**
   String incomingStreams(int n);
+
+  /// No description provided for @keepOfflineMeteredAsk.
+  ///
+  /// In it, this message translates to:
+  /// **'Sei su una rete a consumo. {n, plural, one{1 brano} other{{n} brani}}, circa {mb} MB: scaricare?'**
+  String keepOfflineMeteredAsk(int n, int mb);
 }
 
 class _AppLocalizationsDelegate

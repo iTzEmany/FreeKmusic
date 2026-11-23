@@ -3956,5 +3956,16 @@
         "type": "int"
       }
     }
+  },
+  "keepOfflineMeteredAsk": "Estás en una red de uso medido. {n, plural, one{1 canción} other{{n} canciones}}, unos {mb} MB: ¿descargar?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

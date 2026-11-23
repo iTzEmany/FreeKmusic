@@ -22,19 +22,24 @@ YtResult _song(String id, String title, {Duration duration = const Duration(minu
     );
 
 class _AlbumCatalog extends FakeCatalog {
-  _AlbumCatalog(this.titles, {this.hitTitle = 'Album 0', this.hitArtist = 'Artist', this.durations = const {}}) : super((_) async => null);
+  _AlbumCatalog(this.titles, {this.hitTitle = 'Album 0', this.hitArtist = 'Artist', this.durations = const {}, this.hits, this.failSearch = false, this.failAlbum = false}) : super((_) async => null);
 
   final List<String> titles;
   final String hitTitle;
   final String hitArtist;
   final Map<int, Duration> durations;
+  final List<YtmAlbumHit>? hits;
+  final bool failSearch, failAlbum;
   final asked = <String>[];
+  final queries = <String>[];
   var searches = 0;
 
   @override
   Future<List<YtmAlbumHit>> searchAlbums(String query, String hl, {CancelToken? cancel}) async {
     searches++;
-    return [
+    queries.add(query);
+    if (failSearch) throw StateError('search down');
+    return hits ?? [
       (
         release: YtmRelease(browseId: 'MPREb_x', title: hitTitle, subtitle: 'Album'),
         artist: YtmArtistRef(id: 'UC1', name: hitArtist),
@@ -45,6 +50,7 @@ class _AlbumCatalog extends FakeCatalog {
   @override
   Future<CatalogResult<YtmAlbum>> album(String browseId, String hl, {bool refresh = false}) async {
     asked.add(browseId);
+    if (failAlbum) throw StateError('album down');
     return CatalogResult(
       YtmAlbum(
         browseId: browseId,
@@ -137,6 +143,82 @@ void main() {
       await repo.saveStream(const YtResult(id: 'v3', title: 'C', channel: 'c', duration: null, albumId: 'MPREb_old'));
       expect((await repo.getById(edited))!.albumBrowseId, isNull);
     });
+    await h.dispose(tester);
+  });
+
+  Future<List<String>> missing(WidgetTester tester, Harness h, _AlbumCatalog catalog, {String? sql}) async {
+    late List<String> out;
+    if (sql != null) {
+      await tester.runAsync(() async {
+        for (final q in sql.split(';')) {
+          await h.db.customStatement(q);
+        }
+      });
+    }
+    final c = ProviderContainer(overrides: h.overridesWith([ytmCatalogProvider.overrideWithValue(catalog)]));
+    addTearDown(c.dispose);
+    c.listen(albumMissingTracksProvider('artist|album 0'), (_, _) {});
+    await tester.runAsync(() async {
+      out = [for (final t in await c.read(albumMissingTracksProvider('artist|album 0').future)) t.result.title];
+    });
+    return out;
+  }
+
+  testWidgets('without an artist on the library side nothing is searched', (tester) async {
+    final h = await Harness.create(tester, tracks: 6)..realAlbumMissing = true;
+    final catalog = _AlbumCatalog(ten);
+    expect(await missing(tester, h, catalog, sql: "UPDATE tracks SET artist = '', album_artist = NULL"), isEmpty);
+    expect(catalog.searches, 0);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the album artist, when there is one, is the one searched and matched', (tester) async {
+    final h = await Harness.create(tester, tracks: 6)..realAlbumMissing = true;
+    final catalog = _AlbumCatalog(ten, hitArtist: 'Various');
+    expect(await missing(tester, h, catalog, sql: "UPDATE tracks SET album_artist = 'Various'"), hasLength(7));
+    expect(catalog.queries.single, 'Album 0 Various');
+    await h.dispose(tester);
+    final h2 = await Harness.create(tester, tracks: 6)..realAlbumMissing = true;
+    // The track artist alone no longer matches once an album artist is set.
+    expect(await missing(tester, h2, _AlbumCatalog(ten), sql: "UPDATE tracks SET album_artist = 'Various'"), isEmpty);
+    await h2.dispose(tester);
+  });
+
+  for (final (why, sql, dur) in [
+    ('on the 3 s edge', 'track_number = 1, duration_ms = 185000', 188000),
+    ('without a number on our side', 'track_number = NULL, duration_ms = 185000', 185000),
+    ('with another number', 'track_number = 2, duration_ms = 185000', 185000),
+    ('with no length on our side', 'track_number = 1, duration_ms = 0', 0),
+    ('just over the 3 s edge', 'track_number = 1, duration_ms = 185000', 188001),
+  ]) {
+    testWidgets('same-place rule $why', (tester) async {
+      final h = await Harness.create(tester, tracks: 6)..realAlbumMissing = true;
+      final owned = why == 'on the 3 s edge';
+      final catalog = _AlbumCatalog(['Song Zero'], durations: {0: Duration(milliseconds: dur)});
+      final got = await missing(tester, h, catalog,
+          sql: "UPDATE tracks SET track_number = NULL, duration_ms = 0; UPDATE tracks SET $sql WHERE title = 'Song 0'");
+      expect(got, owned ? isEmpty : ['Song Zero']);
+      await h.dispose(tester);
+    });
+  }
+
+  for (final (why, failSearch, failAlbum) in [('the search', true, false), ('the album page', false, true)]) {
+    testWidgets('$why failing gives no missing songs', (tester) async {
+      final h = await Harness.create(tester, tracks: 6)..realAlbumMissing = true;
+      expect(await missing(tester, h, _AlbumCatalog(ten, failSearch: failSearch, failAlbum: failAlbum)), isEmpty);
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('of several search hits the first valid one is taken', (tester) async {
+    final h = await Harness.create(tester, tracks: 6)..realAlbumMissing = true;
+    YtmAlbumHit hit(String id, String title) => (
+          release: YtmRelease(browseId: id, title: title, subtitle: 'Album'),
+          artist: YtmArtistRef(id: 'UC1', name: 'Artist'),
+        );
+    final catalog = _AlbumCatalog(ten, hits: [hit('MPREb_no', 'Other Album'), hit('MPREb_a', 'Album 0'), hit('MPREb_b', 'Album 0')]);
+    await missing(tester, h, catalog);
+    expect(catalog.asked, ['MPREb_a']);
     await h.dispose(tester);
   });
 }

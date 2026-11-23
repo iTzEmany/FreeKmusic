@@ -9,6 +9,26 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  test('AppSettings() defaults are the ones a fresh install reads', () async {
+    SharedPreferences.setMockInitialValues({});
+    final d = const AppSettings();
+    final r = (await SettingsStore.open()).readSettings();
+    expect(d.theme, r.theme);
+    expect(d.language, r.language);
+    expect(d.autoEnrich, r.autoEnrich);
+    expect(d.enrichOnMetered, isFalse);
+    expect(d.downloadParallel, r.downloadParallel);
+    expect(d.streamCacheMb, r.streamCacheMb);
+    expect(d.storageMode, r.storageMode);
+    expect(d.importSureThreshold, r.importSureThreshold);
+    expect(d.importReviewThreshold, r.importReviewThreshold);
+    expect(d.crossfadeSeconds, r.crossfadeSeconds);
+    expect(d.shufflePlusEvery, r.shufflePlusEvery);
+    expect(d.showUndoSnackbar, isTrue);
+    expect(d.recordHistory, isTrue);
+    expect(d.pauseOnZeroVolume, isFalse);
+  });
+
   test('storageMode: nothing stored reads stream (D-665, even an install from before the choice); a stored choice wins; the choice and prefetchOnMobile round trip', () async {
     SharedPreferences.setMockInitialValues({'onboardingFinished': true});
     var store = await SettingsStore.open();

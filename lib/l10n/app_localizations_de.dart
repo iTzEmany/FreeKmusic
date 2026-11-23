@@ -8198,4 +8198,15 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String keepOfflineMeteredAsk(int n, int mb) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Titel',
+      one: '1 Titel',
+    );
+    return 'Du bist in einem getakteten Netz. $_temp0, etwa $mb MB: herunterladen?';
+  }
 }

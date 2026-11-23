@@ -3956,5 +3956,16 @@
         "type": "int"
       }
     }
+  },
+  "keepOfflineMeteredAsk": "Du bist in einem getakteten Netz. {n, plural, one{1 Titel} other{{n} Titel}}, etwa {mb} MB: herunterladen?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

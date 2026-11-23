@@ -4142,5 +4142,16 @@
         "type": "int"
       }
     }
+  },
+  "keepOfflineMeteredAsk": "Estás numa rede com tráfego limitado. {n, plural, one{1 faixa} other{{n} faixas}}, cerca de {mb} MB: descarregar?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

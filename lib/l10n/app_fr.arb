@@ -4177,5 +4177,16 @@
         "type": "int"
       }
     }
+  },
+  "keepOfflineMeteredAsk": "Tu es sur un réseau limité. {n, plural, one{1 titre} other{{n} titres}}, environ {mb} Mo : télécharger ?",
+  "@keepOfflineMeteredAsk": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      },
+      "mb": {
+        "type": "int"
+      }
+    }
   }
 }

@@ -8173,4 +8173,15 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String keepOfflineMeteredAsk(int n, int mb) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n faixas',
+      one: '1 faixa',
+    );
+    return 'Estás numa rede com tráfego limitado. $_temp0, cerca de $mb MB: descarregar?';
+  }
 }

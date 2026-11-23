@@ -8138,4 +8138,15 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String keepOfflineMeteredAsk(int n, int mb) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n tracks',
+      one: '1 track',
+    );
+    return 'You are on a metered network. $_temp0, about $mb MB: download?';
+  }
 }

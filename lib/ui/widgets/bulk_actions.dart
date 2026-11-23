@@ -15,6 +15,7 @@ import '../screens/playlists/playlist_dialogs.dart';
 import '../screens/tags/tags_sheet.dart';
 import 'confirm.dart';
 import 'delete_tracks.dart';
+import 'keep_offline_action.dart';
 import 'track_actions.dart';
 import 'show_msg.dart';
 
@@ -111,6 +112,11 @@ List<TrackActionGroup> bulkActions(
     done();
   }
 
+  Future<void> download() async {
+    await keepOfflineFlow(outer, ref, savedStreams);
+    done();
+  }
+
   final music = [
     for (final t in tracks)
       if (t.kind == 0) t,
@@ -182,8 +188,10 @@ List<TrackActionGroup> bulkActions(
     ]),
     if (allMissing || music.isNotEmpty || savedStreams.isNotEmpty)
       TrackActionGroup(l.groupOther, [
-        if (savedStreams.isNotEmpty)
+        if (savedStreams.isNotEmpty) ...[
+          TrackAction(Icons.download_rounded, l.updateDownload, download),
           TrackAction(Icons.delete_outline_rounded, l.removeFromLibrary, removeSavedStreams),
+        ],
         // Only for tracks whose file is gone: the library row has nothing left
         // to point to. Music that still exists is never removable from here.
         if (allMissing)

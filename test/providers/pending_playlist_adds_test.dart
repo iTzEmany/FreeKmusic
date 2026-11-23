@@ -175,6 +175,58 @@ void main() {
       expect(c.read(libraryAdderProvider).alreadyThere('v1', MediaSource.youtube), isTrue);
     });
 
+    test('alreadyThere with the index still loading says no, whatever the mode', () async {
+      final file = File('${dir.path}/a.m4a')..writeAsStringSync('x');
+      await index.add('v1', file.path);
+      for (final mode in StorageMode.values) {
+        await store.writeSettings(store.readSettings().copyWith(storageMode: mode));
+        final c = ProviderContainer(overrides: [
+          databaseProvider.overrideWithValue(db),
+          settingsStoreProvider.overrideWithValue(store),
+          downloadIndexProvider.overrideWith((ref) => Completer<DownloadIndex>().future),
+        ]);
+        addTearDown(c.dispose);
+        expect(c.read(libraryAdderProvider).alreadyThere('v1', MediaSource.youtube), isFalse, reason: '$mode');
+      }
+    });
+
+    test('download saves the row first, but not when the file is already there', () async {
+      var c = await container(StorageMode.device);
+      await c.read(libraryAdderProvider).download(_song);
+      expect(await savedRows(), hasLength(1));
+      expect(queue.added, ['v1']);
+      await db.delete(db.tracks).go();
+      final file = File('${dir.path}/a.m4a')..writeAsStringSync('x');
+      await index.add('v1', file.path);
+      queue = _Queue();
+      c = await container(StorageMode.device);
+      await c.read(libraryAdderProvider).download(_song, tag: addToPlaylistTag(3));
+      expect(await savedRows(), isEmpty);
+      expect(queue.added, ['v1:addto:3']);
+    });
+
+    test('add with a file already there goes through the download path with its tag; saved + playlist still joins it', () async {
+      final file = File('${dir.path}/a.m4a')..writeAsStringSync('x');
+      await index.add('v1', file.path);
+      var c = await container(StorageMode.stream);
+      await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(3));
+      expect(queue.added, ['v1:addto:3']);
+      expect(await savedRows(), isEmpty);
+      // A saved row and a playlist: the song still joins the playlist (no early «already there»).
+      await File(file.path).delete();
+      index = DownloadIndex(File('${dir.path}/i2.json'));
+      queue = _Queue();
+      c = await container(StorageMode.stream);
+      final pid = await c.read(playlistRepositoryProvider).create('P');
+      c.listen(savedStreamKeysProvider, (_, _) {});
+      await c.read(libraryAdderProvider).add(_song);
+      await c.read(savedStreamKeysProvider.future);
+      await Future<void>.delayed(Duration.zero);
+      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(pid)), isTrue);
+      expect((await c.read(playlistRepositoryProvider).watchTracks(pid).first), hasLength(1));
+      expect(await savedRows(), hasLength(1));
+    });
+
     test('a failed save is reported (null), never turned into a download', () async {
       final c = await container(StorageMode.stream, repo: (db) => _FailingTracks(db));
       expect(await c.read(libraryAdderProvider).add(_song), isNull);
