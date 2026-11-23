@@ -28,6 +28,7 @@ class DaylistCard extends ConsumerWidget {
     final covers = playlistCoverKeys(null, [
       for (final i in d.result.items) i.track?.coverKey,
     ]);
+    void open() => ShellNav.open<void>(context, const DaylistScreen());
     return Padding(
       padding: const EdgeInsets.fromLTRB(
         CcDims.margin,
@@ -39,19 +40,18 @@ class DaylistCard extends ConsumerWidget {
         color: cc.surface1,
         borderRadius: BorderRadius.circular(CcDims.rCard),
         clipBehavior: Clip.antiAlias,
-        child: Row(
-          children: [
-            Expanded(
-              child: Semantics(
-                button: true,
-                label: l.daylistCardLabel(count, name, time),
-                excludeSemantics: true,
-                onTap: () =>
-                    ShellNav.open<void>(context, const DaylistScreen()),
-                child: InkWell(
-                  key: const ValueKey('daylist-card'),
-                  onTap: () =>
-                      ShellNav.open<void>(context, const DaylistScreen()),
+        child: InkWell(
+          key: const ValueKey('daylist-card'),
+          onTap: open,
+          excludeFromSemantics: true,
+          child: Row(
+            children: [
+              Expanded(
+                child: Semantics(
+                  button: true,
+                  label: l.daylistCardLabel(count, name, time),
+                  excludeSemantics: true,
+                  onTap: open,
                   child: Padding(
                     padding: const EdgeInsets.all(CcDims.gap12),
                     child: Row(
@@ -94,16 +94,16 @@ class DaylistCard extends ConsumerWidget {
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(right: CcDims.gap12),
-              child: PlayCircleButton(
-                size: 48,
-                tooltip: l.daylistPlay,
-                onPressed: () => ref.read(daylistActionsProvider).play(),
+              Padding(
+                padding: const EdgeInsets.only(right: CcDims.gap12),
+                child: PlayCircleButton(
+                  size: 48,
+                  tooltip: l.daylistPlay,
+                  onPressed: () => ref.read(daylistActionsProvider).play(),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

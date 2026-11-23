@@ -1,6 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/daylist_providers.dart';
-import 'package:codecore/providers/shuffle_plus_providers.dart' show ShuffleMode, listShuffleProvider;
+import 'package:codecore/providers/shuffle_plus_providers.dart'
+    show ShuffleMode, listShuffleProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/services/daylist/daylist_builder.dart';
@@ -122,6 +123,22 @@ void main() {
   });
 
   testWidgets(
+    'card: a tap anywhere opens the daylist, the play button only plays',
+    (tester) async {
+      await pump(tester, const Scaffold(body: DaylistCard()), _state);
+      await tester.tap(find.byTooltip('Riproduci la daylist'));
+      await tester.pump();
+      expect(actions.calls, [null]);
+      expect(find.byType(DaylistScreen), findsNothing);
+      final card = tester.getRect(find.byKey(const ValueKey('daylist-card')));
+      await tester.tapAt(Offset(card.right - 90, card.center.dy));
+      await tester.pumpAndSettle();
+      expect(find.byType(DaylistScreen), findsOneWidget);
+      await h.dispose(tester);
+    },
+  );
+
+  testWidgets(
     'screen: title and Play call the actions; Casuale only toggles the daylist mode, starts nothing (D-534)',
     (tester) async {
       await pump(tester, const DaylistScreen(), _state);
@@ -138,7 +155,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       expect(actions.calls, [null]);
       expect(c.read(listShuffleProvider(daylistListKey)), ShuffleMode.shuffle);
-      expect(h.handler.shuffleEnabled, isFalse, reason: 'the playing queue is untouched');
+      expect(
+        h.handler.shuffleEnabled,
+        isFalse,
+        reason: 'the playing queue is untouched',
+      );
       expect(h.handler.isPlaying, isFalse);
       expect(find.textContaining('Si aggiorna alle 00:00'), findsOneWidget);
       await h.dispose(tester);
@@ -295,7 +316,9 @@ void main() {
     });
   });
 
-  testWidgets('a swipe on a daylist row queues the track (R-220)', (tester) async {
+  testWidgets('a swipe on a daylist row queues the track (R-220)', (
+    tester,
+  ) async {
     await pump(tester, const DaylistScreen(), _state);
     expect(find.byType(SwipeToQueue), findsWidgets);
     final y = tester.getCenter(find.text('Song 0')).dy;
