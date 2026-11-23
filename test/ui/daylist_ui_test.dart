@@ -130,6 +130,10 @@ void main() {
       await tester.pump();
       expect(actions.calls, [null]);
       expect(find.byType(DaylistScreen), findsNothing);
+      expect(
+        tester.widget<InkWell>(find.byKey(const ValueKey('daylist-card'))).canRequestFocus,
+        isTrue,
+      );
       final card = tester.getRect(find.byKey(const ValueKey('daylist-card')));
       await tester.tapAt(Offset(card.right - 90, card.center.dy));
       await tester.pumpAndSettle();

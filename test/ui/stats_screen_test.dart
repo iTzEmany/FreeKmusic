@@ -262,7 +262,7 @@ void main() {
       await openHome(tester, 10);
       expect(find.text('Il tuo mese'), findsOneWidget);
       expect(find.textContaining('30 min'), findsOneWidget);
-      await tester.tap(find.text('Il tuo mese'));
+      await tester.tap(find.text('Tutti').last); // the month block is the lowest on Home
       await _settle(tester);
       expect(find.text('Statistiche'), findsOneWidget);
       await h.dispose(tester);

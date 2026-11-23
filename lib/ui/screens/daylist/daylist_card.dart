@@ -43,7 +43,6 @@ class DaylistCard extends ConsumerWidget {
         child: InkWell(
           key: const ValueKey('daylist-card'),
           onTap: open,
-          canRequestFocus: false,
           excludeFromSemantics: true,
           child: Row(
             children: [
