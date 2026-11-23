@@ -20,7 +20,6 @@ import '../../widgets/skeleton.dart';
 import '../../widgets/track_actions.dart' show showOnlineActions;
 import '../online/online_song_row.dart';
 import '../../widgets/collection_header.dart';
-import '../../widgets/keep_offline_action.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
@@ -92,7 +91,7 @@ class GenreScreen extends ConsumerWidget {
           tracks: tracks.length,
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
-        onDownload: tracks.isEmpty ? null : () => keepOfflineFlow(context, ref, tracks),
+        downloadTracks: tracks,
         // The list as shown: the suggested songs that have arrived, in place.
         onPlay: () => ctrl.playMixed(items, context: ctx, listKey: shuffleKey),
         // The ids of the list ▶ plays: the songs shown (a suggested one has no id yet).

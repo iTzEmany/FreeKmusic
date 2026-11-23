@@ -18,7 +18,6 @@ import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/collection_header.dart';
-import '../../widgets/keep_offline_action.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/smart_cover.dart';
@@ -112,7 +111,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
           tracks: tracks.length,
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
-        onDownload: tracks.isEmpty ? null : () => keepOfflineFlow(context, ref, tracks),
+        downloadTracks: tracks,
         scrollerCount: shown.length,
         onPlay: tracks.isEmpty
             ? null

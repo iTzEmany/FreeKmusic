@@ -12,7 +12,6 @@ import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/collection_header.dart';
-import '../../widgets/keep_offline_action.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
@@ -105,7 +104,7 @@ class TagTracksScreen extends ConsumerWidget {
         title: name,
         name: name,
         meta: collectionMeta(l, tracks: tracks.length, durationMs: durationMs),
-        onDownload: tracks.isEmpty ? null : () => keepOfflineFlow(context, ref, tracks),
+        downloadTracks: tracks,
         scrollerCount: tracks.length,
         onPlay: tracks.isEmpty
             ? null

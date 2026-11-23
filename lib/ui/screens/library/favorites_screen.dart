@@ -19,7 +19,6 @@ import '../../widgets/collection_header.dart';
 import '../../shell/shell_nav.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/keep_offline_action.dart';
 import '../../widgets/section_header.dart';
 import '../playlists/playlist_detail_screen.dart';
 import '../../widgets/async_body.dart';
@@ -132,7 +131,7 @@ SliverToBoxAdapter(
                 context: playCtx,
                 listKey: shuffleKey,
               ),
-        onDownload: list.isEmpty ? null : () => keepOfflineFlow(context, ref, list),
+        downloadTracks: list,
         scrollerCount: albums.length + playlists.length + list.length,
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,

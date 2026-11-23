@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../data/db/app_database.dart' show Track;
+import '../../data/repositories/track_kinds.dart' show kStreamKind;
 
 import '../../l10n/l10n_ext.dart';
 import '../theme/tokens.dart';
 import 'alpha_scroller.dart';
+import 'keep_offline_action.dart';
 import 'play_buttons.dart';
 import 'shuffle_button.dart';
 
 /// Page of one collection (album, artist, playlist, favourites): a pinned bar
 /// whose title appears while scrolling, the cover at the left of name and meta
 /// (above them when the text is large), then the actions and the page's slivers.
-class CollectionScaffold extends StatefulWidget {
+class CollectionScaffold extends ConsumerStatefulWidget {
   const CollectionScaffold({
     super.key,
     required this.title,
@@ -21,7 +26,7 @@ class CollectionScaffold extends StatefulWidget {
     this.meta,
     this.menu,
     this.onPlay,
-    this.onDownload,
+    this.downloadTracks,
     this.scrollerCount,
     this.shuffleIds,
     this.shuffleKey,
@@ -47,8 +52,9 @@ class CollectionScaffold extends StatefulWidget {
   final Widget? menu;
   final VoidCallback? onPlay;
 
-  /// The download icon; null hides it.
-  final VoidCallback? onDownload;
+  /// The tracks «Scarica» keeps offline: the icon shows only when one of them is a stream (a page of files
+  /// has nothing to download); null hides it.
+  final List<Track>? downloadTracks;
 
   /// How many rows the page lists: past [alphaScrollerMinItems] a by-position
   /// scroll bar is laid over the page; null: none.
@@ -68,10 +74,10 @@ class CollectionScaffold extends StatefulWidget {
   final Widget? selectionBar;
 
   @override
-  State<CollectionScaffold> createState() => _CollectionScaffoldState();
+  ConsumerState<CollectionScaffold> createState() => _CollectionScaffoldState();
 }
 
-class _CollectionScaffoldState extends State<CollectionScaffold> {
+class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
   final _scroll = ScrollController();
   bool _showTitle = false;
 
@@ -101,11 +107,11 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
           listKey: widget.shuffleKey,
           plus: widget.shufflePlus,
         ),
-      if (widget.onDownload != null)
+      if (widget.downloadTracks?.any((t) => t.kind == kStreamKind) ?? false)
         SizedBox.square(
           dimension: 48,
           child: IconButton(
-            onPressed: widget.onDownload,
+            onPressed: () => keepOfflineFlow(context, ref, widget.downloadTracks!),
             tooltip: context.l10n.ytDownload,
             icon: const Icon(Icons.download_rounded),
           ),

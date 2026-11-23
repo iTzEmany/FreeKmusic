@@ -26,7 +26,7 @@ void _expectHeader(WidgetTester tester) {
   expect(find.byType(CollectionHeader), findsOneWidget, reason: 'one header');
   expect(find.byTooltip('Riproduci'), findsOneWidget);
   expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
-  expect(find.byIcon(Icons.download_rounded), findsOneWidget, reason: 'Scarica');
+  expect(find.byIcon(Icons.download_rounded), findsNothing, reason: 'files only: nothing to download');
   expect(tester.takeException(), isNull);
 }
 

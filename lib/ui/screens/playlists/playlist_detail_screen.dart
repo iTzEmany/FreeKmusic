@@ -1,5 +1,4 @@
 import '../../widgets/cc_sheet.dart';
-import '../../widgets/keep_offline_action.dart';
 import '../../widgets/cc_search_field.dart';
 import '../../../core/app_log.dart';
 import '../../../providers/favorite_collections_providers.dart';
@@ -398,7 +397,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
                 context: playCtx,
                 listKey: shuffleKey,
               ),
-        onDownload: tracks.isEmpty ? null : () => keepOfflineFlow(context, ref, tracks),
+        downloadTracks: tracks,
         scrollerCount: tracks.length,
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         shuffleKey: shuffleKey,

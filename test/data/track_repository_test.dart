@@ -746,7 +746,9 @@ void main() {
       await db.customStatement("UPDATE tracks SET user_edited = 1, album_key = 'hand' WHERE id = $id");
       await FavoriteCollectionsRepository(db).add('album', 'hand');
       await repo.demoteToStream(id, 'youtube:a');
-      expect(await FavoriteCollectionsRepository(db).watch('album').first, ['youtube:a']);
+      // The hand-picked key stays (with the stream prefix): the album does not split and the favourite stays.
+      expect((await repo.getById(id))!.albumKey, 'stream|hand');
+      expect(await FavoriteCollectionsRepository(db).watch('album').first, ['hand']);
     });
 
     test('a stream row is not demoted, and restoreRow puts the file row back', () async {
@@ -758,6 +760,17 @@ void main() {
       await repo.restoreRow(before);
       final t = (await repo.getById(id))!;
       expect([t.path, t.kind, t.saved], ['/a.mp3', 0, false]);
+    });
+
+    test('restoreRow puts the favourite back on the file album', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
+      final id = (await db.select(db.tracks).getSingle()).id;
+      final favs = FavoriteCollectionsRepository(db);
+      await favs.add('album', 'k');
+      final before = (await repo.demoteToStream(id, 'youtube:a'))!; // no artist or album: the key becomes stream|youtube:a
+      expect(await favs.watch('album').first, ['youtube:a']);
+      await repo.restoreRow(before);
+      expect(await favs.watch('album').first, ['k']);
     });
   });
 

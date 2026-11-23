@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../db/app_database.dart';
+import 'track_kinds.dart' show libraryRowSql;
 
 /// The canonical key of a favourite album: its `albumKey` without the `stream|` prefix, so the
 /// favourite survives promote/demote (which rewrite the key between the two forms).
@@ -35,7 +36,7 @@ class FavoriteCollectionsRepository {
     if (o == n || n.isEmpty) return;
     await _db.customUpdate(
       'UPDATE OR IGNORE favorite_collections SET key = ? WHERE kind = ? AND key = ? '
-      'AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_key IN (?, ?))',
+      'AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_key IN (?, ?) AND missing = 0 AND ignored = 0 AND ${libraryRowSql()})',
       variables: [Variable(n), const Variable(album), Variable(o), Variable(o), Variable('$_streamPrefix$o')],
       updates: {_db.favoriteCollections},
     );

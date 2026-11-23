@@ -87,10 +87,30 @@ final ytDlpStatusProvider = FutureProvider<YtDlpStatus>((ref) async {
   return YtDlpStatus(v);
 });
 
-final downloadIndexProvider = FutureProvider<DownloadIndex>((ref) async {
-  final idx = DownloadIndex(DownloadIndex.defaultFile(await appSupportDir()));
+class _PruneOnce {
+  bool done = false;
+}
+
+final _downloadIndexPruned = Provider<_PruneOnce>((_) => _PruneOnce());
+
+/// The index of downloaded files. Pruned once per process (not on every reload: a file hidden for a moment, e.g.
+/// by a missing permission, would empty it); «Libera spazio» prunes by itself. An entry forgotten by
+/// `containsOnDisk` invalidates it, so the UI that watches it follows.
+final FutureProvider<DownloadIndex> downloadIndexProvider = FutureProvider<DownloadIndex>((ref) async {
+  var disposed = false;
+  ref.onDispose(() => disposed = true);
+  final idx = DownloadIndex(
+    DownloadIndex.defaultFile(await appSupportDir()),
+    onForget: () {
+      if (!disposed) ref.container.invalidate(downloadIndexProvider); // via the container: a provider may not depend on itself
+    },
+  );
   await idx.load();
-  await idx.pruneGone(); // files deleted outside the app
+  final once = ref.read(_downloadIndexPruned);
+  if (!once.done) {
+    once.done = true;
+    await idx.pruneGone(); // files deleted outside the app
+  }
   return idx;
 });
 

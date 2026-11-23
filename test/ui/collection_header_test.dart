@@ -1,3 +1,6 @@
+import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/track_kinds.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:flutter/rendering.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
@@ -80,8 +83,14 @@ void main() {
   }
 
   group('icon row', () {
-    Future<Harness> pumpScaffold(WidgetTester tester, {VoidCallback? onDownload}) async {
+    Future<Harness> pumpScaffold(WidgetTester tester, {int? kind}) async {
       final h = await Harness.create(tester, tracks: 0);
+      final downloadTracks = kind == null
+          ? null
+          : [
+              await tester.runAsync(() => h.db.into(h.db.tracks).insertReturning(TracksCompanion.insert(
+                  path: 'x', title: 'x', albumKey: 'k', format: '', sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: Value(kind)))) as Track,
+            ];
       await h.pump(
         tester,
         CollectionScaffold(
@@ -90,7 +99,7 @@ void main() {
           slivers: const [],
           onPlay: () {},
           shuffleIds: const [1, 2],
-          onDownload: onDownload,
+          downloadTracks: downloadTracks,
           menu: const SizedBox.square(dimension: 48),
         ),
       );
@@ -99,7 +108,7 @@ void main() {
 
     testWidgets('sizes, labels and tooltips', (tester) async {
       final sem = tester.ensureSemantics();
-      final h = await pumpScaffold(tester, onDownload: () {});
+      final h = await pumpScaffold(tester, kind: kStreamKind);
       expect(tester.getSize(find.byType(PlayCircleButton)), const Size(56, 56));
       expect(tester.getSize(find.byIcon(Icons.shuffle_rounded).hitTestable()).width, lessThan(48));
       expect(find.bySemanticsLabel('Riproduci'), findsOneWidget);
@@ -166,9 +175,12 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('download icon is hidden without callback', (tester) async {
-      final h = await pumpScaffold(tester);
+    testWidgets('the download icon shows only when a stream is among the tracks', (tester) async {
+      var h = await pumpScaffold(tester);
       expect(find.byIcon(Icons.download_rounded), findsNothing);
+      await h.dispose(tester);
+      h = await pumpScaffold(tester, kind: kMusicKind);
+      expect(find.byIcon(Icons.download_rounded), findsNothing, reason: 'files only: nothing to download');
       await h.dispose(tester);
     });
   });

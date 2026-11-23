@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../db/app_database.dart';
 import 'light_tracks.dart';
+import 'favorite_collections_repository.dart' show favoriteAlbumKey;
 import 'track_kinds.dart';
 
 enum AlbumSort { title, artist, year }
@@ -280,9 +281,12 @@ ORDER BY g.k COLLATE NOCASE
         .map((rows) => [for (final r in rows) _db.tracks.map(r.data)]);
   }
 
+  /// The tracks of an album, under its key in either form (`stream|k` or `k`): a page opened on one form
+  /// follows the album when a download or «Libera spazio» rewrites the key to the other.
   Stream<List<Track>> watchAlbumTracks(String albumKey) {
+    final canon = favoriteAlbumKey(albumKey);
     return lightSelect(_db, _db.select(_db.tracks)
-          ..where((t) => t.albumKey.equals(albumKey) &
+          ..where((t) => t.albumKey.isIn([canon, 'stream|$canon']) &
               t.missing.equals(false) &
               t.ignored.equals(false) &
               isLibraryRow(t))

@@ -11,6 +11,7 @@ import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/cover_backdrop.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -378,7 +379,7 @@ void main() {
     final h = await Harness.create(tester, tracks: 4);
     await h.pump(tester, AlbumDetailScreen(album: album('Album 0')));
     await _settle(tester);
-    expect(find.byIcon(Icons.download_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.download_rounded), findsNothing, reason: 'files only: nothing to download');
     await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pumpAndSettle();
     expect(find.text('Invia a un dispositivo'), findsOneWidget);
@@ -427,6 +428,7 @@ void main() {
       final pr = PlaylistRepository(h.db);
       final id = await pr.create('Notte');
       await pr.addTracks(id, [1, 2]);
+      await h.db.update(h.db.tracks).write(const TracksCompanion(kind: Value(2), saved: Value(true)));
       return id;
     });
     await h.pump(

@@ -10,9 +10,12 @@ import 'youtube_service.dart';
 /// written before sources existed have the bare YouTube video id as key and
 /// still count as `youtube:<id>`.
 class DownloadIndex {
-  DownloadIndex(this._file);
+  DownloadIndex(this._file, {this.onForget});
 
   final File _file;
+
+  /// Called when [containsOnDisk] forgets an entry, so whoever shares this instance can reload it.
+  final void Function()? onForget;
   Map<String, String> _map = {};
 
   /// `<source>:<id>` -> [size, mtimeMs] of the file when it was downloaded (`downloads.sig.json`, beside the
@@ -172,7 +175,10 @@ class DownloadIndex {
     final path = pathFor(id, source: source);
     if (path == null) return false;
     if (await File(path).exists()) return true;
-    if (await Directory(p.dirname(path)).exists()) await removeByPaths([path]);
+    if (await Directory(p.dirname(path)).exists()) {
+      await removeByPaths([path]);
+      onForget?.call();
+    }
     return false;
   }
 

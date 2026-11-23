@@ -20,7 +20,7 @@ List<AlbumSummary> resolveFavoriteAlbums(List<String> keys, List<AlbumSummary> a
   final seen = <String>{};
   return [
     for (final k in keys)
-      if (k.startsWith(_stream) ? k.substring(_stream.length) : k case final canon)
+      if (favoriteAlbumKey(k) case final canon)
         if (seen.add(canon))
           ?(byKey[canon] ?? byKey['$_stream$canon']),
   ];

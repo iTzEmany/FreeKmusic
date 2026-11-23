@@ -19,7 +19,6 @@ import '../../widgets/cc_sheet.dart';
 import '../../widgets/cover_picker_sheet.dart';
 import '../../widgets/artist_avatar.dart';
 import '../../widgets/collection_header.dart';
-import '../../widgets/keep_offline_action.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/selection_bar.dart';
@@ -87,7 +86,7 @@ class ArtistDetailScreen extends ConsumerWidget {
         ),
         meta: meta,
         menu: _ArtistMenu(artist: artist, picked: picked != null),
-        onDownload: list.isEmpty ? null : () => keepOfflineFlow(context, ref, list),
+        downloadTracks: list,
         scrollerCount: top.length + list.length,
         onPlay: list.isEmpty
             ? null

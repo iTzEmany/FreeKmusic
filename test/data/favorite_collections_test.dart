@@ -67,6 +67,18 @@ void main() {
     expect(await repo.watch('album').first, ['art|alb (deluxe)']);
   });
 
+  test('followAlbumKey ignores invisible rows (unsaved shadow, missing, ignored) with the old key', () async {
+    await repo.add('album', 'art|alb');
+    await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: 'stream:youtube:x', title: 'x', albumKey: 'stream|art|alb', format: '', sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: const Value(2)));
+    await row('/m', 'art|alb');
+    await row('/i', 'art|alb');
+    await db.customStatement("UPDATE tracks SET missing = 1 WHERE path = '/m'");
+    await db.customStatement("UPDATE tracks SET ignored = 1 WHERE path = '/i'");
+    await repo.followAlbumKey('art|alb', 'art|new');
+    expect(await repo.watch('album').first, ['art|new']);
+  });
+
   test('a stream| album key is empty after the prefix: it is not a favourite', () async {
     await repo.add('album', 'stream|');
     expect(await repo.watch('album').first, isEmpty);

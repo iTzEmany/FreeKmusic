@@ -257,18 +257,22 @@ class _AlphaScrollerState extends State<AlphaScroller>
             top: 0,
             bottom: 0,
             child: ExcludeSemantics(child: Center(
-              child: Container(
+              // Not a Container with `alignment`: it would fill the whole height of the list.
+              child: ConstrainedBox(
                 constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                alignment: Alignment.center,
-                decoration: ShapeDecoration(
-                  color: cc.accent,
-                  shape: const StadiumBorder(),
-                ),
-                child: Text(
-                  _bubble!,
-                  style: Theme.of(context).textTheme.titleLarge
-                      ?.copyWith(color: cc.onAccent),
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(color: cc.accent, shape: const StadiumBorder()),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Center(
+                      widthFactor: 1,
+                      heightFactor: 1,
+                      child: Text(
+                        _bubble!,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(color: cc.onAccent),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             )),
