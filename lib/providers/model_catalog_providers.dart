@@ -156,8 +156,9 @@ class ModelCatalogNotifier extends AsyncNotifier<List<ModelEntry>> {
       AppLog.w('model ${e.id} download failed', err, st);
       rethrow;
     } finally {
-      if (e.kind == ModelKind.translation)
+      if (e.kind == ModelKind.translation) {
         ref.invalidate(translationModelsProvider);
+      }
       await _refresh(e);
       _release();
     }
