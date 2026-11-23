@@ -65,6 +65,13 @@ D-665, D-666, D-674, D-690, D-675, D-598 (superata in parte da D-665), D-662, D-
 - [ ] 140.11 Area e controllo di fine fase
   - Aggiorna `../architettura/online.md` (streaming per prima, cartella unica), `libreria-e-dati.md` (v22, `browseId`), `sync-backup-jam.md` (Jam: salvare; LAN con stream), `piattaforme.md` (Android Auto); «Trappole»: `lite` resta `device`. Annota in `../decisioni.md` solo deroghe nuove.
 
+## Da riprendere (review di architettura della fase 139)
+- Menu del brano che suona (voce online con riga salvata, `entry.trackId`): menu completo costruito da quella riga; `TrackDeleter.removeFromQueue` toglie anche le voci online legate agli id cancellati (oggi il menu online resta proprio per questo).
+- Stato del brano calcolato in quattro modi: `inLibraryOfProvider` → `trackStateProvider(key) != online` (per riga, non una closure che ricostruisce tutte le righe); via `entryInLibrary` (`track_actions.dart`); `downloadIndex.contains` → `== downloaded`; valutare di togliere il ramo `#` di `trackStateProvider`; `trackRowLookupProvider` in `track_state_providers.dart`; helper di `online_entries` al posto di `_onlinePrefix` copiato.
+- I/O sincrono nell'indice dei download (`pathForKey` → `existsSync`, `signatureMatchesPath`, `pruneGone`) chiamato da provider e build: insieme dei file presenti calcolato fuori dal thread UI e aggiornato da `add`/`remove`; `freeSpace(ids)` filtra prima le voci richieste.
+- Il menu ⋮ si blocca se il widget che l'ha aperto viene smontato (id che cambia dopo un download non in cache): foglio come `Consumer` con il proprio `ref`, test con chi apre il menu rimosso.
+- `LibraryAdder.add` in modalità dispositivo passa da `download` (salva, poi scarica), portandosi dietro il `tag`.
+
 ## Tocca a te
 - Nessuna cosa in questa fase: la prova «aggiunte in streaming con i file locali intatti» sul Motorola è nella 147 (l'utente non deve fare nulla ora).
 

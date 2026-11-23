@@ -17,7 +17,9 @@ import '../theme/tokens.dart';
 /// download ends it shows «Scaricato» for [doneFor], then goes back to [idle]
 /// (the button that gives way to the bar). A [compact] bar is a 48 px round
 /// indicator for list rows and shows no «Scaricato» (the row has its own tick).
-/// The only place of the UI that watches `downloadsProvider`.
+/// The one widget that shows the progress of a song's download; the online rows and lists
+/// (`online_song_row`, `online_results_sections`, `genre_screen`, `suggestions_screen`) also read `downloadsProvider`,
+/// only to find the item (failed / done state of the row), never to draw a bar.
 class DownloadBar extends ConsumerStatefulWidget {
   const DownloadBar({
     super.key,

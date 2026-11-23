@@ -140,6 +140,18 @@ void main() {
     expect(actions.downloaded, hasLength(1));
   });
 
+  testWidgets('saving in streaming mode swaps «Aggiungi alla libreria» for «Scarica sul dispositivo», which downloads', (tester) async {
+    await open(tester, suggested: false);
+    saved.add({});
+    await tester.pump();
+    expect(find.text('Aggiungi alla libreria'), findsOneWidget);
+    saved.add({'youtube:v1'});
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Aggiungi alla libreria'), findsNothing);
+    expect(find.text('Scarica sul dispositivo'), findsOneWidget);
+  });
+
   testWidgets('the «Scaricato» line shows even though the song joins the library just before the download is done (D-697)', (tester) async {
     await open(tester, suggested: false);
     downloads.put(DownloadStatus.downloading, 0.5);

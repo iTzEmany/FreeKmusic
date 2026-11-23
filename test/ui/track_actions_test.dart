@@ -721,6 +721,49 @@ void main() {
     );
   }
 
+  testWidgets('a saved stream then downloaded (row promoted): «Libera spazio» appears without the row key being watched', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+    );
+    expect(find.text('Libera spazio', skipOffstage: false), findsNothing);
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => h.db.customStatement("UPDATE tracks SET kind = 0, saved = 0, path = '${file.path}' WHERE id = (SELECT MIN(id) FROM tracks)"));
+    await tester.runAsync(() => index.add('abc', file.path));
+    ProviderScope.containerOf(tester.element(find.text('Scarica'))).invalidate(downloadIndexProvider);
+    await _settle(tester);
+    expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('an online entry saved from the player gets «Scarica sul dispositivo» and the row actions, not «Aggiungi alla libreria»', (tester) async {
+    final online = OnlineEntries();
+    final id = online.register(const YtResult(id: 'v1', title: 'Streamed', channel: 'Chan', duration: null));
+    final h = await openSheet(
+      tester,
+      (_) => online.trackOf(id)!,
+      mode: StorageMode.stream,
+      extra: [onlineEntriesProvider.overrideWithValue(online)],
+    );
+    expect(find.text('Aggiungi alla libreria'), findsOneWidget);
+    expect(find.text('Scarica sul dispositivo', skipOffstage: false), findsNothing);
+    // «Aggiungi alla libreria» saved the shadow row; the player keeps the negative id.
+    await tester.runAsync(() => h.db.customStatement("UPDATE tracks SET kind = 2, saved = 1, path = 'stream:youtube:v1' WHERE id = (SELECT MIN(id) FROM tracks)"));
+    h.db.markTablesUpdated({h.db.tracks}); // a raw statement does not notify the watchers
+    online.bindRow(id, 1);
+    await _settle(tester);
+    await _settle(tester);
+    expect(find.text('Scarica sul dispositivo', skipOffstage: false), findsOneWidget);
+    expect(find.text('Aggiungi alla libreria', skipOffstage: false), findsNothing);
+    expect(find.text('Modifica info', skipOffstage: false), findsOneWidget);
+    expect(find.text('Rimuovi dalla coda', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
+
   testWidgets('«Libera spazio» asks to confirm, then frees the file', (tester) async {
     final h = await openDownloaded(tester);
     await tester.tap(find.text('Libera spazio'));

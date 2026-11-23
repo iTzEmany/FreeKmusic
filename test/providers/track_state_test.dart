@@ -11,6 +11,7 @@ import 'package:codecore/providers/library_add_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/track_state_providers.dart';
 import 'package:codecore/providers/youtube_providers.dart';
+import 'package:codecore/services/online/download_queue.dart' show DownloadItem;
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/download_index.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -22,6 +23,11 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/fake_backend.dart';
 
 const _r = YtResult(id: 'abc', title: 'Song', channel: 'Chan', duration: Duration(seconds: 200));
+
+class _NoDownloads extends DownloadsNotifier {
+  @override
+  List<DownloadItem> build() => [];
+}
 
 void main() {
   late AppDatabase db;
@@ -47,6 +53,7 @@ void main() {
       databaseProvider.overrideWithValue(db),
       trackRepositoryProvider.overrideWithValue(tracks),
       downloadIndexProvider.overrideWith((ref) async => index),
+      downloadsProvider.overrideWith(_NoDownloads.new),
     ]);
     addTearDown(c.dispose);
   });

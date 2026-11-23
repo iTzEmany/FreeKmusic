@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '../../services/audio/online_entries.dart';
 import 'cc_sheet.dart';
 import 'dislike_sheet.dart';
@@ -68,12 +70,16 @@ class TrackAction {
     this.run, {
     this.destructive = false,
     this.onStreamRow = false,
+    this.onOnlineEntry = false,
   });
 
   final bool destructive;
 
   /// Kept in the menu of a streamed shadow row (kind 2).
   final bool onStreamRow;
+
+  /// Kept in the menu of a saved online entry that is bound to its library row (it plays under a negative id).
+  final bool onOnlineEntry;
   final IconData icon;
   final String label;
   final Future<void> Function() run;
@@ -102,13 +108,16 @@ bool entryInLibrary(WidgetRef ref, int id) {
 List<TrackActionGroup> onlineTrackActions(
   BuildContext outer,
   WidgetRef ref,
-  Track track,
-) {
+  Track track, {
+  Track? row,
+}) {
   final l = outer.l10n;
   final actions = ref.read(suggestionActionsProvider);
   void snack(String text) => showMsg(outer, text);
+  final entry = ref.read(onlineEntriesProvider)?[track.id];
+  final saved = entry != null && ref.read(trackStateProvider(entry.result.indexKey)) == TrackState.savedStream;
 
-  return [
+  final groups = [
     TrackActionGroup(l.groupCollection, [
       // Gone as soon as the entry is in the library, also with the sheet open (R-93).
       if (!entryInLibrary(ref, track.id))
@@ -119,6 +128,17 @@ List<TrackActionGroup> onlineTrackActions(
             outer,
             inLibrary: entryInLibrary(ref, track.id),
             start: () => actions.downloadEntry(track.id),
+          ),
+        ),
+      // Saved without a file: «Scarica» puts it on the device (the player keeps the entry's negative id).
+      if (saved)
+        TrackAction(
+          Icons.download_rounded,
+          l.ytDownloadOnDevice,
+          () => downloadOnline(
+            outer,
+            inLibrary: false,
+            start: () => ref.read(libraryAdderProvider).download(entry.result),
           ),
         ),
       TrackAction(Icons.playlist_add_rounded, l.addToPlaylist, () async {
@@ -165,6 +185,21 @@ List<TrackActionGroup> onlineTrackActions(
       ),
     ]),
   ];
+  if (row == null) return groups;
+  // The row's own actions that neither touch the queue nor delete a file; same-titled groups merge.
+  final extra = [
+    for (final g in trackActions(outer, ref, row))
+      TrackActionGroup(g.title, [for (final a in g.actions) if (a.onOnlineEntry) a]),
+  ].where((g) => g.actions.isNotEmpty);
+  return [
+    for (final g in groups)
+      TrackActionGroup(g.title, [
+        ...g.actions,
+        for (final x in extra.where((x) => x.title == g.title)) ...x.actions,
+      ]),
+    for (final x in extra)
+      if (!groups.any((g) => g.title == x.title)) x,
+  ];
 }
 
 /// A radio in the queue is not a track: it can be saved in «Le mie radio» (or
@@ -210,11 +245,12 @@ List<TrackActionGroup> radioTrackActions(
 List<TrackActionGroup> trackActions(
   BuildContext outer,
   WidgetRef ref,
-  Track track,
-) {
+  Track track, {
+  Track? row,
+}) {
   final radio = radioOfTrackRead(ref, track);
   if (radio != null) return radioTrackActions(outer, ref, track, radio);
-  if (isOnlineId(track.id)) return onlineTrackActions(outer, ref, track);
+  if (isOnlineId(track.id)) return onlineTrackActions(outer, ref, track, row: row);
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
 
@@ -244,9 +280,13 @@ List<TrackActionGroup> trackActions(
   // A shadow row not saved yet keeps the short menu; a saved one has the full menu (D-696).
   final unsavedShadow = streamKey != null && state == TrackState.online;
   // The same rule as `freeSpaceCandidates`: the very file the app downloaded, not the one playing.
-  final inDownloads = state == TrackState.downloaded &&
-      track.kind == kMusicKind &&
-      ref.read(audioHandlerProvider).currentTrack?.id != track.id &&
+  // Not from `state`: the row's `#id` key may have no listener (an autoDispose read reads «online»).
+  final playingId = ref.read(audioHandlerProvider).currentTrack?.id;
+  final playingRow = playingId == null ? null : ref.read(onlineEntriesProvider)?[playingId]?.trackId;
+  final inDownloads = track.kind == kMusicKind &&
+      !track.missing &&
+      playingId != track.id &&
+      playingRow != track.id &&
       (ref.read(downloadIndexProvider).value?.signatureMatchesPath(track.path) ?? false);
 
   final groups = [
@@ -322,6 +362,7 @@ List<TrackActionGroup> trackActions(
             : Icons.favorite_border_rounded,
         track.isFavorite ? l.removeFromFavorites : l.favorite,
         () => toggleFavorite(outer, ref, track),
+        onOnlineEntry: true,
       ),
       TrackAction(
         Icons.playlist_add_rounded,
@@ -332,12 +373,13 @@ List<TrackActionGroup> trackActions(
         Icons.label_outline_rounded,
         l.tagsEllipsis,
         () async => showTagsSheet(outer, ref, [track]),
+        onOnlineEntry: true,
       ),
     ]),
     TrackActionGroup(l.groupGoTo, [
-      TrackAction(Icons.album_outlined, l.goToAlbum, goToAlbum),
+      TrackAction(Icons.album_outlined, l.goToAlbum, goToAlbum, onOnlineEntry: true),
       if ((track.artist ?? '').trim().isNotEmpty)
-        TrackAction(Icons.person_outline_rounded, l.goToArtist, goToArtist),
+        TrackAction(Icons.person_outline_rounded, l.goToArtist, goToArtist, onOnlineEntry: true),
       if (kEnableYoutube && (track.artist ?? '').trim().isNotEmpty)
         TrackAction(
           Icons.smart_display_rounded,
@@ -370,6 +412,7 @@ List<TrackActionGroup> trackActions(
         Icons.edit_outlined,
         l.editInfo,
         () async => showTrackEditDialog(outer, track),
+        onOnlineEntry: true,
       ),
       TrackAction(
         Icons.travel_explore_rounded,
@@ -416,7 +459,7 @@ List<TrackActionGroup> trackActions(
         }, destructive: true),
     ]),
   ];
-  // A streamed shadow row (kind 2) keeps only queue actions and Details until phase 46; so
+  // A streamed shadow row (kind 2) keeps only queue actions and Details; so
   // does a podcast episode not downloaded yet (a row on an address), which has no file to act on.
   if (!unsavedShadow &&
       !(track.kind == kEpisodeKind && isRemoteEpisodePath(track.path))) {
@@ -445,20 +488,30 @@ Future<void> showTrackActions(
   final entryKey = ref.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
   final key = trackStateKey(track, streamKey: entryKey);
   var live = track;
+  Track? liveRow; // the library row behind an online entry (negative id), once saved or downloaded
   List<TrackActionGroup> build() => [
     if (lead != null) TrackActionGroup('', [lead]),
-    ...trackActions(context, ref, live),
+    ...trackActions(context, ref, live, row: liveRow),
   ];
   late List<TrackActionGroup> last;
   // The caller may be gone while the sheet is open: keep the last groups then.
   List<TrackActionGroup> groups() => context.mounted ? last = build() : last;
   final changed = ValueNotifier(0);
   var closed = false;
+  var calls = 0; // only the last call counts: an older lookup finishing late must not undo a newer one
   Future<void> follow() async {
+    final n = ++calls;
     try {
       final row = await ref.read(trackRowLookupProvider)(track, key);
+      if (n != calls) return;
       // An online entry (negative id) stays itself: the library row is another thing to act on.
-      if (row != null && !isOnlineId(track.id)) live = row;
+      if (row != null) {
+        if (isOnlineId(track.id)) {
+          liveRow = row;
+        } else {
+          live = row;
+        }
+      }
     } on Object catch (e, st) {
       AppLog.w('track menu: row of $key not reloaded', e, st);
     }
@@ -466,10 +519,14 @@ Future<void> showTrackActions(
   }
 
   // Listeners before the first build: an autoDispose provider read with none would build twice (a flicker).
-  final sub = ref.listenManual(trackStateProvider(key), (_, _) => follow());
+  // A `#<id>` key with a negative id (a radio) has no row to follow.
+  final sub = key.startsWith('#') && isOnlineId(track.id)
+      ? null
+      : ref.listenManual(trackStateProvider(key), (_, _) => follow());
   // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
   final indexSub = ref.listenManual(downloadIndexProvider, (_, _) => follow());
   last = build();
+  if (ref.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow()); // the row of an entry saved before the sheet opened
   return showTrackActionGroups(
     context,
     last,
@@ -478,7 +535,7 @@ Future<void> showTrackActions(
     regroup: groups,
   ).whenComplete(() {
     closed = true;
-    sub.close();
+    sub?.close();
     indexSub.close();
     changed.dispose();
   });

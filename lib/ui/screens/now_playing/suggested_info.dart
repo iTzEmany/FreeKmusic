@@ -5,9 +5,10 @@ import '../../../data/db/app_database.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/suggestion_actions.dart';
-import '../../../providers/youtube_providers.dart' show downloadIndexProvider;
+import '../../../providers/library_add_providers.dart';
+import '../../../providers/track_state_providers.dart';
 import '../../widgets/download_bar.dart';
-import '../../widgets/track_actions.dart' show entryInLibrary;
+import '../../widgets/track_actions.dart' show downloadOnline;
 import '../../theme/tokens.dart';
 import '../playlists/playlist_picker.dart';
 import 'now_playing_controls.dart' show npEdge;
@@ -29,16 +30,29 @@ class SuggestedInfo extends ConsumerWidget {
     final entry = ref.watch(onlineEntriesProvider)?[track.id];
     final seed = entry?.seedTitle;
     final actions = ref.read(suggestionActionsProvider);
-    ref.watch(downloadIndexProvider); // a promotion refreshes it
-    if (entryInLibrary(ref, track.id)) {
+    final key = entry?.result.indexKey;
+    // Follows the saved-stream keys and the download index: a save or a download swaps the tiles.
+    final state = key == null ? TrackState.online : ref.watch(trackStateProvider(key));
+    if (key != null && state != TrackState.online) {
       // The library row appears before the download reports «done»: keep the bar up to show it.
-      final key = entry?.result.indexKey;
-      return key == null
-          ? const SizedBox.shrink()
-          : Padding(
-              padding: const EdgeInsets.symmetric(horizontal: npEdge + CcDims.gap4),
-              child: DownloadBar(entryKey: key),
-            );
+      final saved = state == TrackState.savedStream;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: npEdge + CcDims.gap4),
+        child: DownloadBar(
+          entryKey: key,
+          idle: saved
+              ? _Tile(
+                  icon: Icons.download_rounded,
+                  label: l.ytDownloadOnDevice,
+                  onPressed: () => downloadOnline(
+                    context,
+                    inLibrary: false,
+                    start: () => ref.read(libraryAdderProvider).download(entry!.result),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+      );
     }
     final suggested = entry?.suggested ?? false;
     return Padding(

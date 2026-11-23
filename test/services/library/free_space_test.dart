@@ -42,8 +42,8 @@ void main() {
     return (await repo.byPath(f.path))!.id;
   }
 
-  FreeSpaceService svc({FileDeleter? deleter, Set<int> Function()? playing, bool Function()? scan}) => FreeSpaceService(
-    tracks: repo, index: index, deleter: deleter, playingIds: playing, scanRunning: scan, nowMs: () => _now);
+  FreeSpaceService svc({FileDeleter? deleter, Set<int> Function()? playing, bool Function()? scan, Set<String> Function()? active}) => FreeSpaceService(
+    tracks: repo, index: index, deleter: deleter, playingIds: playing, activeKeys: active, scanRunning: scan, nowMs: () => _now);
 
   test('candidates: only files the app downloaded, unplayed for 90 days first', () async {
     final recent = await add('recent.mp3', vid: 'r', lastPlayed: _now - 10 * _day, size: 99);
@@ -102,6 +102,13 @@ void main() {
     final t = (await repo.getById(id))!;
     expect([t.path, t.kind, t.saved], [path, 0, false]);
     expect(index.contains('a'), true);
+  });
+
+  test('a song with a download queued or running is not freed (the download would write the file back)', () async {
+    final id = await add('a.mp3', vid: 'a');
+    expect(await svc(active: () => {'youtube:a'}).freeSpaceCandidates(), isEmpty);
+    expect((await svc(active: () => {'youtube:a'}).freeSpace([id])).freedIds, isEmpty);
+    expect((await svc(active: () => {'youtube:other'}).freeSpace([id])).freedIds, [id]);
   });
 
   test('ids that are not candidates are ignored', () async {
