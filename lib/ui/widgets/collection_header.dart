@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/l10n_ext.dart';
 import '../theme/tokens.dart';
+import 'alpha_scroller.dart';
 import 'play_buttons.dart';
 import 'shuffle_button.dart';
 
@@ -20,6 +21,8 @@ class CollectionScaffold extends StatefulWidget {
     this.meta,
     this.menu,
     this.onPlay,
+    this.onDownload,
+    this.scrollerCount,
     this.shuffleIds,
     this.shuffleKey,
     this.shufflePlus = true,
@@ -43,6 +46,13 @@ class CollectionScaffold extends StatefulWidget {
   final String? meta;
   final Widget? menu;
   final VoidCallback? onPlay;
+
+  /// The download icon; null hides it.
+  final VoidCallback? onDownload;
+
+  /// How many rows the page lists: past [alphaScrollerMinItems] a by-position
+  /// scroll bar is laid over the page; null: none.
+  final int? scrollerCount;
 
   /// The ids the «Casuale» pill cycles Shuffle+ for; null: no pill.
   final List<int>? shuffleIds;
@@ -83,52 +93,69 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
   @override
   Widget build(BuildContext context) {
     final actions = [
-      if (widget.onPlay != null) PlayPill(onPressed: widget.onPlay),
+      if (widget.onPlay != null) PlayCircleButton(onPressed: widget.onPlay),
       if (widget.shuffleIds != null)
         ShufflePill(
+          iconOnly: true,
           ids: widget.shuffleIds!,
           listKey: widget.shuffleKey,
           plus: widget.shufflePlus,
         ),
+      if (widget.onDownload != null)
+        SizedBox.square(
+          dimension: 48,
+          child: IconButton(
+            onPressed: widget.onDownload,
+            tooltip: context.l10n.ytDownload,
+            icon: const Icon(Icons.download_rounded),
+          ),
+        ),
       ?widget.menu,
     ];
+    final scroll = CustomScrollView(
+      controller: _scroll,
+      slivers: [
+        SliverAppBar(
+          pinned: true,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          title: AnimatedOpacity(
+            duration: ccDuration(context, CcMotion.press),
+            opacity: _showTitle ? 1 : 0,
+            child: Text(
+              widget.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          actions: widget.barActions,
+        ),
+        SliverToBoxAdapter(
+          child: CollectionHeader(
+            cover: widget.cover,
+            name: widget.name,
+            subtitle: widget.subtitle,
+            meta: widget.meta,
+            actions: actions,
+          ),
+        ),
+        ...widget.slivers,
+        SliverToBoxAdapter(child: SizedBox(height: 24 + context.dockInset)),
+      ],
+    );
     return Scaffold(
       body: Stack(
         children: [
           Positioned.fill(
-            child: CustomScrollView(
-              controller: _scroll,
-              slivers: [
-                SliverAppBar(
-                  pinned: true,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  title: AnimatedOpacity(
-                    duration: ccDuration(context, CcMotion.press),
-                    opacity: _showTitle ? 1 : 0,
-                    child: Text(
-                      widget.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+            child: widget.scrollerCount == null
+                ? scroll
+                : AlphaScroller(
+                    controller: _scroll,
+                    itemCount: widget.scrollerCount,
+                    topInset: () =>
+                        MediaQuery.paddingOf(context).top + kToolbarHeight,
+                    child: scroll,
                   ),
-                  actions: widget.barActions,
-                ),
-                SliverToBoxAdapter(
-                  child: CollectionHeader(
-                    cover: widget.cover,
-                    name: widget.name,
-                    subtitle: widget.subtitle,
-                    meta: widget.meta,
-                    actions: actions,
-                  ),
-                ),
-                ...widget.slivers,
-                SliverToBoxAdapter(
-                  child: SizedBox(height: 24 + context.dockInset),
-                ),
-              ],
-            ),
           ),
           if (widget.selectionBar != null)
             Positioned(top: 0, left: 0, right: 0, child: widget.selectionBar!),
@@ -286,7 +313,12 @@ class DiscHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, CcDims.gap4),
+    padding: const EdgeInsets.fromLTRB(
+      CcDims.margin,
+      CcDims.gap16,
+      CcDims.margin,
+      CcDims.gap4,
+    ),
     child: Text(
       context.l10n.discN(disc),
       style: Theme.of(context).textTheme.labelLarge

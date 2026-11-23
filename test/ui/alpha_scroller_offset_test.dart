@@ -18,7 +18,7 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
 }
 
-const _rows = 40;
+const _rows = 120;
 
 double _headerHeight(WidgetTester t) =>
     t.renderObject<RenderSliver>(find.byType(ShrinkingHeader, skipOffstage: false)).geometry!.paintExtent;
@@ -34,7 +34,7 @@ Future<Harness> _open(WidgetTester tester) async {
 }
 
 // Drags the strip to a fraction (60 % by default) of its height and checks where the list landed.
-Future<void> _expectJump(WidgetTester t, double header, [double f = 0.6, int index = 23]) async {
+Future<void> _expectJump(WidgetTester t, double header, [double f = 0.6, int index = 71]) async {
   final strip = find.byType(AlphaScroller);
   // The strip starts below the visible part of the header.
   final inset = _headerHeight(t);
@@ -53,8 +53,8 @@ Future<void> _expectJump(WidgetTester t, double header, [double f = 0.6, int ind
 void main() {
   testWidgets('the jump rounds to the nearest row, not down', (t) async {
     final h = await _open(t);
-    // 0.64 * 39 = 24.96: round gives 25, floor would give 24.
-    await _expectJump(t, _headerHeight(t), 0.64, 25);
+    // 0.66 * 119 = 78.54: round gives 79, floor would give 78.
+    await _expectJump(t, _headerHeight(t), 0.66, 79);
     await h.dispose(t);
   });
 

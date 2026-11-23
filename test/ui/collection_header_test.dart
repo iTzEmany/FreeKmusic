@@ -1,9 +1,12 @@
+import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:flutter/rendering.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/collection_header.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/app_harness.dart';
 
 ThemeData _theme(AppThemeId id) => buildThemeFromColors(
     buildPalette(id, accentFromName('')), false);
@@ -75,4 +78,49 @@ void main() {
       expect(seg.backgroundColor!.resolve({}), cc.surface2);
     });
   }
+
+  group('icon row', () {
+    Future<Harness> pumpScaffold(WidgetTester tester, {VoidCallback? onDownload}) async {
+      final h = await Harness.create(tester, tracks: 0);
+      await h.pump(
+        tester,
+        CollectionScaffold(
+          title: 'T',
+          name: 'Nome',
+          slivers: const [],
+          onPlay: () {},
+          shuffleIds: const [1, 2],
+          onDownload: onDownload,
+          menu: const SizedBox.square(dimension: 48),
+        ),
+      );
+      return h;
+    }
+
+    testWidgets('sizes, labels and tooltips', (tester) async {
+      final sem = tester.ensureSemantics();
+      final h = await pumpScaffold(tester, onDownload: () {});
+      expect(tester.getSize(find.byType(PlayCircleButton)), const Size(56, 56));
+      expect(tester.getSize(find.byIcon(Icons.shuffle_rounded).hitTestable()).width, lessThan(48));
+      expect(find.bySemanticsLabel('Riproduci'), findsOneWidget);
+      expect(find.byTooltip('Riproduci'), findsOneWidget);
+      // IconButton hands its tooltip to the semantics node as its name.
+      expect(find.byTooltip('Scarica'), findsOneWidget);
+      expect(find.bySemanticsLabel(RegExp('[Cc]asuale|[Ss]huffle|mescol', caseSensitive: false)), findsWidgets);
+      final shuffle = tester.getSize(find.ancestor(
+          of: find.byIcon(Icons.shuffle_rounded), matching: find.byType(SizedBox)).first);
+      expect(shuffle, const Size(48, 48));
+      expect(tester.getSize(find.ancestor(
+          of: find.byIcon(Icons.download_rounded), matching: find.byType(SizedBox)).first),
+          const Size(48, 48));
+      sem.dispose();
+      await h.dispose(tester);
+    });
+
+    testWidgets('download icon is hidden without callback', (tester) async {
+      final h = await pumpScaffold(tester);
+      expect(find.byIcon(Icons.download_rounded), findsNothing);
+      await h.dispose(tester);
+    });
+  });
 }

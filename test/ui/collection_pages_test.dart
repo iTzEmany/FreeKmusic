@@ -59,14 +59,14 @@ void main() {
         )));
     await _settle(tester);
     await tester.runAsync(() async {
-      await tester.tap(find.text('Casuale'));
+      await tester.tap(find.byIcon(Icons.shuffle_rounded));
       await Future<void>.delayed(const Duration(milliseconds: 100));
     });
     await tester.pump(const Duration(milliseconds: 100));
     expect(h.handler.shuffleEnabled, isFalse);
     expect(h.handler.queueIds, [3, 4]);
     await tester.runAsync(() async {
-      await tester.tap(find.text('Riproduci'));
+      await tester.tap(find.byTooltip('Riproduci'));
       await Future<void>.delayed(const Duration(milliseconds: 100));
     });
     expect(h.handler.shuffleEnabled, isTrue);
@@ -94,8 +94,8 @@ void main() {
     await _settle(tester);
     expect(find.text('Album 0'), findsWidgets);
     expect(find.text('Artist'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Riproduci'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Casuale'), findsOneWidget);
+    expect(find.byTooltip('Riproduci'), findsOneWidget);
+    expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
     expect(find.text('Song 0'), findsOneWidget);
     expect(find.textContaining('2019'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -158,8 +158,8 @@ void main() {
     await _settle(tester);
     expect(find.text('Artist'), findsWidgets);
     expect(find.textContaining('2 album, 4 brani'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Riproduci'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Casuale'), findsOneWidget);
+    expect(find.byTooltip('Riproduci'), findsOneWidget);
+    expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
     expect(find.text('Album 0'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await h.dispose(tester);
@@ -182,8 +182,8 @@ void main() {
     await _settle(tester);
     expect(find.text('Notte'), findsWidgets);
     expect(find.text('Song 0'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Riproduci'), findsOneWidget);
-    expect(find.widgetWithText(OutlinedButton, 'Casuale'), findsOneWidget);
+    expect(find.byTooltip('Riproduci'), findsOneWidget);
+    expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
     await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
@@ -319,12 +319,12 @@ void main() {
             playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
     await _settle(tester);
     await tester.runAsync(() async {
-      await tester.tap(find.text('Casuale'));
+      await tester.tap(find.byIcon(Icons.shuffle_rounded));
       await Future<void>.delayed(const Duration(milliseconds: 100));
     });
     expect(h.handler.shuffleEnabled, isFalse);
     await tester.runAsync(() async {
-      await tester.tap(find.text('Riproduci'));
+      await tester.tap(find.byTooltip('Riproduci'));
       await Future<void>.delayed(const Duration(milliseconds: 100));
     });
     expect(h.handler.shuffleEnabled, isTrue);
@@ -338,7 +338,7 @@ void main() {
     await _settle(tester);
     expect(find.text('Preferiti'), findsWidgets);
     expect(find.text('Nessun preferito, per ora'), findsOneWidget);
-    expect(find.text('Riproduci'), findsNothing);
+    expect(find.byTooltip('Riproduci'), findsNothing);
     expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
@@ -352,8 +352,8 @@ void main() {
         PlaylistDetailScreen(
             playlist: Playlist(id: id!, name: 'Vuota', createdAt: 0, updatedAt: 0)));
     await _settle(tester);
-    expect(find.text('Riproduci'), findsNothing);
-    expect(find.text('Casuale'), findsNothing);
+    expect(find.byTooltip('Riproduci'), findsNothing);
+    expect(find.byIcon(Icons.shuffle_rounded), findsNothing);
     expect(find.byTooltip('Altre azioni'), findsOneWidget);
     await h.dispose(tester);
   });

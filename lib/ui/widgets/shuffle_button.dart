@@ -159,11 +159,15 @@ class ShufflePill extends ConsumerWidget {
     this.ids = const [],
     this.listKey,
     this.plus = true,
+    this.iconOnly = false,
   });
 
   final List<int> ids;
   final Object? listKey;
   final bool plus;
+
+  /// A 48 dp icon (collection headers) instead of the word button.
+  final bool iconOnly;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -178,6 +182,28 @@ class ShufflePill extends ConsumerWidget {
       listKey: key,
       plus: plus,
     );
+    final label = switch (mode) {
+      ShuffleMode.off => context.l10n.shuffleModeOff,
+      ShuffleMode.shuffle => context.l10n.shuffleModeOn,
+      ShuffleMode.plus => context.l10n.shuffleModePlus,
+    };
+    final glyph = Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(Icons.shuffle_rounded, color: color),
+        if (mode == ShuffleMode.plus)
+          Positioned(
+            right: -6,
+            top: -4,
+            child: Icon(
+              Icons.add_rounded,
+              key: const ValueKey('shuffle-plus-badge'),
+              size: 12,
+              color: color,
+            ),
+          ),
+      ],
+    );
     // One node: the state is the name (the button's own «Casuale» would be a second).
     return Semantics(
       button: true,
@@ -185,36 +211,31 @@ class ShufflePill extends ConsumerWidget {
       onTap: cycle,
       onLongPress: () => showShufflePlusSheet(context),
       toggled: mode != ShuffleMode.off,
-      label: switch (mode) {
-        ShuffleMode.off => context.l10n.shuffleModeOff,
-        ShuffleMode.shuffle => context.l10n.shuffleModeOn,
-        ShuffleMode.plus => context.l10n.shuffleModePlus,
-      },
+      label: label,
       child: PressScale(
         child: GestureDetector(
           onLongPress: () => showShufflePlusSheet(context),
-          child: OutlinedButton.icon(
-            onPressed: cycle,
-            style: OutlinedButton.styleFrom(foregroundColor: color),
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Icon(Icons.shuffle_rounded, color: color),
-                if (mode == ShuffleMode.plus)
-                  Positioned(
-                    right: -6,
-                    top: -4,
-                    child: Icon(
-                      Icons.add_rounded,
-                      key: const ValueKey('shuffle-plus-badge'),
-                      size: 12,
-                      color: color,
+          child: iconOnly
+              // Hover-only tooltip: on touch it would win the long press.
+              ? Tooltip(
+                  triggerMode: TooltipTriggerMode.manual,
+                  excludeFromSemantics: true,
+                  message: label,
+                  child: SizedBox.square(
+                    dimension: 48,
+                    child: IconButton(
+                      onPressed: cycle,
+                      style: IconButton.styleFrom(foregroundColor: color),
+                      icon: glyph,
                     ),
                   ),
-              ],
-            ),
-            label: Text(context.l10n.shuffle),
-          ),
+                )
+              : OutlinedButton.icon(
+                  onPressed: cycle,
+                  style: OutlinedButton.styleFrom(foregroundColor: color),
+                  icon: glyph,
+                  label: Text(context.l10n.shuffle),
+                ),
         ),
       ),
     );
