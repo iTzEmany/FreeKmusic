@@ -17,10 +17,10 @@ LibraryEntryLite entry(int id, String path, {String title = 't', String? artist}
 void main() {
   test('a YouTube Music page address becomes the streamed row path (export -> import)', () {
     final p = readM3u('a.m3u8',
-        '#EXTINF:100,Pink Floyd - Hey You\nhttps://music.youtube.com/watch?v=abc123&list=x\n#EXTINF:1,A - B\nhttps://example.com/watch?v=zzz\n');
-    expect(p.rows[0].location, 'stream:youtube:abc123');
+        '#EXTINF:100,Pink Floyd - Hey You\nhttps://music.youtube.com/watch?v=abcdefghi12&list=x\n#EXTINF:1,A - B\nhttps://example.com/watch?v=zzz\n');
+    expect(p.rows[0].location, 'stream:youtube:abcdefghi12');
     expect(p.rows[1].location, isNull);
-    final idx = LibraryIndex([entry(7, 'stream:youtube:abc123', title: 'Hey You', artist: 'Pink Floyd')]);
+    final idx = LibraryIndex([entry(7, 'stream:youtube:abcdefghi12', title: 'Hey You', artist: 'Pink Floyd')]);
     expect(idx.find(p.rows[0])?.id, 7);
   });
 

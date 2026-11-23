@@ -1356,4 +1356,39 @@ void main() {
     expect(parseImportTag('import:x:1'), isNull);
     expect(parseImportTag(null), isNull);
   });
+
+  group('«scarica anche» outlives the import finishing', () {
+    test('a row picked by hand and a retry, after the finish, still download', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      yt.songs['one'] = [topic('v1', 'One', 'Band', 200)];
+      final id = await service.start(csv([row(0, 'One', 'Band', 200), row(1, 'Zzz', 'Nobody', 100)]),
+          options: const ImportOptions(downloadToo: true));
+      await idle();
+      await finish(importTag(id, 0), '/m/one.mp3');
+      expect((await imports.get(id))!.state, ImportStatus.finished);
+      await service.download(id, 1, topic('v9', 'Zzz', 'Nobody', 100));
+      await idle();
+      expect(queued.map((q) => q.$1.id), ['v1', 'v9']);
+      expect(await tracks.streamRow('youtube:v9'), isNull, reason: 'downloaded, not saved as a stream');
+    });
+
+    test('cancelling the import forgets the choice', () async {
+      final id = await service.start(csv([row(0, 'One', 'Band', 200)]), options: const ImportOptions(downloadToo: true));
+      await idle();
+      await service.cancel(id);
+      expect((await SharedPreferences.getInstance()).getKeys().where((k) => k.contains('importDownloadToo')), isEmpty);
+    });
+  });
+
+  test('a stream: location survives a base folder and links the saved row', () async {
+    final r = YtResult(id: 'abcdefghi12', title: 'Hey', channel: 'Band', duration: const Duration(seconds: 100));
+    final rid = await tracks.saveStream(r);
+    final id = await service.start(ImportedPlaylist(
+      name: 'M',
+      baseDir: '/base',
+      rows: [ImportRow(index: 0, title: 'Hey', artists: const ['Band'], durationMs: 100000, location: 'stream:youtube:abcdefghi12')],
+    ));
+    await idle();
+    expect((await imports.item(id, 0))!.trackId, rid);
+  });
 }

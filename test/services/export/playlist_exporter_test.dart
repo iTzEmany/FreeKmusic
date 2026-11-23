@@ -80,6 +80,15 @@ void main() {
       expect(json, contains('youtube:v1'));
     });
 
+    test('streamUrlOf: a YouTube row has a page address, a SoundCloud row none (and is left out)', () {
+      final yt = t(3, 'stream:youtube:v1', 'Y', 'Band', 1000).copyWith(kind: 2);
+      final sc = t(4, 'stream:soundcloud:123', 'Cloud', 'Band', 1000).copyWith(kind: 2);
+      expect(streamUrlOf(yt), 'https://music.youtube.com/watch?v=v1');
+      expect(streamUrlOf(sc), isNull);
+      expect(streamUrlOf(tracks.first), isNull);
+      expect(toM3u8('Mix', [sc]), isNot(contains('Cloud')));
+    });
+
     test('paths relative to the playlist folder', () {
       final m = toM3u8('Mix', tracks, relativeTo: '/music/lists');
       expect(m, contains('\n../a/one.mp3\n'));

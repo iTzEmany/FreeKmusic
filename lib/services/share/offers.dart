@@ -111,6 +111,8 @@ class OfferItem {
 
 /// A saved stream offered without a file (D-674): the receiver saves the row.
 /// Travels in the optional `streams` list, which older versions never read.
+const _maxStreamMs = 24 * 3600 * 1000;
+
 class StreamOffer {
   const StreamOffer({required this.key, required this.title, this.artist, this.album, this.durationMs = 0, this.meta});
 
@@ -132,14 +134,14 @@ class StreamOffer {
   static StreamOffer? tryParse(Object? raw) {
     if (raw is! Map) return null;
     final key = raw['key'], title = raw['title'], dur = raw['durationMs'];
-    if (key is! String || title is! String || key.length > 200 || !isStreamKey(key)) return null;
+    if (key is! String || title is! String || title.isEmpty || !isStreamKey(key)) return null;
     String? clip(Object? v) => v is String ? (v.length > 200 ? v.substring(0, 200) : v) : null;
     return StreamOffer(
       key: key,
       title: clip(title) ?? '',
       artist: clip(raw['artist']),
       album: clip(raw['album']),
-      durationMs: dur is int && dur >= 0 ? dur : 0,
+      durationMs: dur is int && dur >= 0 && dur <= _maxStreamMs ? dur : 0,
       meta: TrackMeta.tryParse(raw['meta']),
     );
   }
@@ -381,7 +383,7 @@ class OfferService {
           port < 1 ||
           port > 65535 ||
           (rawItems.isEmpty && streams.isEmpty) ||
-          rawItems.length > maxOfferItems) {
+          rawItems.length + streams.length > maxOfferItems) {
         return Response(400, body: 'bad request');
       }
       final items = <OfferItem>[];

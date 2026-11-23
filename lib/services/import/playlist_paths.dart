@@ -1,5 +1,7 @@
 // Helpers shared by the M3U and XSPF readers and by the library lookup.
 
+import '../stream/stream_key.dart' show ytIdRe;
+
 final _windowsDrive = RegExp(r'^[A-Za-z]:[\\/]');
 
 /// A `file://` URL or a plain path as a path with `/` separators; null for
@@ -23,8 +25,8 @@ String? localPathFromLocation(String raw) {
 String? streamPathOfWatchUrl(String raw) {
   final u = Uri.tryParse(raw.trim());
   final host = u?.host.toLowerCase() ?? '';
-  final id = u?.queryParameters['v'];
-  if (u == null || id == null || id.isEmpty || u.path != '/watch') return null;
+  final id = u?.queryParametersAll['v']?.first;
+  if (u == null || id == null || u.path != '/watch' || !ytIdRe.hasMatch(id)) return null;
   return host == 'youtube.com' || host.endsWith('.youtube.com') ? 'stream:youtube:$id' : null;
 }
 
@@ -40,7 +42,11 @@ bool isAbsoluteLocalPath(String p) => p.startsWith('/') || _windowsDrive.hasMatc
 
 /// Lower-case comparison key: Windows and macOS paths ignore case and a
 /// playlist may have been written on another system.
-String pathKey(String p) => p.replaceAll(r'\', '/').toLowerCase();
+String pathKey(String p) {
+  final s = p.replaceAll(r'\', '/');
+  // A YouTube id tells upper from lower case.
+  return s.startsWith('stream:') ? s : s.toLowerCase();
+}
 
 String basenameOf(String p) {
   final s = p.replaceAll(r'\', '/');

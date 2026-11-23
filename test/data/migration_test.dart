@@ -1033,10 +1033,31 @@ void main() {
     );
     final rows = (await db.customSelect('SELECT * FROM tracks ORDER BY id').get()).map((r) => r.data).toList();
     expect(rows.map((r) => r['album_browse_id']), [null, null]);
+    final cols = await db.customSelect('PRAGMA table_info(tracks)').get();
+    expect(cols.map((c) => c.read<String>('name')), contains('album_browse_id'));
     expect(rows.map((r) => [r['path'], r['title'], r['kind'], r['saved']]), [
       ['/a.mp3', 'A', 0, 0],
       ['stream:youtube:x', 'S', 2, 1],
     ]);
+    await db.close();
+  });
+
+  test('a v21 database that already has tracks.album_browse_id opens and keeps the value', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL, '
+            'saved INTEGER NOT NULL DEFAULT 0, album_browse_id TEXT)',
+          );
+          raw.execute("INSERT INTO tracks (id, path, title, album_key, album_browse_id) VALUES (1, '/a.mp3', 'A', 'k', 'MPRE1')");
+          raw.userVersion = 21;
+        },
+      ),
+    );
+    final rows = await db.customSelect('SELECT album_browse_id FROM tracks').get();
+    expect(rows.single.read<String?>('album_browse_id'), 'MPRE1');
     await db.close();
   });
 }

@@ -221,4 +221,10 @@ void main() {
     expect((row.kind, row.saved, row.title, row.artist), (2, true, 'Live', 'Band'));
     expect(await repo.byPath('stream:youtube:bbbbbbbbbbb'), isNull);
   });
+
+  test('a stream already saved is not counted again; its credits are given once', () async {
+    const a = StreamOffer(key: 'youtube:abcdefghijk', title: 'Live');
+    expect(await saveReceivedStreams(repo, [a], hasFile: (_) => false), 1);
+    expect(await saveReceivedStreams(repo, [a], hasFile: (_) => false), 0);
+  });
 }

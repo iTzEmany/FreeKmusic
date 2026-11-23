@@ -53,9 +53,10 @@ Future<int> saveReceivedStreams(
     try {
       final r = streamResultOf(s.key, title: s.title, artist: s.artist, album: s.album, durationMs: s.durationMs);
       if (hasFile(r)) continue;
+      final wasSaved = (await tracks.streamRow(s.key))?.saved ?? false;
       final id = await tracks.saveStream(r);
       if (id == null) continue;
-      n++;
+      if (!wasSaved) n++;
       final m = s.meta;
       if (m != null && credits != null) await credits.saveIfNone(id, m.credits, m.details);
     } on Object catch (e, st) {

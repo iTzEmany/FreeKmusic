@@ -1,9 +1,9 @@
 import '../../data/db/app_database.dart';
 import '../online/credits.dart';
 import '../online/lrc_parser.dart';
+import '../stream/stream_key.dart' show ytIdRe;
 
 final _isrcRe = RegExp(r'^[A-Z]{2}[A-Z0-9]{3}\d{7}$');
-final _ytIdRe = RegExp(r'^[A-Za-z0-9_-]{11}$');
 
 const kMaxMetaCredits = 200;
 
@@ -119,7 +119,7 @@ class TrackMeta {
           ? synced
           : null,
       enrichStatus: num('enrichStatus', 0, 2),
-      youtubeId: yt is String && _ytIdRe.hasMatch(yt) ? yt : null,
+      youtubeId: yt is String && ytIdRe.hasMatch(yt) ? yt : null,
       curiosities: lyrics('curiosities', 20000),
       credits: parseCreditList(raw['credits'], max: kMaxMetaCredits),
       details: raw['details'] is Map ? TrackDetails.fromJson(raw['details'] as Map) : null,

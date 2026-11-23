@@ -291,7 +291,6 @@ class PlaylistImportService {
     _eta(first!).start();
     if (rows.isEmpty) {
       await imports.setStatus(first, ImportStatus.finished);
-      await _forgetDownloadToo(first);
       _emit(ImportEvent(ImportEventKind.completed, first));
     } else {
       _kick();
@@ -336,7 +335,6 @@ class PlaylistImportService {
     _eta(id).start();
     if (rows.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
-      await _forgetDownloadToo(id);
       _emit(ImportEvent(ImportEventKind.completed, id));
     } else {
       _kick();
@@ -373,7 +371,7 @@ class PlaylistImportService {
   final _nextBlock = <int, int>{};
 
   /// Imports whose rows are also downloaded (D-665, «scarica anche»): kept in the preferences, one key per
-  /// import, so a restart does not turn the choice into plain streaming. Removed when the import ends.
+  /// import, so a restart does not turn the choice into plain streaming. Removed when the import is cancelled.
   static String _downloadTooKey(int id) => 'importDownloadToo.$id';
 
   Future<void> _rememberDownloadToo(int id) async =>
@@ -501,7 +499,6 @@ class PlaylistImportService {
     _eta(id).start();
     if (diff.added.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
-      await _forgetDownloadToo(id);
       _emit(ImportEvent(ImportEventKind.completed, id));
     } else {
       _kick();
@@ -1209,7 +1206,6 @@ class PlaylistImportService {
       return true;
     }
     await imports.setStatus(importId, ImportStatus.finished);
-    await _forgetDownloadToo(importId);
     // The album pages read for this block serve no other: a long import in
     // blocks would keep every one of them for the session.
     _albumCounts.remove(importId);
