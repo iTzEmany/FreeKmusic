@@ -27,8 +27,10 @@ import '../../providers/player_providers.dart';
 import '../../providers/preview_providers.dart';
 import '../../providers/suggestion_actions.dart';
 import '../../providers/track_ops.dart';
-import '../../providers/youtube_providers.dart'
-    show downloadIndexProvider, downloadsProvider;
+import '../../providers/free_space_providers.dart';
+import '../../providers/track_state_providers.dart';
+import '../../providers/youtube_providers.dart' show downloadIndexProvider;
+import 'download_bar.dart';
 import '../screens/playlists/playlist_dialogs.dart';
 import '../screens/playlists/playlist_picker.dart';
 import '../screens/tags/tags_sheet.dart';
@@ -235,6 +237,14 @@ List<TrackActionGroup> trackActions(
     open: (page) => ShellNav.openInLibrary(outer, ref, page),
   );
 
+  final state = ref.read(trackStateProvider(trackStateKey(track)));
+  final streamKey = track.kind == kStreamKind ? keyOfStreamPath(track.path) : null;
+  final streaming = ref.read(settingsProvider).storageMode == StorageMode.stream;
+  // A shadow row not saved yet keeps the short menu; a saved one has the full menu (D-696).
+  final unsavedShadow = streamKey != null && state == TrackState.online;
+  final inDownloads = state == TrackState.downloaded &&
+      (ref.read(downloadIndexProvider).value?.entries.any((e) => e.value == track.path) ?? false);
+
   final groups = [
     TrackActionGroup(l.groupQueue, [
       if (isDesktop)
@@ -258,37 +268,42 @@ List<TrackActionGroup> trackActions(
       }, onStreamRow: true),
     ]),
     TrackActionGroup(l.groupCollection, [
-      // An unsaved shadow row (of a playlist or the history) in streaming mode joins the library without a file.
-      if (track.kind == kStreamKind &&
-          !track.saved &&
-          keyOfStreamPath(track.path) != null &&
-          ref.read(settingsProvider).storageMode == StorageMode.stream)
+      // An unsaved shadow row in streaming mode joins the library without a file: never next to «Scarica».
+      if (unsavedShadow && streaming)
         TrackAction(
           Icons.library_add_rounded,
           l.addToLibrary,
           () => downloadOnline(
             outer,
             inLibrary: false,
-            start: () => ref.read(libraryAdderProvider).add(streamResultOfRow(keyOfStreamPath(track.path)!, track)),
+            start: () => ref.read(libraryAdderProvider).add(streamResultOfRow(streamKey, track)),
           ),
           onStreamRow: true,
         ),
-      // A streamed shadow row: the download promotes it to a real library track.
-      if (track.kind == kStreamKind &&
-          keyOfStreamPath(track.path) != null &&
-          ref
-                  .read(downloadIndexProvider)
-                  .value
-                  ?.pathForKey(keyOfStreamPath(track.path)!) ==
-              null)
+      // «Scarica» saves too (D-695) and promotes the row to a file.
+      if (streamKey != null && state != TrackState.downloaded && !(unsavedShadow && streaming))
         TrackAction(
           Icons.download_rounded,
-          ref.read(settingsProvider).storageMode == StorageMode.stream ? l.ytDownloadOnDevice : l.ytDownload,
-          () async {
-          ref
-              .read(downloadsProvider.notifier)
-              .add(streamResultOfRow(keyOfStreamPath(track.path)!, track));
-        }, onStreamRow: true),
+          streaming ? l.ytDownloadOnDevice : l.ytDownload,
+          () => downloadOnline(
+            outer,
+            inLibrary: false,
+            start: () => ref.read(libraryAdderProvider).download(streamResultOfRow(streamKey, track)),
+          ),
+          onStreamRow: true,
+        ),
+      // Only a file the app downloaded itself (a user's mp3 is never touched).
+      if (inDownloads)
+        TrackAction(Icons.cleaning_services_rounded, l.freeSpaceTitle, () async {
+          final report = await (await ref.read(freeSpaceServiceProvider.future)).freeSpace([track.id]);
+          if (!outer.mounted) return;
+          showMsg(
+            outer,
+            report.freedIds.isEmpty
+                ? l.freeSpaceFailed(1)
+                : l.freeSpaceDone(report.freedIds.length, formatBytes(report.freedBytes, Localizations.localeOf(outer).toString())),
+          );
+        }),
       TrackAction(
         track.isFavorite
             ? Icons.favorite_rounded
@@ -374,7 +389,7 @@ List<TrackActionGroup> trackActions(
           builder: (_) => _DetailsDialog(track: track),
         );
       }, onStreamRow: true),
-      if (isDesktop)
+      if (isDesktop && track.kind != kStreamKind)
         TrackAction(
           Icons.folder_open_rounded,
           l.showInFolder,
@@ -390,7 +405,7 @@ List<TrackActionGroup> trackActions(
   ];
   // A streamed shadow row (kind 2) keeps only queue actions and Details until phase 46; so
   // does a podcast episode not downloaded yet (a row on an address), which has no file to act on.
-  if (track.kind != kStreamKind &&
+  if (!unsavedShadow &&
       !(track.kind == kEpisodeKind && isRemoteEpisodePath(track.path))) {
     return groups;
   }
@@ -412,29 +427,44 @@ Future<void> showTrackActions(
   Track track, {
   TrackAction? lead,
 }) {
+  // The menu follows the state of the song, not the Track it was opened with: a download
+  // or a save swaps it for the library row and the groups are rebuilt (D-697).
+  final entryKey = ref.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
+  final key = trackStateKey(track, streamKey: entryKey);
+  var live = track;
   List<TrackActionGroup> build() => [
     if (lead != null) TrackActionGroup('', [lead]),
-    ...trackActions(context, ref, track),
+    ...trackActions(context, ref, live),
   ];
   var last = build();
   // The caller may be gone while the sheet is open: keep the last groups then.
   List<TrackActionGroup> groups() => context.mounted ? last = build() : last;
-  // An online entry or streamed row: the groups follow the download index while the sheet is open.
-  final changed = isOnlineId(track.id) || track.kind == kStreamKind
-      ? ValueNotifier(0)
-      : null;
-  final sub = changed == null
-      ? null
-      : ref.listenManual(downloadIndexProvider, (_, _) => changed.value++);
+  final changed = ValueNotifier(0);
+  var closed = false;
+  Future<void> follow() async {
+    try {
+      final row = await ref.read(trackRowLookupProvider)(track, key);
+      if (row != null) live = row;
+    } on Object catch (e, st) {
+      AppLog.w('track menu: row of $key not reloaded', e, st);
+    }
+    if (!closed) changed.value++;
+  }
+
+  final sub = ref.listenManual(trackStateProvider(key), (_, _) => follow());
+  // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
+  final indexSub = ref.listenManual(downloadIndexProvider, (_, _) => follow());
   return showTrackActionGroups(
     context,
     last,
-    header: _TrackHeader(track: track),
+    header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
     refresh: changed,
     regroup: groups,
   ).whenComplete(() {
-    sub?.close();
-    changed?.dispose();
+    closed = true;
+    sub.close();
+    indexSub.close();
+    changed.dispose();
   });
 }
 
@@ -485,9 +515,12 @@ Future<void> showTrackActionGroups(
 }
 
 class _TrackHeader extends StatelessWidget {
-  const _TrackHeader({required this.track});
+  const _TrackHeader({required this.track, this.downloadKey});
 
   final Track track;
+
+  /// `source:id` of the song when it can be downloaded: its progress shows under the title.
+  final String? downloadKey;
 
   @override
   Widget build(BuildContext context) {
@@ -528,6 +561,7 @@ class _TrackHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: theme.bodySmall?.copyWith(color: cc.textFaint),
                   ),
+                if (downloadKey != null) DownloadBar(entryKey: downloadKey!),
               ],
             ),
           ),
@@ -645,7 +679,7 @@ List<TrackAction> onlineResultActions(
         () => downloadOnline(
           outer,
           inLibrary: ref.read(downloadIndexProvider).value?.contains(r.id, source: r.source) ?? false,
-          start: () => ref.read(downloadsProvider.notifier).add(r),
+          start: () => ref.read(libraryAdderProvider).download(r),
         ),
       ),
     TrackAction(

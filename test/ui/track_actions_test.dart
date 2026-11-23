@@ -277,6 +277,8 @@ void main() {
     final t = edit(
       (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first,
     );
+    // The menu follows the DB row: it holds what the test says the track is (an online id has no row).
+    if (t.id > 0) await tester.runAsync(() => h.db.update(h.db.tracks).replace(t));
     await h.pump(
       tester,
       extraOverrides: extra,
@@ -484,6 +486,79 @@ void main() {
       await h.dispose(tester);
     },
   );
+
+  testWidgets('saved stream: the full menu of a local track plus «Scarica»; unsaved shadow row: «Scarica» or «Aggiungi alla libreria», never both', (tester) async {
+    var h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true));
+    for (final t in ['Aggiungi a playlist…', 'Modifica info', 'Scarica', 'Rimuovi dalla libreria']) {
+      expect(find.text(t, skipOffstage: false), findsOneWidget, reason: 'saved: $t');
+    }
+    await h.dispose(tester);
+
+    h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc'), mode: StorageMode.stream);
+    expect(find.text('Aggiungi alla libreria'), findsOneWidget);
+    expect(find.text('Scarica sul dispositivo'), findsNothing);
+    expect(find.text('Modifica info'), findsNothing);
+    await h.dispose(tester);
+
+    h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc'));
+    expect(find.text('Scarica'), findsOneWidget);
+    expect(find.text('Aggiungi alla libreria'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Scarica» saves the row too, then downloads (D-695)', (tester) async {
+    final downloads = _Downloads();
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc'),
+      extra: [downloadsProvider.overrideWith(() => downloads)],
+    );
+    await tester.tap(find.text('Scarica'));
+    await _settle(tester);
+    expect(downloads.added, hasLength(1));
+    final row = (await tester.runAsync(() => TrackRepository(h.db).byPath('stream:youtube:abc')))!;
+    expect(row.saved, isTrue);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the open menu of a saved stream swaps «Scarica» away by itself when its key joins the download index', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true),
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+    );
+    expect(find.text('Scarica'), findsOneWidget);
+    final file = File('${dir.path}/abc.m4a')..writeAsStringSync('x');
+    await tester.runAsync(() => index.add('abc', file.path));
+    ProviderScope.containerOf(tester.element(find.text('Scarica'))).invalidate(downloadIndexProvider);
+    await _settle(tester);
+    expect(find.text('Scarica'), findsNothing);
+    expect(find.text('Aggiungi a playlist…', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Libera spazio» only for a file the app downloaded (it is in the download index)', (tester) async {
+    final dir = Directory.systemTemp.createTempSync('dl_idx');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final index = DownloadIndex(File('${dir.path}/downloads.json'));
+    var h = await openSheet(tester, (t) => t, extra: [downloadIndexProvider.overrideWith((ref) async => index)]);
+    expect(find.text('Libera spazio', skipOffstage: false), findsNothing, reason: 'a user file');
+    await h.dispose(tester);
+
+    h = await openSheet(
+      tester,
+      (t) {
+        index.add('abc', t.path);
+        return t;
+      },
+      extra: [downloadIndexProvider.overrideWith((ref) async => index)],
+    );
+    expect(find.text('Libera spazio', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
 
   testWidgets('a saved stream row offers «Rimuovi dalla libreria»: it stops being saved, nothing else', (tester) async {
     final h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true));

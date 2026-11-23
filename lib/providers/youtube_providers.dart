@@ -249,13 +249,12 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       final tracks = ref.read(trackRepositoryProvider);
       final id = await tracks.idForPath(path);
       final gone = id == null ? null : await tracks.mergeStreamRow(r.indexKey, id);
-      if (gone != null) {
-        ref.read(audioHandlerProvider).replaceQueueId(gone, id!);
-        // The entry now playing keeps streaming: point it at the library row.
-        final online = ref.read(onlineEntriesProvider);
-        for (final e in online?.idsOf(r) ?? const <int>[]) {
-          online!.bindRow(e, id);
-        }
+      if (id == null) return;
+      if (gone != null) ref.read(audioHandlerProvider).replaceQueueId(gone, id);
+      // The entry now playing keeps streaming: point it at the library row, also when no shadow row existed.
+      final online = ref.read(onlineEntriesProvider);
+      for (final e in online?.idsOf(r) ?? const <int>[]) {
+        online!.bindRow(e, id);
       }
     } on Object catch (e, st) {
       AppLog.w('merge of the stream row failed for ${r.indexKey}', e, st);
