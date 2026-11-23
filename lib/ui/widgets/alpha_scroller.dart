@@ -68,6 +68,7 @@ class AlphaScroller extends StatefulWidget {
     this.itemCount,
     this.start,
     this.topInset,
+    this.bottomInset,
     required this.child,
   });
 
@@ -88,6 +89,9 @@ class AlphaScroller extends StatefulWidget {
   /// Height at the top that the strip leaves free (the visible part of a
   /// header), read again on every scroll.
   final double Function()? topInset;
+
+  /// Height at the bottom left free for the dock / mini player; default: [CcContext.dockInset].
+  final double? bottomInset;
   final Widget child;
 
   @override
@@ -124,6 +128,11 @@ class _AlphaScrollerState extends State<AlphaScroller>
       old.controller.removeListener(_onScroll);
       widget.controller.addListener(_onScroll);
     }
+    // The strip vanished under the finger (list shrank): drop its state.
+    if (_count < alphaScrollerMinItems && (_touched || _bubble != null)) {
+      _touched = false;
+      _bubble = null;
+    }
   }
 
   @override
@@ -133,7 +142,9 @@ class _AlphaScrollerState extends State<AlphaScroller>
     super.dispose();
   }
 
-  void _onScroll() => _fade.forward(from: 0);
+  void _onScroll() {
+    if (_count >= alphaScrollerMinItems) _fade.forward(from: 0);
+  }
 
   void _jump(double dy, double height) {
     final n = _count;
@@ -149,6 +160,8 @@ class _AlphaScrollerState extends State<AlphaScroller>
             : f * max,
       );
     }
+    // shortcut: the bubble's index is approximate by position and maxScrollExtent
+    // may change while the finger rests (lazy lists); fine for a scrub aid.
     setState(() => _bubble = _byLetters ? widget.letters[index] : '${index + 1} / $n');
   }
 
@@ -187,10 +200,10 @@ class _AlphaScrollerState extends State<AlphaScroller>
             final opacity = _touched ? 1.0 : 0.12 + 0.6 * scrolling;
             return Positioned(
           top: _inset,
-          bottom: 0,
+          bottom: widget.bottomInset ?? context.dockInset,
           right: 0,
           width: isDesktop ? 28 : 48,
-          child: LayoutBuilder(
+          child: ExcludeSemantics(child: LayoutBuilder(
             builder: (_, c) {
               final cx = widget.controller;
               final max = cx.hasClients ? cx.position.maxScrollExtent : 0.0;
@@ -234,7 +247,7 @@ class _AlphaScrollerState extends State<AlphaScroller>
             ),
             );
             },
-          ),
+          )),
         );
           },
         ),
@@ -243,7 +256,7 @@ class _AlphaScrollerState extends State<AlphaScroller>
             right: 40,
             top: 0,
             bottom: 0,
-            child: Center(
+            child: ExcludeSemantics(child: Center(
               child: Container(
                 constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -258,7 +271,7 @@ class _AlphaScrollerState extends State<AlphaScroller>
                       ?.copyWith(color: cc.onAccent),
                 ),
               ),
-            ),
+            )),
           ),
       ],
     );

@@ -117,6 +117,55 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('a small menu is padded to 48 dp', (tester) async {
+      final h = await Harness.create(tester, tracks: 0);
+      await h.pump(
+        tester,
+        const CollectionScaffold(
+          title: 'T',
+          name: 'Nome',
+          slivers: [],
+          menu: SizedBox.square(key: ValueKey('menu'), dimension: 20),
+        ),
+      );
+      final box = tester.getSize(find.ancestor(
+          of: find.byKey(const ValueKey('menu')),
+          matching: find.byType(ConstrainedBox)).first);
+      expect(box, const Size(48, 48));
+      await h.dispose(tester);
+    });
+
+    testWidgets('scrollerCount changes keep the offset and toggle the bar', (tester) async {
+      final h = await Harness.create(tester, tracks: 0);
+      Future<void> show(int? n) => h.pump(
+            tester,
+            CollectionScaffold(
+              title: 'T',
+              name: 'Nome',
+              scrollerCount: n,
+              slivers: [
+                SliverList.builder(
+                  itemCount: 200,
+                  itemBuilder: (_, i) => SizedBox(height: 56, child: Text('r$i')),
+                ),
+              ],
+            ),
+          );
+      final handle = find.byKey(const ValueKey('scroller-handle'));
+      await show(null);
+      final c = tester.widget<CustomScrollView>(find.byType(CustomScrollView)).controller!;
+      c.jumpTo(500);
+      await tester.pump();
+      expect(handle, findsNothing);
+      await show(150);
+      expect(c.offset, 500);
+      expect(handle, findsOneWidget);
+      await show(50);
+      expect(c.offset, 500);
+      expect(handle, findsNothing);
+      await h.dispose(tester);
+    });
+
     testWidgets('download icon is hidden without callback', (tester) async {
       final h = await pumpScaffold(tester);
       expect(find.byIcon(Icons.download_rounded), findsNothing);

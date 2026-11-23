@@ -110,7 +110,11 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
             icon: const Icon(Icons.download_rounded),
           ),
         ),
-      ?widget.menu,
+      if (widget.menu != null)
+        ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          child: widget.menu,
+        ),
     ];
     final scroll = CustomScrollView(
       controller: _scroll,
@@ -147,15 +151,14 @@ class _CollectionScaffoldState extends State<CollectionScaffold> {
       body: Stack(
         children: [
           Positioned.fill(
-            child: widget.scrollerCount == null
-                ? scroll
-                : AlphaScroller(
-                    controller: _scroll,
-                    itemCount: widget.scrollerCount,
-                    topInset: () =>
-                        MediaQuery.paddingOf(context).top + kToolbarHeight,
-                    child: scroll,
-                  ),
+            // Always wrapped: a changing tree would remount the scroll view.
+            child: AlphaScroller(
+              controller: _scroll,
+              itemCount: widget.scrollerCount ?? 0,
+              topInset: () =>
+                  MediaQuery.paddingOf(context).top + kToolbarHeight,
+              child: scroll,
+            ),
           ),
           if (widget.selectionBar != null)
             Positioned(top: 0, left: 0, right: 0, child: widget.selectionBar!),
