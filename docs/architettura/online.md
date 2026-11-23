@@ -172,6 +172,7 @@ Unico servizio esterno nostro, eccezione a «nessun backend»: il Worker in `too
 - **Nuovo `MediaSource`**: in `YtResult`/`downloadIndexKey`, con la chiave in `downloads.json`.
 
 ## Trappole
+- **Il frammento del link di condivisione non arriva mai al server** (D-702): `https://itzemany.github.io/FreeKmusic/#<frammento>` lo legge solo la pagina nel browser (il `#` non viene inviato). Formato fisso, in `lib/services/share/share_fragment.dart` e nella pagina: `FK1\n<tipo t|a|p>\n<titolo>\n<id YouTube da 11 caratteri concatenati>`, gzip, base64url senza padding; decodifica tollerante al padding, max 64 KB decompressi, max `kMaxSharedTracks` = 50 brani (oltre: m3u8); ogni input cattivo è un `ShareFragmentError`. I vettori condivisi con la pagina JS sono in `test/services/share/fragment_vectors.json`.
 - **La segnalazione si costruisce solo ai tasti**: `buildIssue` non gira a ogni lettera e nulla chiama `IssueSender` fuori da «Invia»; l'unica chiamata di rete della segnalazione è quella.
 - **Il menu ⋮ non cattura il `Track`** (fase 139): `showTrackActions` ascolta lo stato e l'indice e ricarica la riga viva, ma per un brano online (id negativo) resta il menu online anche a download finito: con la riga locale «Elimina dal dispositivo» cancellerebbe il file che suona lasciandolo in coda.
 - **`downloadIndexProvider` è mutato sul posto**: chi aggiunge o toglie file deve fare `ref.invalidate(downloadIndexProvider)`, altrimenti lo stato del brano resta vecchio.

@@ -75,6 +75,7 @@ dependencies:
     path: third_party/metadata_god
   sodium: ^4.1.2
   mqtt_client: ^10.14.0
+  share_plus: ^13.3.1
 
 # Local copy of audio_service: PLAY/PAUSE keys must not toggle (R-227, D-608).
 dependency_overrides:
