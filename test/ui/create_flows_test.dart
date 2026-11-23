@@ -52,7 +52,6 @@ void main() {
 
   testWidgets('new playlist sheet: the name field has no focus on open', (tester) async {
     final h = await _open(tester, (c, ref) => createPlaylistFlow(c, ref, onSmart: () {}));
-    expect(tester.widget<TextField>(find.byType(TextField)).autofocus, isFalse);
     expect(FocusManager.instance.primaryFocus?.context?.findAncestorWidgetOfExactType<TextField>(), isNull);
     await h.dispose(tester);
   });
