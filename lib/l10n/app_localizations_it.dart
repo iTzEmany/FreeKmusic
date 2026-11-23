@@ -8148,4 +8148,7 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get onboardingFoldersDownloadsNote =>
       'I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui.';
+
+  @override
+  String get albumMissingTitle => 'Altri brani dell\'album';
 }

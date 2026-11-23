@@ -210,3 +210,6 @@ Link a `../decisioni.md`:
 - D-510..D-514, D-527: pagine da link.
 - D-515..D-526, D-530, D-537: Shazam, link, streaming nelle playlist (D-521 Spotify embed, D-523 limite Deezer, D-524 righe ombra, D-526 limite dei link).
 - D-81 / D-138..D-145: cache e streaming veloce.
+
+- **«Scarica anche» dell'import (D-665) sopravvive al riavvio**: `PlaylistImportService` tiene la scelta nelle preferenze, chiave `importDownloadToo.<id>`, tolta quando l'import finisce o viene annullato (nessuna colonna in `playlist_imports`).
+- **Brani mancanti dell'album (D-706)**: `albumMissingTracksProvider` legge una volta (niente watch sulla libreria) e restituisce `YtmAlbumTrack`; in streaming la sezione si carica da sola, in modalità dispositivo una riga «Altri brani dell'album» li cerca al tocco, nella `lite` non c'è nulla.

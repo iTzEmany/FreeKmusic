@@ -25,10 +25,11 @@ ImportedPlaylist readM3u(String fileName, String text) {
       }
       continue;
     }
-    final local = localPathFromLocation(line);
+    final stream = streamPathOfWatchUrl(line);
+    final local = stream ?? localPathFromLocation(line);
     final labelParts = label == null || label.isEmpty ? null : splitLabel(label);
     final title =
-        labelParts?.title ?? (local == null ? null : withoutExtension(basenameOf(local)));
+        labelParts?.title ?? (local == null || stream != null ? null : withoutExtension(basenameOf(local)));
     final artist = labelParts?.artist;
     if (title == null || title.isEmpty) {
       skipped++;

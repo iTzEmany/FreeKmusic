@@ -8184,4 +8184,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get onboardingFoldersDownloadsNote =>
       'Heruntergeladene Titel landen im Ordner FreeKmusic, innerhalb des hier gewählten Ordners.';
+
+  @override
+  String get albumMissingTitle => 'Weitere Titel des Albums';
 }

@@ -3947,5 +3947,6 @@
   },
   "csvImportDownloadToo": "Descargar también los archivos",
   "csvImportDownloadTooHint": "Normalmente las canciones se guardan para streaming, sin archivo. Activado, también se descargan al dispositivo.",
-  "onboardingFoldersDownloadsNote": "Las canciones que descargues van a la carpeta FreeKmusic, dentro de la carpeta que elijas aquí."
+  "onboardingFoldersDownloadsNote": "Las canciones que descargues van a la carpeta FreeKmusic, dentro de la carpeta que elijas aquí.",
+  "albumMissingTitle": "Más canciones del álbum"
 }

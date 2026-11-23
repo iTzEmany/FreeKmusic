@@ -12894,6 +12894,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui.'**
   String get onboardingFoldersDownloadsNote;
+
+  /// No description provided for @albumMissingTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Altri brani dell\'album'**
+  String get albumMissingTitle;
 }
 
 class _AppLocalizationsDelegate

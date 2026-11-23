@@ -16,6 +16,8 @@ import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/share_providers.dart' show systemDeviceNameProvider;
 import 'package:codecore/providers/startup_providers.dart';
+import 'package:codecore/providers/ytm_catalog_providers.dart' show albumMissingTracksProvider;
+import 'package:codecore/services/online/ytm_artist.dart' show YtmAlbumTrack;
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/audio/play_queue.dart';
@@ -80,6 +82,9 @@ class Harness {
   /// What the artist-merge search answers (nothing by default); set before `pump`.
   Future<List<YtmArtistRef>>? Function(String) mergeSearch = (_) => Future.value(const <YtmArtistRef>[]);
 
+  /// Lets `albumMissingTracksProvider` run for real (it needs a fake catalog); else it finds nothing.
+  bool realAlbumMissing = false;
+
   List<Override> get overrides => [
         databaseProvider.overrideWithValue(db),
         audioHandlerProvider.overrideWithValue(handler),
@@ -100,6 +105,8 @@ class Harness {
         ),
         // The hostname differs between machines and CI runners (golden phone_150 settings).
         systemDeviceNameProvider.overrideWithValue('Test PC'),
+        // Never the real InnerTube catalog.
+        if (!realAlbumMissing) albumMissingTracksProvider.overrideWith((ref, _) async => const <YtmAlbumTrack>[]),
       ];
 
   /// [overrides] with [extra] on top: a provider overridden in both keeps only the extra one

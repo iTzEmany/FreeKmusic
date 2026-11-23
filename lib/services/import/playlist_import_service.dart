@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
@@ -278,7 +279,7 @@ class PlaylistImportService {
         planFirst: options.planFirst,
         fetchCovers: options.fetchCovers,
       );
-      if (options.downloadToo) _downloadToo.add(id);
+      if (options.downloadToo) await _rememberDownloadToo(id);
       first ??= id;
       if (previous != null) {
         // Waits for the block before it: the playlist order stays right.
@@ -290,6 +291,7 @@ class PlaylistImportService {
     _eta(first!).start();
     if (rows.isEmpty) {
       await imports.setStatus(first, ImportStatus.finished);
+      await _forgetDownloadToo(first);
       _emit(ImportEvent(ImportEventKind.completed, first));
     } else {
       _kick();
@@ -330,10 +332,11 @@ class PlaylistImportService {
           ),
       },
     );
-    if (options.downloadToo) _downloadToo.add(id);
+    if (options.downloadToo) await _rememberDownloadToo(id);
     _eta(id).start();
     if (rows.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
+      await _forgetDownloadToo(id);
       _emit(ImportEvent(ImportEventKind.completed, id));
     } else {
       _kick();
@@ -369,9 +372,18 @@ class PlaylistImportService {
   /// blocks are then paused, and resumed by hand like any paused import).
   final _nextBlock = <int, int>{};
 
-  /// Imports whose rows are also downloaded (D-665, «scarica anche»). Not stored: after a restart the
-  /// import goes on saving in streaming, never downloading what nobody asked for again.
-  final _downloadToo = <int>{};
+  /// Imports whose rows are also downloaded (D-665, «scarica anche»): kept in the preferences, one key per
+  /// import, so a restart does not turn the choice into plain streaming. Removed when the import ends.
+  static String _downloadTooKey(int id) => 'importDownloadToo.$id';
+
+  Future<void> _rememberDownloadToo(int id) async =>
+      (await SharedPreferences.getInstance()).setBool(_downloadTooKey(id), true);
+
+  Future<bool> _wantsDownloadToo(int id) async =>
+      (await SharedPreferences.getInstance()).getBool(_downloadTooKey(id)) ?? false;
+
+  Future<void> _forgetDownloadToo(int id) async =>
+      (await SharedPreferences.getInstance()).remove(_downloadTooKey(id));
 
   // ---- sync ---------------------------------------------------------------
 
@@ -485,10 +497,11 @@ class PlaylistImportService {
     await playlists.reorderBy(playlistId, {
       for (final k in diff.kept) k.old.trackId!: k.fresh.index,
     });
-    if (options.downloadToo) _downloadToo.add(id);
+    if (options.downloadToo) await _rememberDownloadToo(id);
     _eta(id).start();
     if (diff.added.isEmpty) {
       await imports.setStatus(id, ImportStatus.finished);
+      await _forgetDownloadToo(id);
       _emit(ImportEvent(ImportEventKind.completed, id));
     } else {
       _kick();
@@ -503,7 +516,7 @@ class PlaylistImportService {
     if (base == null) return list.rows;
     return [
       for (final r in list.rows)
-        r.location != null && !isAbsoluteLocalPath(r.location!)
+        r.location != null && !r.location!.startsWith('stream:') && !isAbsoluteLocalPath(r.location!)
             ? r.withLocation(
                 p.posix.normalize(
                   '${base.replaceAll(r'\', '/')}/${r.location}',
@@ -566,6 +579,7 @@ class PlaylistImportService {
   Future<void> cancel(int importId) async {
     _nextBlock.remove(importId);
     await imports.setStatus(importId, ImportStatus.cancelled);
+    await _forgetDownloadToo(importId);
     cancelDownloads((i) => parseImportTag(i.tag)?.$1 == importId);
     _wakeUp();
   }
@@ -998,12 +1012,13 @@ class PlaylistImportService {
       }
     }
     // Without «scarica anche» the row is saved (streaming), with it the file is downloaded as always.
-    final saved = _downloadToo.contains(importId) ? null : await saveNow?.call(r);
+    final downloadToo = await _wantsDownloadToo(importId);
+    final saved = downloadToo ? null : await saveNow?.call(r);
     if (saved != null) {
       await _tagSaved(importId, row, saved);
       return;
     }
-    if (!_downloadToo.contains(importId) && (streaming?.call() ?? false)) {
+    if (!downloadToo && (streaming?.call() ?? false)) {
       AppLog.w('import: ${r.indexKey} could not be saved in streaming mode, item failed');
       await imports.setItem(importId, row.index, status: ImportItemStatus.failed);
       return;
@@ -1193,6 +1208,7 @@ class PlaylistImportService {
       return true;
     }
     await imports.setStatus(importId, ImportStatus.finished);
+    await _forgetDownloadToo(importId);
     // The album pages read for this block serve no other: a long import in
     // blocks would keep every one of them for the session.
     _albumCounts.remove(importId);

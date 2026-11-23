@@ -794,6 +794,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
             : PlaybackFailureReason.unplayable;
       await _onLoadFailure(reason, track, token, play: playNow);
     } finally {
+      // The cold restore is over: later cuts and stream restarts are a normal playback's (D-679).
+      if (_coldToken == token) _coldToken = -1;
       if (token == _loadToken) {
         _waitingStream = _loadBusy = false;
         if (_errorWhileLoading && _url != null) _onUrlError();
@@ -812,7 +814,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       _stayStill('restored stream not cached and offline');
       return true;
     }
-    if (await _jumpToAvailable(back: back, play: play, token: token)) return true;
+    if (await _jumpToAvailable(back: back, play: _playWhenReady, token: token)) return true;
     if (token != _loadToken) return true;
     onError(PlaybackFailure(_current?.title, PlaybackFailureReason.networkUnavailable));
     await _goIdle();
@@ -1166,8 +1168,8 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
       } on Object catch (err, st) {
         AppLog.w('audio permission check failed', err, st);
       }
+      if (token != _loadToken) return;
       if (denied) {
-        if (token != _loadToken) return;
         // D-678: no permission is not a bad file: stay paused on it, say so once.
         _noSaveId = track.id;
         _playWhenReady = false;

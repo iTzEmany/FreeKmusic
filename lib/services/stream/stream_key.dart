@@ -40,6 +40,7 @@ YtResult streamResultOf(
   String? artist,
   String? album,
   int durationMs = 0,
+  String? albumId,
 }) {
   final sep = key.indexOf(':');
   final source = MediaSource.values.firstWhere(
@@ -52,6 +53,7 @@ YtResult streamResultOf(
     channel: artist ?? '',
     artists: artist == null ? const [] : [artist],
     album: album,
+    albumId: albumId,
     duration: durationMs > 0 ? Duration(milliseconds: durationMs) : null,
     source: source,
   );

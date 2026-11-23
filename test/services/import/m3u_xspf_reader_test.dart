@@ -15,6 +15,15 @@ LibraryEntryLite entry(int id, String path, {String title = 't', String? artist}
     LibraryEntryLite(id: id, title: title, artist: artist, durationMs: 0, path: path);
 
 void main() {
+  test('a YouTube Music page address becomes the streamed row path (export -> import)', () {
+    final p = readM3u('a.m3u8',
+        '#EXTINF:100,Pink Floyd - Hey You\nhttps://music.youtube.com/watch?v=abc123&list=x\n#EXTINF:1,A - B\nhttps://example.com/watch?v=zzz\n');
+    expect(p.rows[0].location, 'stream:youtube:abc123');
+    expect(p.rows[1].location, isNull);
+    final idx = LibraryIndex([entry(7, 'stream:youtube:abc123', title: 'Hey You', artist: 'Pink Floyd')]);
+    expect(idx.find(p.rows[0])?.id, 7);
+  });
+
   group('M3U (synthetic VLC file)', () {
     final p = readM3u('Sera_in_casa.m3u8', fixture('synthetic_vlc.m3u8'));
 

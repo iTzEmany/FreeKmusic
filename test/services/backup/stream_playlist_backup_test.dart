@@ -153,7 +153,7 @@ void main() {
       final db = AppDatabase(NativeDatabase.memory());
       final tracks = TrackRepository(db);
       await tracks.saveStream(const YtResult(
-          id: 'v1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art'], album: 'Alb'));
+          id: 'v1', title: 'Stream one', channel: 'Ch', duration: Duration(seconds: 90), artists: ['Art'], album: 'Alb', albumId: 'MPREb_x'));
       await tracks.ensureStreamRow(const YtResult(id: 'v2', title: 'Unsaved', channel: 'Ch', duration: null));
       await db.customStatement("UPDATE tracks SET is_favorite = 1, play_count = 4, last_played_at = 99, added_at = 1234 WHERE path = 'stream:youtube:v1'");
       final pl = PlaylistRepository(db);
@@ -176,6 +176,7 @@ void main() {
       final row = (await TrackRepository(here).streamRow('youtube:v1'))!;
       expect((row.saved, row.isFavorite, row.playCount, row.lastPlayedAt), (true, true, 4, 99));
       expect((row.album, row.albumKey, row.addedAt), ('Alb', 'stream|art|alb', 1234));
+      expect(row.albumBrowseId, 'MPREb_x');
       expect((await TrackRepository(here).streamRow('youtube:v2')), isNull);
       expect(await playlist(here, 'Mix'), await playlist(src, 'Mix'));
       final saved = await (here.select(here.tracks)..where((t) => isLibraryRow(t))).get();

@@ -8124,4 +8124,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get onboardingFoldersDownloadsNote =>
       'Songs you download go to the FreeKmusic folder, inside the folder you pick here.';
+
+  @override
+  String get albumMissingTitle => 'More songs from the album';
 }

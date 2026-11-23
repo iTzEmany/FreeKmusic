@@ -4168,5 +4168,6 @@
   },
   "csvImportDownloadToo": "Télécharger aussi les fichiers",
   "csvImportDownloadTooHint": "Les titres sont normalement enregistrés en streaming, sans fichier. Activé, ils sont aussi téléchargés sur l’appareil.",
-  "onboardingFoldersDownloadsNote": "Les titres que vous téléchargez vont dans le dossier FreeKmusic, à l’intérieur du dossier choisi ici."
+  "onboardingFoldersDownloadsNote": "Les titres que vous téléchargez vont dans le dossier FreeKmusic, à l’intérieur du dossier choisi ici.",
+  "albumMissingTitle": "Autres titres de l’album"
 }

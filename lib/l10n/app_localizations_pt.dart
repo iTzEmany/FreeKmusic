@@ -8159,4 +8159,7 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get onboardingFoldersDownloadsNote =>
       'As músicas que transferir vão para a pasta FreeKmusic, dentro da pasta que escolher aqui.';
+
+  @override
+  String get albumMissingTitle => 'Mais músicas do álbum';
 }

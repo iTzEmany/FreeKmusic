@@ -17,6 +17,7 @@ import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' show OrderingTerm, Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Answers searches from a map; records how many searches were made.
 class FakeYoutube implements YoutubeService {
@@ -221,6 +222,7 @@ void main() {
       (await playlists.watchTracks(playlistId).first).map((t) => t.title).toList();
 
   setUp(() {
+    SharedPreferences.setMockInitialValues({});
     db = AppDatabase(NativeDatabase.memory());
     imports = ImportRepository(db);
     playlists = PlaylistRepository(db);
@@ -489,6 +491,20 @@ void main() {
       await idle();
       expect(queued.single.$2, importTag(id, 0));
       expect((await imports.get(id))!.state, ImportStatus.running);
+    });
+
+    test('«scarica anche» survives the restart and is forgotten when the import is cancelled', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      final id = await cutImport(ImportStatus.running);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('importDownloadToo.$id', true); // what the first run wrote
+      rebuild();
+      await service.recoverAfterRestart();
+      await idle();
+      expect(queued.single.$2, importTag(id, 0), reason: 'downloaded, not saved in streaming');
+      expect(await db.select(db.tracks).get(), isEmpty);
+      await service.cancel(id);
+      expect(prefs.getBool('importDownloadToo.$id'), isNull);
     });
 
     test('a pause chosen by the user stays paused', () async {

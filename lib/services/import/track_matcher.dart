@@ -139,6 +139,7 @@ class LibraryIndex {
   /// to wherever the library is) matches by its trailing folders when that
   /// leaves a single candidate.
   LibraryEntryLite? findByPath(String location, {String? baseDir}) {
+    if (location.startsWith('stream:')) return _byPath[pathKey(location)];
     final local = localPathFromLocation(location);
     if (local == null || local.isEmpty) return null;
     final key = pathKey(local);

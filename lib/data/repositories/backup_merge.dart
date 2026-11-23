@@ -108,7 +108,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         final wasSaved = (await trackRepo.getById(id))?.saved ?? false;
         // saveStream groups the row with the saved tracks of its album; the backup's date keeps it out of «recent».
         await trackRepo.saveStream(streamResultOf(key,
-            title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs));
+            title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs, albumId: u.albumBrowseId));
         if (!wasSaved && u.addedAt != null) {
           await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(TracksCompanion(addedAt: Value(u.addedAt!)));
         }

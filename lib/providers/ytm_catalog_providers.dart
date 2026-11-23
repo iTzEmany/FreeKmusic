@@ -14,7 +14,6 @@ import '../services/online/catalog_cache.dart';
 import '../services/online/youtube_service.dart';
 import '../services/online/ytm_artist.dart';
 import '../services/online/ytm_catalog.dart';
-import 'library_add_providers.dart' show inLibraryOfProvider;
 import 'library_providers.dart';
 import 'database_providers.dart' show artistAliasRepositoryProvider;
 import 'settings_providers.dart';
@@ -77,28 +76,29 @@ final discographyProvider = FutureProvider.autoDispose
   retry: (_, _) => null,
 );
 
-/// The songs of the library album [albumKey] that are not in the library (F-22): taken from the online
-/// album (its `browseId` saved with a stream row, else the best album search hit with the same title and
-/// artist). Empty when the album cannot be found or the catalog is unreachable.
-final albumMissingTracksProvider = FutureProvider.autoDispose.family<List<YtResult>, String>((ref, albumKey) async {
-  final own = await ref.watch(albumTracksProvider(albumKey).future);
+/// The songs of the library album [albumKey] that are not in the library (F-22), with their place on the
+/// record: taken from the online album (its `browseId` saved with a stream row, else the best album search
+/// hit with the same title and artist). Empty when the album cannot be found or the catalog is unreachable.
+/// Read once per opening: later writes to the library do not search again (the rows hide what is owned).
+final albumMissingTracksProvider = FutureProvider.autoDispose.family<List<YtmAlbumTrack>, String>((ref, albumKey) async {
+  final own = await ref.read(albumTracksOnceProvider)(albumKey);
   if (own.isEmpty) return const [];
   final catalog = ref.read(ytmCatalogProvider);
   final hl = ref.read(ytmLanguageProvider);
-  final inLibrary = ref.watch(inLibraryOfProvider);
   try {
     var browseId = own.map((t) => t.albumBrowseId).nonNulls.firstOrNull;
     if (browseId == null) {
       final first = own.first;
       final title = first.album ?? '';
-      final artist = first.albumArtist ?? first.artist ?? '';
-      if (title.isEmpty) return const [];
+      final artist = (first.albumArtist ?? '').isNotEmpty ? first.albumArtist! : first.artist ?? '';
+      // A wrong album would list foreign songs: without an artist on both sides nothing is taken.
+      if (title.isEmpty || artist.isEmpty) return const [];
       final hits = await catalog.searchAlbums('$title $artist', hl);
-      // A wrong album would list foreign songs: only the same title (and artist, when known) counts.
       browseId = hits
           .where((h) =>
               libraryTitleKey(h.release.title) == libraryTitleKey(title) &&
-              (artist.isEmpty || h.artist == null || artistKey(h.artist!.name) == artistKey(artist)))
+              h.artist != null &&
+              artistKey(h.artist!.name) == artistKey(artist))
           .firstOrNull
           ?.release
           .browseId;
@@ -106,12 +106,20 @@ final albumMissingTracksProvider = FutureProvider.autoDispose.family<List<YtResu
     if (browseId == null) return const [];
     final album = (await catalog.album(browseId, hl)).value;
     final owned = LibraryOverlap(own);
+    // The same place on the record with about the same length is the song too (another title spelling).
+    bool samePlace(YtmAlbumTrack t) =>
+        t.number != null &&
+        t.result.duration != null &&
+        own.any((o) =>
+            o.trackNumber == t.number &&
+            o.durationMs > 0 &&
+            (o.durationMs - t.result.duration!.inMilliseconds).abs() <= 3000);
     return [
       for (final t in album.tracks)
-        if (!owned.owns(t.result) && !inLibrary(t.result.id, t.result.source)) t.result,
+        if (!owned.owns(t.result) && !samePlace(t)) t,
     ];
   } on Object catch (e, st) {
     AppLog.w('album $albumKey: missing songs not available', e, st);
     return const [];
   }
-});
+}, retry: (_, _) => null);

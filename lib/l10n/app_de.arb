@@ -3947,5 +3947,6 @@
   },
   "csvImportDownloadToo": "Dateien auch herunterladen",
   "csvImportDownloadTooHint": "Titel werden normalerweise nur zum Streamen gespeichert, ohne Datei. Eingeschaltet werden sie auch auf das Gerät geladen.",
-  "onboardingFoldersDownloadsNote": "Heruntergeladene Titel landen im Ordner FreeKmusic, innerhalb des hier gewählten Ordners."
+  "onboardingFoldersDownloadsNote": "Heruntergeladene Titel landen im Ordner FreeKmusic, innerhalb des hier gewählten Ordners.",
+  "albumMissingTitle": "Weitere Titel des Albums"
 }

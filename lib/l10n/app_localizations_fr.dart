@@ -8219,4 +8219,7 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get onboardingFoldersDownloadsNote =>
       'Les titres que vous téléchargez vont dans le dossier FreeKmusic, à l’intérieur du dossier choisi ici.';
+
+  @override
+  String get albumMissingTitle => 'Autres titres de l’album';
 }

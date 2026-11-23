@@ -1,5 +1,6 @@
 import 'csv_parser.dart';
 import 'imported_playlist.dart';
+import 'playlist_paths.dart';
 
 /// A playlist CSV is a few hundred KB; anything near these limits is not one.
 const kMaxCsvBytes = 5 * 1024 * 1024;
@@ -162,6 +163,7 @@ ImportedPlaylist readCsvPlaylist(String fileName, String text) {
       durationMs: parseDurationMs(_cell(r, durationCol), headerSaysMs: msHeader),
       isrc: _cell(r, isrcCol),
       spotifyUri: uri,
+      location: uri == null ? null : streamPathOfWatchUrl(uri),
       year: parseReleaseYear(_cell(r, yearCol)),
     ));
   }

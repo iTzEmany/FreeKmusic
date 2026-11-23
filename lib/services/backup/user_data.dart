@@ -99,6 +99,7 @@ class TrackUserData {
     this.saved = false,
     this.album,
     this.addedAt,
+    this.albumBrowseId,
     this.edit,
     this.lyricsPlain,
     this.lyricsSynced,
@@ -123,6 +124,9 @@ class TrackUserData {
   /// Album and date added of a saved stream row (absent otherwise and in older backups).
   final String? album;
   final int? addedAt;
+
+  /// The online album page of a saved stream row (absent otherwise and in older backups).
+  final String? albumBrowseId;
   final TrackEditData? edit;
   final String? lyricsPlain, lyricsSynced, curiosities;
 
@@ -152,6 +156,7 @@ class TrackUserData {
         'saved': saved ? true : null,
         'album': album,
         'addedAt': addedAt,
+        'albumBrowseId': albumBrowseId,
         'edit': edit?.toJson(),
         'lyricsPlain': lyricsPlain,
         'lyricsSynced': lyricsSynced,
@@ -173,6 +178,7 @@ class TrackUserData {
         saved: j['saved'] == true,
         album: j['album'] is String ? j['album'] as String : null,
         addedAt: (j['addedAt'] is num) ? (j['addedAt'] as num).toInt() : null,
+        albumBrowseId: j['albumBrowseId'] is String ? j['albumBrowseId'] as String : null,
         edit: j['edit'] == null
             ? null
             : TrackEditData.fromJson(j['edit'] as Map<String, dynamic>),

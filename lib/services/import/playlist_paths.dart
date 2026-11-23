@@ -18,6 +18,16 @@ String? localPathFromLocation(String raw) {
   return s.replaceAll(r'\', '/');
 }
 
+/// The library path of the streamed row a YouTube Music page address (`watch?v=<id>`) stands for
+/// (`stream:youtube:<id>`, the shadow row's path), or null for any other text.
+String? streamPathOfWatchUrl(String raw) {
+  final u = Uri.tryParse(raw.trim());
+  final host = u?.host.toLowerCase() ?? '';
+  final id = u?.queryParameters['v'];
+  if (u == null || id == null || id.isEmpty || u.path != '/watch') return null;
+  return host == 'youtube.com' || host.endsWith('.youtube.com') ? 'stream:youtube:$id' : null;
+}
+
 String _safeDecode(String s) {
   try {
     return Uri.decodeFull(s);
