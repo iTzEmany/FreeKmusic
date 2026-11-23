@@ -470,6 +470,30 @@ class SeparationService extends ChangeNotifier {
     return false;
   }
 
+  Future<Directory> _modelsDir() async =>
+      Directory(p.join((await modelsRoot()).path, 'models', _modelDir));
+
+  /// Bytes of the model files on the device (0 when none).
+  Future<int> modelsSize() async {
+    final dir = await _modelsDir();
+    var total = 0;
+    for (final n in models.keys) {
+      final f = File(p.join(dir.path, n));
+      if (await f.exists()) total += await f.length();
+    }
+    return total;
+  }
+
+  /// Downloads the missing models (the catalogue's «Scarica»); throws when it fails.
+  Future<void> downloadModels([void Function(double)? onProgress]) =>
+      ensureModels(CancelToken(), onProgress ?? (_) {});
+
+  /// Deletes the models; they are downloaded again by the next separation.
+  Future<void> deleteModels() async {
+    final dir = await _modelsDir();
+    if (await dir.exists()) await dir.delete(recursive: true);
+  }
+
   void _drop(String key) => _set(key, SeparationState.idle);
 
   void _fail(String key, Object e, StackTrace st) {
