@@ -177,6 +177,27 @@ void main() {
     await _settle(tester);
   }
 
+  testWidgets('the last row scrolls above the dock and can be tapped', (tester) async {
+    final h = await open(
+      tester,
+      page: Scaffold(
+        extendBody: true,
+        bottomNavigationBar: const SizedBox(key: ValueKey('dock'), height: 130),
+        body: const OnlineResults(query: 'pink floyd', submitted: 1),
+      ),
+    );
+    await emit(
+      tester,
+      _state(best: [for (var i = 0; i < 12; i++) _song('s$i', 'Song $i')]),
+    );
+    await tester.fling(find.byType(ListView), const Offset(0, -2000), 3000);
+    await _settle(tester);
+    final last = find.text('Song 11');
+    final dockTop = tester.getTopLeft(find.byKey(const ValueKey('dock'))).dy;
+    expect(tester.getBottomLeft(last).dy, lessThanOrEqualTo(dockTop));
+    await h.dispose(tester);
+  });
+
   testWidgets(
     '«Altri risultati» stays closed until it is tapped, then lists its rows',
     (tester) async {

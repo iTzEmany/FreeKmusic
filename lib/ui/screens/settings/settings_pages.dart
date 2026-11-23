@@ -15,6 +15,7 @@ import '../../../providers/library_providers.dart';
 import '../../../providers/permission_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/choice_dialog.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/cover_image.dart';
 import '../../../providers/folder_actions.dart';
@@ -347,25 +348,23 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
         ListTile(
           leading: const Icon(Icons.storage_rounded),
           title: Text(l.storageWhere),
-          trailing: DropdownButton<StorageMode>(
-            value: settings.storageMode,
-            underline: const SizedBox.shrink(),
-            items: [
-              DropdownMenuItem(
-                value: StorageMode.device,
-                child: Text(l.storageModeDevice),
-              ),
-              DropdownMenuItem(
-                value: StorageMode.stream,
-                child: Text(l.storageModeStream),
-              ),
-            ],
-            onChanged: (m) => m == null
-                ? null
-                : ref
-                      .read(settingsProvider.notifier)
-                      .update((c) => c.copyWith(storageMode: m)),
+          trailing: Text(
+            settings.storageMode == StorageMode.device ? l.storageModeDevice : l.storageModeStream,
           ),
+          onTap: () async {
+            final m = await showChoiceDialog<StorageMode>(
+              context,
+              title: l.storageWhere,
+              options: [
+                (value: StorageMode.device, label: l.storageModeDevice),
+                (value: StorageMode.stream, label: l.storageModeStream),
+              ],
+              current: settings.storageMode,
+            );
+            if (m != null) {
+              ref.read(settingsProvider.notifier).update((c) => c.copyWith(storageMode: m));
+            }
+          },
         ),
         const DownloadLocationTile(),
         const StreamCacheTile(),

@@ -10,6 +10,7 @@ import '../../../providers/youtube_providers.dart';
 import '../../../providers/yt_dlp_update_providers.dart';
 import '../../../services/online/youtube_service.dart' show DownloadFormat;
 import '../../theme/tokens.dart';
+import '../../widgets/choice_dialog.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/yt_dlp_update_button.dart';
 import '../../widgets/show_msg.dart';
@@ -123,19 +124,18 @@ class DownloadSettingsTiles extends ConsumerWidget {
           leading: const Icon(Icons.stacked_line_chart),
           title: Text(l.downloadParallel),
           subtitle: Text(l.downloadParallelHint),
-          trailing: DropdownButton<int>(
-            value: n,
-            underline: const SizedBox.shrink(),
-            items: [
-              for (final v in const [1, 2, 3])
-                DropdownMenuItem(value: v, child: Text('$v')),
-            ],
-            onChanged: (v) => v == null
-                ? null
-                : ref
-                      .read(settingsProvider.notifier)
-                      .update((c) => c.copyWith(downloadParallel: v)),
-          ),
+          trailing: Text('$n'),
+          onTap: () async {
+            final v = await showChoiceDialog<int>(
+              context,
+              title: l.downloadParallel,
+              options: [for (final v in const [1, 2, 3]) (value: v, label: '$v')],
+              current: n,
+            );
+            if (v != null) {
+              ref.read(settingsProvider.notifier).update((c) => c.copyWith(downloadParallel: v));
+            }
+          },
         ),
         ListTile(
           leading: const Icon(Icons.high_quality_outlined),
@@ -156,19 +156,20 @@ class DownloadSettingsTiles extends ConsumerWidget {
         ListTile(
           leading: const Icon(Icons.speed),
           title: Text(l.downloadRateLimit),
-          trailing: DropdownButton<int>(
-            value: _rateChoices.contains(rate) ? rate : 0,
-            underline: const SizedBox.shrink(),
-            items: [
-              for (final v in _rateChoices)
-                DropdownMenuItem(value: v, child: Text(_rateLabel(l, v))),
-            ],
-            onChanged: (v) => v == null
-                ? null
-                : ref
-                      .read(settingsProvider.notifier)
-                      .update((c) => c.copyWith(downloadRateLimitKBps: v)),
-          ),
+          trailing: Text(_rateLabel(l, _rateChoices.contains(rate) ? rate : 0)),
+          onTap: () async {
+            final v = await showChoiceDialog<int>(
+              context,
+              title: l.downloadRateLimit,
+              options: [for (final v in _rateChoices) (value: v, label: _rateLabel(l, v))],
+              current: _rateChoices.contains(rate) ? rate : 0,
+            );
+            if (v != null) {
+              ref
+                  .read(settingsProvider.notifier)
+                  .update((c) => c.copyWith(downloadRateLimitKBps: v));
+            }
+          },
         ),
       ],
     );

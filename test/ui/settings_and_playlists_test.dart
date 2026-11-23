@@ -1,3 +1,4 @@
+import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
 import 'package:codecore/ui/screens/playlists/playlists_screen.dart';
@@ -78,6 +79,41 @@ void main() {
     await tester.tap(find.text('Duplicati'));
     await tester.pumpAndSettle();
     expect(find.text('Cerca duplicati'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Dove tieni la musica» picks on the root navigator, above the dock', (tester) async {
+    tester.view.physicalSize = const Size(500, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    // A tab navigator under an opaque dock that covers the screen's middle.
+    await h.pump(
+      tester,
+      Stack(
+        children: [
+          Navigator(
+            onGenerateRoute: (_) => MaterialPageRoute<void>(
+              builder: (_) => const Scaffold(body: SettingsScreen(initial: SettingsPage.library)),
+            ),
+          ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            top: 800,
+            height: 1200,
+            child: AbsorbPointer(child: ColoredBox(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text('Dove tieni la musica'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('In streaming').last);
+    await tester.pumpAndSettle();
+    expect(h.store.readSettings().storageMode, StorageMode.stream);
     await h.dispose(tester);
   });
 
