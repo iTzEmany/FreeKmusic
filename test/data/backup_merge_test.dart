@@ -290,6 +290,23 @@ void main() {
     expect(await (db.select(db.tracks)..where((t) => t.title.equals('ghost'))).get(), isEmpty);
   });
 
+  test('local tracks missing only from a playlist are reported, once each', () async {
+    final r = await merge(UserData(createdAt: 1, playlists: [
+      PlaylistData(name: 'P', createdAt: 1, items: [ref('g1'), ref('g2')]),
+    ]));
+    expect(r.notFound.map((t) => t.title), ['g1', 'g2']);
+    expect(r.playlistItemsSkipped, 2);
+  });
+
+  test('a track missing from both tracks and a playlist is one entry', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: ref('ghost'), favorite: true),
+    ], playlists: [
+      PlaylistData(name: 'P', createdAt: 1, items: [ref('ghost')]),
+    ]));
+    expect(r.notFound, hasLength(1));
+  });
+
   test('a playlist already here keeps its tracks and their order', () async {
     final id = await db.into(db.playlists).insert(PlaylistsCompanion.insert(name: 'Mix', createdAt: 1));
     final uuid = (await (db.select(db.playlists)..where((p) => p.id.equals(id))).getSingle()).uuid;
