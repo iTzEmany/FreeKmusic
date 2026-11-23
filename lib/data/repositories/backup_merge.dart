@@ -85,6 +85,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
   // One entry per missing track, whether it comes from the tracks or from a playlist.
   final missingSeen = <String>{};
   void missing(TrackRef r) {
+    if (r.title.trim().isEmpty && (r.artist ?? '').trim().isEmpty) return;
     final key = (r.relPath?.isNotEmpty ?? false) ? r.relPath! : '${r.title}|${r.artist ?? ''}'.toLowerCase();
     if (missingSeen.add(key)) report.notFound.add(MissingTrack(title: r.title, artist: r.artist));
   }

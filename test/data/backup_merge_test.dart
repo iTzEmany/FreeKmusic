@@ -298,6 +298,13 @@ void main() {
     expect(r.playlistItemsSkipped, 2);
   });
 
+  test('a missing track with neither title nor artist is not listed', () async {
+    final r = await merge(UserData(createdAt: 1, tracks: [
+      TrackUserData(ref: const TrackRef(title: ' ', relPath: 'x.mp3', artist: ''), favorite: true),
+    ]));
+    expect(r.notFound, isEmpty);
+  });
+
   test('a track missing from both tracks and a playlist is one entry', () async {
     final r = await merge(UserData(createdAt: 1, tracks: [
       TrackUserData(ref: ref('ghost'), favorite: true),

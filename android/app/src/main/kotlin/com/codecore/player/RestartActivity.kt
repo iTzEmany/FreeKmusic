@@ -12,7 +12,8 @@ import android.os.Process
 class RestartActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Process.killProcess(intent.getIntExtra("pid", -1))
+        val pid = intent.getIntExtra("pid", -1)
+        if (pid > 0 && pid != Process.myPid()) Process.killProcess(pid)
         packageManager.getLaunchIntentForPackage(packageName)?.let {
             startActivity(it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK))
         }

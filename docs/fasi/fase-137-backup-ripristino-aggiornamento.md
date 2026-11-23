@@ -4,7 +4,7 @@
 «Sostituisci» riavvia davvero l'app (Android e desktop); la sezione Backup dice cosa contiene, offre Esporta/Importa playlist e, dopo «Unisci», elenca i brani non trovati con «Salva in streaming»; il popup della nuova versione si apre con un tocco ovunque e un controllo fallito non consuma la giornata. Fuori: formato del backup (invariato), sync fra dispositivi (146).
 
 ## Riferimenti
-D-680, D-681, D-682, D-662, D-699. Rilievi F-07, F-08, F-09, prova L7 in [`../refactor/grande-revisione/analisi.md`](../refactor/grande-revisione/analisi.md); `scansione-dati.md` (punti 1, 2, 5); rete.md riga 137. Aree: `../architettura/sync-backup-jam.md`, `piattaforme.md`, `online.md`. **Area a rischio** (backup e ripristino): review `/code-review high`; il canale nativo è codice Android (manifest e processo): review Opus. Il riavvio riusa `DesktopUpdate` (`lib/services/update/desktop_update.dart`).
+D-680, D-681, D-682, D-662, D-699. Rilievi F-07, F-08, F-09, prova L7 in [`../refactor/grande-revisione/analisi.md`](../refactor/grande-revisione/analisi.md); `scansione-dati.md` (punti 1, 2, 5); rete.md riga 137. Aree: `../architettura/sync-backup-jam.md`, `piattaforme.md`, `online.md`. **Area a rischio** (backup e ripristino): review `/code-review high`; il canale nativo è codice Android (manifest e processo): review Opus. Il riavvio riusa solo `startDetached` (`lib/services/update/desktop_update.dart`) e `detectUpdateTarget` per riconoscere l'AppImage.
 
 ## Task
 - [x] 137.1 Test di caratterizzazione (rete.md, riga 137)
@@ -46,4 +46,4 @@ D-680, D-681, D-682, D-662, D-699. Rilievi F-07, F-08, F-09, prova L7 in [`../re
 ## Note di deviazione
 - 137.2: riavvio Android da `RestartActivity` nel processo `:restart` (schema ProcessPhoenix), non `startActivity`+kill nello stesso processo (review Opus: app chiusa sui telefoni veloci); nessuno `stopService`. `applyPendingRestore` sposta anche `-journal` col DB vecchio.
 - 137.5: niente «Salva in streaming»: il backup non porta un videoId per i brani locali e un brano in streaming si ricrea sempre; restano «Cerca online» (copia prima l'elenco) e «Copia elenco». I non trovati comprendono le voci delle playlist.
-- 137.3: `BackupOps.restartAfterRestore` chiude il DB prima del riavvio (Windows: rename di un file aperto).
+- 137.3: `BackupOps.restartAfterRestore` chiude il DB prima del riavvio (Windows: rename di un file aperto), con timeout di 2 s: `close()` di drift aspetta ogni stream e Riverpod tiene in pausa quelli delle schermate coperte, sul Mi A3 il dialogo restava bloccato. `AppRestart.quit()` (canale `exit` / `exit(0)`) chiude il processo dal ripiego «chiudi e riapri»; se dopo 5 s il processo è ancora vivo il dialogo passa al ripiego. `DesktopRestart` sceglie `$APPIMAGE` solo se `detectUpdateTarget` lo riconosce. I non trovati senza titolo né artista non si elencano.

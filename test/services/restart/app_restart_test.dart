@@ -50,7 +50,7 @@ void main() {
   });
 
   test('desktop: starts \$APPIMAGE when set, then exits 0', () async {
-    expect(await make({'APPIMAGE': '/tmp/a.AppImage'}).restart(), isTrue);
+    expect(await make({'APPIMAGE': '/tmp/a.AppImage', 'APPDIR': '/opt/app'}).restart(), isTrue);
     expect(started, ['/tmp/a.AppImage']);
     expect(exits, [0]);
     expect(events, ['start', 'exit']);
@@ -59,6 +59,23 @@ void main() {
   test('desktop: falls back to the resolved executable', () async {
     expect(await make({'APPIMAGE': ''}).restart(), isTrue);
     expect(started, ['/opt/app/codecore']);
+    expect(exits, [0]);
+  });
+
+  test('desktop: an inherited \$APPIMAGE with the executable outside the mount is ignored', () async {
+    expect(await make({'APPIMAGE': '/home/u/other.AppImage', 'APPDIR': '/tmp/.mount_x'}).restart(), isTrue);
+    expect(started, ['/opt/app/codecore']);
+  });
+
+  test('quit: Android calls exit on the channel, desktop exits 0', () async {
+    final calls = <String>[];
+    mockChannel((c) async {
+      calls.add(c.method);
+      return null;
+    });
+    await AndroidRestart().quit();
+    expect(calls, ['exit']);
+    await make({}).quit();
     expect(exits, [0]);
   });
 

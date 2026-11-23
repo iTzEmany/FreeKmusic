@@ -19,6 +19,9 @@ class _FakeRestart implements AppRestart {
   final bool result;
   final bool throws;
   int calls = 0;
+  int quits = 0;
+  @override
+  Future<void> quit() async => quits++;
   @override
   Future<bool> restart() async {
     calls++;
@@ -46,16 +49,27 @@ void main() {
     expect(fake.calls, 1);
     expect(find.textContaining('si riavvia'), findsOneWidget);
     expect(find.textContaining('chiudi l’app'), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
     await h.dispose(tester);
   });
 
-  testWidgets('restart not possible: the fallback text and a button that closes only the dialog', (tester) async {
+  testWidgets('restart not possible: the fallback text and a button that quits the app', (tester) async {
     final h = await Harness.create(tester);
-    await _open(tester, h, showRestartDialog, [appRestartProvider.overrideWithValue(_FakeRestart(false))]);
+    final fake = _FakeRestart(false);
+    await _open(tester, h, showRestartDialog, [appRestartProvider.overrideWithValue(fake)]);
     expect(find.textContaining('chiudi l’app'), findsOneWidget);
     await tester.tap(find.text('Chiudi'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    expect(fake.quits, 1);
+    await h.dispose(tester);
+  });
+
+  testWidgets('restart started but the process lives on after 5 s: the fallback', (tester) async {
+    final h = await Harness.create(tester);
+    await _open(tester, h, showRestartDialog, [appRestartProvider.overrideWithValue(_FakeRestart(true))]);
     expect(find.textContaining('chiudi l’app'), findsNothing);
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.textContaining('chiudi l’app'), findsOneWidget);
     await h.dispose(tester);
   });
 
@@ -72,6 +86,7 @@ void main() {
     await tester.tapAt(const Offset(2, 2));
     await tester.pumpAndSettle();
     expect(find.textContaining('si riavvia'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 5));
     await h.dispose(tester);
   });
 

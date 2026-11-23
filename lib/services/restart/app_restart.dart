@@ -4,12 +4,16 @@ import 'package:flutter/services.dart';
 
 import '../../core/app_log.dart';
 import '../update/desktop_update.dart';
+import '../update/update_target.dart';
 
 /// Restarts the whole process (a restore must not leave the old one alive).
 abstract class AppRestart {
   /// True: the restart started and the process is about to end. False: not
   /// possible here, the UI asks the user to close and reopen the app.
   Future<bool> restart();
+
+  /// Ends this process without restarting (the fallback «close and reopen»).
+  Future<void> quit();
 }
 
 class AndroidRestart implements AppRestart {
@@ -28,6 +32,15 @@ class AndroidRestart implements AppRestart {
     } on PlatformException catch (e, st) {
       AppLog.w('restart failed', e, st);
       return false;
+    }
+  }
+
+  @override
+  Future<void> quit() async {
+    try {
+      await _channel.invokeMethod<void>('exit');
+    } on Object catch (e, st) {
+      AppLog.w('exit failed', e, st);
     }
   }
 }
@@ -50,10 +63,10 @@ class DesktopRestart implements AppRestart {
 
   @override
   Future<bool> restart() async {
+    final target = await detectUpdateTarget(env: _env, executable: _exe);
     // A Flatpak sandbox cannot relaunch itself from inside.
-    if (_env.containsKey('FLATPAK_ID')) return false;
-    final image = _env['APPIMAGE'];
-    final exe = image == null || image.isEmpty ? _exe : image;
+    if (target?.kind == UpdateKind.flatpak) return false;
+    final exe = target?.kind == UpdateKind.appImage ? _env['APPIMAGE']! : _exe;
     try {
       await _start(exe, const []);
     } on Object catch (e, st) {
@@ -63,4 +76,7 @@ class DesktopRestart implements AppRestart {
     _exit(0);
     return true;
   }
+
+  @override
+  Future<void> quit() async => _exit(0);
 }

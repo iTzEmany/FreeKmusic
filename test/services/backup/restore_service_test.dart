@@ -251,6 +251,20 @@ void main() {
       expect(File('${dbFile.path}.before-restore-journal').existsSync(), isTrue);
     });
 
+    test('a failure after the original moved puts the database and its -journal back', () async {
+      File('${dbFile.path}-journal').writeAsBytesSync([1]);
+      File('${dbFile.path}-wal').writeAsBytesSync([2]);
+      // A directory where the -wal would go makes that rename fail, after the journal moved.
+      Directory('${dbFile.path}.before-restore-wal').createSync();
+      File(p.join('${dbFile.path}.before-restore-wal', 'x')).writeAsBytesSync([3]);
+      final before = dbFile.readAsBytesSync();
+      await stageFullRestore(await makeBackup(['n1']), staging);
+      expect(await apply(), isFalse);
+      expect(dbFile.readAsBytesSync(), before);
+      expect(File('${dbFile.path}-journal').readAsBytesSync(), [1]);
+      expect(File('${dbFile.path}.before-restore-journal').existsSync(), isFalse);
+    });
+
     test('unsyncedLyrics is dropped with the replaced database: a backup without it leaves none, one with it wins', () async {
       await prefs.setStringList('unsyncedLyrics', ['9']);
       await stageFullRestore(await makeBackup(['n1']), staging);

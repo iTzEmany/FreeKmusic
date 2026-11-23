@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -56,7 +58,7 @@ Future<void> showRestartDialog(BuildContext context, WidgetRef ref) async {
       valueListenable: started,
       builder: (_, ok, _) => AlertDialog(
         content: Text(ok == false ? l.restoreRestartNeeded : l.restoreRestarting),
-        actions: [if (ok == false) FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(l.close))],
+        actions: [if (ok == false) FilledButton(onPressed: ops.quit, child: Text(l.close))],
       ),
     ),
   );
@@ -66,7 +68,11 @@ Future<void> showRestartDialog(BuildContext context, WidgetRef ref) async {
     AppLog.w('restart failed', e, st);
     started.value = false;
   }
-  if (started.value == true) return;
+  if (started.value == true) {
+    // The process should be gone by now: if not, ask the user to close it by hand.
+    Timer(const Duration(seconds: 5), () => started.value = false);
+    return;
+  }
   await dialog;
   started.dispose();
 }

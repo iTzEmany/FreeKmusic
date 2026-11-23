@@ -348,6 +348,10 @@ Future<bool> applyPendingRestore({
     AppLog.e('restore failed, keeping the current database', e, st);
     if (movedOriginal && !dbFile.existsSync() && backup.existsSync()) {
       backup.renameSync(dbFile.path);
+      for (final ext in ['-journal', '-wal', '-shm']) {
+        final kept = File('${backup.path}$ext');
+        if (kept.existsSync()) kept.renameSync('${dbFile.path}$ext');
+      }
     }
     _quietDelete(staging);
     return false;

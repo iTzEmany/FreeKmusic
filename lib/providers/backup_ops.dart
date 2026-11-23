@@ -22,9 +22,12 @@ import 'update_providers.dart';
 
 /// Backups: create, look inside, replace the library or merge into it.
 class BackupOps {
-  BackupOps(this._ref);
+  BackupOps(this._ref, {this.closeTimeout = const Duration(seconds: 2)});
 
   final Ref _ref;
+
+  /// drift's close() waits for every stream, and paused Riverpod listeners never end them.
+  final Duration closeTimeout;
 
   /// Writes a backup zip to [path].
   Future<void> create(String path) async {
@@ -50,12 +53,16 @@ class BackupOps {
   /// stops writing), then restarts the app. False: no restart possible, the user reopens.
   Future<bool> restartAfterRestore() async {
     try {
-      await _ref.read(databaseProvider).close();
+      await _ref.read(databaseProvider).close().timeout(closeTimeout);
     } on Object catch (e, st) {
+      // Also a timeout: the restart ends the process anyway.
       AppLog.w('database not closed before restart', e, st);
     }
     return _ref.read(appRestartProvider).restart();
   }
+
+  /// Ends the process (the staged restore applies at the next launch).
+  Future<void> quit() => _ref.read(appRestartProvider).quit();
 
   /// Merges the zip into the live library.
   Future<MergeReport> merge(File zip) async {
