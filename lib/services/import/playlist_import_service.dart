@@ -10,6 +10,7 @@ import '../../data/repositories/hidden_playlists.dart' show ytmAlbumSourceKind;
 import '../../data/repositories/import_repository.dart';
 import '../../data/repositories/playlist_repository.dart';
 import '../online/download_queue.dart';
+import '../stream/stream_key.dart' show isStreamKey, keyOfStreamPath, streamResultOf;
 import '../online/query_cleaner.dart';
 import '../online/youtube_service.dart';
 import 'exportify_reader.dart';
@@ -372,7 +373,7 @@ class PlaylistImportService {
 
   /// Imports whose rows are also downloaded (D-665, «scarica anche»): kept in the preferences, one key per
   /// import, so a restart does not turn the choice into plain streaming. Removed when the import is cancelled.
-  static String _downloadTooKey(int id) => 'importDownloadToo.$id';
+  static String _downloadTooKey(int id) => '$importDownloadTooPrefix$id';
 
   Future<void> _rememberDownloadToo(int id) async =>
       (await SharedPreferences.getInstance()).setBool(_downloadTooKey(id), true);
@@ -723,6 +724,22 @@ class PlaylistImportService {
         status: ImportItemStatus.notFound,
         note: Value(
           youtubeEnabled ? ImportNote.linkOnly : ImportNote.youtubeOff,
+        ),
+      );
+      return;
+    }
+    // An export of this app names the stream (`stream:<key>`): saved as is, no search and no network.
+    final key = item.location == null ? null : keyOfStreamPath(item.location!);
+    if (key != null && isStreamKey(key)) {
+      await _queueDownload(
+        row,
+        importId,
+        streamResultOf(
+          key,
+          title: row.title,
+          artist: row.artists.isEmpty ? null : row.artists.join(', '),
+          album: row.album,
+          durationMs: row.durationMs ?? 0,
         ),
       );
       return;

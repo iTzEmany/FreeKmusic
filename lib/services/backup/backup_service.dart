@@ -13,6 +13,7 @@ import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_queries.dart';
 import '../../data/repositories/track_kinds.dart';
 import '../../data/settings/jam_secret_store.dart';
+import '../import/import_options.dart' show importDownloadTooPrefix;
 import '../../data/settings/settings_store.dart'
     show
         SettingsStore,
@@ -20,7 +21,8 @@ import '../../data/settings/settings_store.dart'
         genreRereadAfterKey,
         genreRereadDoneKey,
         recogPassAfterKey,
-        recogPassDoneKey;
+        recogPassDoneKey,
+        storageModeD665Key;
 
 const kBackupFormat = 1;
 
@@ -38,6 +40,7 @@ const kDeviceBoundKeys = {
   recogPassDoneKey,
   genreRereadAfterKey,
   genreRereadDoneKey,
+  storageModeD665Key,
   // State of this device's own sessions: a copy would be wrong (or skip a prompt) elsewhere.
   'jamBlePermAsked',
   'lastUpdateCheckDay',
@@ -49,6 +52,8 @@ const kDeviceBoundKeys = {
   'backupLastAt',
   'streamCacheVolume',
 };
+
+bool _staysOnDevice(String k) => kDeviceBoundKeys.contains(k) || k.startsWith(importDownloadTooPrefix);
 
 class BackupSummary {
   const BackupSummary({
@@ -67,7 +72,7 @@ class BackupSummary {
 /// kept (`{"key": {"t": "bool", "v": true}}`).
 Map<String, Object?> settingsToJson(SharedPreferences prefs) => {
   for (final k in prefs.getKeys())
-    if (!kDeviceBoundKeys.contains(k))
+    if (!_staysOnDevice(k))
       k: switch (prefs.get(k)) {
         final bool v => {'t': 'bool', 'v': v},
         final int v => {'t': 'int', 'v': v},
@@ -85,7 +90,7 @@ Future<void> applySettingsJson(
 ) async {
   for (final e in json.entries) {
     final v = e.value;
-    if (kDeviceBoundKeys.contains(e.key) || v is! Map) continue;
+    if (_staysOnDevice(e.key) || v is! Map) continue;
     final value = v['v'];
     switch (v['t']) {
       case 'bool' when value is bool:

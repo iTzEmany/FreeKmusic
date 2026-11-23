@@ -45,11 +45,7 @@ class ImportPreviewDialog extends StatefulWidget {
     required this.known,
     required this.existing,
     this.syncPreview,
-    this.streaming = false,
   });
-
-  /// Streaming mode: files are written only with «Scarica anche» (D-665).
-  final bool streaming;
 
   /// What a sync of the file into an existing playlist would change; without
   /// it the «Sincronizza» choice is not offered.
@@ -90,8 +86,8 @@ class _State extends State<ImportPreviewDialog> {
   bool _fetchCovers = false;
   bool _downloadToo = false;
 
-  /// Files are written: always in device mode, with «Scarica anche» in streaming.
-  bool get _toDisk => !widget.streaming || _downloadToo;
+  /// Files are written only with «Scarica anche» (D-665): the import itself always saves in streaming.
+  bool get _toDisk => _downloadToo;
 
   @override
   void dispose() {
@@ -126,17 +122,16 @@ class _State extends State<ImportPreviewDialog> {
         onChanged: (v) => setState(() => _linkOnly = v),
       ),
       if (!_linkOnly) ...[
-        if (widget.streaming)
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(l.csvImportDownloadToo),
-            subtitle: Text(l.csvImportDownloadTooHint),
-            value: _downloadToo,
-            onChanged: (v) => setState(() {
-              _downloadToo = v;
-              if (!v) _ownFolder = _numberFiles = false;
-            }),
-          ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l.csvImportDownloadToo),
+          subtitle: Text(l.csvImportDownloadTooHint),
+          value: _downloadToo,
+          onChanged: (v) => setState(() {
+            _downloadToo = v;
+            if (!v) _ownFolder = _numberFiles = false;
+          }),
+        ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           title: Text(l.csvImportPlanFirst),

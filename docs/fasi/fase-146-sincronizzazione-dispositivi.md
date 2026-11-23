@@ -65,4 +65,8 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
 - [ ] Decidere la proposta di 146.9.
 - [ ] Per la prova reale (147) servono due dispositivi dell'utente accesi sulla stessa rete e associati come «miei»; i telefoni di test (Mi A3, Redmi) servono per le prove, non toccare i file del Motorola.
 
+## Da riprendere (review fase 140)
+- Un solo ingresso per salvare righe in streaming da fuori (backup, LAN, Jam, import): controllo del file già presente e del tombstone sempre uguale; `StreamOffer` con `albumBrowseId` e `addedAt`.
+- La lista bianca delle impostazioni (146.6) non deve includere le chiavi `importDownloadToo.*` (restano sul dispositivo, come nel backup).
+
 ## Note di deviazione

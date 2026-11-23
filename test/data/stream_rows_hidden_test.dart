@@ -23,6 +23,7 @@ import 'package:codecore/services/library/track_deleter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:codecore/services/stream/stream_key.dart' show streamResultOf;
 import 'package:flutter_test/flutter_test.dart';
 
 // K-02: a shadow row (kind = 2) of a streamed track, even played and tagged,
@@ -362,6 +363,17 @@ void main() {
       expect(entries.map((e) => e.id), [row.id, local]);
       expect((entries.first.streamKey, entries.first.path), ('youtube:abc', ''));
       expect(entries.last.streamKey, isNull);
+    });
+
+    test('a saved SoundCloud stream is not offered in LAN (only YouTube keys travel)', () async {
+      final c = ProviderContainer(overrides: [
+        databaseProvider.overrideWithValue(db),
+        coversDirProvider.overrideWithValue(tmp),
+      ]);
+      addTearDown(c.dispose);
+      final id = await tracks.saveStream(streamResultOf('soundcloud:123', title: 'Sc'));
+      final row = (await tracks.getByIds([id!])).single;
+      expect(await buildShareEntries(c.read(_refProvider), [row]), isEmpty);
     });
   });
 

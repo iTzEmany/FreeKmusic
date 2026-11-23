@@ -437,6 +437,9 @@ const recogPassDoneKey = 'recogPassDone';
 const genreRereadAfterKey = 'genreRereadAfter';
 const genreRereadDoneKey = 'genreRereadDone';
 
+/// D-665 one-off step done on this device (device-bound: a restored backup neither repeats nor blocks it).
+const storageModeD665Key = 'storageModeD665';
+
 class SettingsStore {
   SettingsStore(this._prefs);
 
@@ -444,6 +447,14 @@ class SettingsStore {
 
   static Future<SettingsStore> open() async =>
       SettingsStore(await SharedPreferences.getInstance());
+
+  /// D-665, once per device: an install from before streaming-first has `device` stored by [writeSettings];
+  /// it moves to `stream`. Only the preference changes: no file is touched, nothing is downloaded.
+  Future<void> migrateStorageModeD665() async {
+    if (!kEnableYoutube || _prefs.getBool(storageModeD665Key) == true) return;
+    await _prefs.setString('storageMode', StorageMode.stream.name);
+    await _prefs.setBool(storageModeD665Key, true);
+  }
 
   Map<String, String> _readPlaylistSorts() {
     final raw = _prefs.get('playlistSorts');

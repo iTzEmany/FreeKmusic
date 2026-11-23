@@ -80,7 +80,7 @@ Non sono `productFlavors` di Gradle: sono variabili d'ambiente lette da `build.g
 Le release producono un APK per ABI (`arm64-v8a`, `armeabi-v7a`), `minify` e `shrinkResources` attivi (`proguard-rules.pro`). Senza `android/key.properties` si firma con la chiave di debug.
 
 ### La sessione media è l'unico punto di comando
-Widget, tile, Android Auto e orologio mandano tasti alla sessione di `audio_service`; non toccano DB o file. Dart scrive titolo, artista, copertina e stato in `FlutterSharedPreferences` (`flutter.widget.*`, tramite `widget_bridge.dart`); `CodecoreApp` ascolta `flutter.widget.stamp` e ridisegna. Non c'è un canale perché il motore avviato da `audio_service` senza attività non ha quelli di `MainActivity`. A freddo `MediaKeys.pressSurely` preme il tasto due volte (R63).
+Widget, tile, Android Auto e orologio mandano tasti alla sessione di `audio_service`; non toccano DB o file. Dart scrive titolo, artista, copertina e stato in `FlutterSharedPreferences` (`flutter.widget.*`, tramite `widget_bridge.dart`); `CodecoreApp` ascolta `flutter.widget.stamp` e ridisegna. Non c'è un canale perché il motore avviato da `audio_service` senza attività non ha quelli di `MainActivity`. A freddo `MediaKeys.pressSurely` preme il tasto due volte (R63). L'albero di Android Auto (`MediaBrowseTree`) include i brani in streaming delle playlist: si riproducono se c'è rete (D-674).
 
 ### Aggiornamento dall'app per piattaforma (fase 132)
 Dettagli in `online.md`; qui solo cosa tocca la piattaforma.

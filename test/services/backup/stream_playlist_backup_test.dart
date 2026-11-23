@@ -165,6 +165,17 @@ void main() {
     UserData roundTrip(UserData d) =>
         UserData.fromJson(jsonDecode(jsonEncode(d.toJson())) as Map<String, dynamic>);
 
+    test('an album browse id that is not a plain id is dropped when a backup is read', () {
+      Map<String, dynamic> j(Object id) => {
+            'ref': {'streamKey': 'youtube:vvvvvvvvvv1'},
+            'albumBrowseId': id,
+          };
+      expect(TrackUserData.fromJson(j('MPREb_x-1')).albumBrowseId, 'MPREb_x-1');
+      for (final bad in ['a/b', 'x y', '', 'a' * 65]) {
+        expect(TrackUserData.fromJson(j(bad)).albumBrowseId, isNull, reason: bad);
+      }
+    });
+
     test('restore on an empty DB keeps saved rows with favourite, plays and playlist; unsaved ones stay out', () async {
       final src = await savedSource();
       addTearDown(src.close);

@@ -70,15 +70,16 @@ D-665, D-666, D-674, D-690, D-675, D-598 (superata in parte da D-665), D-662, D-
 - Stato del brano calcolato in quattro modi: `inLibraryOfProvider` → `trackStateProvider(key) != online` (per riga, non una closure che ricostruisce tutte le righe); via `entryInLibrary` (`track_actions.dart`); `downloadIndex.contains` → `== downloaded`; valutare di togliere il ramo `#` di `trackStateProvider`; `trackRowLookupProvider` in `track_state_providers.dart`; helper di `online_entries` al posto di `_onlinePrefix` copiato.
 - I/O sincrono nell'indice dei download (`pathForKey` → `existsSync`, `signatureMatchesPath`, `pruneGone`) chiamato da provider e build: insieme dei file presenti calcolato fuori dal thread UI e aggiornato da `add`/`remove`; `freeSpace(ids)` filtra prima le voci richieste.
 - Il menu ⋮ si blocca se il widget che l'ha aperto viene smontato (id che cambia dopo un download non in cache): foglio come `Consumer` con il proprio `ref`, test con chi apre il menu rimosso.
-- `LibraryAdder.add` in modalità dispositivo passa da `download` (salva, poi scarica), portandosi dietro il `tag`.
+- [x] `LibraryAdder.add` in modalità dispositivo passa da `download` (salva, poi scarica), portandosi dietro il `tag`.
+- Gli altri quattro punti di sopra (menu del brano che suona, stato del brano, I/O sincrono dell'indice, menu ⋮ che si blocca) sono passati alla 141, sezione «Da allineare (review fase 140)».
 
 ## Tocca a te
 - Nessuna cosa in questa fase: la prova «aggiunte in streaming con i file locali intatti» sul Motorola è nella 147 (l'utente non deve fare nulla ora).
 
 ## Note di deviazione
-- 140.3: chi non aveva mai scelto passa a `stream`; chi ha una scelta salvata la tiene (supera D-598 per chi aggiorna). La `lite` è sempre `device` e non mostra la scelta.
+- 140.3: D-665 vale anche per chi aggiorna (l'alternativa «solo nuovi utenti» è scartata): quasi ogni installazione ha `storageMode='device'` salvato da `writeSettings`, quindi all'avvio un passaggio una tantum (`SettingsStore.migrateStorageModeD665`, flag `storageModeD665`) lo porta a `stream`. File locali intatti, nessun download; il flag è legato al dispositivo (`kDeviceBoundKeys`), così un ripristino non rifà il passaggio e non lo impedisce. Dopo il passaggio la scelta dell'utente in Impostazioni vale. La `lite` è sempre `device` e non mostra la scelta.
 - 140.4: una cartella dei download già scelta su desktop resta com'è; su Android resta la scelta della scheda SD (D-579).
-- 140.5: «scarica anche» non ha una colonna nel DB (la v22 era già fatta): sta nelle preferenze (`importDownloadToo.<id>`) finché l'import non viene annullato.
+- 140.5: «scarica anche» non ha una colonna nel DB (la v22 era già fatta): sta nelle preferenze (`importDownloadToo.<id>`), tolta all'annullamento dell'import o alla cancellazione della playlist, mai dal backup. La casella è sempre visibile nel dialogo.
 - 140.7: D-706 (presa in autonomia): la sezione dei brani mancanti parte da sola solo in modalità streaming; in modalità dispositivo al tocco; nella `lite` non c'è.
 - 140.8: solo i brani dell'host (non di altri ospiti); nessun messaggio Jam cambiato.
 - 140.9: campo opzionale `streams` nell'offerta; il dialogo e la notifica contano gli stream.

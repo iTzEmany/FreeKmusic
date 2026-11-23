@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/db/app_database.dart';
 import '../data/repositories/hidden_playlists.dart';
 import '../data/repositories/playlist_repository.dart';
 import '../data/repositories/smart_playlist_repository.dart' show SmartSort;
+import '../services/import/import_options.dart' show forgetImportDownloadToo;
 import 'database_providers.dart';
 
 /// Playlist actions (plain and smart) and the import history of a playlist.
@@ -49,7 +51,13 @@ class PlaylistOps {
 
   Future<void> reorder(int playlistId, int oldIndex, int newIndex) => _repo.reorder(playlistId, oldIndex, newIndex);
   Future<void> rename(int id, String name) => _repo.rename(id, name);
-  Future<void> delete(int id) => _repo.delete(id);
+  Future<void> delete(int id) async {
+    // The import rows go with the playlist (cascade): their «scarica anche» keys too.
+    final db = _ref.read(databaseProvider);
+    final imports = await (db.select(db.playlistImports)..where((i) => i.playlistId.equals(id))).get();
+    await _repo.delete(id);
+    await forgetImportDownloadToo(await SharedPreferences.getInstance(), [for (final i in imports) i.id]);
+  }
 
   /// The playlists the user sees (hidden system ones left out).
   Future<List<Playlist>> visible() => _ref.read(databaseProvider).visiblePlaylists();

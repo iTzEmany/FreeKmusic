@@ -178,7 +178,7 @@ class TrackUserData {
         saved: j['saved'] == true,
         album: j['album'] is String ? j['album'] as String : null,
         addedAt: (j['addedAt'] is num) ? (j['addedAt'] as num).toInt() : null,
-        albumBrowseId: j['albumBrowseId'] is String ? j['albumBrowseId'] as String : null,
+        albumBrowseId: j['albumBrowseId'] is String && _browseIdRe.hasMatch(j['albumBrowseId'] as String) ? j['albumBrowseId'] as String : null,
         edit: j['edit'] == null
             ? null
             : TrackEditData.fromJson(j['edit'] as Map<String, dynamic>),
@@ -196,6 +196,9 @@ class TrackUserData {
         coverKey: j['coverKey'] is String ? j['coverKey'] as String : null,
       );
 }
+
+/// What an album page id looks like; a backup is untrusted, the id ends up in a request.
+final _browseIdRe = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
 
 class PlaylistData {
   const PlaylistData({

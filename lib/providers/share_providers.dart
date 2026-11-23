@@ -91,7 +91,8 @@ Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async {
   for (final t in tracks) {
     // A saved stream has no file: only its key and metadata travel (D-674); a shadow row is not offered.
     final streamKey = t.kind == kStreamKind ? keyOfStreamPath(t.path) : null;
-    if (t.missing || (t.kind == kStreamKind && (!t.saved || streamKey == null))) continue;
+    // Only YouTube keys travel: a SoundCloud id has no link the receiver can replay.
+    if (t.missing || (t.kind == kStreamKind && (!t.saved || streamKey == null || !streamKey.startsWith('youtube:')))) continue;
     final c = extra[t.id]!;
     entries.add(ShareEntry(
       id: t.id,

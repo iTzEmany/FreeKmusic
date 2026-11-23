@@ -54,7 +54,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | 19 | `podcasts.followed` |
 | 20 | `tracks.saved` (D-607) |
 | 21 | `track_enrich.instrumental` nullabile (D-675, D-684; non entra nel backup) |
-| 22 | `tracks.albumBrowseId` (pagina dell'album online di un brano in streaming; entra nel backup dei brani salvati; D-706) |
+| 22 | `tracks.albumBrowseId` (pagina dell'album online di un brano in streaming; entra nel backup dei brani salvati, validato in lettura; D-675) |
 
 - I passi 18 e 19 sono ripetibili: controllano `PRAGMA table_info('podcasts')` prima di `addColumn`; i passi 20 e 22 fanno lo stesso con `PRAGMA table_info('tracks')` (D-607).
 - Dopo ogni modifica alle tabelle: `dart run build_runner build --delete-conflicting-outputs`.

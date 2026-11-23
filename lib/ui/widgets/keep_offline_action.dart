@@ -13,7 +13,7 @@ Future<void> keepOfflineFlow(BuildContext context, WidgetRef ref, Iterable<Track
   if (ask != null) {
     if (!context.mounted) return;
     final l = context.l10n;
-    if (!await showConfirm(context, title: l.keepOfflineMeteredAsk(ask.count, ask.mb), confirmLabel: l.updateDownload)) return;
+    if (!await showConfirm(context, title: l.keepOfflineMeteredAsk(ask.count, ask.mb), confirmLabel: l.ytDownload)) return;
   }
   final n = await ref.read(keepOfflineProvider)(tracks);
   if (context.mounted) _report(context, n);

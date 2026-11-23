@@ -189,7 +189,7 @@ List<TrackActionGroup> bulkActions(
     if (allMissing || music.isNotEmpty || savedStreams.isNotEmpty)
       TrackActionGroup(l.groupOther, [
         if (savedStreams.isNotEmpty) ...[
-          TrackAction(Icons.download_rounded, l.updateDownload, download),
+          TrackAction(Icons.download_rounded, l.ytDownload, download),
           TrackAction(Icons.delete_outline_rounded, l.removeFromLibrary, removeSavedStreams),
         ],
         // Only for tracks whose file is gone: the library row has nothing left

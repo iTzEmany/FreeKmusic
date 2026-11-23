@@ -6,7 +6,6 @@ import '../../../l10n/l10n_ext.dart';
 import '../../../providers/track_ops.dart';
 import '../../../providers/database_providers.dart';
 import '../../../providers/import_providers.dart';
-import '../../../providers/library_add_providers.dart';
 import '../../../services/import/exportify_reader.dart'
     show CsvTooLargeException;
 import '../../../services/import/exportify_zip.dart';
@@ -78,7 +77,6 @@ Future<void> continueImport(
     builder: (_) => ImportPreviewDialog(
       csv: csv,
       known: known,
-      streaming: ref.read(libraryAdderProvider).streaming,
       existing: {for (final p in lists) p.playlist.id: p.playlist.name},
       syncPreview: (id) =>
           ref.read(playlistImportServiceProvider).previewSync(csv, id),

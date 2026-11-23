@@ -1,4 +1,16 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../core/import_row.dart';
+
+/// Preference key prefix of «scarica anche» (D-665), one key per import: device state, never in a backup.
+const importDownloadTooPrefix = 'importDownloadToo.';
+
+/// Drops the «scarica anche» key of each import in [importIds] (cancelled, or deleted with its playlist).
+Future<void> forgetImportDownloadToo(SharedPreferences prefs, Iterable<int> importIds) async {
+  for (final id in importIds) {
+    await prefs.remove('$importDownloadTooPrefix$id');
+  }
+}
 
 /// What the user chose in the preview, stored with the import.
 class ImportOptions {

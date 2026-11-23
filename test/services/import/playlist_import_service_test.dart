@@ -578,6 +578,18 @@ void main() {
       expect(enriched, ids);
     });
 
+    test('an exported row naming a stream missing from the library is saved as is: no search, no download', () async {
+      saveNowHook = (r) => tracks.saveStream(r);
+      final id = await service.start(ImportedPlaylist(name: 'Mix', rows: [
+        ImportRow(index: 0, title: 'One', artists: const ['Band'], durationMs: 100000, location: 'stream:youtube:abcdefghi12'),
+      ]));
+      await idle();
+      expect(yt.searches, 0);
+      expect(queued, isEmpty);
+      expect((await imports.item(id, 0))!.state, ImportItemStatus.linked);
+      expect((await db.select(db.tracks).get()).single.path, 'stream:youtube:abcdefghi12');
+    });
+
     test('«scarica anche» (D-665): the songs are downloaded, not saved as shadow rows', () async {
       saveNowHook = (r) => tracks.saveStream(r);
       await service.startFromResults(

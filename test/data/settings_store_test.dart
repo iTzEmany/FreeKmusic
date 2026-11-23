@@ -44,6 +44,16 @@ void main() {
     expect((await SettingsStore.open()).readSettings().storageMode, StorageMode.device);
   });
 
+  test('D-665 one-off step: stored device and no flag -> stream + flag; with the flag the choice stays', () async {
+    SharedPreferences.setMockInitialValues({'storageMode': 'device'});
+    var store = await SettingsStore.open();
+    await store.migrateStorageModeD665();
+    expect(store.readSettings().storageMode, StorageMode.stream);
+    await store.writeSettings(store.readSettings().copyWith(storageMode: StorageMode.device));
+    await store.migrateStorageModeD665();
+    expect(store.readSettings().storageMode, StorageMode.device);
+  });
+
   test('qualities: High when absent, round trip', () async {
     SharedPreferences.setMockInitialValues({});
     var store = await SettingsStore.open();
