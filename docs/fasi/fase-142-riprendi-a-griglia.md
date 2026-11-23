@@ -35,3 +35,8 @@ D-671, D-689, D-687, D-692, D-693, D-699. Rilievo F-36 in [`../refactor/grande-r
 
 ## Note di deviazione
 - Dalla review della fase 138: `theme_editor_screen.dart` è 555 righe e `ThemePreview.build` supera ~120 righe: estrarre la colonna dell'anteprima in un file proprio quando si tocca l'area del tema.
+
+## Da allineare (dalla fase 141, review 138)
+- Testate e `Scaffold` con `cc.bg` opaco che coprono l'immagine del tema (D-687), da decidere una per una: `online/online_page_frame.dart:51,83`, `lyrics/lyrics_screen.dart:50`, `lyrics/lyrics_editor.dart:109`, `lyrics/lyrics_romanization_editor.dart:89`, `onboarding/onboarding_screen.dart:72`, `shell/desktop_sidebar.dart:63`, `activity/activity_log_screen.dart:318` (solo senza backdrop); `car/car_mode_screen.dart:64` probabilmente voluto.
+- `SectionHeader` fuori da una superficie: `releases/top_artists_card.dart`, `stats_screen.dart:333`, `memory_screen.dart`, `podcasts_screen.dart:122,276`, `radio_sections.dart`, `artist_screen.dart`, `online_results*.dart`, `search_screen.dart:181,208`, `queue_sheet.dart`: liste di pagina (D-687, senza sfondo) o blocchi, caso per caso.
+- Focus alla ricerca col clic su «Cerca» nella barra laterale su desktop (tolto in 138.2): rimetterlo solo su desktop se serve; test che il tasto Cerca della shell non dia focus sul telefono.
