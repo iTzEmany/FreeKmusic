@@ -73,5 +73,50 @@
       "abcdefgh4_9"
     ],
     "fragment": "H4sIAAAAAAAAA0XNqRHCUBQAQP-ryTsgpAEMQw0ZIFwOSfkoZt26PZ5ifMb5_R2X6227P56vaZ0wMLGwcYd7nPGAy59hC1vYwha2sIUtbGELW9rSlra0pS1taUtb2tJWtrKVrWxlK1vZyla2srWtbW1rW9va1ra2ta3X5QcGCBkYMAIAAA"
+  },
+  {
+    "name": "empty title",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4eJKCSw3KbcMT49IDgQAw9AHFRIAAAA"
+  },
+  {
+    "name": "blank title",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4VJQUOBKCSw3KbcMT49IDgQAobHhfhUAAAA"
+  },
+  {
+    "name": "title over 120",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4aoYKMCVElhuUm4Znh6RHAgAAbDQ3IsAAAA"
+  },
+  {
+    "name": "id with newline",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4argSgksNynnsgxPj0gOBABmJDawFAAAAA"
+  },
+  {
+    "name": "unknown kind",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuSq4qrgSgksNym3DE-PSA4EAON0MIsTAAAA"
+  },
+  {
+    "name": "bad prefix",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4argSgksNym3DE-PSA4EABI32TUTAAAA"
+  },
+  {
+    "name": "standard alphabet",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4aow4EoJLDcptwxPj0gOBACXz7+aFAAAAA"
+  },
+  {
+    "name": "wrong padding",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4argSgksNym3DE-PSA4EAJZsQ2YTAAAA="
+  },
+  {
+    "name": "space inside",
+    "error": true,
+    "fragment": "H4sI AAAAAAACA3PzNuQq4argSgksNym3DE-PSA4EAJZsQ2YTAAAA"
   }
 ]

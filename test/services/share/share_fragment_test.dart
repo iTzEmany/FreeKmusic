@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:codecore/services/share/share_fragment.dart';
@@ -43,6 +44,20 @@ void main() {
       decodeShareFragment(encodeShareFragment(long)).title.runes.length,
       120,
     );
+  });
+
+  test('blank title is encoded as "Senza titolo"', () {
+    for (final t in ['', '  \n ']) {
+      final f = SharedFragment(SharedKind.track, t, _ids(1));
+      expect(decodeShareFragment(encodeShareFragment(f)).title, 'Senza titolo');
+    }
+  });
+
+  test('leading # is stripped', () {
+    final e = encodeShareFragment(
+      SharedFragment(SharedKind.track, 'a', _ids(1)),
+    );
+    expect(decodeShareFragment('#$e').title, 'a');
   });
 
   test('padding is tolerated and never emitted', () {
@@ -88,6 +103,10 @@ void main() {
       _frag('FK1\nt\nT\n'),
       _frag('FK1\nt\nT\n${_ids(51).join()}'),
       _frag('FK1\nt\nT'),
+      _frag('FK1\nt\n\nabcdefghijk'),
+      _frag('FK1\nt\n  \nabcdefghijk'),
+      _frag('FK1\nt\n${'x' * 121}\nabcdefghijk'),
+      _frag('FK1\nt\nT\nabcde\nfghijk'),
       _b64(gzip.encode(List.filled(10 * 1024 * 1024, 65))),
       _b64(gzip.encode([0xff, 0xfe, 0x0a, 0x0a, 0x0a])),
     ];
@@ -100,12 +119,29 @@ void main() {
     }
   });
 
-  test('vectors produced by Dart decode to the expected payload', () {
+  test('a ~200 MB bomb is cut quickly', () {
+    final bomb = _b64(gzip.encode(Uint8List(200 * 1024 * 1024)));
+    final sw = Stopwatch()..start();
+    expect(() => decodeShareFragment(bomb), throwsA(isA<ShareFragmentError>()));
+    expect(sw.elapsed, lessThan(const Duration(seconds: 2)));
+  });
+
+  test('shared vectors: positive decode, negative are rejected', () {
     final v = jsonDecode(
       File('test/services/share/fragment_vectors.json').readAsStringSync(),
     ) as List;
+    expect(v, isNotEmpty);
     for (final e in v) {
-      final d = decodeShareFragment(e['fragment'] as String);
+      final f = e['fragment'] as String;
+      if (e['error'] == true) {
+        expect(
+          () => decodeShareFragment(f),
+          throwsA(isA<ShareFragmentError>()),
+          reason: e['name'] as String,
+        );
+        continue;
+      }
+      final d = decodeShareFragment(f);
       expect(d.kind.code, e['kind']);
       expect(d.title, e['title']);
       expect(d.ids, e['ids']);

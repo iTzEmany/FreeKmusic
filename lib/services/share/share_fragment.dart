@@ -9,6 +9,8 @@ const int _maxTitle = 120;
 const int _maxDecompressed = 64 * 1024;
 const _idLen = 11;
 final _idChars = RegExp(r'^[A-Za-z0-9_-]+$');
+final _b64Body = RegExp(r'^([A-Za-z0-9_-]+)(={0,2})$');
+const _untitled = 'Senza titolo';
 
 enum SharedKind {
   track('t'),
@@ -34,10 +36,13 @@ class ShareFragmentError implements Exception {
 }
 
 /// `FK1\n<kind>\n<title>\n<ids>` -> gzip -> base64url without padding.
+/// The title is non-blank and at most 120 chars; a blank one becomes "Senza titolo".
 String encodeShareFragment(SharedFragment f) {
   _validate(f.ids);
-  final title = f.title.replaceAll(RegExp(r'[\r\n]'), ' ');
-  final clipped = String.fromCharCodes(title.runes.take(_maxTitle));
+  final title = f.title.replaceAll(RegExp(r'[\r\n]'), ' ').trim();
+  final clipped = title.isEmpty
+      ? _untitled
+      : String.fromCharCodes(title.runes.take(_maxTitle));
   final payload = 'FK1\n${f.kind.code}\n$clipped\n${f.ids.join()}';
   return base64Url
       .encode(gzip.encode(utf8.encode(payload)))
@@ -56,7 +61,17 @@ SharedFragment decodeShareFragment(String fragment) {
 }
 
 SharedFragment _decode(String fragment) {
-  final bytes = base64Url.decode(base64Url.normalize(fragment.trim()));
+  final m = _b64Body.firstMatch(
+    fragment.startsWith('#') ? fragment.substring(1) : fragment,
+  );
+  if (m == null) throw const ShareFragmentError('bad base64url');
+  final body = m[1]!;
+  final pad = m[2]!.length;
+  // Padding is optional, but when present it must be the canonical amount.
+  if (body.length % 4 == 1 || (pad != 0 && pad != (4 - body.length % 4) % 4)) {
+    throw const ShareFragmentError('bad base64url padding');
+  }
+  final bytes = base64Url.decode(base64Url.normalize(body));
   final out = BytesBuilder(copy: false);
   final dec = gzip.decoder.startChunkedConversion(_LimitSink(out));
   dec.add(bytes);
@@ -65,8 +80,14 @@ SharedFragment _decode(String fragment) {
   if (lines.length != 4 || lines[0] != 'FK1') {
     throw const ShareFragmentError('bad prefix or layout');
   }
-  final kind = SharedKind.values.where((k) => k.code == lines[1]);
-  if (kind.isEmpty) throw const ShareFragmentError('unknown kind');
+  final kind = SharedKind.values.firstWhere(
+    (k) => k.code == lines[1],
+    orElse: () => throw const ShareFragmentError('unknown kind'),
+  );
+  final title = lines[2];
+  if (title.trim().isEmpty || title.runes.length > _maxTitle) {
+    throw const ShareFragmentError('bad title');
+  }
   final s = lines[3];
   if (s.isNotEmpty && !_idChars.hasMatch(s)) {
     throw const ShareFragmentError('invalid id characters');
@@ -76,7 +97,7 @@ SharedFragment _decode(String fragment) {
     for (var i = 0; i < s.length; i += _idLen) s.substring(i, i + _idLen),
   ];
   _validate(ids);
-  return SharedFragment(kind.first, lines[2], ids);
+  return SharedFragment(kind, title, ids);
 }
 
 void _validate(List<String> ids) {

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>FreeKmusic</title>
 <style>
@@ -27,15 +28,15 @@
   <p class="card">Non hai l'app? <a href="https://github.com/iTzEmany/FreeKmusic/releases/latest">Scarica FreeKmusic</a>.</p>
 </main>
 <script type="module">
-import { decodeFragment } from './fragment.js';
+import { decodeFragment, openAppUrl } from './fragment.js';
 const KINDS = { t: 'Brano', a: 'Album', p: 'Playlist' };
 const $ = (id) => document.getElementById(id);
 if (location.hash.length > 1) {
   try {
-    const { type, title, ids } = await decodeFragment(location.hash);
+    const { kind, title, ids } = await decodeFragment(location.hash);
     document.title = title + ' - FreeKmusic';
     $('title').textContent = title;
-    $('kind').textContent = KINDS[type] + ' condiviso con FreeKmusic, ' + ids.length + (ids.length === 1 ? ' brano' : ' brani');
+    $('kind').textContent = KINDS[kind] + ' condiviso con FreeKmusic, ' + ids.length + (ids.length === 1 ? ' brano' : ' brani');
     $('intro').hidden = true;
     ids.forEach((id, i) => {
       const a = document.createElement('a');
@@ -46,9 +47,8 @@ if (location.hash.length > 1) {
       li.appendChild(a);
       $('list').appendChild(li);
     });
-    // Same https URL: Android's App Link opens the installed app, otherwise this page again.
-    $('openBtn').href = location.href;
-    $('open').hidden = false;
+    const app = openAppUrl(location.hash, navigator.userAgent);
+    if (app) { $('openBtn').href = app; $('open').hidden = false; }
   } catch (e) {
     $('kind').textContent = 'Il link non è valido o è incompleto.';
   }

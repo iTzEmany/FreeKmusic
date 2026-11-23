@@ -136,7 +136,7 @@ Il Worker Cloudflare che trasforma una segnalazione anonima in una issue GitHub 
 
 ### Pagina di condivisione (fase 145)
 
-`docs/site/` (`index.html` con CSS e JS inline, `fragment.js` che decodifica il frammento: base64url, gzip, limite 64 KB, controlli FK1) è pubblicata su GitHub Pages da `.github/workflows/pages.yml` a ogni push su `master` che tocca `docs/site/**` (o a mano). Nessuna richiesta di rete con i dati del frammento. La prova è `node --test docs/site/fragment.test.mjs` (passo «Share page tests» di «Analyze and test»); in `ci.yml` `docs/site/*` non conta come sola documentazione.
+`docs/site/` (`index.html` con CSS e JS inline, `fragment.js` che decodifica il frammento: base64url, gzip, limite 64 KB, controlli FK1) è pubblicata su GitHub Pages da `.github/workflows/pages.yml` a ogni push su `master` che tocca `docs/site/**` (o a mano). Nessuna richiesta di rete con i dati del frammento. La prova è `node --test test/site/fragment.test.mjs` (il test sta fuori da `docs/site`, che è pubblicata) (passo «Share page tests» di «Analyze and test»); in `ci.yml` `docs/site/*` non conta come sola documentazione.
 
 ## Invarianti da non rompere
 
