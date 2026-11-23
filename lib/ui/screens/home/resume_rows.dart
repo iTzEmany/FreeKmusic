@@ -18,8 +18,11 @@ import '../now_playing/now_playing_screen.dart' show playContextName;
 import '../playlists/playlist_detail_screen.dart';
 import 'home_row.dart';
 
-/// «Riprendi»: a grid with the latest item of each area (2 columns on a
-/// phone, 3 from [CcDims.wideBreakpoint] on). Hidden when empty.
+/// Width of the block from which the grid has 3 columns instead of 2.
+const _threeColumnsWidth = 560.0;
+
+/// «Riprendi»: a grid with the latest item of each area (2 columns, 3 when the
+/// block is at least [_threeColumnsWidth] wide). Hidden when empty.
 class ResumeList extends ConsumerWidget {
   const ResumeList({super.key});
 
@@ -31,8 +34,8 @@ class ResumeList extends ConsumerWidget {
     final source = ref.watch(playContextProvider);
     final playing = ref.watch(isPlayingProvider).value ?? false;
     final ctrl = ref.read(playerControllerProvider);
-    final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
-    final columns = wide ? 3 : 2;
+    // What the queue plays now: a tap pauses/resumes it, never restarts it.
+    final nowTap = playing ? null : ctrl.togglePlayPause;
 
     Widget tile(ResumeItem r) {
       final t = r.track, e = r.entry;
@@ -74,9 +77,7 @@ class ResumeList extends ConsumerWidget {
             : _fraction(t.resumePositionMs, t.durationMs),
         onTap: switch (r.area) {
           ResumeArea.track || ResumeArea.podcast =>
-            r.queueIndex != null
-                ? (playing ? null : ctrl.togglePlayPause)
-                : () => ctrl.playFromList([t!], 0),
+            r.queueIndex != null ? nowTap : () => ctrl.playFromList([t!], 0),
           ResumeArea.album => () => ShellNav.open<void>(
             context,
             AlbumDetailScreen(album: e!.album!),
@@ -93,7 +94,10 @@ class ResumeList extends ConsumerWidget {
             0,
             context: PlayContext(PlayContextKind.radio, r.radio!.name),
           ),
-          ResumeArea.daylist => () => ref.read(daylistActionsProvider).play(),
+          ResumeArea.daylist =>
+            r.queueIndex != null
+                ? nowTap
+                : () => ref.read(daylistActionsProvider).play(),
         },
       );
     }
@@ -110,6 +114,8 @@ class ResumeList extends ConsumerWidget {
           ),
           child: LayoutBuilder(
             builder: (context, box) {
+              // The columns follow the block, not the window (a side panel narrows it).
+              final columns = box.maxWidth >= _threeColumnsWidth ? 3 : 2;
               final w = (box.maxWidth - (columns - 1) * CcDims.gap8) / columns;
               return Wrap(
                 spacing: CcDims.gap8,

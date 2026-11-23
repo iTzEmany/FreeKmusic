@@ -476,8 +476,8 @@ List<TrackActionGroup> trackActions(
   ];
 }
 
-/// Tracks whose menu is being prepared (a double tap on the same row must not open two sheets).
-final _opening = <int>{};
+/// A menu is being prepared (a double tap, or two rows tapped within the check, must not open two sheets).
+var _opening = false;
 
 /// The track sheet; [lead] goes first (e.g. «Rimuovi dalla playlist»). Also the
 /// desktop right click, and the ⋮ of a selection through [showTrackActionGroups].
@@ -487,10 +487,12 @@ Future<void> showTrackActions(
   Track track, {
   TrackAction? lead,
 }) async {
-  if (!_opening.add(track.id)) return;
+  if (_opening) return;
   // Taken before the wait: the row may be unmounted by then, the root overlay is not.
+  // Before the guard: a context already gone must not leave it taken.
   final overlay = Overlay.maybeOf(context, rootOverlay: true);
   final container = ProviderScope.containerOf(context, listen: false);
+  _opening = true;
   var isDownloadedFile = false;
   try {
     // «Libera spazio» needs the file to be the very one downloaded: checked (a stat) before the sheet
@@ -507,7 +509,7 @@ Future<void> showTrackActions(
   } on Object catch (e, st) {
     AppLog.w('track menu: download check failed', e, st);
   } finally {
-    _opening.remove(track.id);
+    _opening = false;
   }
   // The row that was tapped may be gone by now (its list changed): the root overlay stands in.
   final anchor = context.mounted ? context : overlay?.context;

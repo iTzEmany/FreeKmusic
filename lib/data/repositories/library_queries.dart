@@ -245,35 +245,31 @@ ORDER BY g.k COLLATE NOCASE
         .map((rows) => [for (final r in rows) _db.tracks.map(r.data)]);
   }
 
-  /// The latest play of each `Plays.context` value, with its track (home
-  /// «Riprendi», D-671). A track gone missing or ignored drops out.
+  /// The latest play of each `Plays.context` value of the last 90 days (the
+  /// `plays_at` index; no migration), with its track (home «Riprendi», D-671).
+  /// Missing or ignored tracks are filtered before the grouping, so the
+  /// context falls back to its latest valid play.
   Stream<List<LastPlay>> watchLastPlayPerContext() {
+    final since = DateTime.now()
+        .subtract(const Duration(days: 90))
+        .millisecondsSinceEpoch;
     return _db
         .customSelect(
-          // SQLite gives the bare column of the row holding the MAX.
-          'SELECT context, track_id, MAX(played_at) AS at FROM plays GROUP BY context',
-          readsFrom: {_db.plays},
+          // SQLite gives the bare columns (t.*) of the row holding the MAX.
+          'SELECT p.context AS context, MAX(p.played_at) AS at, t.* FROM plays p '
+          'JOIN tracks t ON t.id = p.track_id '
+          'WHERE p.played_at >= ? AND t.missing = 0 AND t.ignored = 0 '
+          'GROUP BY p.context',
+          variables: [Variable<int>(since)],
+          readsFrom: {_db.plays, _db.tracks},
         )
         .watch()
-        .asyncMap((rows) async {
-          final ids = [for (final r in rows) r.read<int>('track_id')];
-          final tracks = {
-            for (final t
-                in await (_db.select(_db.tracks)..where(
-                      (t) =>
-                          t.id.isIn(ids) &
-                          t.missing.equals(false) &
-                          t.ignored.equals(false),
-                    ))
-                    .get())
-              t.id: t,
-          };
-          return [
+        .map(
+          (rows) => [
             for (final r in rows)
-              if (tracks[r.read<int>('track_id')] case final t?)
-                LastPlay(r.read<int?>('context'), t, r.read<int>('at')),
-          ];
-        });
+              LastPlay(r.read<int?>('context'), _db.tracks.map(r.data), r.read<int>('at')),
+          ],
+        );
   }
 
   /// The most played tracks (never-played ones excluded).

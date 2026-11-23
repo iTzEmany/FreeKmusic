@@ -107,6 +107,18 @@ void main() {
       expect(playContextOf(h)?.kind, PlayContextKind.library);
     }
 
+    // Kind 0 (album) is a real kind, not the «unknown» fallback.
+    SharedPreferences.setMockInitialValues({
+      'lastQueueIds': ['${ids[0]}'],
+      'lastContextKind': 0,
+      'lastContextName': 'Disco',
+    });
+    final album = open();
+    addTearDown(album.dispose);
+    await PlaybackPersistence(album, SettingsStore(await SharedPreferences.getInstance())).restore();
+    expect(playContextOf(album)?.kind, PlayContextKind.album);
+    expect(playContextOf(album)?.name, 'Disco');
+
     // Stored indexes never move: new kinds only go last.
     expect(PlayContextKind.values.take(8), [
       PlayContextKind.album, PlayContextKind.artist, PlayContextKind.playlist, PlayContextKind.favorites,

@@ -1,5 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/library_queries.dart' show LastPlay;
+import 'package:codecore/providers/daylist_providers.dart' show DaylistActions, daylistActionsProvider;
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
@@ -28,7 +30,132 @@ class _Spy implements PlayerController {
   dynamic noSuchMethod(Invocation invocation) => null;
 }
 
+class _DaylistSpy implements DaylistActions {
+  int plays = 0;
+  @override
+  Future<void> play({int? startIndex}) async => plays++;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+Track _song(int id) => Track(
+  saved: false, coverSource: 0, id: id, path: '/m/$id.mp3', title: 'T$id', albumKey: 'k',
+  durationMs: 60000, format: 'mp3', sizeBytes: 1, mtimeMs: 1, hasCover: false, isFavorite: false,
+  enrichStatus: 0, userEdited: false, missing: false, ignored: false, kind: 0, addedAt: 1, playCount: 0,
+);
+
+/// The block alone, inside a box of [blockWidth] dp when given.
+Future<_DaylistSpy> _pumpResume(
+  WidgetTester tester, {
+  PlayContext? source,
+  List<Track> queue = const [],
+  Track? current,
+  List<LastPlay> plays = const [],
+  List<LibraryEntry> entries = const [],
+  List<SavedRadio> radios = const [],
+  double? blockWidth,
+}) async {
+  final daylist = _DaylistSpy();
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        resumableTracksProvider.overrideWith((ref) => Stream.value(const <Track>[])),
+        lastPlaysProvider.overrideWith((ref) => Stream.value(plays)),
+        savedRadiosProvider.overrideWith((ref) => Stream.value(radios)),
+        isPlayingProvider.overrideWith((ref) => Stream.value(true)),
+        currentTrackProvider.overrideWith((ref) => Stream.value(current)),
+        queueProvider.overrideWith((ref) => Stream.value(queue)),
+        playContextProvider.overrideWithValue(source),
+        recentEntriesProvider.overrideWithValue(entries),
+        playerControllerProvider.overrideWithValue(_Spy()),
+        daylistActionsProvider.overrideWithValue(daylist),
+      ],
+      child: MaterialApp(
+        locale: const Locale('it'),
+        theme: buildThemeFromColors(CcColors.notte, false),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(width: blockWidth, child: const ResumeList()),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 50));
+  await tester.pump(const Duration(milliseconds: 50));
+  return daylist;
+}
+
 void main() {
+  for (final (kind, key, title) in [
+    (PlayContextKind.album, 'album', 'Disco'),
+    (PlayContextKind.playlist, 'playlist', 'Mix'),
+    (PlayContextKind.radio, 'radio', 'Radio X'),
+  ]) {
+    testWidgets('a queue playing from $kind: no error, the tile of the area shows its own $title', (tester) async {
+      await _pumpResume(
+        tester,
+        source: PlayContext(kind, title),
+        current: _song(1),
+        queue: [_song(1)],
+        entries: [
+          const LibraryEntry(kind: LibraryKind.album, id: 'a', title: 'Disco', count: 1, lastPlayedAt: 5),
+          const LibraryEntry(kind: LibraryKind.playlist, id: 'p', title: 'Mix', count: 1, lastPlayedAt: 5),
+        ],
+        radios: [
+          SavedRadio(
+            stationId: 's', name: 'Radio X', streamUrl: 'u', homepage: '', faviconUrl: '', countryCode: '',
+            state: '', tags: '', codec: '', bitrate: 0, hls: false, position: 0, addedAt: 1,
+            lastPlayedAt: 5, unreachable: false,
+          ),
+        ],
+      );
+      expect(tester.takeException(), isNull);
+      expect(find.descendant(of: find.byKey(ValueKey('resume-$key')), matching: find.text(title)), findsOneWidget);
+    });
+  }
+
+  testWidgets('a daylist from the plays starts it on tap', (tester) async {
+    final daylist = await _pumpResume(tester, plays: [LastPlay(8, _song(1), 5)]);
+    await tester.tap(find.byKey(const ValueKey('resume-daylist')));
+    expect(daylist.plays, 1);
+  });
+
+  testWidgets('the daylist that is playing is not started again by a tap', (tester) async {
+    final daylist = await _pumpResume(
+      tester,
+      source: const PlayContext(PlayContextKind.daylist),
+      current: _song(1),
+      queue: [_song(1)],
+    );
+    expect(find.byKey(const ValueKey('resume-daylist')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('resume-daylist')));
+    expect(daylist.plays, 0);
+  });
+
+  for (final (blockWidth, columns) in [(500.0, 2), (700.0, 3)]) {
+    testWidgets('in a window of 1400 dp a block of $blockWidth dp has $columns columns', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await _pumpResume(
+        tester,
+        blockWidth: blockWidth,
+        plays: [LastPlay(null, _song(1), 5), LastPlay(8, _song(2), 4)],
+        entries: [const LibraryEntry(kind: LibraryKind.album, id: 'a', title: 'Disco', count: 1, lastPlayedAt: 5)],
+      );
+      final tops = {
+        for (final k in ['track', 'daylist', 'album']) tester.getTopLeft(find.byKey(ValueKey('resume-$k'))).dy,
+      };
+      expect(tops, hasLength(columns == 2 ? 2 : 1));
+    });
+  }
+
   testWidgets(
     'an episode row names the podcast, where it was left and plays it',
     (tester) async {

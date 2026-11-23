@@ -925,6 +925,101 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('two rows tapped within the download check open one sheet', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 2);
+    final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
+    final loading = Completer<DownloadIndex>();
+    await h.pump(
+      tester,
+      extraOverrides: [downloadIndexProvider.overrideWith((ref) => loading.future)],
+      Scaffold(
+        body: Consumer(
+          builder: (context, ref, _) => Column(
+            children: [
+              for (final t in rows)
+                TextButton(onPressed: () => showTrackActions(context, ref, t), child: Text('open${t.id}')),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open${rows[0].id}'));
+    await tester.tap(find.text('open${rows[1].id}')); // another row, the check of the first still running
+    await _settle(tester);
+    await _settle(tester); // past the 500 ms timeout
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a call from a row already unmounted neither opens a sheet nor locks the menu', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 1);
+    final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
+    final shown = ValueNotifier(true);
+    BuildContext? gone;
+    WidgetRef? goneRef;
+    await h.pump(
+      tester,
+      ValueListenableBuilder<bool>(
+        valueListenable: shown,
+        builder: (_, s, _) => !s
+            ? const SizedBox()
+            : Consumer(builder: (c, r, _) {
+                gone = c;
+                goneRef = r;
+                return const Text('row');
+              }),
+      ),
+    );
+    shown.value = false;
+    await tester.pump();
+    try {
+      await showTrackActions(gone!, goneRef!, t);
+    } on Object {
+      // either outcome is fine; what matters is below
+    }
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsNothing);
+    await h.pump(
+      tester,
+      Scaffold(body: Consumer(builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, r, t), child: const Text('open')))),
+    );
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget, reason: 'the guard was not left taken');
+    await h.dispose(tester);
+  });
+
+  testWidgets('a row inside a nested overlay opens the sheet, its host goes to the root overlay and leaves with it', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 1);
+    final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Overlay(
+          initialEntries: [
+            OverlayEntry(
+              builder: (_) => Consumer(
+                builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, r, t), child: const Text('open')),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    final base = find.byType(Consumer, skipOffstage: false).evaluate().length;
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
+    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, greaterThan(base), reason: 'the host is in the tree');
+    await tester.tapAt(const Offset(5, 5));
+    await _settle(tester);
+    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, base, reason: 'closed without an action: host removed');
+    await h.dispose(tester);
+  });
+
   testWidgets('a failing download index does not lock the menu: it reopens', (tester) async {
     final h = await openSheet(tester, (t) => t, extra: [downloadIndexProvider.overrideWith((ref) async => throw StateError('boom'))]);
     expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);

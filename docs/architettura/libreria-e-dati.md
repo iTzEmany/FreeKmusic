@@ -29,7 +29,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 
 ### «Ultimo per macroarea» (home Riprendi, D-671)
 
-- `LibraryQueries.watchLastPlayPerContext()` dà l'ultimo `Plays` per valore di `context` (con il brano). `lastPerArea` (`home_sections.dart`, pura) sceglie al massimo un elemento per `ResumeArea` (brano, podcast, album, playlist, radio, daylist): la coda in riproduzione vince la sua macroarea, poi i `Plays` (contesto sconosciuto o nullo = libreria), i brani/episodi da riprendere, `LibraryEntry.lastPlayedAt` per album e playlist, `RadioStations.lastPlayedAt` per le radio. Il provider è `resumeItemsProvider` (`lib/providers/resume_providers.dart`); l'ordine è dal più recente.
+- `LibraryQueries.watchLastPlayPerContext()` dà l'ultimo `Plays` per valore di `context` (con il brano), solo degli ultimi 90 giorni (usa l'indice `plays_at`, nessuna migrazione) e con i brani `missing`/`ignored` esclusi dentro la query prima del raggruppamento: un contesto ricade sull'ultimo ascolto valido. `lastPerArea` (`home_sections.dart`, pura) sceglie al massimo un elemento per `ResumeArea` (brano, podcast, album, playlist, radio, daylist): la coda in riproduzione vince la sua macroarea solo se è brano, podcast o daylist (album, playlist e radio prendono il loro elemento da `entries`/`radios`), poi i `Plays` (contesto sconosciuto o nullo = libreria), i brani/episodi da riprendere, `LibraryEntry.lastPlayedAt` per album e playlist, `RadioStations.lastPlayedAt` per le radio. Il provider è `resumeItemsProvider` (`lib/providers/resume_providers.dart`); l'ordine è dal più recente.
 
 ### Schema e migrazioni
 

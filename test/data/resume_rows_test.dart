@@ -32,6 +32,12 @@ LibraryEntry entry(
   LibraryKind k = LibraryKind.album,
 ]) => LibraryEntry(kind: k, id: id, title: id, count: 1, lastPlayedAt: played);
 
+SavedRadio radio(int? played) => SavedRadio(
+  stationId: 's', name: 'R', streamUrl: 'u', homepage: '', faviconUrl: '', countryCode: '',
+  state: '', tags: '', codec: '', bitrate: 0, hls: false, position: 0, addedAt: 1,
+  lastPlayedAt: played, unreachable: false,
+);
+
 void main() {
   test('one item per area, the latest of each, most recent first', () {
     final items = lastPerArea(
@@ -74,5 +80,63 @@ void main() {
 
   test('nothing played: no items', () {
     expect(lastPerArea(), isEmpty);
+  });
+
+  for (final queueArea in [ResumeArea.album, ResumeArea.playlist, ResumeArea.radio]) {
+    test('a queue playing $queueArea does not make an item without its entry', () {
+      final items = lastPerArea(
+        current: track(1),
+        queue: [track(1)],
+        queueArea: queueArea,
+      );
+      expect(items, isEmpty, reason: 'album, playlist and radio tiles need their entry or station');
+    });
+  }
+
+  test('an album in the queue takes its tile from the entries', () {
+    final items = lastPerArea(
+      current: track(1),
+      queue: [track(1)],
+      queueArea: ResumeArea.album,
+      entries: [entry('a', 30)],
+    );
+    expect(items.single.area, ResumeArea.album);
+    expect(items.single.entry!.id, 'a');
+    expect(items.single.queueIndex, isNull);
+  });
+
+  test('a daylist in the queue carries its place', () {
+    final items = lastPerArea(
+      current: track(1),
+      queue: [track(1), track(2)],
+      queueArea: ResumeArea.daylist,
+    );
+    expect(items.single.area, ResumeArea.daylist);
+    expect(items.single.queueIndex, 0);
+  });
+
+  test('entries without a last play are skipped, artists never show', () {
+    final items = lastPerArea(
+      entries: [
+        const LibraryEntry(kind: LibraryKind.album, id: 'none', title: 'none', count: 1),
+        entry('ok', 5),
+        entry('artist', 99, LibraryKind.artist),
+      ],
+    );
+    expect(items.map((i) => i.entry!.id), ['ok']);
+  });
+
+  test('a radio played shows, the latest of the plays wins', () {
+    final items = lastPerArea(radios: [radio(5)]);
+    expect(items.single.radio!.name, 'R');
+  });
+
+  test('a podcast play gives the track tile, a radio never played (no last play) is absent', () {
+    final items = lastPerArea(
+      plays: [(area: ResumeArea.podcast, track: track(3, kind: 1), at: 7)],
+      radios: [radio(null)],
+    );
+    expect(items.single.area, ResumeArea.podcast);
+    expect(items.single.track!.id, 3);
   });
 }

@@ -66,7 +66,7 @@ class ResumeItem {
 
 /// The latest of each area, the most recent first. [plays] are the latest
 /// play per area (albums and playlists come from [entries]); the playing
-/// queue always wins its own area ([queueArea]).
+/// queue wins its own area ([queueArea]) when that is track, podcast or daylist.
 List<ResumeItem> lastPerArea({
   Track? current,
   List<Track> queue = const [],
@@ -87,10 +87,16 @@ List<ResumeItem> lastPerArea({
     if (b == null || i.at > b.at) best[i.area] = i;
   }
 
-  if (current != null && index >= 0) {
+  // Album, playlist and radio tiles need their entry/station: they come from [entries]/[radios].
+  final playingArea = queueArea ?? (current == null ? null : ofTrack(current));
+  if (current != null &&
+      index >= 0 &&
+      (playingArea == ResumeArea.track ||
+          playingArea == ResumeArea.podcast ||
+          playingArea == ResumeArea.daylist)) {
     offer(
       ResumeItem(
-        queueArea ?? ofTrack(current),
+        playingArea!,
         1 << 62,
         track: current,
         queueIndex: index,
