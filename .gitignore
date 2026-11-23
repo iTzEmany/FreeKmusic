@@ -22,3 +22,6 @@ test/goldens/failures/
 # CodeGraph index (local)
 .codegraph/
 scripts/__pycache__/
+
+# Cloudflare wrangler (login and local state)
+.wrangler/
