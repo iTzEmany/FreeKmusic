@@ -4677,5 +4677,13 @@
   "csvImportDownloadToo": "Scarica anche i file",
   "csvImportDownloadTooHint": "Di norma i brani si salvano in streaming, senza file. Accesa, li scarica anche sul dispositivo.",
   "onboardingFoldersDownloadsNote": "I brani che scarichi vanno nella cartella FreeKmusic, dentro la cartella che scegli qui.",
-  "albumMissingTitle": "Altri brani dell'album"
+  "albumMissingTitle": "Altri brani dell'album",
+  "incomingStreams": "{n, plural, one{1 brano in streaming} other{{n} brani in streaming}}",
+  "@incomingStreams": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

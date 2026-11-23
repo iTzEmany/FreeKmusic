@@ -8151,4 +8151,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get albumMissingTitle => 'Altri brani dell\'album';
+
+  @override
+  String incomingStreams(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n brani in streaming',
+      one: '1 brano in streaming',
+    );
+    return '$_temp0';
+  }
 }

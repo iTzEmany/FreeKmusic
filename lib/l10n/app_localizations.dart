@@ -12900,6 +12900,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Altri brani dell\'album'**
   String get albumMissingTitle;
+
+  /// No description provided for @incomingStreams.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{1 brano in streaming} other{{n} brani in streaming}}'**
+  String incomingStreams(int n);
 }
 
 class _AppLocalizationsDelegate

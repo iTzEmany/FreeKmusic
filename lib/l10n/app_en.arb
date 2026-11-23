@@ -3948,5 +3948,13 @@
   "csvImportDownloadToo": "Also download the files",
   "csvImportDownloadTooHint": "Songs are normally saved for streaming, with no file. When on, they are also downloaded to the device.",
   "onboardingFoldersDownloadsNote": "Songs you download go to the FreeKmusic folder, inside the folder you pick here.",
-  "albumMissingTitle": "More songs from the album"
+  "albumMissingTitle": "More songs from the album",
+  "incomingStreams": "{n, plural, one{1 streamed song} other{{n} streamed songs}}",
+  "@incomingStreams": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }
