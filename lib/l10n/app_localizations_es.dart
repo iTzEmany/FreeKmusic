@@ -8129,4 +8129,50 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get instrumentalTrack => 'Pista instrumental';
+
+  @override
+  String get backupContents =>
+      'La copia incluye: biblioteca, listas y favoritos, reproducciones, etiquetas, letras, ajustes y temas. La música no está incluida.';
+
+  @override
+  String get backupExportPlaylists => 'Exportar listas';
+
+  @override
+  String get backupExportPlaylistsHint =>
+      'Un archivo por lista, para usarlas en otro sitio.';
+
+  @override
+  String get backupImportPlaylists => 'Importar listas';
+
+  @override
+  String get backupImportPlaylistsHint => 'Desde un archivo de lista (CSV).';
+
+  @override
+  String get restoreRestarting =>
+      'Listo: la app se reinicia para completar la restauración.';
+
+  @override
+  String restoreMissingRow(String title, String artist) {
+    return '$title · $artist';
+  }
+
+  @override
+  String get restoreSaveStream => 'Guardar en streaming';
+
+  @override
+  String get restoreSearchOnline => 'Buscar en línea';
+
+  @override
+  String get restoreSaveAll => 'Guardar todos';
+
+  @override
+  String restoreSavedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count canciones guardadas',
+      one: '1 canción guardada',
+    );
+    return '$_temp0';
+  }
 }

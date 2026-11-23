@@ -8078,4 +8078,50 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get instrumentalTrack => 'Instrumental track';
+
+  @override
+  String get backupContents =>
+      'The backup holds: library, playlists and favourites, plays, tags, lyrics, settings and themes. The music itself is not included.';
+
+  @override
+  String get backupExportPlaylists => 'Export playlists';
+
+  @override
+  String get backupExportPlaylistsHint =>
+      'One file per playlist, to use elsewhere.';
+
+  @override
+  String get backupImportPlaylists => 'Import playlists';
+
+  @override
+  String get backupImportPlaylistsHint => 'From a playlist file (CSV).';
+
+  @override
+  String get restoreRestarting =>
+      'Ready: the app restarts to finish the restore.';
+
+  @override
+  String restoreMissingRow(String title, String artist) {
+    return '$title · $artist';
+  }
+
+  @override
+  String get restoreSaveStream => 'Save as stream';
+
+  @override
+  String get restoreSearchOnline => 'Search online';
+
+  @override
+  String get restoreSaveAll => 'Save all';
+
+  @override
+  String restoreSavedCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count songs saved',
+      one: '1 song saved',
+    );
+    return '$_temp0';
+  }
 }

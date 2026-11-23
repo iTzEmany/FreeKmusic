@@ -3927,5 +3927,33 @@
   "karaokeTurnOff": "Turn off",
   "enrichOnMetered": "Enrich on metered networks too",
   "enrichOnMeteredHint": "By default background enrichment waits for an unmetered network.",
-  "instrumentalTrack": "Instrumental track"
+  "instrumentalTrack": "Instrumental track",
+  "backupContents": "The backup holds: library, playlists and favourites, plays, tags, lyrics, settings and themes. The music itself is not included.",
+  "backupExportPlaylists": "Export playlists",
+  "backupExportPlaylistsHint": "One file per playlist, to use elsewhere.",
+  "backupImportPlaylists": "Import playlists",
+  "backupImportPlaylistsHint": "From a playlist file (CSV).",
+  "restoreRestarting": "Ready: the app restarts to finish the restore.",
+  "restoreMissingRow": "{title} · {artist}",
+  "@restoreMissingRow": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreSaveStream": "Save as stream",
+  "restoreSearchOnline": "Search online",
+  "restoreSaveAll": "Save all",
+  "restoreSavedCount": "{count, plural, one{1 song saved} other{{count} songs saved}}",
+  "@restoreSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -3927,5 +3927,33 @@
   "karaokeTurnOff": "Ausschalten",
   "enrichOnMetered": "Auch im getakteten Netz anreichern",
   "enrichOnMeteredHint": "Standardmäßig wartet die Hintergrundanreicherung auf ein ungetaktetes Netz.",
-  "instrumentalTrack": "Instrumentalstück"
+  "instrumentalTrack": "Instrumentalstück",
+  "backupContents": "Das Backup enthält: Bibliothek, Playlists und Favoriten, Wiedergaben, Tags, Songtexte, Einstellungen und Designs. Die Musik selbst ist nicht dabei.",
+  "backupExportPlaylists": "Playlists exportieren",
+  "backupExportPlaylistsHint": "Eine Datei pro Playlist, zur Nutzung anderswo.",
+  "backupImportPlaylists": "Playlists importieren",
+  "backupImportPlaylistsHint": "Aus einer Playlist-Datei (CSV).",
+  "restoreRestarting": "Bereit: Die App startet neu, um die Wiederherstellung abzuschließen.",
+  "restoreMissingRow": "{title} · {artist}",
+  "@restoreMissingRow": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "artist": {
+        "type": "String"
+      }
+    }
+  },
+  "restoreSaveStream": "Als Stream speichern",
+  "restoreSearchOnline": "Online suchen",
+  "restoreSaveAll": "Alle speichern",
+  "restoreSavedCount": "{count, plural, one{1 Titel gespeichert} other{{count} Titel gespeichert}}",
+  "@restoreSavedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

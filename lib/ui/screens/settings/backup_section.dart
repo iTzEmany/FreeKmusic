@@ -2,18 +2,19 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../core/app_log.dart';
-import '../../../data/repositories/backup_merge.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/backup_ops.dart';
 import '../../../services/backup/backup_service.dart';
 import '../../../services/backup/restore_service.dart';
 import '../../../services/export/save_file.dart';
 import '../../widgets/confirm.dart';
+import '../import/import_flow.dart';
+import '../playlists/export_dialog.dart';
+import 'merge_report_dialog.dart';
 import 'restore_dialog.dart';
 import '../../widgets/show_msg.dart';
 
@@ -32,6 +33,22 @@ List<Widget> backupTiles(BuildContext context, WidgetRef ref) {
       title: Text(l.backupRestore),
       subtitle: Text(l.backupRestoreHint),
       onTap: () => _restore(context, ref),
+    ),
+    Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Text(l.backupContents, style: Theme.of(context).textTheme.bodySmall),
+    ),
+    ListTile(
+      leading: const Icon(Icons.library_music_outlined),
+      title: Text(l.backupExportPlaylists),
+      subtitle: Text(l.backupExportPlaylistsHint),
+      onTap: () => exportAllPlaylistsFlow(context, ref),
+    ),
+    ListTile(
+      leading: const Icon(Icons.upload_file_rounded),
+      title: Text(l.backupImportPlaylists),
+      subtitle: Text(l.backupImportPlaylistsHint),
+      onTap: () => startCsvImport(context, ref),
     ),
   ];
 }
@@ -97,23 +114,11 @@ Future<void> _restore(BuildContext context, WidgetRef ref) async {
       if (!ok) return;
       await ref.read(backupOpsProvider).stageReplace(File(path));
       if (!context.mounted) return;
-      await showDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          content: Text(l.restoreRestartNeeded),
-          actions: [
-            FilledButton(
-              onPressed: () => Platform.isAndroid ? SystemNavigator.pop() : Navigator.pop(ctx),
-              child: Text(l.close),
-            ),
-          ],
-        ),
-      );
+      await showRestartDialog(context, ref);
     } else {
       final report = await ref.read(backupOpsProvider).merge(File(path));
       if (!context.mounted) return;
-      await _showMergeReport(context, report);
+      await showMergeReport(context, report);
     }
   } on RestoreException catch (e) {
     AppLog.w('restore refused', e);
@@ -124,42 +129,4 @@ Future<void> _restore(BuildContext context, WidgetRef ref) async {
     if (!context.mounted) return;
     showMsg(context, l.restoreFailed);
   }
-}
-
-Future<void> _showMergeReport(BuildContext context, MergeReport r) {
-  final l = context.l10n;
-  final missing = r.notFound.map((t) => t.artist == null || t.artist!.isEmpty ? t.title : '${t.title} — ${t.artist}').join('\n');
-  return showDialog<void>(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      content: SingleChildScrollView(
-        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(l.restoreMergeDone(r.recognized, r.notFound.length, r.playlistsCreated, r.favoritesAdded)),
-          for (final line in [
-            if (r.backupDbUnreadable) l.restoreMergeDbUnreadable,
-            if (r.tables.playsAdded > 0) l.restoreMergePlays(r.tables.playsAdded),
-            if (r.tables.tagsAdded > 0) l.restoreMergeTags(r.tables.tagsAdded),
-            if (r.tables.smartPlaylistsAdded > 0) l.restoreMergeSmart(r.tables.smartPlaylistsAdded),
-            if (r.tables.podcastsAdded > 0) l.restoreMergePodcasts(r.tables.podcastsAdded),
-            if (r.themesDropped > 0) l.restoreMergeThemesDropped(r.themesDropped),
-            if (r.tables.playsUnlinked > 0) l.restoreMergeUnlinked(r.tables.playsUnlinked),
-          ])
-            Padding(padding: const EdgeInsets.only(top: 8), child: Text(line)),
-          if (r.notFound.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(l.restoreNotFound, style: Theme.of(ctx).textTheme.titleSmall),
-            SelectableText(missing),
-          ],
-        ]),
-      ),
-      actions: [
-        if (r.notFound.isNotEmpty)
-          TextButton(
-            onPressed: () => Clipboard.setData(ClipboardData(text: missing)),
-            child: Text(l.restoreCopyList),
-          ),
-        TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.close)),
-      ],
-    ),
-  );
 }
