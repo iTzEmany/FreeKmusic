@@ -8140,4 +8140,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get restoreListCopied => 'Lista copiada para a área de transferência';
+
+  @override
+  String get deselectAll => 'Desmarcar tudo';
 }

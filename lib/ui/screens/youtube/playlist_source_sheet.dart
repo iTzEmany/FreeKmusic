@@ -153,25 +153,36 @@ class _PlaylistSourceSheetState extends ConsumerState<PlaylistSourceSheet> {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap8, CcDims.gap8, 0),
-          child: Row(
+          padding: const EdgeInsets.fromLTRB(
+            CcDims.margin,
+            CcDims.gap8,
+            CcDims.gap8,
+            0,
+          ),
+          child: Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.only(right: CcDims.gap8),
                 child: Text(
                   l.playlistSourceCount(data.entries.length),
                   style: theme.labelLarge,
                 ),
               ),
               TextButton(
-                key: const ValueKey('toggle-all'),
-                onPressed: () => setState(() {
-                  if (all) {
-                    picked.clear();
-                  } else {
-                    picked.addAll([for (final e in data.entries) e.id]);
-                  }
-                }),
-                child: Text(all ? l.playlistSourceNone : l.selectAll),
+                key: const ValueKey('select-all'),
+                onPressed: all
+                    ? null
+                    : () => setState(
+                        () =>
+                            picked.addAll([for (final e in data.entries) e.id]),
+                      ),
+                child: Text(l.selectAll),
+              ),
+              TextButton(
+                key: const ValueKey('deselect-all'),
+                onPressed: picked.isEmpty ? null : () => setState(picked.clear),
+                child: Text(l.deselectAll),
               ),
             ],
           ),
@@ -237,7 +248,12 @@ class _PlaylistSourceSheetState extends ConsumerState<PlaylistSourceSheet> {
   }
 
   Widget _note(String text, Color color) => Padding(
-    padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap4, CcDims.margin, 0),
+    padding: const EdgeInsets.fromLTRB(
+      CcDims.margin,
+      CcDims.gap4,
+      CcDims.margin,
+      0,
+    ),
     child: Align(
       alignment: Alignment.centerLeft,
       child: Text(

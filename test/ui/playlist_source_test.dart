@@ -166,14 +166,15 @@ void main() {
     await tester.pump();
     expect(find.text('Scarica in una playlist (2)'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('toggle-all')));
+    await tester.tap(find.byKey(const ValueKey('select-all')));
     await tester.pump();
-    expect(find.text('Scarica in una playlist (3)'), findsOneWidget, reason: 'not all ticked: the button ticks them all');
-    expect(find.text('Nessuno'), findsOneWidget);
+    expect(find.text('Scarica in una playlist (3)'), findsOneWidget);
+    expect(find.text('Seleziona tutto'), findsOneWidget);
+    expect(find.text('Deseleziona tutto'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('toggle-all')));
+    await tester.tap(find.byKey(const ValueKey('deselect-all')));
     await tester.pump();
-    expect(find.text('Scarica in una playlist (0)'), findsOneWidget, reason: 'all ticked: the button clears them');
+    expect(find.text('Scarica in una playlist (0)'), findsOneWidget);
     expect(tester.widget<FilledButton>(find.byKey(const ValueKey('playlist-go'))).onPressed, isNull);
     await h.dispose(tester);
   });

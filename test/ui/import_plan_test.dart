@@ -47,6 +47,14 @@ void main() {
     expect(find.textContaining('Band - Topic'), findsOneWidget);
     expect(find.text('Scarica 1 brano'), findsOneWidget);
 
+    await tester.tap(find.byKey(const ValueKey('plan-deselect-all')));
+    await tester.pump();
+    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
+    expect(find.text('Scarica 0 brani'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('plan-select-all')));
+    await tester.pump();
+    expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isTrue);
+
     await tester.tap(find.textContaining('Song 0, Band'));
     await tester.pumpAndSettle();
     expect(find.text('Song 0 (Live)'), findsOneWidget);

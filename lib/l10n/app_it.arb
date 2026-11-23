@@ -4664,5 +4664,6 @@
   "backupImportPlaylistsHint": "Da un file di playlist (CSV).",
   "restoreRestarting": "Pronto: l’app si riavvia per completare il ripristino.",
   "restoreSearchOnline": "Cerca online",
-  "restoreListCopied": "Elenco copiato negli appunti"
+  "restoreListCopied": "Elenco copiato negli appunti",
+  "deselectAll": "Deseleziona tutto"
 }

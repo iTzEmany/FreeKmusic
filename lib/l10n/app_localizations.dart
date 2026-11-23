@@ -12864,6 +12864,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Elenco copiato negli appunti'**
   String get restoreListCopied;
+
+  /// No description provided for @deselectAll.
+  ///
+  /// In it, this message translates to:
+  /// **'Deseleziona tutto'**
+  String get deselectAll;
 }
 
 class _AppLocalizationsDelegate

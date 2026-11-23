@@ -8165,4 +8165,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get restoreListCopied => 'Liste in die Zwischenablage kopiert';
+
+  @override
+  String get deselectAll => 'Alle abwählen';
 }

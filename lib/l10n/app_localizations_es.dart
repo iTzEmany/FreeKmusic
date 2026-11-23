@@ -8156,4 +8156,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get restoreListCopied => 'Lista copiada al portapapeles';
+
+  @override
+  String get deselectAll => 'Deseleccionar todo';
 }

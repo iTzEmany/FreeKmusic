@@ -8200,4 +8200,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get restoreListCopied => 'Liste copiée dans le presse-papiers';
+
+  @override
+  String get deselectAll => 'Tout désélectionner';
 }

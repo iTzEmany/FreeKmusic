@@ -4156,5 +4156,6 @@
   "backupImportPlaylistsHint": "Depuis un fichier de playlist (CSV).",
   "restoreRestarting": "Prêt : l’app redémarre pour terminer la restauration.",
   "restoreSearchOnline": "Chercher en ligne",
-  "restoreListCopied": "Liste copiée dans le presse-papiers"
+  "restoreListCopied": "Liste copiée dans le presse-papiers",
+  "deselectAll": "Tout désélectionner"
 }

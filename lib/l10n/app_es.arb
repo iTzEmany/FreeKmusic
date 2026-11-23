@@ -3935,5 +3935,6 @@
   "backupImportPlaylistsHint": "Desde un archivo de lista (CSV).",
   "restoreRestarting": "Listo: la app se reinicia para completar la restauración.",
   "restoreSearchOnline": "Buscar en línea",
-  "restoreListCopied": "Lista copiada al portapapeles"
+  "restoreListCopied": "Lista copiada al portapapeles",
+  "deselectAll": "Deseleccionar todo"
 }

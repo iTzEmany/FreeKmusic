@@ -8129,4 +8129,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get restoreListCopied => 'Elenco copiato negli appunti';
+
+  @override
+  String get deselectAll => 'Deseleziona tutto';
 }
