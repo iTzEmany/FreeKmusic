@@ -47,7 +47,7 @@ D-676, D-677, D-688, D-694, D-687, D-675, D-662, D-699. Rilievi F-34, F-35, F-37
   - Passi: 1) inserire la barra in ciascuna lista con la modalità giusta (alfabetica quando l'ordine è per titolo/artista, altrimenti per posizione); 2) test su almeno due liste (non una per schermata).
   - Comando mirato: `flutter test test/ui/all_tracks_screen_test.dart test/ui/library_screen_test.dart test/ui/history_screen_test.dart test/ui/collection_pages_test.dart`
   - Fatto quando: la barra compare nelle sei liste sopra 100 elementi; i test esistenti sono verdi.
-- [ ] 141.9 Area e controllo di fine fase
+- [x] 141.9 Area e controllo di fine fase
   - Aggiorna `../architettura/ui-e-design.md` (testata a icone, scorrimento), `libreria-e-dati.md` (v23, `FavoriteCollections`), `sync-backup-jam.md` (backup con i preferiti di collezione); «Trappole»: «Condividi» arriva con la 145. `scripts/guardie.sh` (golden) prima del push.
 
 ## Da allineare (review di architettura della fase 138)
