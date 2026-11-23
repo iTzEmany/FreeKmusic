@@ -9,7 +9,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 21;
+const kSchemaVersion = 22;
 
 @DriftDatabase(
   tables: [
@@ -230,6 +230,16 @@ class AppDatabase extends _$AppDatabase {
         };
         if (cols.isNotEmpty && !cols.contains('instrumental')) {
           await m.addColumn(trackEnrich, trackEnrich.instrumental);
+        }
+      }
+      if (from < 22) {
+        // Nullable, no backfill: not a single row changes. Old test fixtures have a bare tracks table.
+        final cols = {
+          for (final c in await customSelect('PRAGMA table_info(tracks)').get())
+            c.read<String>('name'),
+        };
+        if (cols.isNotEmpty && !cols.contains('album_browse_id')) {
+          await m.addColumn(tracks, tracks.albumBrowseId);
         }
       }
     },
