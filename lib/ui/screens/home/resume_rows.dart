@@ -97,8 +97,8 @@ class ResumeList extends ConsumerWidget {
 
     return Column(
       children: [
-        SectionHeader(l.homeResume),
         HomeBlock(
+          header: SectionHeader(l.homeResume),
           children: [
             for (final r in rows)
               switch (r) {

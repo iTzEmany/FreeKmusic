@@ -20,6 +20,7 @@ import '../library/favorites_screen.dart';
 import '../playlists/playlists_screen.dart';
 import '../radio/radio_screen.dart';
 import 'cover_fan.dart';
+import 'home_row.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../../providers/shuffle_plus_providers.dart' show libraryListKey;
 
@@ -197,20 +198,18 @@ class AddedLately extends ConsumerWidget {
     final l = context.l10n;
     final albums = ref.watch(recentlyAddedAlbumsProvider);
     if (albums.isEmpty) return const SizedBox.shrink();
-    return Column(
-      children: [
-        SectionHeader(
-          l.homeAddedLately,
-          actionLabel: l.showAll,
-          onAction: () {
-            ShellNav.open<void>(
-              context,
-              const AllTracksScreen(initialSort: SortOption.addedAt),
-            );
-          },
-        ),
-        CoverFan(albums: albums),
-      ],
+    return HomeBlock(
+      header: SectionHeader(
+        l.homeAddedLately,
+        actionLabel: l.showAll,
+        onAction: () {
+          ShellNav.open<void>(
+            context,
+            const AllTracksScreen(initialSort: SortOption.addedAt),
+          );
+        },
+      ),
+      children: [CoverFan(albums: albums)],
     );
   }
 }

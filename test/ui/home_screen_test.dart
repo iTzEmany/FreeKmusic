@@ -316,8 +316,15 @@ void main() {
   testWidgets('the blocks have no dividers and merge each row', (tester) async {
     final handle = tester.ensureSemantics();
     final h = await openRanked(tester);
-    expect(find.byType(HomeBlock), findsNWidgets(3));
+    expect(find.byType(HomeBlock), findsNWidgets(4));
     expect(find.byType(Divider), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byType(HomeBlock),
+        matching: find.text('I più ascoltati'),
+      ),
+      findsOneWidget,
+    );
     expect(find.bySemanticsLabel(RegExp(r'^Song 3\n')), findsOneWidget);
     await h.dispose(tester);
     handle.dispose();

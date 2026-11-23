@@ -39,8 +39,8 @@ class HomeBottomRows extends ConsumerWidget {
     ];
     final topRows = [
       if (top.isNotEmpty) ...[
-        SectionHeader(l.homeTopTracks),
         HomeBlock(
+          header: SectionHeader(l.homeTopTracks),
           children: [
             for (var i = 0; i < math.min(3, top.length); i++)
               HomeRow(
@@ -59,8 +59,8 @@ class HomeBottomRows extends ConsumerWidget {
     ];
     final redo = [
       if (rediscover.isNotEmpty) ...[
-        SectionHeader(l.homeRediscover),
         HomeBlock(
+          header: SectionHeader(l.homeRediscover),
           children: [
             for (final a in rediscover)
               HomeRow(
@@ -106,37 +106,30 @@ class _MonthBlock extends ConsumerWidget {
         .value;
     if (month == null || month.isEmpty) return const SizedBox.shrink();
     void open() => ShellNav.open<void>(context, const StatsScreen());
-    return InkWell(
-      onTap: open,
-      child: Column(
-        children: [
-          SectionHeader(
-            l.statsYourMonth,
-            actionLabel: l.showAll,
-            onAction: open,
-          ),
-          HomeBlock(
-            children: [
-              HomeRow(
-                cover: const HomeIconCover(Icons.bar_chart_rounded),
-                title: formatListened(l, month.playedMs),
-                onTap: open,
-              ),
-              for (final a in month.topArtists.take(2))
-                HomeRow(
-                  cover: ArtistAvatar(
-                    name: a.name,
-                    size: kHomeCover,
-                    coverKey: a.coverKey,
-                  ),
-                  title: a.name ?? l.unknownArtist,
-                  subtitle: l.statsPlays(a.plays),
-                  onTap: open,
-                ),
-            ],
-          ),
-        ],
+    return HomeBlock(
+      header: SectionHeader(
+        l.statsYourMonth,
+        actionLabel: l.showAll,
+        onAction: open,
       ),
+      children: [
+        HomeRow(
+          cover: const HomeIconCover(Icons.bar_chart_rounded),
+          title: formatListened(l, month.playedMs),
+          onTap: open,
+        ),
+        for (final a in month.topArtists.take(2))
+          HomeRow(
+            cover: ArtistAvatar(
+              name: a.name,
+              size: kHomeCover,
+              coverKey: a.coverKey,
+            ),
+            title: a.name ?? l.unknownArtist,
+            subtitle: l.statsPlays(a.plays),
+            onTap: open,
+          ),
+      ],
     );
   }
 }
