@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../src/index.js';
+import worker, { __test } from '../src/index.js';
 
 const env = { GITHUB_TOKEN: 't0k', GITHUB_REPO: 'o/r' };
 const realFetch = globalThis.fetch;
@@ -9,6 +9,7 @@ let ghStatus;
 let n = 0;
 
 beforeEach(() => {
+  __test.reset(); // module state is shared: every test starts clean, whatever the order
   calls = [];
   ghStatus = 201;
   globalThis.fetch = async (url, init) => {
@@ -18,7 +19,7 @@ beforeEach(() => {
 });
 afterEach(() => { globalThis.fetch = realFetch; });
 
-const ip = () => `10.0.0.${++n}`; // fresh IP per test: the counter is module-level
+const ip = () => `10.0.${Math.floor(++n / 250)}.${n % 250}`;
 const send = (body, { method = 'POST', addr = ip(), type = 'application/json', extra = {}, length } = {}) => {
   const text = method === 'GET' ? undefined : typeof body === 'string' ? body : JSON.stringify(body);
   const headers = { 'x-forwarded-for': addr ?? '', ...extra };
@@ -158,12 +159,105 @@ test('the window expires', async () => {
   try { assert.equal((await send(ok, { addr })).status, 201); } finally { Date.now = realNow; }
 });
 
-test('global daily cap is 429 (keep last: it leaves the counter full)', async () => {
-  const realNow = Date.now;
-  Date.now = () => realNow() + 3 * 24 * 60 * 60 * 1000;
+test('global daily cap: the 100th passes, the 101st is 429', async () => {
+  for (let i = 0; i < 100; i++) assert.equal((await send(ok)).status, 201);
+  assert.equal((await send(ok)).status, 429);
+});
+
+test('requests refused per IP do not use the daily cap', async () => {
+  const addr = ip();
+  for (let i = 0; i < 20; i++) await send(ok, { addr }); // 5 pass, 15 refused
+  for (let i = 0; i < 95; i++) assert.equal((await send(ok)).status, 201); // the 100th use of the cap
+  assert.equal((await send(ok)).status, 429);
+});
+
+test('IPv4-mapped IPv6 uses the IPv4 bucket; distinct mapped addresses are distinct', async () => {
+  for (let i = 0; i < 5; i++) assert.equal((await send(ok, { addr: '::ffff:1.2.3.4' })).status, 201);
+  assert.equal((await send(ok, { addr: '1.2.3.4' })).status, 429);
+  assert.equal((await send(ok, { addr: '::ffff:1.2.3.5' })).status, 201);
+});
+
+test('IPv6 /64 grouping, with and without leading zeros and case', async () => {
+  for (let i = 0; i < 5; i++) assert.equal((await send(ok, { addr: '2001:db8::1' })).status, 201);
+  assert.equal((await send(ok, { addr: '2001:DB8:0:0::2' })).status, 429);
+  assert.equal((await send(ok, { addr: '2001:db8:0:1::1' })).status, 201);
+});
+
+test('control and format characters are removed from title and body', async () => {
+  await send({ ...ok, title: 'a\u202Eb\u200Bc', body: 'x\u0007y\nz\u200Bw' });
+  assert.equal(sentBody().title, 'abc');
+  assert.ok(sentBody().body.startsWith('xy\nzw\n'));
+  assert.equal((await send({ ...ok, title: '\u200B\u202E' })).status, 400);
+  assert.equal((await send({ ...ok, body: '\u200B \u0007' })).status, 400);
+});
+
+test('field limits: 120-char title and 20000-char body are accepted; whitespace-only body and 41-char version are 400', async () => {
+  assert.equal((await send({ ...ok, title: 'x'.repeat(120), body: 'y'.repeat(20000) })).status, 201);
+  assert.equal((await send({ ...ok, body: ' \n\t ' })).status, 400);
+  assert.equal((await send({ ...ok, version: 'v'.repeat(41) })).status, 400);
+  assert.equal((await send({ ...ok, version: 'v'.repeat(40) })).status, 201);
+});
+
+test('request size: 32768 is accepted, 32769 is 413; a small content-length cannot hide a big body', async () => {
+  const pad = (len) => JSON.stringify(ok) + ' '.repeat(len - JSON.stringify(ok).length);
+  assert.equal((await send(pad(32768))).status, 201);
+  assert.equal((await send(pad(32769))).status, 413);
+  assert.equal((await send(pad(40000), { length: 10 })).status, 413);
+  assert.equal(calls.length, 1);
+});
+
+test('content-length must be a plain decimal integer', async () => {
+  for (const length of ['abc', '-5', '1e3', '0x10', ' ', '']) {
+    assert.equal((await send(ok, { length })).status, 413, `length ${JSON.stringify(length)}`);
+  }
+});
+
+test('content-type is matched as a media type, case-insensitive, parameters allowed', async () => {
+  assert.equal((await send(ok, { type: 'Application/JSON' })).status, 201);
+  assert.equal((await send(ok, { type: 'application/json; charset=utf-8' })).status, 201);
+  assert.equal((await send(ok, { type: 'text/json' })).status, 415);
+  assert.equal((await send(ok, { type: 'application/jsonp' })).status, 415);
+});
+
+test('missing token alone is 500', async () => {
+  const real = console.error;
+  console.error = () => {};
   try {
-    let last;
-    for (let i = 0; i < 101; i++) last = (await send(ok)).status;
-    assert.equal(last, 429);
-  } finally { Date.now = realNow; }
+    const res = await worker.fetch(new Request('https://w.test/', {
+      method: 'POST',
+      headers: { 'cf-connecting-ip': ip(), 'content-type': 'application/json', 'content-length': '2' },
+      body: '{}',
+    }), { GITHUB_REPO: 'o/r' });
+    assert.equal(res.status, 500);
+    const res2 = await worker.fetch(new Request('https://w.test/', { method: 'POST' }), { GITHUB_TOKEN: 't' });
+    assert.equal(res2.status, 500);
+  } finally { console.error = real; }
+});
+
+test('the GitHub call times out after 8000 ms', async () => {
+  const realTimeout = AbortSignal.timeout;
+  const asked = [];
+  AbortSignal.timeout = (ms) => { asked.push(ms); return realTimeout.call(AbortSignal, ms); };
+  try { await send(ok); } finally { AbortSignal.timeout = realTimeout; }
+  assert.deepEqual(asked, [8000]);
+});
+
+test('the IP map stops growing at 5000 entries but known IPs still pass', () => {
+  __test.cfg.dailyCap = Infinity;
+  const t = 1_000_000;
+  for (let i = 0; i < 5000; i++) assert.equal(__test.rateLimited(`ip${i}`, t), false);
+  assert.equal(__test.hits.size, 5000);
+  assert.equal(__test.rateLimited('new', t), true);
+  assert.equal(__test.hits.size, 5000);
+  assert.equal(__test.rateLimited('ip0', t), false);
+});
+
+test('expired entries are swept only above 1000 entries', () => {
+  __test.cfg.dailyCap = Infinity;
+  const t = 1_000_000;
+  for (let i = 0; i < 1000; i++) __test.rateLimited(`ip${i}`, t);
+  __test.rateLimited('later', t + 2 * 60 * 60 * 1000);
+  assert.equal(__test.hits.size, 1001, 'at 1000 entries nothing is swept');
+  __test.rateLimited('later2', t + 2 * 60 * 60 * 1000);
+  assert.equal(__test.hits.size, 2, 'above 1000 the expired ones go');
 });

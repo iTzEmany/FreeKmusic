@@ -287,6 +287,36 @@ void main() {
     expect([for (final p in await db.select(db.plays).get()) p.trackId], [kept]);
   });
 
+  test('replaceQueueId on the online entry now playing does not change currentTrack.id', () async {
+    final id = online.register(result('v1'));
+    preparer.urls['youtube:v1'] = (Uri.parse('https://rr1.googlevideo.com/v1'), const {});
+    await handler.playQueue([id], 0);
+    await settle();
+    expect(handler.currentTrack?.id, id);
+    expect(handler.replaceQueueId(id, ids[1]), isFalse);
+    expect(handler.currentTrack?.id, id);
+    expect(handler.queueIds, [id]);
+  });
+
+  test('after the playing shadow row is merged, going back does not reach a dead id', () async {
+    final id = online.register(result('v1'));
+    preparer.urls['youtube:v1'] = (Uri.parse('https://rr1.googlevideo.com/v1'), const {});
+    await handler.playQueue([id], 0);
+    await settle();
+    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
+    await handler.playQueue([shadow, ids[0]], 0);
+    await settle();
+    await TrackRepository(db).mergeStreamRow('youtube:v1', ids[1]);
+    handler.replaceQueueId(shadow, ids[1]);
+    expect(handler.queueIds, [ids[1], ids[0]]);
+    await handler.skipToNext();
+    await settle();
+    await handler.skipToPrevious();
+    await settle();
+    expect(handler.currentTrack?.id, ids[1]);
+    expect(failures, isEmpty);
+  });
+
   test('replaceQueueId also follows the list playback started from, and the library track now playing', () async {
     await handler.playQueue([ids[0]], 0);
     await settle();

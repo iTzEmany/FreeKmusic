@@ -12,9 +12,12 @@ const MAP_CAP = 5000;
 // a real 5/hour limit needs a Durable Object: move to it if abuse shows up (no paid binding for now).
 const hits = new Map();
 let day = { n: 0, reset: 0 };
+const cfg = { dailyCap: DAILY_CAP }; // tests lower it to reach the map limits
 
 // IPv4 as is; IPv6 reduced to its /64 (first 4 groups) so rotating the host part does not help.
 function bucket(ip) {
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(ip); // IPv4-mapped IPv6 is the IPv4 address
+  if (mapped) return mapped[1];
   if (!ip.includes(':')) return ip;
   const [head, tail] = ip.split('::');
   const h = head ? head.split(':') : [];
@@ -25,7 +28,7 @@ function bucket(ip) {
 
 function rateLimited(ip, now) {
   if (day.reset <= now) day = { n: 0, reset: now + DAY_MS };
-  if (++day.n > DAILY_CAP) return true;
+  if (day.n >= cfg.dailyCap) return true;
   if (hits.size > CLEAN_ABOVE) for (const [k, v] of hits) if (v.reset <= now) hits.delete(k);
   const key = bucket(ip);
   if (!hits.has(key) && hits.size >= MAP_CAP) return true;
@@ -33,8 +36,18 @@ function rateLimited(ip, now) {
   if (e.reset <= now) { e.n = 0; e.reset = now + WINDOW_MS; }
   e.n += 1;
   hits.set(key, e);
-  return e.n > LIMIT;
+  if (e.n > LIMIT) return true;
+  day.n += 1; // only requests that pass the per-IP limit use the shared cap: one IP cannot burn it for everyone
+  return false;
 }
+
+// For tests only: module state is shared across requests.
+export const __test = {
+  rateLimited,
+  hits,
+  cfg,
+  reset() { hits.clear(); day = { n: 0, reset: 0 }; cfg.dailyCap = DAILY_CAP; },
+};
 
 const reply = (status, obj) => Response.json(obj, { status });
 // Zero-width space after "@": GitHub no longer sees a mention, nobody gets notified.
@@ -47,14 +60,14 @@ export default {
       console.error('misconfigured');
       return reply(500, { error: 'server error' });
     }
-    if (!request.headers.get('content-type')?.toLowerCase().startsWith('application/json')) {
+    if (request.headers.get('content-type')?.split(';')[0].trim().toLowerCase() !== 'application/json') {
       return reply(415, { error: 'unsupported media type' });
     }
     // The IP is used only for the local counter, never forwarded.
     const ip = request.headers.get('cf-connecting-ip');
     if (!ip) return reply(400, { error: 'missing client ip' });
-    const len = Number(request.headers.get('content-length'));
-    if (!Number.isFinite(len) || !request.headers.has('content-length') || len > MAX_REQUEST) {
+    const lenHeader = request.headers.get('content-length');
+    if (lenHeader === null || !/^\d+$/.test(lenHeader) || Number(lenHeader) > MAX_REQUEST) {
       return reply(413, { error: 'payload too large' });
     }
     if (rateLimited(ip, Date.now())) return reply(429, { error: 'too many requests' });
@@ -70,8 +83,10 @@ export default {
     for (const k of ['title', 'body', 'version']) {
       if (typeof data?.[k] !== 'string') return reply(400, { error: 'invalid fields' });
     }
-    const title = data.title.replace(/\s+/g, ' ').trim();
-    if (!title || !data.body.trim() || title.length > MAX.title || data.body.length > MAX.body
+    // Control and format characters (RTL override, zero-width, ...) are dropped; the body keeps its line breaks and tabs.
+    const title = data.title.replace(/\s+/g, ' ').replace(/(?!\u200d)[\p{Cc}\p{Cf}]/gu, '').trim();
+    const body = data.body.replace(/(?![\n\r\t\u200d])[\p{Cc}\p{Cf}]/gu, '');
+    if (!title || !body.trim() || title.length > MAX.title || body.length > MAX.body
       || !VERSION.test(data.version)) {
       return reply(400, { error: 'invalid fields' });
     }
@@ -88,7 +103,7 @@ export default {
         },
         body: JSON.stringify({
           title: defang(title),
-          body: defang(`${data.body}\n\n---\nVersione: ${data.version}`),
+          body: defang(`${body}\n\n---\nVersione: ${data.version}`),
           labels: ['da-triage'],
         }),
       });
