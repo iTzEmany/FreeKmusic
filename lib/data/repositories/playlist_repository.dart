@@ -4,6 +4,7 @@ import '../../core/app_log.dart';
 import '../../core/clock.dart';
 import '../../core/playlist_order.dart';
 import '../db/app_database.dart';
+import 'favorite_collections_repository.dart';
 import 'hidden_playlists.dart';
 import 'light_tracks.dart';
 import 'track_kinds.dart';
@@ -60,7 +61,7 @@ class PlaylistRepository {
   Future<void> delete(int id) => _db.transaction(() async {
         final uuid = await uuidOf(id);
         if (uuid != null) {
-          await (_db.delete(_db.favoriteCollections)..where((r) => r.kind.equals('playlist') & r.key.equals(uuid))).go();
+          await FavoriteCollectionsRepository(_db).remove(FavoriteCollectionsRepository.playlist, uuid);
         }
         await (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
       });

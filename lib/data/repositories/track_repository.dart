@@ -251,7 +251,7 @@ class TrackRepository {
     // The album's YouTube Music id: the kept row's own value wins, the shadow's fills a gap.
     final id = shadow.albumBrowseId;
     if (id != null) {
-      await (_db.update(_db.tracks)..where((t) => t.id.equals(keepId) & t.albumBrowseId.isNull()))
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(keepId) & t.albumBrowseId.isNull() & t.userEdited.equals(false)))
           .write(TracksCompanion(albumBrowseId: Value(id)));
     }
     await (_db.delete(_db.tracks)..where((t) => t.id.equals(shadow.id))).go();

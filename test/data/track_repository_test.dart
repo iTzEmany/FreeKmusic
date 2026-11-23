@@ -703,13 +703,14 @@ void main() {
       expect((await repo.getById(lib['B']!))!.albumBrowseId, 'MPREmine');
     });
 
-    test('demoteToStream keeps the row value', () async {
-      final folderId = (await FolderRepository(db).add('/m')).id;
-      await repo.upsertBatch([row('/m/a.mp3', 'A', folderId: folderId)]);
+    test('mergeStreamRow leaves a user-edited row alone', () async {
+      await repo.upsertBatch([row('/a.mp3', 'A')]);
       final id = (await db.select(db.tracks).getSingle()).id;
-      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREa' WHERE id = $id");
-      await repo.demoteToStream(id, 'youtube:a');
-      expect((await repo.getById(id))!.albumBrowseId, 'MPREa');
+      await repo.ensureStreamRow(yt('a'));
+      await db.customStatement("UPDATE tracks SET album_browse_id = 'MPREa' WHERE path = 'stream:youtube:a'");
+      await db.customStatement('UPDATE tracks SET user_edited = 1 WHERE id = $id');
+      await repo.mergeStreamRow('youtube:a', id);
+      expect((await repo.getById(id))!.albumBrowseId, null);
     });
   });
 

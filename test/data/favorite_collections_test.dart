@@ -39,4 +39,17 @@ void main() {
     expect(await repo.watch('playlist').first, isEmpty);
     expect(await repo.watch('album').first, [uuid]);
   });
+
+  test('an album favourite is one key whether given as stream or file album key', () async {
+    await repo.add('album', 'stream|art|alb');
+    expect(await repo.isFavorite('album', 'art|alb').first, isTrue);
+    await repo.toggle('album', 'art|alb');
+    expect(await repo.watch('album').first, isEmpty);
+    await repo.add('album', 'art|alb');
+    expect(await repo.isFavoriteNow('album', 'stream|art|alb'), isTrue);
+    await repo.add('album', 'stream|art|alb');
+    expect(await repo.watch('album').first, ['art|alb']);
+    await repo.remove('album', 'stream|art|alb');
+    expect(await repo.watch('album').first, isEmpty);
+  });
 }

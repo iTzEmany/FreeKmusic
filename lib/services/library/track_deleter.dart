@@ -3,6 +3,7 @@ import 'dart:io';
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/hidden_playlists.dart';
+import '../../data/repositories/playlist_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -64,8 +65,8 @@ class TrackDeleter {
   /// Only on Android: for the files plain deletion is not allowed to touch.
   final PlatformDeleter? platform;
 
-  /// Called after rows were removed (the download state of those tracks changed).
-  final void Function()? onDeleted;
+  /// Called, and awaited, with the rows that were removed (the download state of those tracks changed).
+  final Future<void> Function(List<Track> gone)? onDeleted;
 
   /// Podcast episodes (`kind != 0`) are skipped: they have their own cleanup.
   Future<TrackDeleteReport> deleteTracks(List<Track> input) async {
@@ -115,7 +116,7 @@ class TrackDeleter {
     }
     await tracks.deleteTracks([for (final t in gone) t.id]);
     await _tidy(gone);
-    if (gone.isNotEmpty) onDeleted?.call();
+    if (gone.isNotEmpty) await onDeleted?.call(gone);
     return TrackDeleteReport(deleted: gone, failed: failed, refused: refused);
   }
 
@@ -145,7 +146,7 @@ class TrackDeleter {
       final imports = await (db.select(db.playlistImports)..where((i) => i.playlistId.equals(id))).get();
       await (db.delete(db.playlistImports)..where((i) => i.playlistId.equals(id))).go();
       await forgetImportDownloadToo(await SharedPreferences.getInstance(), [for (final i in imports) i.id]);
-      await (db.delete(db.playlists)..where((pl) => pl.id.equals(id))).go();
+      await PlaylistRepository(db).delete(id);
     }
   }
 

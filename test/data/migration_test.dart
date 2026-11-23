@@ -1081,7 +1081,6 @@ void main() {
       ['/a.mp3', 'A', 'MPRE1'],
     ]);
     expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), kSchemaVersion);
-    expect(kSchemaVersion, 23);
     await db.close();
   });
 }

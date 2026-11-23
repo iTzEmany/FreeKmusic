@@ -693,6 +693,8 @@ void main() {
         const FavoriteCollectionData(kind: 'playlist', key: 'not-here'),
       ]));
       expect((await db.select(db.favoriteCollections).get()).map((r) => r.key), ['k1']);
+      await merge(UserData(createdAt: 1, favoriteCollections: [const FavoriteCollectionData(kind: 'album', key: 'stream|k1')]));
+      expect((await db.select(db.favoriteCollections).get()).map((r) => r.key), ['k1']);
     });
 
     test('a backup without the field reads and merges; a bad entry is dropped', () async {
