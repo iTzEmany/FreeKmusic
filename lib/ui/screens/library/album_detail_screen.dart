@@ -309,7 +309,7 @@ class _AlbumMenu extends ConsumerWidget {
     final l = context.l10n;
     final list = tracks;
     final ctrl = ref.read(playerControllerProvider);
-    final fav = ref.watch(isFavoriteCollectionProvider((kind: 'album', key: album.albumKey))).value ?? false;
+    final fav = ref.watch(isFavoriteCollectionProvider((kind: favoriteAlbumKind, key: album.albumKey))).value ?? false;
     return IconButton(
       tooltip: l.moreActions,
       icon: const Icon(Icons.more_vert_rounded),
@@ -351,7 +351,7 @@ class _AlbumMenu extends ConsumerWidget {
           case _AlbumAction.playlist:
             showAddToPlaylistSheet(context, ref, list);
           case _AlbumAction.favorite:
-            await ref.read(toggleFavoriteCollectionProvider)('album', album.albumKey);
+            await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey);
           case _AlbumAction.share:
             DevicesSheet.show(context, trackIds: [for (final t in list) t.id]);
           case _AlbumAction.enrich:

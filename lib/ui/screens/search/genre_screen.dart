@@ -92,8 +92,8 @@ class GenreScreen extends ConsumerWidget {
           tracks: tracks.length,
           durationMs: tracks.fold<int>(0, (sum, t) => sum + t.durationMs),
         ),
+        onDownload: tracks.isEmpty ? null : () => keepOfflineFlow(context, ref, tracks),
         // The list as shown: the suggested songs that have arrived, in place.
-        onDownload: () => keepOfflineFlow(context, ref, tracks),
         onPlay: () => ctrl.playMixed(items, context: ctx, listKey: shuffleKey),
         // The ids of the list ▶ plays: the songs shown (a suggested one has no id yet).
         shuffleIds: shuffleIds,

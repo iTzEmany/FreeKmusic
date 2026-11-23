@@ -15,7 +15,10 @@ String formatSpeed(BuildContext context, double v) =>
 
 /// Chip with the current speed (highlighted when not 1×); opens the choices.
 class SpeedButton extends ConsumerWidget {
-  const SpeedButton({super.key});
+  const SpeedButton({super.key, this.minTarget = 0});
+
+  /// Smallest tap target (dp) when the chip sits among icon buttons; 0 = the chip's own size.
+  final double minTarget;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,18 +30,25 @@ class SpeedButton extends ConsumerWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(CcDims.rSheet),
         onTap: () => SpeedSheet.show(context),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: CcDims.gap4),
-          decoration: BoxDecoration(
-            color: changed ? cc.accent.withValues(alpha: 0.18) : cc.surface2,
-            borderRadius: BorderRadius.circular(CcDims.rSheet),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: minTarget, minHeight: minTarget),
+          child: Center(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: CcDims.gap4),
+            decoration: BoxDecoration(
+              color: changed ? cc.accent.withValues(alpha: 0.18) : cc.surface2,
+              borderRadius: BorderRadius.circular(CcDims.rSheet),
+            ),
+            child: Text(
+              formatSpeed(context, speed),
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: changed ? cc.accent : cc.textMuted,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+            ),
           ),
-          child: Text(
-            formatSpeed(context, speed),
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: changed ? cc.accent : cc.textMuted,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
           ),
         ),
       ),

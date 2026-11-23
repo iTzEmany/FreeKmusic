@@ -112,7 +112,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         await ops.setCover(id, null);
       case _PlaylistAction.favorite:
         final uuid = widget.playlist.uuid;
-        if (uuid != null) await ref.read(toggleFavoriteCollectionProvider)('playlist', uuid);
+        if (uuid != null) await ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, uuid);
       case _PlaylistAction.export:
         await exportPlaylistFlow(
           context,
@@ -289,7 +289,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     final custom = summary?.playlist.coverKey;
     final compact = ref.watch(settingsProvider).compactMode;
     final fav = widget.playlist.uuid != null &&
-        (ref.watch(isFavoriteCollectionProvider((kind: 'playlist', key: widget.playlist.uuid!))).value ?? false);
+        (ref.watch(isFavoriteCollectionProvider((kind: favoritePlaylistKind, key: widget.playlist.uuid!))).value ?? false);
     final ctrl = ref.read(playerControllerProvider);
     final playCtx = PlayContext(PlayContextKind.playlist, _name);
     // The mosaic follows the personal order, never the view order (D-424).

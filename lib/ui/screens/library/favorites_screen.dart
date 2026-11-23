@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
 import '../../../data/db/app_database.dart' show Track;
 import '../../../data/repositories/track_repository.dart';
 import '../../../l10n/l10n_ext.dart';
@@ -65,6 +66,11 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final list = tracks.value ?? const [];
+    for (final p in [favoriteAlbumsProvider, favoritePlaylistsProvider]) {
+      ref.listen(p, (_, n) {
+        if (n.hasError) AppLog.w('favourite collections failed', n.error, n.stackTrace);
+      });
+    }
     final albums = ref.watch(favoriteAlbumsProvider).value ?? const <AlbumSummary>[];
     final playlists = ref.watch(favoritePlaylistsProvider).value ?? const <PlaylistSummary>[];
     const playCtx = PlayContext(PlayContextKind.favorites);
@@ -127,7 +133,7 @@ SliverToBoxAdapter(
                 listKey: shuffleKey,
               ),
         onDownload: list.isEmpty ? null : () => keepOfflineFlow(context, ref, list),
-        scrollerCount: list.length,
+        scrollerCount: albums.length + playlists.length + list.length,
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,
         menu: IconButton(
@@ -186,6 +192,8 @@ SliverToBoxAdapter(
               ),
             ),
           ],
+          if (list.isNotEmpty && (albums.isNotEmpty || playlists.isNotEmpty))
+            SliverToBoxAdapter(child: SectionHeader(l.tracks, count: '${list.length}')),
           SliverAsyncBody(
             value: tracks,
             onRetry: () => ref.invalidate(tracksProvider(query)),

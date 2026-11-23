@@ -157,7 +157,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
       menu: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SpeedButton(),
+          const SpeedButton(minTarget: 48),
           IconButton(
             key: const ValueKey('podcast-menu'),
             tooltip: l.moreActions,

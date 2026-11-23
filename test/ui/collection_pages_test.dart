@@ -3,6 +3,7 @@ import 'package:codecore/data/repositories/favorite_collections_repository.dart'
 import 'package:codecore/data/repositories/library_queries.dart';
 import 'package:codecore/providers/favorite_collections_providers.dart' show resolveFavoriteAlbums;
 import 'package:codecore/data/repositories/playlist_repository.dart';
+import 'package:codecore/providers/keep_offline_providers.dart' show keepOfflineProvider;
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
 import 'package:codecore/ui/screens/library/artist_screen.dart';
 import 'package:codecore/ui/screens/library/favorites_screen.dart';
@@ -365,6 +366,10 @@ void main() {
         albumKey: key, title: 't', artist: 'a', variousArtists: false, trackCount: 1, durationMs: 1, year: null, coverKey: null);
     expect(resolveFavoriteAlbums(['x|y', 'gone|z'], [a('stream|x|y')]).map((e) => e.albumKey), ['stream|x|y']);
     expect(resolveFavoriteAlbums(['x|y'], [a('stream|x|y'), a('x|y')]).single.albumKey, 'x|y');
+    // A key stored with the prefix finds the same album, and the file one still wins.
+    expect(resolveFavoriteAlbums(['stream|x|y'], [a('stream|x|y')]).single.albumKey, 'stream|x|y');
+    expect(resolveFavoriteAlbums(['stream|x|y'], [a('stream|x|y'), a('x|y')]).single.albumKey, 'x|y');
+    expect(resolveFavoriteAlbums(['x|y', 'stream|x|y'], [a('stream|x|y')]), hasLength(1));
   });
 
   testWidgets('album page: Scarica icon, «Invia a un dispositivo» and the heart in the menu; the album shows in Preferiti and leaves it',
@@ -411,6 +416,34 @@ void main() {
     await tester.runAsync(() => repo.remove('playlist', uuid!));
     await _settle(tester);
     expect(find.text('Notte'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('playlist page: Scarica icon hands the playlist tracks to keepOffline', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 3);
+    final got = <int>[];
+    final id = await tester.runAsync(() async {
+      final pr = PlaylistRepository(h.db);
+      final id = await pr.create('Notte');
+      await pr.addTracks(id, [1, 2]);
+      return id;
+    });
+    await h.pump(
+      tester,
+      PlaylistDetailScreen(playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)),
+      extraOverrides: [
+        keepOfflineProvider.overrideWithValue((tracks) async {
+          got.addAll([for (final t in tracks) t.id]);
+          return 2;
+        }),
+      ],
+    );
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Scarica'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(got, unorderedEquals([1, 2]));
     await h.dispose(tester);
   });
 }
