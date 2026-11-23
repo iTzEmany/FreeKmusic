@@ -11,6 +11,7 @@ import '../services/online/vanished_tracks.dart';
 import '../services/online/youtube_service.dart';
 import '../services/stream/stream_key.dart' show keyOfStreamPath;
 import 'database_providers.dart';
+import 'player_providers.dart' show audioHandlerProvider;
 import 'settings_providers.dart' show settingsProvider;
 import 'smart_search_providers.dart' show linkMatchLimiterProvider, sourceCooldownProvider;
 import 'youtube_providers.dart' show downloadIndexProvider, youtubeServiceProvider;
@@ -21,6 +22,7 @@ final vanishedTracksProvider = Provider<VanishedTracks>((ref) {
   final log = ActivityLogRepository(ref.watch(databaseProvider));
   return VanishedTracks(
     tracks: tracks,
+    onShadowMerged: (gone, keep) => ref.read(audioHandlerProvider).replaceQueueId(gone, keep),
     hasFile: (key) async => await (await ref.read(downloadIndexProvider.future)).existingPathForKey(key) != null,
     search: (row) async {
       // One matcher per search: the library is not consulted, every YouTube Music call is budgeted.
