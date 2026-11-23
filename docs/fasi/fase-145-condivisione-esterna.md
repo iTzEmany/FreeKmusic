@@ -55,3 +55,6 @@ D-677, D-669, D-670, D-691 (stesso spirito per i servizi esterni), D-662, D-699.
 
 ## Da allineare (review di architettura della fase 142)
 - Menu ⋮ (`track_actions.dart` ~479-620): prima di aggiungere «Condividi», semplificare con un host persistente unico (un `Consumer` creato una volta nell'overlay radice o nello stato della shell) al posto dell'`OverlayEntry` per ogni menu, di `hostX ?? callerX`, del ramo `const []`, del post-frame e di `onActionDone`. `outer` oggi è l'overlay radice: niente `ShellNav.open` né `RenderBox` della riga come ancora (il foglio di condivisione su iPad/desktop vuole un'ancora).
+
+## Da allineare (review di architettura della fase 143)
+- `ci.yml`, passo «Detect documentation-only change»: `docs/*` conta come sola documentazione, quindi una PR che tocca solo `docs/site/` (pagina Pages con JS che decodifica il frammento `#`) salterebbe la CI. Escludere `docs/site/*` da quel `case` o dargli un job a sé.

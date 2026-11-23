@@ -29,3 +29,6 @@ D-673, D-662, D-699. Rilievo F-38 in [`../refactor/grande-revisione/analisi.md`]
 - Nessuna cosa in questa fase.
 
 ## Note di deviazione
+
+## Da allineare (review di architettura della fase 143)
+- I 30 test `node --test` del Worker (`tools/report-worker/`) non girano in CI: aggiungere un passo in «Analyze and test» (`ci.yml`; node c'è su ubuntu-latest). Il contratto app↔Worker è duplicato (limiti in `lib/core/issue_report.dart` e `tools/report-worker/src/index.js`, codici in `issue_sender.dart`, repo in `kReleaseRepo` e `wrangler.toml`): un test Dart che legge `index.js` e confronta i limiti con le costanti Dart.
