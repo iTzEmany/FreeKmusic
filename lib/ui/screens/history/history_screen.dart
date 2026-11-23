@@ -17,6 +17,7 @@ import '../../widgets/track_row.dart';
 import '../settings/settings_screen.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/async_body.dart';
+import '../../widgets/alpha_scroller.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../theme/tokens.dart';
 
@@ -138,7 +139,10 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               for (var i = 0; i < items.length; i++) {
                 if (items[i] is HistoryEntry) trackIndex[i] = next++;
               }
-              return ListView.builder(
+              return AlphaScroller(
+                controller: _scroll,
+                itemCount: entries.length,
+                child: ListView.builder(
                 controller: _scroll,
                 padding: EdgeInsets.zero.withDock(context),
                 itemCount: items.length,
@@ -161,6 +165,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                     ),
                   );
                 },
+              ),
               );
             },
           ),

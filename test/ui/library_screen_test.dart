@@ -18,6 +18,7 @@ import 'package:codecore/providers/ui_providers.dart' show librarySearchRequestP
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/settings_providers.dart' show settingsProvider;
 import 'package:codecore/ui/shell/app_shell.dart';
+import 'package:codecore/ui/widgets/alpha_scroller.dart' show alphaScrollerMinItems;
 import 'package:codecore/ui/widgets/cc_search_field.dart';
 import 'package:codecore/ui/widgets/library_filter_bar.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
@@ -1051,6 +1052,31 @@ void main() {
     final r = t.getRect(find.byType(SegmentedBlocks<LibraryKind?>));
     final menu = t.getRect(find.byTooltip('Altre azioni'));
     expect(r.right, greaterThanOrEqualTo(menu.right - 2 * CcDims.margin));
+    await h.dispose(t);
+  });
+
+  testWidgets('the scroll strip shows from alphaScrollerMinItems entries on', (t) async {
+    final h = await open(t, tracks: 0);
+    final handle = find.byKey(const ValueKey('scroller-handle'));
+    await _settle(t);
+    expect(handle, findsNothing);
+    for (var i = 0; i < alphaScrollerMinItems; i++) {
+      await h.db.into(h.db.tracks).insert(
+        TracksCompanion.insert(
+          path: '/m/s$i.mp3',
+          title: 'T$i',
+          albumKey: 'a|album $i',
+          format: 'mp3',
+          sizeBytes: 1,
+          mtimeMs: 1,
+          addedAt: i,
+          artist: const Value('Zed'),
+          album: Value('Album $i'),
+        ),
+      );
+    }
+    await _settle(t);
+    expect(handle, findsOneWidget);
     await h.dispose(t);
   });
 }

@@ -609,7 +609,12 @@ class _LibraryList extends StatelessWidget {
         ],
       ),
     );
-    return CustomScrollView(
+    // Letter rows make the extent vary: the strip goes by position.
+    return PositionScroller(
+      itemCount: entries.length,
+      topInset: () => topInset,
+      builder: (controller) => CustomScrollView(
+      controller: controller,
       slivers: [
         SliverToBoxAdapter(child: SizedBox(height: topInset)),
         if (header != null) SliverToBoxAdapter(child: header),
@@ -637,6 +642,7 @@ class _LibraryList extends StatelessWidget {
         ),
         SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
       ],
+      ),
     );
   }
 }
@@ -694,7 +700,11 @@ class _LibraryGrid extends StatelessWidget {
       );
     }
 
-    return CustomScrollView(
+    return PositionScroller(
+      itemCount: entries.length,
+      topInset: () => topInset,
+      builder: (controller) => CustomScrollView(
+      controller: controller,
       slivers: [
         SliverToBoxAdapter(child: SizedBox(height: topInset)),
         if (header != null) SliverToBoxAdapter(child: header),
@@ -711,6 +721,7 @@ class _LibraryGrid extends StatelessWidget {
         ),
         SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
       ],
+      ),
     );
   }
 }

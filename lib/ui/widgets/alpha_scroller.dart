@@ -17,6 +17,42 @@ String leadingLetter(String? text) {
 /// Below this many items the strip is not worth having (D-694).
 const alphaScrollerMinItems = 100;
 
+/// Owns the [ScrollController] of a list that has none of its own and puts
+/// the by-position [AlphaScroller] on it.
+class PositionScroller extends StatefulWidget {
+  const PositionScroller({
+    super.key,
+    required this.itemCount,
+    this.topInset,
+    required this.builder,
+  });
+
+  final int itemCount;
+  final double Function()? topInset;
+  final Widget Function(ScrollController controller) builder;
+
+  @override
+  State<PositionScroller> createState() => _PositionScrollerState();
+}
+
+class _PositionScrollerState extends State<PositionScroller> {
+  final _controller = ScrollController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlphaScroller(
+    controller: _controller,
+    itemCount: widget.itemCount,
+    topInset: widget.topInset,
+    child: widget.builder(_controller),
+  );
+}
+
 /// A draggable strip at the right edge of a list. With [letters] and
 /// [itemExtent] (fixed-extent list) it jumps to the item whose initial sits
 /// under the finger and shows the letter in a bubble; with only [itemCount]
