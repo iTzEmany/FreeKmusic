@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
 import '../../../core/platform.dart';
 import '../../../l10n/l10n_ext.dart';
@@ -10,7 +11,9 @@ import '../../widgets/karaoke_video_surface.dart';
 /// The karaoke video over the whole screen (R-257). Android turns landscape and immersive,
 /// and goes back to portrait on exit; on desktop the video just fills the window.
 class KaraokeVideoFullscreen extends ConsumerStatefulWidget {
-  const KaraokeVideoFullscreen({super.key});
+  const KaraokeVideoFullscreen({super.key, this.provider});
+
+  final ProviderListenable<KaraokeVideoState>? provider;
 
   @override
   ConsumerState<KaraokeVideoFullscreen> createState() =>
@@ -49,13 +52,14 @@ class _KaraokeVideoFullscreenState
 
   @override
   Widget build(BuildContext context) {
+    final provider = widget.provider ?? karaokeVideoProvider;
     // The state always holds the current controller (a new one per track), never keep an old one.
-    ref.listen(karaokeVideoProvider.select((v) => v.status), (_, s) {
+    ref.listen(provider.select((v) => v.status), (_, s) {
       if (s == KaraokeVideoStatus.none || s == KaraokeVideoStatus.failed) {
         Navigator.of(context).maybePop();
       }
     });
-    final c = ref.watch(karaokeVideoProvider).controller;
+    final c = ref.watch(provider).controller;
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(

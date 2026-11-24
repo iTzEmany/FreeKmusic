@@ -119,7 +119,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
     required this.cached,
     required this.download,
     required this.release,
-    required this.tracks,
+    required this.videoIds,
     required this.positions,
     required this.playing,
     required this.audioPlaying,
@@ -131,7 +131,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
        _clock = clock ?? DateTime.now {
     _audioPlaying = audioPlaying();
     _subs = [
-      tracks.listen(_track),
+      videoIds.listen(_video),
       positions.listen((p) {
         _audioPos = p;
         _tick();
@@ -147,7 +147,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
   final Future<File?> Function(String id) cached;
   final void Function(String id, KaraokeVideoStream stream) download;
   final void Function(String id) release;
-  final Stream<Track?> tracks;
+  final Stream<String?> videoIds;
   final Stream<Duration> positions;
   final Stream<bool> playing;
   final bool Function() audioPlaying;
@@ -207,8 +207,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
     if (port != null) unawaited(_guard(port.dispose(), 'dispose'));
   }
 
-  void _track(Track? t, {bool retry = false}) {
-    final id = t != null && isKaraokeVideo(t) ? karaokeVideoId(t) : null;
+  void _video(String? id, {bool retry = false}) {
     if (id == _id) {
       if (id != null && retry && _status == KaraokeVideoStatus.failed) _restart(); // played again after a failure
       return;
@@ -348,7 +347,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
   @override
   Future<void>? beforePlay(Track t, Duration start) {
     _audioPos = start;
-    _track(t, retry: true);
+    _video(karaokeVideoIdOfTrack(t), retry: true);
     if (_id == null) return null;
     if (_status == KaraokeVideoStatus.ready && (start - _videoPos).abs() > _driftLimit) _tick(user: true);
     return _background ? null : _ready.future; // in the background nobody sees it: it joins the audio on return

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable;
 
 import '../../data/db/app_database.dart' show Track;
 import '../../l10n/l10n_ext.dart';
@@ -11,15 +12,26 @@ import 'track_art.dart';
 /// The 16:9 karaoke video in the player (R-254): the cover with «Carico il video…» while it
 /// loads, the video once ready. A tap opens it full screen (R-257).
 class KaraokeVideoView extends ConsumerWidget {
-  const KaraokeVideoView({super.key, required this.track, required this.width});
+  const KaraokeVideoView({
+    super.key,
+    this.track,
+    this.cover,
+    this.provider,
+    required this.width,
+  }) : assert(track != null || cover != null);
 
-  final Track track;
+  /// The loading placeholder: [cover], or the art of [track].
+  final Track? track;
+  final Widget? cover;
+  /// Defaults to the player's [karaokeVideoProvider].
+  final ProviderListenable<KaraokeVideoState>? provider;
   final double width;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
-    final st = ref.watch(karaokeVideoProvider);
+    final p = provider ?? karaokeVideoProvider;
+    final st = ref.watch(p);
     final c = st.controller;
     final ready = st.status == KaraokeVideoStatus.ready && c != null;
     return Semantics(
@@ -29,7 +41,7 @@ class KaraokeVideoView extends ConsumerWidget {
         onTap: ready
             ? () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const KaraokeVideoFullscreen(),
+                  builder: (_) => KaraokeVideoFullscreen(provider: p),
                 ),
               )
             : null,
@@ -42,7 +54,7 @@ class KaraokeVideoView extends ConsumerWidget {
                 : Stack(
                     alignment: Alignment.center,
                     children: [
-                      TrackArt(track: track, size: width, radius: 0),
+                      cover ?? TrackArt(track: track!, size: width, radius: 0),
                       Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
