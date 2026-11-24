@@ -18,7 +18,7 @@ Codice: `KaraokeVideoController` (`lib/services/karaoke_video/karaoke_video_cont
   - Passi: 1) con un video karaoke in corso, al posto della copertina dentro l'anello c'è il video della Jam (in caricamento: copertina con l'indicatore, come nel player); 2) tocco → schermo intero come nel player; 3) video fallito → copertina e il messaggio breve di oggi; 4) TalkBack «Video karaoke» come nel player.
   - Comando mirato: `flutter test test/ui/karaoke_video_view_test.dart test/ui/jam_*_test.dart test/ui/architecture_test.dart test/ui/no_separator_literals_test.dart`
   - Fatto quando: la schermata della Jam mostra il video per un brano karaoke e la copertina per gli altri.
-- [ ] 148.3 Prova fra Mi A3 e Redmi, aggiornamento dalla 1.6.4, documenti, rilascio
+- [x] 148.3 Prova fra Mi A3 e Redmi, aggiornamento dalla 1.6.4, documenti, rilascio
   - Passi: 0) sul Redmi: build di debug della 1.6.4 (DB v20) con una libreria grossa (`~/Downloads/Liked_Songs.csv`, preferiti, playlist), poi la build di debug di `master` installata sopra: conteggi, playlist e preferiti identici dopo la migrazione v20 → v24; 1) Jam in LAN fra Mi A3 (host) e Redmi (ospite) con un video karaoke: il video compare su entrambi, segue pausa e salto; 2) documenti d'area aggiornati; 3) dopo il merge, tag `v1.7.0` (la fase entra nella 1.7.0).
   - Fatto quando: la prova ha esito scritto qui sotto; tag creato e release della CI verde.
 
@@ -28,3 +28,4 @@ Codice: `KaraokeVideoController` (`lib/services/karaoke_video/karaoke_video_cont
 ## Note di deviazione
 
 - **148.1** `jamKaraokeVideoId` richiede anche `selfFetchable` (ref `yt:youtube:`), più stretta del passo 2: un item di libreria con `videoId` (download) suona il file locale, che può non coincidere col video (D-636). Scheggia di passo saltata: diff piccolo, review Sonnet high con correzioni, prova sui telefoni subito dopo.
+- **148.3 Prove (24/11).** Migrazione: Redmi con la release 1.6.2 (DB v19) popolata (22 brani, 3 playlist, 6 preferiti, etichetta, ascolti, tema e transizione cambiati), poi l'APK release 1.7.0 della CI (`workflow_dispatch`, run 45376533842) installato sopra: tutti i valori uguali, nessun crash né popup al primo avvio. Jam in LAN Redmi (host) ↔ Mi A3 (ospite) con un video karaoke: video su entrambi, pausa/ripresa e salto riallineati (`drift` registrato), schermo intero orizzontale e ritorno, brano normale → copertina, fine Jam pulita, salti rapidi e background ok. Trovato e corretto un errore nel log al dispose del provider (`ref` usato dopo il dispose nel ciclo delle posizioni), con test di regressione. Non provati: Jam a distanza e uscite multiple (stesso provider, nessun codice di rete nuovo).
