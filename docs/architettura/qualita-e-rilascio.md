@@ -51,8 +51,8 @@ Questo documento dice come si verifica una modifica e come esce una versione. Co
 
 | Dove | Cosa |
 |---|---|
-| `pubspec.yaml` | `version: 1.4.1+6` (nome e build). |
-| `lib/core/app_info.dart` | `kAppVersion = '1.6.0'` (da tenere uguale a `pubspec.yaml`), `kReleaseRepo = 'iTzEmany/FreeKmusic'`. |
+| `pubspec.yaml` | `version: <nome>+<build>` (da alzare a ogni rilascio, nella PR che lo prepara). |
+| `lib/core/app_info.dart` | `kAppVersion` (da tenere uguale alla `version` di `pubspec.yaml`), `kReleaseRepo = 'iTzEmany/FreeKmusic'`. |
 
 ## Come funziona
 
@@ -137,6 +137,10 @@ Il Worker Cloudflare che trasforma una segnalazione anonima in una issue GitHub 
 ### Pagina di condivisione (fase 145)
 
 `docs/site/` (`index.html` con CSS e JS inline, `fragment.js` che decodifica il frammento: base64url, gzip, limite 64 KB, controlli FK1) è pubblicata su GitHub Pages da `.github/workflows/pages.yml` a ogni push su `master` che tocca `docs/site/**` (o a mano). Nessuna richiesta di rete con i dati del frammento. La prova è `node --test test/site/fragment.test.mjs` (il test sta fuori da `docs/site`, che è pubblicata) (passo «Share page tests» di «Analyze and test»); in `ci.yml` `docs/site/*` non conta come sola documentazione.
+
+### Metriche di arrivo della grande revisione (fase 147)
+
+Le metriche di `rete.md` (storico, fasi 135-146) sono tutte rispettate: 258 test mirati verdi, più i `grep` sul codice (nessun `color: cc.bg` in Tutti i brani, una sola barra di download, un solo punto d'invio della segnalazione, le 8 pagine con una sola testata); l'unica deviazione è nota (139.4: altri 4 file osservano `downloadsProvider` solo per trovare l'`item` della riga). Accessibilità delle schermate nuove verificata con `uiautomator` sul Mi A3 e con i due test dedicati; esiti per fase in `fasi/fase-147-verifica-finale.md`. In CI «Analyze and test» lancia anche i test `node` del Worker (`tools/report-worker/test/`) e della pagina di condivisione (`test/site/`). Restano all'utente le prove su telefono dopo il tag v1.7.0 (stessa fase, «Tocca a te»).
 
 ## Invarianti da non rompere
 

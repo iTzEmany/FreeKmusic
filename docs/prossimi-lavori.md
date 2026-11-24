@@ -8,20 +8,68 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 
 - **Feature «Video karaoke, aggiornamento dall'app, rilascio 1.6.3»** (kickoff del 18/11): fasi 131–133 in [`fasi/`](fasi/README.md), specifica in [`storico/feature/feature-karaoke-video-e-aggiornamenti.md`](storico/feature/feature-karaoke-video-e-aggiornamenti.md), mockup in [`storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](storico/feature/mockup-karaoke-video-e-aggiornamenti.html), decisioni D-631..D-651.
 
-- **Grande revisione** (22/11, D-662..D-699, analisi in [`refactor/grande-revisione/analisi.md`](refactor/grande-revisione/analisi.md), rete di test in [`rete.md`](refactor/grande-revisione/rete.md)): fasi 135-147 in [`fasi/`](fasi/README.md), una per riga:
+- **Grande revisione** (22/11, D-662..D-699, analisi in [`storico/refactor/grande-revisione/analisi.md`](storico/refactor/grande-revisione/analisi.md), rete di test in [`rete.md`](storico/refactor/grande-revisione/rete.md)): fasi 135-147 in [`fasi/`](fasi/README.md), una per riga:
   - ~~Fase 135 «riproduzione affidabile»~~ fatta (#210): [`storico/fasi/fase-135-riproduzione-affidabile.md`](storico/fasi/fase-135-riproduzione-affidabile.md)
   - ~~Fase 136 «arricchimento unico»~~ fatta (#212): [`storico/fasi/fase-136-arricchimento-unico.md`](storico/fasi/fase-136-arricchimento-unico.md)
   - ~~Fase 137 «backup, ripristino, aggiornamento»~~ fatta (#214): [`storico/fasi/fase-137-backup-ripristino-aggiornamento.md`](storico/fasi/fase-137-backup-ripristino-aggiornamento.md)
   - ~~Fase 138 «ritocchi di UI»~~ fatta (#215): [`storico/fasi/fase-138-ritocchi-ui.md`](storico/fasi/fase-138-ritocchi-ui.md)
   - ~~Fase 139 «stato del brano e download»~~ fatta (#216): [`storico/fasi/fase-139-stato-brano-download.md`](storico/fasi/fase-139-stato-brano-download.md)
   - ~~Fase 140 «streaming per prima»~~ fatta (#217): [`storico/fasi/fase-140-streaming-per-prima.md`](storico/fasi/fase-140-streaming-per-prima.md)
-  - Fase 141 «collezioni»: [`storico/fasi/fase-141-collezioni.md`](storico/fasi/fase-141-collezioni.md)
-  - Fase 142 «Riprendi a griglia»: [`storico/fasi/fase-142-riprendi-a-griglia.md`](storico/fasi/fase-142-riprendi-a-griglia.md)
-  - Fase 143 «registro e segnalazioni»: [`storico/fasi/fase-143-registro-e-segnalazioni.md`](storico/fasi/fase-143-registro-e-segnalazioni.md)
-  - Fase 144 «modelli e dizionari»: [`storico/fasi/fase-144-modelli-e-dizionari.md`](storico/fasi/fase-144-modelli-e-dizionari.md)
-  - Fase 145 «condivisione esterna»: [`storico/fasi/fase-145-condivisione-esterna.md`](storico/fasi/fase-145-condivisione-esterna.md)
-  - Fase 146 «sincronizzazione tra dispositivi»: [`fasi/fase-146-sincronizzazione-dispositivi.md`](fasi/fase-146-sincronizzazione-dispositivi.md)
-  - Fase 147 «verifica finale sul telefono»: [`fasi/fase-147-verifica-finale.md`](fasi/fase-147-verifica-finale.md)
+  - ~~Fase 141 «collezioni»~~ fatta: [`storico/fasi/fase-141-collezioni.md`](storico/fasi/fase-141-collezioni.md)
+  - ~~Fase 142 «Riprendi a griglia»~~ fatta: [`storico/fasi/fase-142-riprendi-a-griglia.md`](storico/fasi/fase-142-riprendi-a-griglia.md)
+  - ~~Fase 143 «registro e segnalazioni»~~ fatta: [`storico/fasi/fase-143-registro-e-segnalazioni.md`](storico/fasi/fase-143-registro-e-segnalazioni.md)
+  - ~~Fase 144 «modelli e dizionari»~~ fatta: [`storico/fasi/fase-144-modelli-e-dizionari.md`](storico/fasi/fase-144-modelli-e-dizionari.md)
+  - ~~Fase 145 «condivisione esterna»~~ fatta: [`storico/fasi/fase-145-condivisione-esterna.md`](storico/fasi/fase-145-condivisione-esterna.md)
+  - ~~Fase 146 «sincronizzazione tra dispositivi»~~ fatta: [`storico/fasi/fase-146-sincronizzazione-dispositivi.md`](storico/fasi/fase-146-sincronizzazione-dispositivi.md)
+  - Fase 147 «verifica finale sul telefono» (parte documentale fatta, prove su telefono dell'utente dopo il tag v1.7.0): [`fasi/fase-147-verifica-finale.md`](fasi/fase-147-verifica-finale.md)
+
+## Dalla grande revisione (fasi 135-147)
+Rinvii di codice delle review e delle schegge, per area; ogni voce rimanda alla fase di origine in `storico/`. Le prove su telefono sono nella fase 147, «Tocca a te».
+
+### Riproduzione e coda
+- **Riquadro Radio del Riprendi**: se la stazione suona già il tocco la riavvia (`playStations`); Android Auto mette il contesto a null (`codecore_audio_handler.dart:525,531`), quindi radio e album avviati dall'auto compaiono come «Brano» ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
+- **Griglia del Riprendi a 3 colonne**: la soglia è sul blocco (560 dp), su desktop serve una finestra di circa 1324 dp: rivedere la soglia o documentarla ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
+- **Riquadro Daylist** visibile per 90 giorni anche quando la daylist non può partire (`daylist_providers.dart:374`, ritorno silenzioso): nasconderlo o avvisare ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
+- **Log `discovery: socket error | Network is unreachable`** ogni 2 s su Android offline ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
+
+### Online e modelli
+- **`SeparationService.deleteModels`**: finestra fra la cancellazione e un `request()` in arrivo (separazione che parte dopo `await _last`): ricontrollare `_activeKey` in ciclo o contare la separazione nella sezione esclusiva ([fase 144](storico/fasi/fase-144-modelli-e-dizionari.md)).
+- **Test di contratto app↔Worker**: oggi solo i limiti; aggiungere 201 con `url`, 504 incerto, 429 e le chiavi della richiesta (`title`, `body`, `version`) ([fase 144](storico/fasi/fase-144-modelli-e-dizionari.md)).
+- **Cancellazione di molte lingue di traduzione**: ogni `delete` rilegge le 20 lingue da ML Kit; se pesa, una sola lettura per selezione ([fase 144](storico/fasi/fase-144-modelli-e-dizionari.md)).
+
+### Condivisione esterna
+- **Importazione dal link**: spostare ricerca, `_busy` e `saveToLibrary` da `lib/ui/shell/shared_collection_import.dart` a un provider accanto a `saveToLibrary`; valutare `innerTube.songOf(id)` al posto di `yt.search(url)` ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **«Condividi…» di `online_album_screen.dart` e `online_playlist_screen.dart`** copia ancora il link negli appunti: portarlo al foglio di sistema (D-677) con testo da id ed etichette, poi togliere `shareMenu` dagli ARB; stesso costruttore per il brano online del menu ⋮ (oggi una `Track` finta) ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **Test di contratto** fra `kSharePageUrl`, manifest (host e percorsi), `IncomingBridge.kt`, `docs/site/fragment.js` e `index.html` (anche `kReleaseRepo`); test che `encodeShareFragment` riproduce i vettori positivi ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **`shortTitle`/`openSearchWith`** in un file neutro della shell, taglio per caratteri (`characters.take`) e non per unità UTF-16; «Senza titolo» del frammento localizzato dal chiamante ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **Menu ⋮**: un `shortcut:` sul perché l'host è statico (deve stare sotto il Navigator di radice) ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **m3u8 e pagina**: cancellare l'm3u8 a fine condivisione; su desktop negli appunti il testo leggibile e non `#EXTM3U`; CSP della pagina senza `unsafe-inline` (script in `main.js`); in `IncomingBridge.kt` controllo del percorso e un tetto a `pendingTexts` ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **Brano singolo da link senza rete**: Cerca mostra tre messaggi di rete e resta in errore finché non si preme Riprova ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+
+### Sync, backup e Jam
+- **Parità al millisecondo**: due modifiche della stessa playlist con lo stesso `updatedAt` su due dispositivi non convergono (1 caso su 300 nel fuzz a passo 0): spareggio deterministico, per esempio l'uuid del dispositivo ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **`GET /sync/collections`** rimanda ogni volta gli ultimi 20000 ascolti e tutti i tombstone (13 MB in circa 2 s): un `since` futuro richiede di tornare a un POST, perché la firma non copre la query ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **`hasFile`** viene dall'indice dei download in memoria; i cuori su brani che qui sono file non viaggiano. Annullare un cuore messo per sbaglio lascia un tombstone `favoriteStream` datato adesso (caso accettato) ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **R2**: l'anteprima si calcola con `apply` in una transazione annullata, o con un helper `olderThan` comune (la precedenza è ripetuta in 7 punti). **R9**: dividere o rinominare `PlaylistSyncRepository` (`DeviceSyncRepository`) e riusare `_chunks`. **R10**: `StreamEntry` su `StreamOffer`, costanti di protocollo fuori da `tables.dart`. **R11**: `_drop` di una playlist importata ripulisce le prefs `importDownloadToo.<id>`. **R12**: `apply` restituisce i conteggi reali per il messaggio finale. **R13**: togliere i test doppi ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **`ShareHub.planPlaylistSync`** (caseInsensitive, keepTexts, recordHistory) resta senza test diretto: limite accettato, i pezzi sono coperti da `sync_two_devices_test` e `sync_transport_test` ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+
+### Dalle sezioni «Da allineare», «Da riprendere», «Da sapere» delle fasi 140-146
+Ancora aperte (verificate nel codice il 24/11):
+- **`autofocus: true` nei campi dei dialoghi** (D-667): `prompt_name.dart:61`, `pairing_dialogs.dart:79`, `move_to_album_dialog.dart:98`, `jam_remote_settings.dart:187`; decidere se D-667 vale anche lì ([fase 141](storico/fasi/fase-141-collezioni.md)).
+- **Stato del brano calcolato in più modi**: `inLibraryOfProvider` (`library_add_providers.dart:19`, usato in `jam_save.dart`) e `entryInLibrary` (`track_actions.dart:101`) accanto a `trackStateProvider`; `_onlinePrefix` copiato in `track_state_providers.dart:24` invece di un helper di `online_entries` ([fase 140](storico/fasi/fase-140-streaming-per-prima.md)).
+- **Riga orfana di `followAlbumKey`**: se entrambi gli album erano preferiti resta la riga con la chiave vecchia (`shortcut:` in `favorite_collections_repository.dart:56`, filtrata in lettura); i preferiti di album spariti restano nel DB e nel backup: potarli o mostrarli ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **Preferiti di collezione nella sync**: `_mergeFavoriteCollections` scarta i preferiti di playlist il cui uuid non c'è ancora; chiavi non trasferibili (`unknown|<cartella>`, chiavi per brano); `FavoriteCollectionData.tryParse` limita la lunghezza della chiave (`kMaxKeyLength`) ma non il numero di voci per la LAN: da verificare ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **`ci.yml`, «Detect documentation-only change»**: `docs/*` conta come sola documentazione, quindi una PR che tocca solo `docs/site/` salterebbe la CI; la pagina ha ancora `script-src 'unsafe-inline'` ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **Menu ⋮** (`track_actions.dart`): host persistente unico al posto dell'`OverlayEntry` per ogni menu e di `hostX ?? callerX`; «Libera spazio» che compare a menu già aperto (aspettare `pristine()` prima del foglio); menu del brano che suona con voce online legata a una riga salvata ([fasi 140, 141, 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- **Indice dei download**: I/O sincrono (`pathForKey` → `existsSync`, `pruneGone`) nel thread UI ([fase 140](storico/fasi/fase-140-streaming-per-prima.md)).
+- **Fusioni di riga**: `demoteToStream` e `rekeyStream` scartano l'id restituito da `mergeStreamRow` e riallacciano tramite la callback `onMerged`; meglio un record (`moved`, `gone`) e un solo percorso per `replaceQueueId` ([fasi 143 e 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **Import**: preferenze iniettate in `PlaylistImportService` e parametro `streaming` ormai morto (D-665); `OnlineSelectionScope` doppio nella pagina album ([fase 140](storico/fasi/fase-140-streaming-per-prima.md)).
+- **Un solo ingresso per salvare righe in streaming da fuori** (backup, LAN, Jam, import), con `StreamOffer` che porta `albumBrowseId` e `addedAt` ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
+- **Contratto app↔Worker** oltre i limiti: vedi la voce in «Online e modelli» ([fase 144](storico/fasi/fase-144-modelli-e-dizionari.md)).
+- **`SectionHeader` fuori da una superficie** e `activity_log_screen.dart:378` (`cc.bg` senza backdrop): da decidere caso per caso (D-687) ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
+- **Test deboli**: `create_flows_test.dart:~53` (flag `autofocus`, basta il focus effettivo).
+
+Già fatte (nominale): test `node` del Worker in CI e test di contratto dei limiti (144), `CcDims.sheetMaxWidth`, `ShrinkingHeader` senza `ClipRect`, `LogEntryCard.onHow` `required`, doppia barra su desktop (`AlphaScroller` con `scrollbars: false`), focus di «Cerca» sul clic della barra laterale su desktop, `albumBrowseId` conservato in `mergeStreamRow`, `PlayContextKind.fromIndex`, chiavi `importDownloadToo.*` fuori da backup e sync, `autofocus` del foglio `jam_remote_sheets`, `cc.bg` delle testate elencate in 141, `LibraryAdder.add` con `tag`.
 
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).

@@ -130,9 +130,9 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
         final VoidCallback? action = hasText
             ? (widget.onClear ?? _clear)
             : widget.onCloseEmpty ?? (focused ? focusNode.unfocus : null);
-        // The hint is also the field's name for TalkBack.
+        // The hint names the field for TalkBack; with text typed the hint is gone, so the label takes over.
         return Semantics(
-          label: widget.hint,
+          label: hasText ? widget.hint : null,
           child: TextField(
             controller: controller,
             focusNode: focusNode,

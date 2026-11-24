@@ -122,17 +122,13 @@ class _Device {
     Map<String, Object> mySettings = const {},
     Map<String, Object> theirSettings = const {},
   }) async {
-    final resolver = await sync.resolver();
-    return planSync(
-      await sync.local(),
+    return sync.plan(
       await other.sync.export(),
-      resolver.resolve,
-      localSide: await sync.side(settings: mySettings),
-      remoteSide: SyncSide(
-        settings: theirSettings,
-        tables: await sync.newTables(await other.sent(), resolver),
-      ),
+      SyncSide(settings: theirSettings, tables: await other.sent()),
+      resolver: await sync.resolver(),
+      settings: mySettings,
       mine: mine,
+      history: true,
     );
   }
 

@@ -281,7 +281,9 @@ class _AlbumSubtitle extends StatelessWidget {
         : (album.artist ?? l.unknownArtist);
     return album.variousArtists || album.artist == null
             ? Text(artistName, style: Theme.of(context).textTheme.bodyLarge)
-            : InkWell(
+            : Semantics(
+                link: true,
+                child: InkWell(
                 onTap: () => ShellNav.open<void>(
                   context,
                   ArtistDetailScreen(
@@ -293,11 +295,21 @@ class _AlbumSubtitle extends StatelessWidget {
                     ),
                   ),
                 ),
-                child: Text(
-                  artistName,
-                  style: Theme.of(context).textTheme.bodyLarge
-                      ?.copyWith(fontWeight: FontWeight.w700, color: cc.text),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: 48),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    widthFactor: 1,
+                    child: Text(
+                      artistName,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: cc.text,
+                      ),
+                    ),
+                  ),
                 ),
+              ),
               );
   }
 }

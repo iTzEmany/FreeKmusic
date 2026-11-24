@@ -17,10 +17,14 @@ class SyncException implements Exception {
   String toString() => 'SyncException($error)';
 }
 
-/// A 404 on the first collection route: the other device predates it (a thrown marker, never leaves [SyncClient]).
+/// A 404 on `/sync/collections`: the other device predates it (a thrown marker, never leaves [SyncClient]).
 class _NoCollectionRoutes implements Exception {
   const _NoCollectionRoutes();
 }
+
+/// `/sync/collections` is one answer of several MB (listens, tags, tombstones), where the other calls were small: it
+/// gets a longer receive timeout than the client's 30 s.
+const kCollectionsTimeout = Duration(minutes: 2);
 
 /// The initiator side of the sync: reads the other device's playlists and asks
 /// for the tracks this one lacks. Always over HTTPS, signed, pinned.
@@ -37,10 +41,10 @@ class SyncClient {
   }
 
   /// The JSON object of a sync answer: what the other device sends is not trusted.
-  Future<Map<String, dynamic>> _reply(Future<SecureReply> Function() call, {bool firstNewRoute = false}) async {
+  Future<Map<String, dynamic>> _reply(Future<SecureReply> Function() call, {bool missingOk = false}) async {
     try {
       final r = await call();
-      if (firstNewRoute && r.status == 404) throw const _NoCollectionRoutes();
+      if (missingOk && r.status == 404) throw const _NoCollectionRoutes();
       if (r.status == 403) throw const SyncException(SyncError.notTrusted);
       final body = r.json;
       if (r.status != 200 || body == null) throw const SyncException(SyncError.failed);
@@ -61,18 +65,13 @@ class SyncClient {
     return list.take(limit).toList();
   }
 
-  Future<List<Object?>> _items(Future<SecureReply> Function() call, String key) async => _list(await _reply(call), key);
-
   /// A malformed playlist fails the whole sync: dropping it, or a track of it, could replace a playlist here with less.
   Future<List<RemotePlaylist>> playlists(
     String host,
     int tlsPort, {
     required String pin,
   }) async {
-    final raw = await _items(
-      () => _client.secureGet(host, tlsPort, '/sync/playlists', pin: pin),
-      'playlists',
-    );
+    final raw = _list(await _reply(() => _client.secureGet(host, tlsPort, '/sync/playlists', pin: pin)), 'playlists');
     try {
       return [
         for (final p in raw) RemotePlaylist.fromJson(p as Map<String, dynamic>),
@@ -95,43 +94,23 @@ class SyncClient {
     required bool mine,
   }) async {
     if (!mine) return const SyncSide();
-    final List<Object?> favorites;
+    final Map<String, dynamic> body;
     try {
-      favorites = _list(
-        await _reply(() => _client.secureGet(host, tlsPort, '/sync/favorites', pin: pin), firstNewRoute: true),
-        'favorites',
-      );
+      body = await _reply(() => _client.secureGet(host, tlsPort, '/sync/collections', pin: pin, receiveTimeout: kCollectionsTimeout), missingOk: true);
     } on _NoCollectionRoutes {
       AppLog.w('sync: the other device is of an older version, only the playlists are synced');
       return const SyncSide();
     }
-    final streams = await _items(
-      () => _client.secureGet(host, tlsPort, '/sync/streams', pin: pin),
-      'streams',
-    );
-    final tombstones = await _items(
-      () => _client.securePost(
-        host,
-        tlsPort,
-        '/sync/tombstones',
-        const {},
-        pin: pin,
-      ),
-      'tombstones',
-    );
-    final settings = await _reply(() => _client.secureGet(host, tlsPort, '/sync/settings', pin: pin));
-    final plays = await _items(() => _client.secureGet(host, tlsPort, '/sync/plays', pin: pin), 'plays');
-    final tags = await _reply(() => _client.secureGet(host, tlsPort, '/sync/tags', pin: pin));
     return SyncSide(
-      favorites: [for (final f in favorites) ?FavoriteCollectionData.tryParse(f)],
-      streams: [for (final s in streams) ?StreamEntry.tryParse(s)],
-      tombstones: latestTombstones(tombstones),
-      settings: parseSyncedSettings(settings['settings']),
+      favorites: [for (final f in _list(body, 'favorites')) ?FavoriteCollectionData.tryParse(f)],
+      streams: [for (final s in _list(body, 'streams')) ?StreamEntry.tryParse(s)],
+      tombstones: latestTombstones(_list(body, 'tombstones')),
+      settings: parseSyncedSettings(body['settings']),
       tables: TablesBundle(
         texts: await _texts(host, tlsPort, pin, keepTexts, maxTextChars),
-        plays: [for (final p in plays) ?PlayEntry.tryParse(p)],
-        tags: [for (final t in _list(tags, 'tags')) ?TagEntry.tryParse(t)],
-        tagged: limitTagged([for (final t in _list(tags, 'tagged')) ?TaggedTrack.tryParse(t)]),
+        plays: [for (final p in _list(body, 'plays')) ?PlayEntry.tryParse(p)],
+        tags: [for (final t in _list(body, 'tags')) ?TagEntry.tryParse(t)],
+        tagged: limitTagged([for (final t in _list(body, 'tagged')) ?TaggedTrack.tryParse(t)]),
       ),
     );
   }
