@@ -7,9 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/jam_providers.dart';
+import '../../../providers/karaoke_video_providers.dart';
 import '../../../services/jam/jam_models.dart';
+import '../../../services/karaoke_video/karaoke_video.dart' show jamKaraokeVideoId;
 import '../../theme/tokens.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/karaoke_video_view.dart';
 import '../../widgets/marquee_text.dart';
 import '../../widgets/ring_progress.dart';
 import '../../widgets/seek_bar.dart';
@@ -246,6 +249,22 @@ class _JamPlayer extends ConsumerWidget {
     final theme = Theme.of(context).textTheme;
     final ctrl = ref.read(jamProvider.notifier);
     final cur = jam.current;
+    // Watched only for a karaoke item: autoDispose, so no video player exists otherwise.
+    // Not after the Jam ended: it keeps `playing`, so the position would keep moving.
+    final karaoke = cur != null &&
+        jamKaraokeVideoId(cur) != null &&
+        ref.watch(jamProvider.select((u) => u.phase == JamPhase.active));
+    final videoStatus = karaoke
+        ? ref.watch(jamKaraokeVideoProvider.select((v) => v.status))
+        : KaraokeVideoStatus.none;
+    if (karaoke) {
+      ref.listen(jamKaraokeVideoProvider.select((v) => v.status), (_, s) {
+        if (s == KaraokeVideoStatus.failed) {
+          showMsg(context, l.karaokeVideoFailed);
+        }
+      });
+    }
+    final video = videoStatus == KaraokeVideoStatus.loading || videoStatus == KaraokeVideoStatus.ready;
     return Column(
       children: [
         header,
@@ -260,6 +279,15 @@ class _JamPlayer extends ConsumerWidget {
                       final s = c.biggest.shortestSide.clamp(80.0, maxRing);
                       const stroke = 12.0;
                       final inner = RingProgress.innerSize(s, stroke: stroke);
+                      if (video) {
+                        return Center(
+                          child: KaraokeVideoView(
+                            provider: jamKaraokeVideoProvider,
+                            cover: JamCover(item: cur, size: c.maxWidth, radius: 0),
+                            width: c.maxWidth,
+                          ),
+                        );
+                      }
                       return Center(
                         child: RingProgress(
                           size: s,
