@@ -73,3 +73,13 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - Test di contratto app↔Worker: oggi solo i limiti; aggiungere 201 con `url`, 504 incerto, 429 e le chiavi della richiesta (`title`, `body`, `version`).
 - Cancellazione di molte lingue di traduzione: ogni `delete` rilegge le 20 lingue da ML Kit; misurare sul Mi A3 e, se pesa, una sola lettura per selezione. Provare la cancellazione reale ML Kit e il ritardo di `isModelReady`.
 - Download del dizionario avviato dal testo di un brano cinese con pinyin: la riga CC-CEDICT della pagina deve mostrare «In scaricamento…» e l'avanzamento.
+
+## Da controllare (review e scheggia della fase 145)
+- Importazione dal link della pagina: spostare ricerca, `_busy` e `saveToLibrary` da `lib/ui/shell/shared_collection_import.dart` a un provider accanto a `saveToLibrary`, così la UI tiene solo la conferma e i messaggi; valutare `innerTube.songOf(id)` al posto di `yt.search(url)` se ne arrivano i campi necessari.
+- «Condividi…» di `online_album_screen.dart` e `online_playlist_screen.dart` copia ancora il link negli appunti: portarlo al foglio di sistema (D-677) con un testo da id ed etichette, poi togliere `shareMenu` dagli ARB. Stesso costruttore per il brano online del menu ⋮ (oggi una `Track` finta).
+- Test di contratto fra `kSharePageUrl`, manifest (host e percorsi), `IncomingBridge.kt`, `docs/site/fragment.js` e `index.html` (pacchetto, release, anche `kReleaseRepo`); test che `encodeShareFragment` riproduce i vettori positivi.
+- `shortTitle`/`openSearchWith` in un file neutro della shell e taglio per caratteri (`characters.take`), non per unità UTF-16. «Senza titolo» del frammento localizzato dal chiamante.
+- Menu ⋮: `shortcut:` sul perché l'host è statico (deve stare sotto il Navigator di radice).
+- m3u8 cancellato a fine condivisione; su desktop negli appunti il testo leggibile, non il corpo `#EXTM3U`. CSP della pagina senza `unsafe-inline` (script in `main.js`). In `IncomingBridge.kt` controllo anche del percorso e un tetto a `pendingTexts`.
+- Brano singolo da link senza rete: Cerca mostra tre messaggi di rete e resta in errore finché non si preme Riprova.
+- Da provare (Mi A3 o Motorola): importazione completa da link con yt-dlp che risponde (sul Mi A3 le ricerche vanno in timeout dopo 45 s); condivisione di una playlist con più di 50 brani in streaming (file m3u8); App Link verificato con l'APK di release (`pm get-app-links`); «Apri in FreeKmusic» toccato dalla pagina in un browser vero; condivisione su WhatsApp (utente).
