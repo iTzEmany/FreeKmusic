@@ -26,6 +26,7 @@ Dipendenze ammesse: `ui` → `providers` → `services` / `data` → `core`. Mai
 | Cartella | Cosa contiene |
 |---|---|
 | `tools/` | Fuori dall'app: `report-worker/` (Cloudflare Worker delle segnalazioni anonime, test con `node --test`) |
+| `docs/site/` | Pagina di condivisione su GitHub Pages (fase 145): decodifica il frammento del link nel browser, nessun dato in rete; test con `node --test test/site/` |
 | `lib/core/` | Utilità senza stato di app: `app_log`, `clock` (`nowMs()`, `nowMsOverride`), `constants` (`kEnableYoutube`), `paths`, `platform` (`isAndroid`, `isDesktop`), `storage_volumes` (volumi SD, `effectiveLocation`), `artist_key`, `text_utils`, `memory_budget`, `network_kind`, `system_volume`, `uuid`, `playlist_order` |
 | `lib/data/db/` | drift: `tables.dart`, `app_database.dart` (`kSchemaVersion`, migrazioni) |
 | `lib/data/repositories/` | Query e scritture sul DB (`TrackRepository`, `PlaylistRepository`, ...). Espongono `Stream` drift |

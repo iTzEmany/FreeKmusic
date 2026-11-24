@@ -7,7 +7,7 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 |---|---|
 | `fasi/` | Un file per fase (127 file): obiettivo, task, verifiche, note di deviazione. Tabella sotto. |
 | `feature/` | Specifiche di feature (requisiti R-…, rischi K-…) che hanno originato le fasi: streaming, arricchimento, riconoscimento, Jam a distanza, Jam della cassa, link e Shazam, libreria leggera, karaoke e Cerca con le classifiche (con l'analisi su Google Drive e i mockup HTML). |
-| `refactor/` | Analisi, mockup, misure e rete di sicurezza dei refactor (`ui-fluida`, `superfici-e-ricerca`, …). |
+| `refactor/` | Analisi, mockup, misure e rete di sicurezza dei refactor (`ui-fluida`, `superfici-e-ricerca`, `grande-revisione` per le fasi 135-147, …). |
 | `superpowers/` | Piani e specifiche di lavoro di agenti (identità «anello» e simili). |
 | `PROGRESS.md` | Registro globale dell'avanzamento fino alla fase 116, con le «Note di deviazione» e i «Pacchetti approvati». |
 | `02-architettura.md`, `03-modello-dati.md` | Vecchia architettura e modello dati: sostituiti da [`../architettura/`](../architettura/00-panoramica.md). |
