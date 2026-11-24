@@ -1085,7 +1085,7 @@ void main() {
     await db.close();
   });
 
-  test('a v23 database gets an empty sync_tombstones table, every user table identical', () async {
+  test('a v23 database gets an empty sync_tombstones table and tracks.favorited_at (NULL), existing rows unchanged', () async {
     final db = AppDatabase(
       NativeDatabase.memory(
         setup: (raw) {
@@ -1104,6 +1104,7 @@ void main() {
       ),
     );
     expect(await db.select(db.syncTombstones).get(), isEmpty);
+    expect(await db.customSelect('SELECT favorited_at FROM tracks').map((r) => r.read<int?>('favorited_at')).get(), [null]);
     Future<List<Object?>> all(String sql) async => [for (final r in await db.customSelect(sql).get()) r.data.values.toList()];
     expect(await all('SELECT id, path, title, album_key FROM tracks'), [
       [1, '/a.mp3', 'A', 'k'],
@@ -1115,6 +1116,33 @@ void main() {
       ['album', 'k', 7],
     ]);
     expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), 24);
+    await db.close();
+  });
+
+  test('a v22 database reaches v24 with sync_tombstones and tracks.favorited_at', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL, '
+            'saved INTEGER NOT NULL DEFAULT 0, album_browse_id TEXT)',
+          );
+          raw.userVersion = 22;
+        },
+      ),
+    );
+    await db.into(db.syncTombstones).insert(SyncTombstonesCompanion.insert(kind: TombstoneKind.savedStream, key: 'youtube:abcdefghijk'));
+    final cols = await db.customSelect("SELECT name FROM pragma_table_info('tracks')").map((r) => r.read<String>('name')).get();
+    expect(cols, contains('favorited_at'));
+    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), 24);
+    await db.close();
+  });
+
+  test('pruneSyncTombstones leaves a tombstone with a zero date alone', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    await db.into(db.syncTombstones).insert(SyncTombstonesCompanion.insert(kind: TombstoneKind.playlist, key: 'zero', deletedAt: const Value(0)));
+    expect(await db.pruneSyncTombstones(), 0);
     await db.close();
   });
 

@@ -70,6 +70,9 @@ class Tracks extends Table {
   /// YouTube Music `browseId` of the album a saved stream row came from (D-675): opens the whole
   /// album from the library page. Null on local rows and on rows saved without an album page.
   TextColumn get albumBrowseId => text().nullable()();
+
+  /// When the heart was put on (ms; v24, D-708); null = never set. Lets «latest wins» apply to the heart in a sync.
+  IntColumn get favoritedAt => integer().nullable()();
 }
 
 class Folders extends Table {
@@ -501,9 +504,23 @@ abstract final class TombstoneKind {
   /// Key = the `Playlists.uuid` of the favourite playlist.
   static const favoritePlaylist = 'favoritePlaylist';
 
-  /// A streamed track removed from the library or unfavourited; key = `<source>:<id>` (`isStreamKey`).
-  static const stream = 'stream';
+  /// A streamed track removed from the library (D-708); key = `<source>:<id>` (`TrackRef.streamKey`, `isStreamKey`).
+  static const savedStream = 'savedStream';
+
+  /// A streamed track whose heart was removed (D-708); same key as [savedStream].
+  static const favoriteStream = 'favoriteStream';
 }
+
+const kTombstoneKinds = {
+  TombstoneKind.playlist,
+  TombstoneKind.favoriteAlbum,
+  TombstoneKind.favoritePlaylist,
+  TombstoneKind.savedStream,
+  TombstoneKind.favoriteStream,
+};
+
+/// A tombstone dated further ahead than this (a wrong clock) is not trusted.
+const kTombstoneMaxFuture = Duration(days: 1);
 
 /// What the user deleted, so that a sync between own devices can delete it there too (schema v24, D-668).
 /// Pruned after [kTombstoneKeep]; no row of any other table is touched by it.

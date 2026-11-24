@@ -35,7 +35,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 
 - `AppDatabase.production()` apre `driftDatabase(name: 'codecore')`. `beforeOpen` imposta `PRAGMA foreign_keys = ON`.
 - Tabelle registrate: `Tracks, Folders, Playlists, PlaylistTracks, PlaylistImports, PlaylistImportItems, Plays, SmartPlaylists, UserTags, TrackTags, Podcasts, PodcastEpisodes, ArtistInfos, RadioStations, FollowedArtists, ArtistReleases, ArtistLookups, TrackCredits, TrackEnrich, ActivityLogRows, TrackGenres, ArtistCountries, ArtistAliases, ArtistNotSame, FavoriteCollections, SyncTombstones`.
-- `kSchemaVersion = 23`. `onUpgrade` ha un `if (from < N)` per ogni salto:
+- `kSchemaVersion = 24` (v24: tabella `SyncTombstones` con i tipi `playlist`, `favoriteAlbum`, `favoritePlaylist`, `savedStream`, `favoriteStream`, e colonna nullabile `tracks.favorited_at`, nessuna riga esistente riempita). `onUpgrade` ha un `if (from < N)` per ogni salto:
 
 | v | Cambio |
 |---|---|
@@ -60,7 +60,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 | 21 | `track_enrich.instrumental` nullabile (D-675, D-684; non entra nel backup) |
 | 22 | `tracks.albumBrowseId` (pagina dell'album online di un brano in streaming; entra nel backup dei brani salvati, validato in lettura; D-675) |
 | 23 | `FavoriteCollections` (`kind` album o playlist, `key`, `addedAt`; chiave primaria `(kind, key)`): preferiti di album e playlist (fase 141). Chiave dell'album = `albumKey` senza il prefisso `stream|` (`favoriteAlbumKey`, normalizzata dal repository in add/remove/toggle/lettura e dal merge del backup: promuovere o declassare un brano riscrive la chiave e il preferito resta), della playlist = `Playlists.uuid` (non l'id). Il passo crea solo la tabella, nessuna riga cambia |
-| 24 | `SyncTombstones` (`kind`, `key`, `deletedAt`; chiave primaria `(kind, key)`): cancellazioni da portare agli altri dispositivi miei (fase 146, D-668). `kind` (`TombstoneKind`): `playlist` (`Playlists.uuid`), `favoriteAlbum` (`albumKey`), `favoritePlaylist` (uuid), `stream` (chiave `<fonte>:<id>` del brano in streaming). `pruneSyncTombstones` li toglie dopo 180 giorni (`kTombstoneKeep`, all'avvio). In `UserData` il campo `tombstones` è opzionale. Il passo crea solo la tabella |
+| 24 | `SyncTombstones` (`kind`, `key`, `deletedAt`; chiave primaria `(kind, key)`): cancellazioni da portare agli altri dispositivi miei (fase 146, D-668). `kind` (`TombstoneKind`): `playlist` (`Playlists.uuid`), `favoriteAlbum` (`albumKey`), `favoritePlaylist` (uuid), `savedStream` (brano in streaming tolto dalla libreria) e `favoriteStream` (cuore tolto), entrambi con chiave `<fonte>:<id>` (D-708); stesso passo: `tracks.favorited_at` nullabile (ms), nessuna riga riempita. `pruneSyncTombstones` li toglie dopo 180 giorni (`kTombstoneKeep`, dopo il primo frame). In `UserData` il campo `tombstones` è opzionale. Il passo crea solo la tabella |
 
 - Repository: `favorite_collections_repository.dart`. Cancellare una playlist toglie il suo preferito (stessa transazione); un album che sparisce si filtra in lettura, la riga resta; il preferito segue la rinomina dell'album (`followAlbumKey`, nella transazione di `TrackEditor.save`/`saveMany` e di `demoteToStream`) solo se nessun brano *visibile* (non mancante, non ignorato, riga di libreria: non una riga ombra non salvata) ha più la chiave vecchia; l'«Annulla» di Unisci/Sposta (`restoreMany`), «Ripristina dai tag» e `restoreRow` lo rimettono con la stessa regola (se l'album di arrivo ha altri brani suoi, il preferito resta lì: limite accettato); `demoteToStream` di un brano modificato a mano tiene la chiave scelta col prefisso `stream|` (l'album non si spezza); scan e arricchimento che cambiano `albumKey` non lo spostano (limite accettato). Una chiave vuota (`stream|`) non è un preferito. `watchAlbumTracks` cerca i brani sotto entrambe le forme della chiave (`k` e `stream|k`): la pagina di un album resta valida dopo Scarica o «Libera spazio».
 - I passi 18 e 19 sono ripetibili: controllano `PRAGMA table_info('podcasts')` prima di `addColumn`; i passi 20 e 22 fanno lo stesso con `PRAGMA table_info('tracks')` (D-607).
@@ -181,6 +181,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - **Nuovo tipo di dato ripulibile**: valore in `AppDataKind`, poi decidere se entra in `clearableKinds`.
 
 ## Trappole
+- **Orologio e tombstone** (fase 146): un tombstone con data futura (orologio sbagliato) non si legge dai backup (oltre `kTombstoneMaxFuture`), ma uno scritto qui con l'orologio avanti resterebbe fino a 180 giorni dopo; la potatura (`kTombstoneKeep`) tocca solo `deleted_at` > 0 e più vecchi di 180 giorni, quindi un orologio locale avanti di mesi può potarne di recenti.
 - **Id dopo il download** (fase 139): con il flusso in cache la riga ombra viene promossa (stesso id, kind 2 → 0); senza cache nasce una riga nuova e `_mergeShadowRow` lega coda (`replaceQueueId`) e voce online (`bindRow`) al nuovo id. La voce che sta suonando tiene il suo id negativo.
 
 Dalle vecchie trappole (archivio `../storico/gotchas.md`):
