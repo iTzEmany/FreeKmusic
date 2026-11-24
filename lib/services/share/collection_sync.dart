@@ -1,4 +1,5 @@
-import '../../data/db/tables.dart' show TombstoneKind;
+import '../../data/db/tables.dart' show TombstoneKind, kTombstoneKinds;
+import '../../data/repositories/favorite_collections_repository.dart' show favoriteAlbumKey;
 import '../backup/user_data.dart';
 import '../stream/stream_key.dart' show isStreamKey;
 import 'settings_sync.dart';
@@ -124,6 +125,43 @@ class CollectionPlan {
 
 typedef TombstoneId = (String kind, String key);
 
+/// A deletion to carry to the other own devices (D-668): [kind] is a `TombstoneKind`, [key] its stable key.
+class TombstoneData {
+  const TombstoneData({required this.kind, required this.key, required this.deletedAt});
+
+  final String kind, key;
+  final int deletedAt;
+
+  Map<String, Object?> toJson() => {'kind': kind, 'key': key, 'deletedAt': deletedAt};
+
+  /// Null for a malformed entry, an unknown kind, a key that does not fit its kind, an over-long key or an
+  /// impossible date (<= 0 or more than [kTombstoneMaxFuture] ahead): it is dropped, the backup still reads.
+  static TombstoneData? tryParse(Object? j) {
+    if (j is! Map || !kTombstoneKinds.contains(j['kind'])) return null;
+    final kind = j['kind'] as String,
+        raw = j['key'],
+        at = sanePastDate(j['deletedAt']);
+    if (raw is! String || raw.length > kMaxKeyLength || at == null) return null;
+    final key = kind == TombstoneKind.favoriteAlbum
+        ? favoriteAlbumKey(raw)
+        : raw;
+    final ok = switch (kind) {
+      TombstoneKind.favoriteAlbum =>
+        key.isNotEmpty &&
+            !key.startsWith('unknown|'), // not transferable between devices
+      TombstoneKind.savedStream ||
+      TombstoneKind.favoriteStream => isStreamKey(key),
+      _ => isUuid(key), // playlist, favoritePlaylist
+    };
+    return ok ? TombstoneData(kind: kind, key: key, deletedAt: at) : null;
+  }
+}
+
+final _uuidRe = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+bool isUuid(String s) => _uuidRe.hasMatch(s);
+
+/// The highest `deletedAt` of each (kind, key).
 Map<TombstoneId, int> _latest(Iterable<TombstoneData> all) {
   final out = <TombstoneId, int>{};
   for (final t in all) {
@@ -132,6 +170,12 @@ Map<TombstoneId, int> _latest(Iterable<TombstoneData> all) {
   }
   return out;
 }
+
+/// Parsed tombstones; of a repeated (kind, key) the highest `deletedAt` is kept.
+List<TombstoneData> latestTombstones(Iterable<Object?> raw) => [
+      for (final e in _latest([for (final t in raw) ?TombstoneData.tryParse(t)]).entries)
+        TombstoneData(kind: e.key.$1, key: e.key.$2, deletedAt: e.value),
+    ];
 
 /// The latest deletion that keeps an item from coming back here: the ones recorded here, and the other
 /// device's when it is [mine]. An item arrives only if it is more recent than this.

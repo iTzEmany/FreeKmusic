@@ -1,6 +1,5 @@
 import 'package:codecore/data/db/tables.dart' show TombstoneKind;
 import 'package:codecore/providers/share_hub.dart';
-import 'package:codecore/services/backup/user_data.dart';
 import 'package:codecore/services/share/collection_sync.dart';
 import 'package:codecore/services/share/playlist_sync.dart';
 import 'package:codecore/services/share/settings_sync.dart';

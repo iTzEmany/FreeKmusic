@@ -689,7 +689,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         export: sync.export,
         exportFavorites: sync.favorites,
         exportStreams: sync.streams,
-        exportTombstones: (since) => sync.tombstones(since: since),
+        exportTombstones: sync.tombstones,
         exportSettings: () async => syncedSettings(ref.read(settingsProvider)),
         // With the history off here nothing is sent: the listens of this device are not recorded, nor shared.
         exportPlays: () async => ref.read(settingsProvider).recordHistory ? sync.plays() : const [],

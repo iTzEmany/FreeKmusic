@@ -781,7 +781,12 @@ void main() {
         },
         {
           'items': [
-            {'title': 'x' * 513},
+            {'title': 'x' * 4097},
+          ],
+        },
+        {
+          'items': [
+            {'title': 'x', 'artist': 'x' * 513},
           ],
         },
         {
@@ -804,7 +809,7 @@ void main() {
         RemotePlaylist.fromJson(
           playlist({
             'items': [
-              {'title': 'x' * 512},
+              {'title': 'x' * 4096, 'folder': '/d' * 2048, 'relPath': 'r' * 4096, 'artist': 'a' * 512},
             ],
           }),
         ).items,
@@ -812,18 +817,15 @@ void main() {
       );
     });
 
-    test(
-      'a playlist of more than kMaxSyncItems tracks is cut to kMaxSyncItems',
-      () {
-        final r = RemotePlaylist.fromJson(
+    test('a playlist of more than kMaxSyncItems tracks is malformed, not cut', () {
+      expect(
+        () => RemotePlaylist.fromJson(
           playlist({
-            'items': [
-              for (var i = 0; i < kMaxSyncItems + 50; i++) {'title': 't'},
-            ],
+            'items': [for (var i = 0; i < kMaxSyncItems + 1; i++) {'title': 't'}],
           }),
-        );
-        expect(r.items, hasLength(kMaxSyncItems));
-      },
-    );
+        ),
+        throwsFormatException,
+      );
+    });
   });
 }

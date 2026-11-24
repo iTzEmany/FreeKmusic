@@ -20,7 +20,7 @@ void main() {
   late OfferNode nodeB;
   late Set<String> trusted, mine;
   late List<TombstoneData> tombstones;
-  int? lastSince;
+  var tombstoneCalls = 0;
   late int favoritesCalls, streamsCalls, settingsCalls;
   late Future<({List<TextEntry> texts, int? next})> Function(int after) textsOf;
   late List<(String, TrackRequest)> wanted;
@@ -40,7 +40,7 @@ void main() {
     trusted = {idA.fingerprint, idD.fingerprint};
     mine = {idA.fingerprint};
     tombstones = [];
-    lastSince = null;
+    tombstoneCalls = 0;
     favoritesCalls = streamsCalls = settingsCalls = 0;
     textsOf = (after) async => (texts: <TextEntry>[], next: null);
     wanted = [];
@@ -80,8 +80,8 @@ void main() {
               ),
             ];
           },
-          exportTombstones: (since) async {
-            lastSince = since;
+          exportTombstones: () async {
+            tombstoneCalls++;
             return tombstones;
           },
           exportSettings: () async {
@@ -223,28 +223,14 @@ void main() {
         mine: true,
       );
       expect(mineSide.tombstones.single.key, uuid);
-      expect(lastSince, isNull);
-      final reply = await LanClient(identity: idA).securePost(
-        '127.0.0.1',
-        nodeB.tlsPort!,
-        '/sync/tombstones',
-        {'since': 40},
-        pin: idB.fingerprint,
-      );
-      expect(reply.status, 200);
-      expect(
-        lastSince,
-        40,
-        reason: 'the route keeps `since`, in the signed body',
-      );
       // The caller asks (it thinks the server is its own) but the server does not think so of it.
       final other = await client(idD).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true);
       expect(other.tombstones, isEmpty);
       // Not asked at all when the caller does not think the server is its own.
-      lastSince = -1;
+      tombstoneCalls = 0;
       final none = await client(idA).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: false);
       expect(none.tombstones, isEmpty);
-      expect(lastSince, -1);
+      expect(tombstoneCalls, 0);
     });
 
     test('an untrusted or unsigned caller is refused (403) on every route by itself, tombstones included', () async {
@@ -490,6 +476,12 @@ void main() {
       );
     });
 
+    test('a peer without the collection routes (404 on the first) syncs the playlists only; other statuses fail', () async {
+      status = 404;
+      final side = await client(idA).collections('127.0.0.1', raw.tlsPort!, pin: idB.fingerprint, mine: true);
+      expect([side.favorites, side.streams, side.tombstones], everyElement(isEmpty));
+    });
+
     test('a malformed playlist is a SyncError, never a TypeError; a good one is read', () async {
       body = {
         'playlists': [playlist()],
@@ -507,7 +499,7 @@ void main() {
         }),
         playlist({
           'items': [
-            {'title': 'x' * 513},
+            {'title': 'x' * 4097},
           ],
         }),
         playlist({'createdAt': 'soon'}),

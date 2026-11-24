@@ -144,9 +144,9 @@ class PlaylistSyncRepository {
       ?keyOfStreamPath(path),
   };
 
-  /// What `POST /sync/tombstones` sends: the deletions after [since] (all when null).
-  Future<List<TombstoneData>> tombstones({int? since}) async => [
-        for (final t in await SyncTombstoneRepository(_db).all(since: since))
+  /// What `POST /sync/tombstones` sends: all the deletions.
+  Future<List<TombstoneData>> tombstones() async => [
+        for (final t in await SyncTombstoneRepository(_db).all())
           if (kTombstoneKinds.contains(t.kind)) TombstoneData(kind: t.kind, key: t.key, deletedAt: t.deletedAt),
       ];
 

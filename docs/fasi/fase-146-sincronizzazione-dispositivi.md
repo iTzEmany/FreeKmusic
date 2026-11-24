@@ -71,7 +71,7 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
 
 ## Note di deviazione
 - 146.2: due tipi di tombstone per i brani in streaming (`savedStream`, `favoriteStream`) e colonna nullabile `tracks.favorited_at` nello stesso passo v24 (D-708). Potatura dopo 180 giorni, dopo il primo frame.
-- 146.5: preferiti di collezione, brani salvati e cuori viaggiano solo fra dispositivi «miei»; con i fidati non miei solo playlist in aggiunta (D-709). Date nel futuro tollerate 10 minuti. Le collezioni si applicano solo dopo la conferma nell'anteprima (`applyCollections`). L'«Unisci» del backup passa dallo stesso ingresso (`ingestStream`): è un gesto dell'utente, ma un brano tolto dopo la data del backup non torna.
+- 146.5: preferiti di collezione, brani salvati e cuori viaggiano solo fra dispositivi «miei»; con i fidati non miei solo playlist in aggiunta (D-709). Date nel futuro tollerate 10 minuti. Le collezioni si applicano solo dopo la conferma nell'anteprima (`applyCollections`). L'«Unisci» del backup passa dallo stesso ingresso (`ingestStream`): è un gesto dell'utente, e rimette ciò che il backup contiene (brani salvati e cuori) anche se tolto qui dopo, e toglie il tombstone: è un gesto esplicito; il sync invece rispetta i tombstone.
 - 146.6: AcoustID resta fuori dalla lista bianca (manda impronte a un servizio esterno: scelta del dispositivo); ascolti non ricevuti né mandati con la cronologia spenta.
 - 146.11: lo svuotamento in pausa sta in `settingsFlushOnPauseProvider` ascoltato dall'app (il notifier non richiede un binding).
 

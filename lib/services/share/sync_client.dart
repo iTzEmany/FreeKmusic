@@ -17,6 +17,11 @@ class SyncException implements Exception {
   String toString() => 'SyncException($error)';
 }
 
+/// A 404 on the first collection route: the other device predates it (a thrown marker, never leaves [SyncClient]).
+class _NoCollectionRoutes implements Exception {
+  const _NoCollectionRoutes();
+}
+
 /// The initiator side of the sync: reads the other device's playlists and asks
 /// for the tracks this one lacks. Always over HTTPS, signed, pinned.
 class SyncClient {
@@ -32,14 +37,17 @@ class SyncClient {
   }
 
   /// The JSON object of a sync answer: what the other device sends is not trusted.
-  Future<Map<String, dynamic>> _reply(Future<SecureReply> Function() call) async {
+  Future<Map<String, dynamic>> _reply(Future<SecureReply> Function() call, {bool firstNewRoute = false}) async {
     try {
       final r = await call();
+      if (firstNewRoute && r.status == 404) throw const _NoCollectionRoutes();
       if (r.status == 403) throw const SyncException(SyncError.notTrusted);
       final body = r.json;
       if (r.status != 200 || body == null) throw const SyncException(SyncError.failed);
       return body;
     } on SyncException {
+      rethrow;
+    } on _NoCollectionRoutes {
       rethrow;
     } on Object catch (e) {
       _fail(e);
@@ -87,10 +95,16 @@ class SyncClient {
     required bool mine,
   }) async {
     if (!mine) return const SyncSide();
-    final favorites = await _items(
-      () => _client.secureGet(host, tlsPort, '/sync/favorites', pin: pin),
-      'favorites',
-    );
+    final List<Object?> favorites;
+    try {
+      favorites = _list(
+        await _reply(() => _client.secureGet(host, tlsPort, '/sync/favorites', pin: pin), firstNewRoute: true),
+        'favorites',
+      );
+    } on _NoCollectionRoutes {
+      AppLog.w('sync: the other device is of an older version, only the playlists are synced');
+      return const SyncSide();
+    }
     final streams = await _items(
       () => _client.secureGet(host, tlsPort, '/sync/streams', pin: pin),
       'streams',

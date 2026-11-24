@@ -2,6 +2,9 @@ import '../../data/db/tables.dart' show TombstoneKind;
 import '../backup/user_data.dart';
 import 'collection_sync.dart';
 
+/// Longest folder, path or title of a track reference (a deep path is longer than a key).
+const kMaxPathLength = 4096;
+
 /// A playlist as the other device describes it: portable track references and
 /// the `updated_at` that decides who is newer.
 class RemotePlaylist {
@@ -27,14 +30,15 @@ class RemotePlaylist {
 
   /// Anything malformed is a [FormatException] (the sync fails, nothing is guessed or cut: a playlist with
   /// dropped tracks would replace a whole one here); a date from the future counts as the oldest, and
-  /// at most [kMaxSyncItems] tracks are read.
+  /// more than [kMaxSyncItems] tracks is malformed.
   factory RemotePlaylist.fromJson(Map<String, dynamic> j) {
     final uuid = j['uuid'], name = j['name'], items = j['items'];
     if (uuid is! String ||
         !isUuid(uuid) ||
         name is! String ||
         name.length > kMaxKeyLength ||
-        items is! List) {
+        items is! List ||
+        items.length > kMaxSyncItems) {
       throw const FormatException('malformed playlist');
     }
     final created = _finite(j['createdAt']).toInt(),
@@ -44,7 +48,7 @@ class RemotePlaylist {
       name: name,
       createdAt: created,
       updatedAt: sanePastDate(updated) ?? 0,
-      items: [for (final i in items.take(kMaxSyncItems)) parseTrackRef(i)],
+      items: [for (final i in items) parseTrackRef(i)],
     );
   }
 
@@ -65,7 +69,7 @@ class RemotePlaylist {
       'streamKey',
     ]) {
       final v = i[k];
-      if (v != null && (v is! String || v.length > kMaxKeyLength)) {
+      if (v != null && (v is! String || v.length > (k == 'title' || k == 'folder' || k == 'relPath' ? kMaxPathLength : kMaxKeyLength))) {
         throw FormatException('malformed track $k');
       }
     }

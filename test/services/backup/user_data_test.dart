@@ -1,8 +1,8 @@
 import 'package:codecore/services/online/credits.dart';
 import 'dart:convert';
-import 'package:codecore/data/db/tables.dart' show TombstoneKind;
 
 import 'package:codecore/services/backup/user_data.dart';
+import 'package:codecore/services/share/collection_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 UserData sample() => const UserData(
@@ -122,14 +122,9 @@ void main() {
 
   const uuid = '123e4567-e89b-42d3-a456-426614174000';
   final now = DateTime.now().millisecondsSinceEpoch;
-  List<TombstoneData> parse(List<Object?> l) => UserData.fromJson({'format': 1, 'tombstones': l}).tombstones;
+  List<TombstoneData> parse(List<Object?> l) => latestTombstones(l);
 
-  test('tombstones round trip; an old backup without them reads as none; bad entries are dropped', () {
-    final t = TombstoneData(kind: TombstoneKind.savedStream, key: 'youtube:abcdefghijk', deletedAt: 9);
-    final back = UserData.fromJson(jsonDecode(jsonEncode(UserData(createdAt: 1, tombstones: [t]).toJson())) as Map<String, dynamic>);
-    expect((back.tombstones.single.kind, back.tombstones.single.key, back.tombstones.single.deletedAt), ('savedStream', 'youtube:abcdefghijk', 9));
-    expect(const UserData(createdAt: 1).toJson().containsKey('tombstones'), isFalse);
-    expect(UserData.fromJson({'format': 1}).tombstones, isEmpty);
+  test('bad tombstone entries are dropped', () {
     final bad = parse([
       {'kind': 'nope', 'key': uuid, 'deletedAt': 1},
       {'kind': 'stream', 'key': 'youtube:abcdefghijk', 'deletedAt': 1},

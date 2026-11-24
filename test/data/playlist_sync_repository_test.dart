@@ -406,6 +406,19 @@ void main() {
       );
     });
 
+    test('a heart taken away leaves favorited_at in the row, but the stream entry carries no heart nor date', () async {
+      final tracks = TrackRepository(phone.db);
+      await tracks.saveStream(yt('aaaaaaaaaaa', 'Song A'));
+      final id = (await tracks.streamRow(keyA))!.id;
+      await tracks.setFavoriteMany([id], true);
+      await tracks.setFavoriteMany([id], false);
+      final row = (await tracks.streamRow(keyA))!;
+      expect(row.isFavorite, isFalse);
+      expect(row.favoritedAt, isNotNull);
+      final e = (await phone.sync.streams()).single;
+      expect((e.favorite, e.favoritedAt, e.saved), (false, null, true));
+    });
+
     test('saved and hearted streamed tracks converge with their dates; a deletion travels only to an own device', () async {
       final tracks = TrackRepository(phone.db);
       await tracks.saveStream(yt('aaaaaaaaaaa', 'Song A'));

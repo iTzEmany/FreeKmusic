@@ -43,7 +43,7 @@ Router buildSyncRouter({
   required Future<List<RemotePlaylist>> Function() export,
   required Future<List<FavoriteCollectionData>> Function() exportFavorites,
   required Future<List<StreamEntry>> Function() exportStreams,
-  required Future<List<TombstoneData>> Function(int? since) exportTombstones,
+  required Future<List<TombstoneData>> Function() exportTombstones,
   required Future<Map<String, Object>> Function() exportSettings,
   required Future<List<PlayEntry>> Function() exportPlays,
   required Future<({List<TagEntry> tags, List<TaggedTrack> tagged})> Function() exportTags,
@@ -133,15 +133,7 @@ Router buildSyncRouter({
   router.post('/tombstones', (Request r) async {
     final fp = trustedCaller(r);
     if (fp == null) return json(403, {'error': 'not trusted'});
-    final Object? body;
-    try {
-      body = jsonDecode(await r.readAsString());
-    } on FormatException {
-      return json(400, {'error': 'bad json'});
-    }
-    if (body is! Map) return json(400, {'error': 'bad request'});
-    final since = body['since'];
-    final all = isMine(fp) ? await exportTombstones(since is int ? since : null) : const <TombstoneData>[];
+    final all = isMine(fp) ? await exportTombstones() : const <TombstoneData>[];
     return json(200, {'tombstones': [for (final t in all) t.toJson()]});
   });
 

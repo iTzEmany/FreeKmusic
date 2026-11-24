@@ -1,10 +1,8 @@
 import '../../core/clock.dart';
-import '../../data/db/tables.dart'
-    show TombstoneKind, kTombstoneKinds, kTombstoneMaxFuture;
+import '../../data/db/tables.dart' show kTombstoneMaxFuture;
 import '../../data/repositories/favorite_collections_repository.dart'
     show favoriteAlbumKey;
 import '../online/credits.dart';
-import '../stream/stream_key.dart' show isStreamKey;
 
 /// Portable user data: everything the user created, with tracks referenced by
 /// relative path + title/artist/duration instead of the local DB id.
@@ -510,55 +508,6 @@ class FavoriteCollectionData {
   }
 }
 
-/// A deletion to carry to the other own devices (D-668): [kind] is a `TombstoneKind`, [key] its stable key.
-class TombstoneData {
-  const TombstoneData({required this.kind, required this.key, required this.deletedAt});
-
-  final String kind, key;
-  final int deletedAt;
-
-  Map<String, Object?> toJson() => {'kind': kind, 'key': key, 'deletedAt': deletedAt};
-
-  /// Null for a malformed entry, an unknown kind, a key that does not fit its kind, an over-long key or an
-  /// impossible date (<= 0 or more than [kTombstoneMaxFuture] ahead): it is dropped, the backup still reads.
-  static TombstoneData? tryParse(Object? j) {
-    if (j is! Map || !kTombstoneKinds.contains(j['kind'])) return null;
-    final kind = j['kind'] as String,
-        raw = j['key'],
-        at = sanePastDate(j['deletedAt']);
-    if (raw is! String || raw.length > kMaxKeyLength || at == null) return null;
-    final key = kind == TombstoneKind.favoriteAlbum
-        ? favoriteAlbumKey(raw)
-        : raw;
-    final ok = switch (kind) {
-      TombstoneKind.favoriteAlbum =>
-        key.isNotEmpty &&
-            !key.startsWith('unknown|'), // not transferable between devices
-      TombstoneKind.savedStream ||
-      TombstoneKind.favoriteStream => isStreamKey(key),
-      _ => isUuid(key), // playlist, favoritePlaylist
-    };
-    return ok ? TombstoneData(kind: kind, key: key, deletedAt: at) : null;
-  }
-}
-
-final _uuidRe = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
-
-bool isUuid(String s) => _uuidRe.hasMatch(s);
-
-/// Most tombstones read from one backup; the rest is dropped.
-const kMaxTombstones = 20000;
-
-/// Parsed tombstones; of a repeated (kind, key) the highest `deletedAt` is kept.
-List<TombstoneData> latestTombstones(Iterable<Object?> raw) {
-  final best = <(String, String), TombstoneData>{};
-  for (final t in raw) {
-    final d = TombstoneData.tryParse(t);
-    if (d != null && d.deletedAt > (best[(d.kind, d.key)]?.deletedAt ?? 0)) best[(d.kind, d.key)] = d;
-  }
-  return best.values.toList();
-}
-
 /// A JSON number as int; anything else (wrong type, NaN, infinity) is null.
 int? _finiteInt(Object? v) => v is num && v.isFinite ? v.toInt() : null;
 
@@ -575,7 +524,6 @@ class UserData {
     this.artistNotSame = const [],
     this.artistImages = const [],
     this.favoriteCollections = const [],
-    this.tombstones = const [],
   });
 
   final int createdAt;
@@ -603,9 +551,6 @@ class UserData {
   /// Favourite albums and playlists (absent in older backups = none).
   final List<FavoriteCollectionData> favoriteCollections;
 
-  /// Deletions to carry to own devices (absent in older backups = none).
-  final List<TombstoneData> tombstones;
-
   Map<String, Object?> toJson() => {
         'format': kUserDataFormat,
         'createdAt': createdAt,
@@ -620,7 +565,6 @@ class UserData {
         if (artistNotSame.isNotEmpty) 'artistNotSame': artistNotSame,
         if (artistImages.isNotEmpty) 'artistImages': [for (final a in artistImages) a.toJson()],
         if (favoriteCollections.isNotEmpty) 'favoriteCollections': [for (final f in favoriteCollections) f.toJson()],
-        if (tombstones.isNotEmpty) 'tombstones': [for (final t in tombstones) t.toJson()],
       };
 
   /// Unknown fields are ignored; a newer `format` is refused.
@@ -669,7 +613,6 @@ class UserData {
       favoriteCollections: [
         for (final f in (j['favoriteCollections'] as List? ?? const [])) ?FavoriteCollectionData.tryParse(f),
       ],
-      tombstones: latestTombstones((j['tombstones'] as List? ?? const []).take(kMaxTombstones)),
     );
   }
 }
