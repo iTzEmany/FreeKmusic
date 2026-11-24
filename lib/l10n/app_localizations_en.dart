@@ -8491,4 +8491,47 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String updateArrived(String version) {
+    return '$version has arrived';
+  }
+
+  @override
+  String updateFrom(String version) {
+    return 'from $version';
+  }
+
+  @override
+  String updateWithSize(int size) {
+    return 'Update · $size MB';
+  }
+
+  @override
+  String get updateSelfHint =>
+      'The app closes, updates and reopens. Your data stays.';
+
+  @override
+  String get updateBrowserHint =>
+      'The browser opens to download the file. Your data stays.';
+
+  @override
+  String get updateKeepListening => 'You can keep listening.';
+
+  @override
+  String get updateHighlight => 'Highlight';
+
+  @override
+  String get updateAlsoHere => 'Also in this version';
+
+  @override
+  String updateFixes(int count) {
+    return 'Fixes ($count)';
+  }
+
+  @override
+  String get updateFixesGeneric => 'Fixes and improvements';
+
+  @override
+  String get updateAllChanges => 'All changes on GitHub';
 }

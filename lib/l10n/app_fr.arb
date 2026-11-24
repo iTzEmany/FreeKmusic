@@ -4368,5 +4368,44 @@
   "@syncApplyRemoving": {"placeholders": {"count": {"type": "int"}}},
   "syncNotMineNote": "Seules les playlists arrivent. Si tu attendais plus, marque cet appareil comme le tien aussi sur l’autre.",
   "syncDone": "{count, plural, =0{Rien à synchroniser} one{Synchronisé : 1 élément} other{Synchronisés : {count} éléments}}",
-  "@syncDone": {"placeholders": {"count": {"type": "int"}}}
+  "@syncDone": {"placeholders": {"count": {"type": "int"}}},
+  "updateArrived": "La {version} est arrivée",
+  "@updateArrived": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateFrom": "depuis la {version}",
+  "@updateFrom": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateWithSize": "Mettre à jour · {size} Mo",
+  "@updateWithSize": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateSelfHint": "L’appli se ferme, se met à jour et se rouvre. Tes données restent.",
+  "updateBrowserHint": "Le navigateur s’ouvre pour télécharger le fichier. Tes données restent.",
+  "updateKeepListening": "Tu peux continuer à écouter.",
+  "updateHighlight": "À la une",
+  "updateAlsoHere": "Aussi dans cette version",
+  "updateFixes": "Corrections ({count})",
+  "@updateFixes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateFixesGeneric": "Corrections et améliorations",
+  "updateAllChanges": "Toutes les modifications sur GitHub"
 }

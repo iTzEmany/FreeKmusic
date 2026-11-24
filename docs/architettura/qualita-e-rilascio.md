@@ -109,7 +109,8 @@ I test in `test/live/*` parlano con servizi veri e partono solo con `CODECORE_LI
 
 1. Alza `version` in `pubspec.yaml` e `kAppVersion` in `lib/core/app_info.dart` (devono coincidere).
 2. Entra con una PR.
-3. Un tag `v*` su `master` fa partire `release.yml`.
+3. Prima del tag scrivi `release-notes/<versione>.md` (formato in `release-notes/README.md`, D-711): `publish` lo mette in cima alla Release e fallisce se manca. L'app mostra solo quel blocco.
+4. Un tag `v*` su `master` fa partire `release.yml`.
 
 Se un job della release fallisce, il tag esiste ma la release no. È successo con v1.4.0 (D-538): si corregge e si pubblica una versione nuova (v1.4.1), non si riscrive il tag.
 

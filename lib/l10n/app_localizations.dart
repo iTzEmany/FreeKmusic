@@ -13290,6 +13290,72 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{count, plural, =0{Niente da sincronizzare} one{Sincronizzato: 1 elemento} other{Sincronizzati: {count} elementi}}'**
   String syncDone(int count);
+
+  /// No description provided for @updateArrived.
+  ///
+  /// In it, this message translates to:
+  /// **'È arrivata la {version}'**
+  String updateArrived(String version);
+
+  /// No description provided for @updateFrom.
+  ///
+  /// In it, this message translates to:
+  /// **'dalla {version}'**
+  String updateFrom(String version);
+
+  /// No description provided for @updateWithSize.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiorna · {size} MB'**
+  String updateWithSize(int size);
+
+  /// No description provided for @updateSelfHint.
+  ///
+  /// In it, this message translates to:
+  /// **'L’app si chiude, si aggiorna e si riapre. I tuoi dati restano.'**
+  String get updateSelfHint;
+
+  /// No description provided for @updateBrowserHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Si apre il browser per scaricare il file. I tuoi dati restano.'**
+  String get updateBrowserHint;
+
+  /// No description provided for @updateKeepListening.
+  ///
+  /// In it, this message translates to:
+  /// **'Puoi continuare ad ascoltare.'**
+  String get updateKeepListening;
+
+  /// No description provided for @updateHighlight.
+  ///
+  /// In it, this message translates to:
+  /// **'In evidenza'**
+  String get updateHighlight;
+
+  /// No description provided for @updateAlsoHere.
+  ///
+  /// In it, this message translates to:
+  /// **'Anche in questa versione'**
+  String get updateAlsoHere;
+
+  /// No description provided for @updateFixes.
+  ///
+  /// In it, this message translates to:
+  /// **'Correzioni ({count})'**
+  String updateFixes(int count);
+
+  /// No description provided for @updateFixesGeneric.
+  ///
+  /// In it, this message translates to:
+  /// **'Correzioni e miglioramenti'**
+  String get updateFixesGeneric;
+
+  /// No description provided for @updateAllChanges.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutte le modifiche su GitHub'**
+  String get updateAllChanges;
 }
 
 class _AppLocalizationsDelegate

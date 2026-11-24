@@ -20,7 +20,7 @@ class _Web implements WebClient {
   @override
   Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async {
     calls++;
-    return [{'tag_name': tag, 'html_url': 'https://github.com/me/codecore/releases/tag/$tag', 'body': 'Novità della release'}];
+    return [{'tag_name': tag, 'html_url': 'https://github.com/me/codecore/releases/tag/$tag', 'body': '## Novità\n- evidenza | mic | Novità della release | Testo.'}];
   }
 
   @override
@@ -43,7 +43,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('with a repository: the check shows the new version and notes; the start-up switch is off', (tester) async {
+  testWidgets('with a repository: the check shows the new version and its notes page; the start-up switch is off', (tester) async {
     _tall(tester);
     final h = await Harness.create(tester);
     final web = _Web('v9.0.0');
@@ -60,7 +60,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
     expect(web.calls, 1);
-    expect(find.text('Disponibile la versione 9.0.0'), findsOneWidget);
+    expect(find.text('È arrivata la 9.0.0'), findsOneWidget);
     expect(find.text('Novità della release'), findsOneWidget);
     expect(find.text('Copia indirizzo'), findsNothing);
     await h.dispose(tester);

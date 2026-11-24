@@ -8518,4 +8518,47 @@ class AppLocalizationsIt extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String updateArrived(String version) {
+    return 'È arrivata la $version';
+  }
+
+  @override
+  String updateFrom(String version) {
+    return 'dalla $version';
+  }
+
+  @override
+  String updateWithSize(int size) {
+    return 'Aggiorna · $size MB';
+  }
+
+  @override
+  String get updateSelfHint =>
+      'L’app si chiude, si aggiorna e si riapre. I tuoi dati restano.';
+
+  @override
+  String get updateBrowserHint =>
+      'Si apre il browser per scaricare il file. I tuoi dati restano.';
+
+  @override
+  String get updateKeepListening => 'Puoi continuare ad ascoltare.';
+
+  @override
+  String get updateHighlight => 'In evidenza';
+
+  @override
+  String get updateAlsoHere => 'Anche in questa versione';
+
+  @override
+  String updateFixes(int count) {
+    return 'Correzioni ($count)';
+  }
+
+  @override
+  String get updateFixesGeneric => 'Correzioni e miglioramenti';
+
+  @override
+  String get updateAllChanges => 'Tutte le modifiche su GitHub';
 }
