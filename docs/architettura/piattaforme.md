@@ -51,6 +51,8 @@ Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchett
 | `android/app/build.gradle.kts` | `namespace`, `applicationId`, varianti, firma, minify. |
 | `android/app/src/main/AndroidManifest.xml` | Permessi, servizi, widget, tile, `AudioService`, metadati Android Auto. |
 
+L'`assetlinks.json` dell'App Link sta nel repo `iTzEmany.github.io` (radice del dominio, `/.well-known/`), non in `docs/site`. L'import da link chiede conferma prima di ogni rete, uno alla volta; un brano singolo apre Cerca.
+
 ### Windows, Linux, macOS
 | Percorso | Ruolo |
 |---|---|

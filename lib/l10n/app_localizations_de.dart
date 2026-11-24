@@ -7709,6 +7709,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get extSaveNothing => 'Noch kein Titel zum Speichern bereit';
 
   @override
+  String get shareLinkInvalid => 'Dieser Freigabelink ist ungültig';
+
+  @override
+  String get shareImportBusy => 'Ein Import läuft bereits';
+
+  @override
+  String get shareImportNeedsYoutube =>
+      'Diese Version kann Titel nicht online suchen';
+
+  @override
+  String get shareImportOffline =>
+      'Zum Importieren der Titel ist eine Verbindung nötig';
+
+  @override
+  String shareImportSearching(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Titel',
+      one: '1 Titel',
+    );
+    return 'Suche $_temp0…';
+  }
+
+  @override
+  String extSavedPartial(String name, int found, int total) {
+    return 'Gespeichert als «$name»: $found von $total';
+  }
+
+  @override
   String get extRefresh => 'Aktualisieren';
 
   @override

@@ -200,7 +200,7 @@ void main() {
     ]);
     shared.add('https://itzemany.github.io/FreeKmusic/#xx!!');
     await _settle(t);
-    expect(find.text('Non riesco a caricare i dati.'), findsOneWidget);
+    expect(find.text('Link di condivisione non valido'), findsOneWidget);
     expect(_container(t).read(searchControllerProvider).text, isEmpty);
     await h.dispose(t);
   });

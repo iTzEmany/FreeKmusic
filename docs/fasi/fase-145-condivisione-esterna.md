@@ -47,7 +47,7 @@ D-677, D-669, D-670, D-691 (stesso spirito per i servizi esterni), D-662, D-699.
 
 ## Tocca a te
 - [ ] Attivare GitHub Pages sul repo (Impostazioni › Pages, ramo e cartella scelti in 145.3).
-- [ ] Fornire il fingerprint SHA-256 del certificato di firma di release (chiave di D-569) e pubblicare `assetlinks.json` su Pages (`/.well-known/assetlinks.json`), poi verificare l'App Link sul telefono (`adb shell pm get-app-links <pacchetto>`).
+- [x] Fornire il fingerprint SHA-256 del certificato di firma di release (chiave di D-569) e pubblicare `assetlinks.json` su Pages (`/.well-known/assetlinks.json`): fatto, il file è su `https://itzemany.github.io/.well-known/assetlinks.json` (200, `com.freekmusic.player`). Resta da verificare l'App Link sul telefono (`adb shell pm get-app-links <pacchetto>`); l'APK debug non è firmato con la chiave di release: `adb shell pm set-app-links --package com.freekmusic.player 2 itzemany.github.io` o scelta a mano.
 - [ ] Rispondere alla proposta di 145.3.
 - [ ] (con la 147) provare la condivisione su WhatsApp dal telefono.
 

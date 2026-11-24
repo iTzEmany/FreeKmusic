@@ -7685,6 +7685,36 @@ class AppLocalizationsPt extends AppLocalizations {
   String get extSaveNothing => 'Nenhuma música pronta para guardar';
 
   @override
+  String get shareLinkInvalid => 'Este link de partilha não é válido';
+
+  @override
+  String get shareImportBusy => 'Já existe uma importação em curso';
+
+  @override
+  String get shareImportNeedsYoutube =>
+      'Esta versão não pode procurar músicas online';
+
+  @override
+  String get shareImportOffline =>
+      'É necessária ligação para importar as músicas';
+
+  @override
+  String shareImportSearching(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count músicas',
+      one: '1 música',
+    );
+    return 'A procurar $_temp0…';
+  }
+
+  @override
+  String extSavedPartial(String name, int found, int total) {
+    return 'Guardada como «$name»: $found de $total';
+  }
+
+  @override
   String get extRefresh => 'Atualizar';
 
   @override
