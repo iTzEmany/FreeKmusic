@@ -13,9 +13,11 @@ import '../support/fake_ytm.dart';
 
 class _Yt implements YoutubeService {
   final asked = <String>[];
+  bool netDown = false;
   @override
   Future<List<YtResult>> search(String query) async {
     asked.add(query);
+    if (netDown) throw const YtException(YtErrorKind.network);
     if (query.endsWith('boomboomboo')) throw StateError('network');
     return [ytmSong(query.substring(query.length - 11), 'Song')];
   }
@@ -29,15 +31,15 @@ final _shared = SharedCollection(
 );
 
 void main() {
-  Future<(Harness, _Yt)> pump(WidgetTester t) async {
+  Future<(Harness, _Yt)> pump(WidgetTester t, {bool netDown = false, SharedCollection? page}) async {
     final h = await Harness.create(t);
-    final yt = _Yt();
+    final yt = _Yt()..netDown = netDown;
     await h.pump(
       t,
       Scaffold(
         body: Consumer(
           builder: (context, ref, _) => TextButton(
-            onPressed: () => handleSharedPage(context, ref, _shared),
+            onPressed: () => handleSharedPage(context, ref, page ?? _shared),
             child: const Text('go'),
           ),
         ),
@@ -72,6 +74,19 @@ void main() {
     await t.tap(find.text('Annulla'));
     await t.pump(const Duration(milliseconds: 300));
     expect(yt.asked, isEmpty);
+    expect(await playlists(t, h), isEmpty);
+    await h.dispose(t);
+  });
+
+  testWidgets('every lookup failing on the network stops after one batch and says so', (t) async {
+    final ids = ['aaaaaaaaaaa', 'bbbbbbbbbbb', 'ccccccccccc', 'ddddddddddd', 'eeeeeeeeeee', 'fffffffffff'];
+    final (h, yt) = await pump(t,
+        netDown: true, page: SharedCollection(SharedFragment(SharedKind.playlist, 'Mix', ids)));
+    await t.tap(find.text('Salva in Libreria'));
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(yt.asked.length, 4);
+    expect(find.text('Controlla la connessione e riprova'), findsOneWidget);
     expect(await playlists(t, h), isEmpty);
     await h.dispose(t);
   });

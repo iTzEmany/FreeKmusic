@@ -4034,6 +4034,7 @@
   "shareImportBusy": "Une importation est déjà en cours",
   "shareImportNeedsYoutube": "Cette version ne peut pas chercher de titres en ligne",
   "shareImportOffline": "Une connexion est nécessaire pour importer les titres",
+  "shareImportNetwork": "Vérifie ta connexion et réessaie",
   "shareImportSearching": "Recherche de {count, plural, one{1 titre} other{{count} titres}}…",
   "@shareImportSearching": {"placeholders": {"count": {"type": "int"}}},
   "extSavedPartial": "Enregistrée sous «{name}» : {found} sur {total}",

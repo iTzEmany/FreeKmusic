@@ -2,7 +2,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/activity_providers.dart';
 import 'dart:async';
 
-import 'package:codecore/providers/exportify_providers.dart' show incomingTextProvider;
+import 'package:codecore/providers/exportify_providers.dart' show IncomingText, incomingTextProvider;
 import 'package:codecore/providers/memory_providers.dart';
 import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
@@ -168,7 +168,7 @@ void main() {
       (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
-    final shared = StreamController<String>();
+    final shared = StreamController<IncomingText>();
     addTearDown(shared.close);
     await h.pump(t, const AppShell(), extraOverrides: [
       incomingTextProvider.overrideWith((ref) => shared.stream),
@@ -181,7 +181,7 @@ void main() {
         builder: (_) => const Scaffold(body: Text('PUSHED'))));
     await _settle(t);
     expect(find.text('PUSHED'), findsOneWidget);
-    shared.add('some words');
+    shared.add(IncomingText('some words'));
     await _settle(t);
     expect(c.read(searchControllerProvider).text, 'some words');
     await _settle(t);
@@ -189,16 +189,35 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('an invalid share-page link tells so instead of searching (145.7)',
-      (t) async {
+  testWidgets('the same text shared twice in a row is handled twice', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);
-    final shared = StreamController<String>();
+    final shared = StreamController<IncomingText>();
     addTearDown(shared.close);
     await h.pump(t, const AppShell(), extraOverrides: [
       incomingTextProvider.overrideWith((ref) => shared.stream),
     ]);
-    shared.add('https://itzemany.github.io/FreeKmusic/#xx!!');
+    final c = _container(t);
+    shared.add(IncomingText('some words'));
+    await _settle(t);
+    expect(c.read(searchControllerProvider).text, 'some words');
+    c.read(searchControllerProvider).clear();
+    shared.add(IncomingText('some words'));
+    await _settle(t);
+    expect(c.read(searchControllerProvider).text, 'some words');
+    await h.dispose(t);
+  });
+
+  testWidgets('an invalid share-page link tells so instead of searching (145.7)',
+      (t) async {
+    _phone(t);
+    final h = await Harness.create(t, tracks: 2);
+    final shared = StreamController<IncomingText>();
+    addTearDown(shared.close);
+    await h.pump(t, const AppShell(), extraOverrides: [
+      incomingTextProvider.overrideWith((ref) => shared.stream),
+    ]);
+    shared.add(IncomingText('https://itzemany.github.io/FreeKmusic/#xx!!'));
     await _settle(t);
     expect(find.text('Link di condivisione non valido'), findsOneWidget);
     expect(_container(t).read(searchControllerProvider).text, isEmpty);

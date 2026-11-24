@@ -90,11 +90,17 @@ final incomingPathProvider = StreamProvider<String>(
 );
 
 /// Text (a link, usually) other apps share with Codecore (Android only).
-final incomingTextProvider = StreamProvider<String>(
+final incomingTextProvider = StreamProvider<IncomingText>(
   (ref) => isAndroid
-      ? ref.watch(incomingFilesProvider).texts()
-      : const Stream<String>.empty(),
+      ? ref.watch(incomingFilesProvider).texts().map(IncomingText.new)
+      : const Stream<IncomingText>.empty(),
 );
+
+/// One share event. No `==` on purpose: the same text shared twice must notify twice.
+class IncomingText {
+  IncomingText(this.text); // not const: each event stays a distinct object
+  final String text;
+}
 
 /// Days between sync reminders: 0 = off, else 7, 14 or 30.
 class ExportifyRemindDays extends Notifier<int> {

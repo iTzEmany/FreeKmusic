@@ -7754,6 +7754,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Une connexion est nécessaire pour importer les titres';
 
   @override
+  String get shareImportNetwork => 'Vérifie ta connexion et réessaie';
+
+  @override
   String shareImportSearching(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

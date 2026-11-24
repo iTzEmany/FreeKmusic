@@ -3813,6 +3813,7 @@
   "shareImportBusy": "An import is already running",
   "shareImportNeedsYoutube": "This version cannot look songs up online",
   "shareImportOffline": "A connection is needed to import the songs",
+  "shareImportNetwork": "Check your connection and try again",
   "shareImportSearching": "Looking up {count, plural, one{1 song} other{{count} songs}}…",
   "@shareImportSearching": {"placeholders": {"count": {"type": "int"}}},
   "extSavedPartial": "Saved as «{name}»: {found} of {total}",

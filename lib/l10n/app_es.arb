@@ -3813,6 +3813,7 @@
   "shareImportBusy": "Ya hay una importación en curso",
   "shareImportNeedsYoutube": "Esta versión no puede buscar canciones en línea",
   "shareImportOffline": "Se necesita conexión para importar las canciones",
+  "shareImportNetwork": "Comprueba la conexión e inténtalo de nuevo",
   "shareImportSearching": "Busco {count, plural, one{1 canción} other{{count} canciones}}…",
   "@shareImportSearching": {"placeholders": {"count": {"type": "int"}}},
   "extSavedPartial": "Guardada como «{name}»: {found} de {total}",

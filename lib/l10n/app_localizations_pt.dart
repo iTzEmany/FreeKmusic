@@ -7699,6 +7699,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'É necessária ligação para importar as músicas';
 
   @override
+  String get shareImportNetwork => 'Verifica a ligação e tenta de novo';
+
+  @override
   String shareImportSearching(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

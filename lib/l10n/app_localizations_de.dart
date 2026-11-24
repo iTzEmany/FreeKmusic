@@ -7723,6 +7723,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zum Importieren der Titel ist eine Verbindung nötig';
 
   @override
+  String get shareImportNetwork =>
+      'Prüfe die Verbindung und versuche es erneut';
+
+  @override
   String shareImportSearching(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

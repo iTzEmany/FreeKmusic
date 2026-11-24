@@ -12205,6 +12205,12 @@ abstract class AppLocalizations {
   /// **'Serve la connessione per importare i brani'**
   String get shareImportOffline;
 
+  /// No description provided for @shareImportNetwork.
+  ///
+  /// In it, this message translates to:
+  /// **'Controlla la connessione e riprova'**
+  String get shareImportNetwork;
+
   /// No description provided for @shareImportSearching.
   ///
   /// In it, this message translates to:

@@ -1,3 +1,5 @@
+import 'dart:async' show TimeoutException;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,6 +11,7 @@ import '../../providers/shuffle_plus_providers.dart' show networkProbeProvider;
 import '../../providers/youtube_providers.dart' show youtubeServiceProvider;
 import '../../services/online/external_collection.dart';
 import '../../services/online/shared_text.dart';
+import '../../services/online/youtube_service.dart' show YtErrorKind, YtException;
 import '../../services/share/share_fragment.dart' show SharedKind;
 import '../widgets/confirm.dart';
 import '../widgets/show_msg.dart';
@@ -44,6 +47,7 @@ Future<void> handleSharedPage(BuildContext context, WidgetRef ref, SharedText s)
     showMsgOn(messenger, l.shareImportSearching(f.ids.length));
     final matches = await _lookUp(ref, f.ids);
     if (!context.mounted) return;
+    if (matches == null) return showMsgOn(messenger, l.shareImportNetwork);
     final String? name;
     try {
       name = await saveToLibrary(ref, f.title, matches, fallback: l.newPlaylist);
@@ -68,20 +72,25 @@ Future<void> handleSharedPage(BuildContext context, WidgetRef ref, SharedText s)
 
 // shortcut: one lookup per id, four at a time (innerTube.songOf lacks cover and ids that a
 // saved row needs); upgrade if a batch endpoint appears.
-Future<List<TrackMatch>> _lookUp(WidgetRef ref, List<String> ids) async {
+// Null: a whole batch failed on the network and nothing was found, so the rest is not tried.
+Future<List<TrackMatch>?> _lookUp(WidgetRef ref, List<String> ids) async {
   final yt = ref.read(youtubeServiceProvider);
   final matches = <TrackMatch>[];
   for (var i = 0; i < ids.length; i += 4) {
-    matches.addAll(await Future.wait([
+    var netFails = 0;
+    final batch = await Future.wait([
       for (final id in ids.skip(i).take(4))
         yt.search('https://www.youtube.com/watch?v=$id').then<TrackMatch>(
           (r) => r.isEmpty ? const TrackNotFound() : TrackReadyOnline(r.first),
           onError: (Object e, StackTrace st) {
             AppLog.w('shared page: lookup failed for $id', e, st);
+            if (e is TimeoutException || (e is YtException && e.kind == YtErrorKind.network)) netFails++;
             return const TrackNotFound();
           },
         ),
-    ]));
+    ]);
+    matches.addAll(batch);
+    if (netFails == batch.length && !matches.any((m) => m is TrackReady)) return null;
   }
   return matches;
 }

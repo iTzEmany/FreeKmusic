@@ -7667,6 +7667,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareImportOffline => 'A connection is needed to import the songs';
 
   @override
+  String get shareImportNetwork => 'Check your connection and try again';
+
+  @override
   String shareImportSearching(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -4519,6 +4519,7 @@
   "shareImportBusy": "Importazione già in corso",
   "shareImportNeedsYoutube": "Questa versione non può cercare i brani online",
   "shareImportOffline": "Serve la connessione per importare i brani",
+  "shareImportNetwork": "Controlla la connessione e riprova",
   "shareImportSearching": "Cerco {count, plural, one{1 brano} other{{count} brani}}…",
   "@shareImportSearching": {"placeholders": {"count": {"type": "int"}}},
   "extSavedPartial": "Salvata come «{name}»: {found} su {total}",

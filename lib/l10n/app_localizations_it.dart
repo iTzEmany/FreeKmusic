@@ -7687,6 +7687,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareImportOffline => 'Serve la connessione per importare i brani';
 
   @override
+  String get shareImportNetwork => 'Controlla la connessione e riprova';
+
+  @override
   String shareImportSearching(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

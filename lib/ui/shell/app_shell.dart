@@ -363,7 +363,7 @@ class AppShell extends ConsumerWidget {
     });
     // Text shared from another app: a link opens like a pasted one in Cerca.
     ref.listen(incomingTextProvider, (_, next) {
-      final text = next.value;
+      final text = next.value?.text;
       if (text == null) return;
       final shared = routeSharedText(text);
       final query = switch (shared) {
