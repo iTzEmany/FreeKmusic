@@ -1,0 +1,44 @@
+/* Impalcatura delle pagine di mockup (non fa parte del prodotto): cornici, note numerate, indicatori di ritmo. */
+html{background:#0b0a0f}
+body.mock{margin:0;background:#0b0a0f;color:#E8E4EE;font:400 15px/1.5 "Figtree",system-ui,sans-serif;padding:32px 40px 64px;min-width:fit-content}
+.mock-head a,ol.legend a{color:#D9C8FF}
+.mock-head{display:flex;align-items:baseline;gap:24px;flex-wrap:wrap;margin-bottom:8px}
+.mock-head h1{font:700 24px/1.2 "Unbounded","Figtree",sans-serif;margin:0}
+.mock-head p{margin:0;color:#B3AAC2;max-width:78ch}
+.mock h2.band{font:700 18px/1 "Figtree",sans-serif;margin:40px 0 16px;color:#F4F0FA;display:flex;align-items:center;gap:12px}
+.mock h2.band small{font:400 13px/1 "Figtree",sans-serif;color:#9A92A6}
+.mock-btn{all:unset;cursor:pointer;border:1px solid rgb(255 255 255 /.25);padding:6px 12px;border-radius:999px;font-size:13px;color:#F4F0FA}
+.mock-btn[aria-pressed=true]{background:rgb(242 193 78 /.2);border-color:#F2C14E}
+.mock-btn:focus-visible{outline:2px solid #A06BFF;outline-offset:2px}
+.frames{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+.cap{margin:10px 0 0;font-size:13px;color:#9A92A6;max-width:360px}
+figure.f{margin:0}
+/* telefono 360x800 (dp = px) */
+.phone{position:relative;width:360px;height:800px;overflow:hidden;border-radius:24px;border:1px solid rgb(255 255 255 /.14);font-size:15px}
+.phone.short{height:470px}
+.phone .status{position:absolute;inset:0 0 auto 0;height:24px;display:flex;align-items:center;justify-content:space-between;padding-inline:16px;font:600 12px/1 "Figtree",sans-serif;z-index:3;color:var(--text)}
+.phone .scroll{position:absolute;inset:24px 0 0 0;overflow-y:auto;scrollbar-width:none;padding-inline:var(--gutter)}
+.phone .scroll::-webkit-scrollbar{display:none}
+/* desktop 1440x900 */
+.desktop{position:relative;width:1440px;height:900px;overflow:hidden;border:1px solid rgb(255 255 255 /.14);border-radius:8px}
+/* note numerate: SOLO annotazione del mockup (ambra, non è un colore del prodotto) */
+.note{position:absolute;z-index:30;width:20px;height:20px;border-radius:50%;background:#F2C14E;color:#1a1300;font:700 12px/20px "Figtree",sans-serif;text-align:center;pointer-events:none}
+ol.legend{margin:32px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px 32px;max-width:1480px}
+ol.legend li{display:flex;gap:12px;font-size:14px;color:#D8D2E2}
+ol.legend li b{flex:none;width:20px;height:20px;border-radius:50%;background:#F2C14E;color:#1a1300;font:700 12px/20px "Figtree",sans-serif;text-align:center;margin-top:1px}
+ol.legend code{font-size:12px;color:#B3AAC2}
+/* ritmo verticale: indicatori in dp, visibili col pulsante (attivi di default) */
+.show-rhythm .gm,.show-rhythm .section::before,.show-rhythm .section-head::before,.show-rhythm .section-head::after,.show-rhythm .section.last::after{display:block}
+.gm{display:none;position:absolute;left:0;width:100%;background:rgb(242 193 78 /.28);border-block:1px dashed #F2C14E;color:#F2C14E;font:700 9px/1 "Figtree",sans-serif;box-sizing:border-box;text-align:left;padding-left:2px;overflow:hidden;z-index:25;pointer-events:none}
+.gm.top{top:0}.gm.bot{bottom:0}
+.section{position:relative}
+.section::before,.section-head::before,.section-head::after,.section.last::after{display:none;position:absolute;width:16px;background:rgb(242 193 78 /.28);border-block:1px dashed #F2C14E;color:#F2C14E;font:700 9px/1 "Figtree",sans-serif;overflow:hidden;box-sizing:border-box;z-index:25;pointer-events:none;padding-left:1px}
+.section::before{content:attr(data-gap);left:calc(-1*var(--gutter));top:calc(-1*var(--section-gap));height:var(--section-gap)}
+.section.last::after{content:attr(data-gap);left:calc(-1*var(--gutter));bottom:calc(-1*var(--section-gap));height:var(--section-gap)}
+.section-head{position:relative}
+.section-head::before{content:"12";left:calc(-1*var(--gutter));top:100%;height:var(--head-gap)}
+.section-head::after{content:"40";right:calc(-1*var(--gutter));top:0;height:var(--head-h)}
+.desk .section::before{width:32px;content:attr(data-gap)}
+.desk .section-head::after{content:"44"}
+.desk .section-head::before{content:"16";width:32px}
+.desk .section-head::after,.desk .section.last::after{width:32px}
