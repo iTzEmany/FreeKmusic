@@ -260,6 +260,13 @@ void main() {
     expect(r.artist, startsWith('a b'));
   });
 
+  test('an emoji across the 60/80 cut is kept whole or dropped whole, never split', () {
+    final f = SharedFragment(SharedKind.track, 'x', [SharedRow.search('${'a' * 59}🎵🎵', '${'b' * 79}🎵🎵')]);
+    final r = decodeShareFragment(encodeShareFragment(f)).rows.single;
+    expect(r.artist, '${'a' * 59}🎵');
+    expect(r.title, '${'b' * 79}🎵');
+  });
+
   test('FK2 rejects empty rows, long rows, a blank title, a bad id, too many rows', () {
     final bad = [
       'FK2\nt\nT\nabcdefghijk\n',

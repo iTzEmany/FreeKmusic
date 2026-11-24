@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show utf8;
 import 'dart:io';
 import 'dart:ui' show Rect;
 
@@ -26,7 +27,7 @@ class FakeShare implements ExternalShare {
   Future<void> shareFile(String path, {String? text, Rect? origin}) async {
     files.add(path);
     fileTexts.add(text);
-    fileBody = File(path).readAsStringSync();
+    fileBody = utf8.decode(File(path).readAsBytesSync(), allowMalformed: true); // a PNG is not text
     origins.add(origin);
     await gate?.future;
     if (error != null) throw error!;

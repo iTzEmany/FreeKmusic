@@ -1,3 +1,4 @@
+import 'dart:async' show TimeoutException;
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -44,6 +45,12 @@ void main() {
     expect((img!.width, img.height), (1080, 1350));
   });
 
+  testWidgets('a card slower than the timeout throws a TimeoutException', (tester) async {
+    await tester.runAsync(
+      () => expectLater(renderShareCardPng(const [], (i) => _shareCard(null, i), timeout: Duration.zero), throwsA(isA<TimeoutException>())),
+    );
+  });
+
   testWidgets('no link (nothing to link, or too long for a QR): no QR on the card', (tester) async {
     await _pump(tester, _card(null));
     expect(find.byType(QrImageView), findsNothing);
@@ -52,6 +59,14 @@ void main() {
   testWidgets('no cover: the ring carries the initial of the title', (tester) async {
     await _pump(tester, _card(null));
     expect(find.text('M'), findsOneWidget);
+  });
+
+  testWidgets('a title that starts with an emoji or a symbol: a note, not half an emoji', (tester) async {
+    for (final title in ['🎵 Mix', '(Mix)']) {
+      await _pump(tester, Directionality(textDirection: TextDirection.ltr, child: ShareCard(
+        kind: SharedKind.track, brand: 'B', kindLabel: 'K', title: title, meta: 'm', tint: Colors.indigo)));
+      expect(find.text('♪'), findsOneWidget, reason: title);
+    }
   });
 }
 

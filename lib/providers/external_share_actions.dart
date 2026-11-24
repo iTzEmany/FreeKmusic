@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'dart:ui' show Rect;
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../core/app_log.dart';
+import '../data/repositories/track_kinds.dart' show kStreamKind;
 import '../data/db/app_database.dart' show Track;
 import '../services/share/external_share.dart';
 import '../services/share/external_share_text.dart';
@@ -15,14 +17,18 @@ import '../services/share/share_fragment.dart';
 import '../services/share/share_m3u8.dart';
 import 'external_share_provider.dart';
 import 'share_card_maker.dart';
+import 'youtube_providers.dart' show downloadIndexProvider;
 
 /// «Condividi» (D-677): the system share sheet with readable text and links, or an m3u8 above the limit (D-702).
 class ExternalShareActions {
-  ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles, this.cardMaker})
+  ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles, this.cardMaker, this.downloadedId})
     : _canShareFiles = canShareFiles ?? !Platform.isLinux;
 
   /// Draws the share card (D-713); null, or a failure, shares the text instead.
   final ShareCardMaker? cardMaker;
+
+  /// The video id a file was downloaded from (the download index): for files saved before the id was kept on the row.
+  final Future<String?> Function(String path)? downloadedId;
 
   final ExternalShare _share;
   final Future<Directory> Function() _tempDir;
@@ -34,11 +40,12 @@ class ExternalShareActions {
 
   /// [origin] anchors the sheet on iPad and desktop. True when the text was copied to the clipboard
   /// instead of shared (the caller says so); false when shared, or when another share is in progress.
-  Future<bool> share(SharedKind kind, String title, List<Track> tracks, {String? subtitle, Rect? origin}) async {
+  Future<bool> share(SharedKind kind, String title, List<Track> rows, {String? subtitle, Rect? origin}) async {
     if (_busy) return false;
     _busy = true;
     String? text;
     try {
+      final tracks = await _withIds(rows);
       if (exceedsShareLimit(tracks, kind: kind, title: title)) {
         text = shareM3u8Body(title, tracks);
         if (!_canShareFiles) return await _copy(text);
@@ -62,6 +69,15 @@ class ExternalShareActions {
     } finally {
       _busy = false;
     }
+  }
+
+  Future<List<Track>> _withIds(List<Track> rows) async {
+    final lookup = downloadedId;
+    if (lookup == null) return rows;
+    return [
+      for (final t in rows)
+        t.kind == kStreamKind || t.videoId != null ? t : t.copyWith(videoId: Value(await lookup(t.path))),
+    ];
   }
 
   /// The card as a file in our own folder, or null (logged) when it cannot be drawn in time.
@@ -89,5 +105,10 @@ class ExternalShareActions {
 }
 
 final externalShareActionsProvider = Provider<ExternalShareActions>(
-  (ref) => ExternalShareActions(ref.watch(externalShareProvider), getTemporaryDirectory, cardMaker: shareCardMaker(ref)),
+  (ref) => ExternalShareActions(
+    ref.watch(externalShareProvider),
+    getTemporaryDirectory,
+    cardMaker: shareCardMaker(ref),
+    downloadedId: (path) async => (await ref.read(downloadIndexProvider.future)).idForPath(path),
+  ),
 );

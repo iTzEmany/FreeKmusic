@@ -191,14 +191,6 @@ void main() {
     expect(row.videoId, 'abcdefghijk', reason: 'the video id stays on the local row (D-713)');
   });
 
-  test('setVideoId keeps a YouTube id only: other sources and malformed ids leave the row alone', () async {
-    await tracks.setVideoId(shadowId, 'soundcloud:123');
-    await tracks.setVideoId(shadowId, 'youtube:short');
-    expect((await tracks.getById(shadowId))!.videoId, isNull);
-    await tracks.setVideoId(shadowId, 'youtube:dQw4w9WgXcQ');
-    expect((await tracks.getById(shadowId))!.videoId, 'dQw4w9WgXcQ');
-  });
-
   test('the cover of the shadow row follows the new album key', () async {
     final key = await covers.saveFromBytes('stream|$_key', [9, 9], 'image/jpeg');
     await tracks.setCoverForAlbum('stream|$_key', true, key);
@@ -354,6 +346,7 @@ void main() {
     expect(tagged, [libId]);
     expect(await tracks.getById(shadowId), isNull, reason: 'the shadow merged into the library row');
     expect((await db.select(db.plays).get()).single.trackId, libId);
+    expect((await tracks.getById(libId))!.videoId, 'abcdefghijk', reason: 'the library row gets the id too (D-713)');
   });
 
   test('no download folder: nothing is promoted and the cache keeps the file', () async {

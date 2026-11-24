@@ -37,7 +37,8 @@ class ShareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final head = ccStyle('Unbounded', 64, 700, color: _c.text, height: 1.1);
+    // With the QR (520 px wide) the text column is narrow: a smaller title keeps it readable.
+    final head = ccStyle('Unbounded', qrLink == null ? 64 : 52, 700, color: _c.text, height: 1.1);
     return SizedBox.fromSize(
       size: kShareCardSize,
       child: DecoratedBox(
@@ -74,12 +75,12 @@ class ShareCard extends StatelessWidget {
                     ),
                   ),
                   if (qrLink != null) ...[
-                    const SizedBox(width: 48),
+                    const SizedBox(width: 32),
                     Container(
                       color: Colors.white,
                       padding: const EdgeInsets.all(20),
-                      // Level M is what the 666-character limit of the link was worked out for.
-                      child: QrImageView(key: ValueKey<String>(qrLink!), data: qrLink!, size: 360, padding: EdgeInsets.zero, errorCorrectionLevel: QrErrorCorrectLevel.M),
+                      // Level M and 480 px are what the link limit (QR version 15) was worked out for.
+                      child: QrImageView(key: ValueKey<String>(qrLink!), data: qrLink!, size: 480, padding: EdgeInsets.zero, errorCorrectionLevel: QrErrorCorrectLevel.M),
                     ),
                   ],
                 ],
@@ -95,7 +96,8 @@ class ShareCard extends StatelessWidget {
   Widget _artwork() {
     if (covers.isEmpty) return _ring(Text(_initial, style: ccStyle('Unbounded', 240, 700, color: _c.onAccent)));
     if (kind == SharedKind.track) return _ring(SizedBox.expand(child: _img(covers.first)));
-    if (kind == SharedKind.album) return ClipRRect(borderRadius: BorderRadius.circular(32), child: SizedBox.square(dimension: _art, child: _img(covers.first)));
+    // Fewer than 4 distinct covers: one cover, as an album (a mosaic would repeat or leave holes).
+    if (kind != SharedKind.track && covers.length < 4) return ClipRRect(borderRadius: BorderRadius.circular(32), child: SizedBox.square(dimension: _art, child: _img(covers.first)));
     return ClipRRect(
       borderRadius: BorderRadius.circular(32),
       child: SizedBox.square(
@@ -112,7 +114,11 @@ class ShareCard extends StatelessWidget {
     );
   }
 
-  String get _initial => title.trim().isEmpty ? '♪' : String.fromCharCode(title.trim().runes.first).toUpperCase();
+  /// The first letter or digit of the title (whole grapheme), else a note.
+  String get _initial {
+    final first = title.trim().characters.firstOrNull;
+    return first != null && RegExp(r'^[\p{L}\p{N}]', unicode: true).hasMatch(first) ? first.toUpperCase() : '♪';
+  }
 
   Widget _img(ui.Image i) => RawImage(image: i, fit: BoxFit.cover);
 

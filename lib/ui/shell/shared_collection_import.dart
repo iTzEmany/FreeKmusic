@@ -102,6 +102,8 @@ Future<List<TrackMatch>?> _lookUp(WidgetRef ref, List<SharedRow> rows) async {
   } finally {
     sub.close();
   }
+  // Every row failed for a passing reason (offline): tell the network, do not save a list of «non trovato».
+  if (out.every((m) => m is TrackNotFound && m.transient)) return null;
   return out;
 }
 

@@ -28,39 +28,63 @@ Future<Uint8List> renderShareCardPng(
 Future<Uint8List> _render(List<File> covers, ShareCard Function(List<ui.Image>) card) async {
   final images = <ui.Image>[];
   ui.Image? out;
+  // What the finally below takes down (nothing may stay hooked to the engine or the focus system).
+  PipelineOwner? pipeline;
+  RenderView? view;
+  BuildOwner? build;
+  FocusManager? focus;
+  RenderObjectToWidgetElement<RenderBox>? root;
+  RenderRepaintBoundary? boundary;
   try {
     for (final f in covers) {
-      final codec = await ui.instantiateImageCodec(await f.readAsBytes(), targetWidth: 720);
+      final codec = await ui.instantiateImageCodec(await f.readAsBytes(), targetWidth: covers.length >= 4 ? 360 : 720);
       images.add((await codec.getNextFrame()).image);
       codec.dispose();
     }
-    final boundary = RenderRepaintBoundary();
-    final view = RenderView(
+    final repaint = RenderRepaintBoundary();
+    boundary = repaint;
+    final v = RenderView(
       view: ui.PlatformDispatcher.instance.views.first,
       configuration: ViewConfiguration(logicalConstraints: BoxConstraints.tight(kShareCardSize)),
-      child: RenderPositionedBox(child: boundary),
+      child: RenderPositionedBox(child: repaint),
     );
-    final pipeline = PipelineOwner()..rootNode = view;
-    view.prepareInitialFrame();
-    final build = BuildOwner(focusManager: FocusManager());
-    final root = RenderObjectToWidgetAdapter<RenderBox>(
-      container: boundary,
+    view = v;
+    final pipe = PipelineOwner()..rootNode = v;
+    pipeline = pipe;
+    v.prepareInitialFrame();
+    focus = FocusManager();
+    final owner = BuildOwner(focusManager: focus);
+    build = owner;
+    final r = RenderObjectToWidgetAdapter<RenderBox>(
+      container: repaint,
       child: Directionality(
         textDirection: TextDirection.ltr,
         child: DefaultTextStyle(style: const TextStyle(decoration: TextDecoration.none), child: card(images)),
       ),
-    ).attachToRenderTree(build);
-    build.buildScope(root);
-    build.finalizeTree();
-    pipeline
+    ).attachToRenderTree(owner);
+    root = r;
+    owner.buildScope(r);
+    owner.finalizeTree();
+    pipe
       ..flushLayout()
       ..flushCompositingBits()
       ..flushPaint();
-    out = await boundary.toImage();
+    out = await repaint.toImage();
     final data = await out.toByteData(format: ui.ImageByteFormat.png);
     if (data == null) throw StateError('share card: no PNG data');
-    return data.buffer.asUint8List();
+    return data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
   } finally {
+    final b = build;
+    final r = root;
+    if (b != null && r != null && boundary != null) {
+      // An adapter without a child unmounts the cloned covers and the widgets.
+      RenderObjectToWidgetAdapter<RenderBox>(container: boundary).attachToRenderTree(b, r);
+      b.buildScope(r);
+      b.finalizeTree();
+    }
+    pipeline?.rootNode = null;
+    view?.dispose();
+    focus?.dispose();
     out?.dispose();
     for (final i in images) {
       i.dispose();

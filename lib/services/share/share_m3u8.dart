@@ -4,13 +4,22 @@ import 'package:path/path.dart' as p;
 
 import '../../core/text_utils.dart' show sanitizeFileName;
 import '../../data/db/app_database.dart' show Track;
-import '../export/playlist_exporter.dart' show streamUrlOf, toM3u8;
+import 'external_share_text.dart' show shareRowOf;
 
-/// The m3u8 of the streamed rows of [tracks] (YouTube Music links; local paths mean nothing to the receiver).
-String shareM3u8Body(String name, List<Track> tracks) => toM3u8(name, [
-  for (final t in tracks)
-    if (streamUrlOf(t) != null) t,
-]);
+/// The m3u8 of every row of [tracks], as the link has them (D-713): a YouTube Music link for a row with
+/// a video id, else a search of its artist + title (local paths mean nothing to the receiver).
+String shareM3u8Body(String name, List<Track> tracks) {
+  final b = StringBuffer('#EXTM3U\n#PLAYLIST:$name\n');
+  for (final t in tracks) {
+    final r = shareRowOf(t);
+    final url = r.id != null
+        ? 'https://music.youtube.com/watch?v=${r.id}'
+        : 'https://music.youtube.com/search?q=${Uri.encodeQueryComponent('${r.artist} ${r.title}'.trim())}';
+    final secs = t.durationMs > 0 ? (t.durationMs / 1000).round() : -1;
+    b.write('#EXTINF:$secs,${(t.artist ?? '').isEmpty ? t.title : '${t.artist} - ${t.title}'}\n$url\n');
+  }
+  return b.toString();
+}
 
 /// Writes [shareM3u8Body] in [dir], which is ours alone: what an earlier share left there is deleted first.
 Future<File> writeShareM3u8(Directory dir, String name, List<Track> tracks) async {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -39,17 +40,13 @@ void main() {
     });
   }
 
-  test('the card fails to draw (error or timeout): the text goes as before', () async {
-    for (final maker in <ShareCardMaker>[
-      (k, t, s, tr) async => throw StateError('no draw'),
-      (k, t, s, tr) => Future<Uint8List>.delayed(const Duration(seconds: 1), () => Uint8List(1)).timeout(const Duration(milliseconds: 10)),
-    ]) {
-      fake = FakeShare();
-      await actions(maker).share(SharedKind.album, 'Alb', [_t(1)], subtitle: 'Band');
+  for (final (name, error) in [('error', StateError('no draw')), ('timeout', TimeoutException('slow card'))]) {
+    test('the card fails to draw ($name): the text goes as before', () async {
+      await actions((k, t, s, tr) async => throw error).share(SharedKind.album, 'Alb', [_t(1)], subtitle: 'Band');
       expect(fake.files, isEmpty);
       expect(fake.texts.single, buildShareText(SharedKind.album, 'Alb', [_t(1)], subtitle: 'Band'));
-    }
-  });
+    });
+  }
 
   test('no file sheet: no card is drawn, the text is the one of today', () async {
     var drawn = false;
@@ -57,6 +54,7 @@ void main() {
     await a.share(SharedKind.track, 'Song 1', [_t(1)]);
     expect(drawn, isFalse);
     expect(fake.files, isEmpty);
+    expect(fake.texts.single, buildShareText(SharedKind.track, 'Song 1', [_t(1)]));
   });
 
   test('above the limit the m3u8 goes, not the card', () async {

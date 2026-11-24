@@ -5,10 +5,11 @@ import 'share_fragment.dart';
 /// Rows named in the text before the "…" (the page and the links carry the rest).
 const _maxListed = 10;
 
-/// The row of [t] in the shared link (D-713): its YouTube video id (kept at download, or from a streamed
-/// row's address), else its artist + title for a search. An invalid id counts as none.
+/// The row of [t] in the shared link (D-713): its YouTube video id (from a streamed row's address, which
+/// wins as `videoId` may be old after a demote; else kept at download), else its artist + title for a search.
+/// An invalid id counts as none.
 SharedRow shareRowOf(Track t) {
-  final id = t.videoId ?? Uri.tryParse(streamUrlOf(t) ?? '')?.queryParameters['v'];
+  final id = Uri.tryParse(streamUrlOf(t) ?? '')?.queryParameters['v'] ?? t.videoId;
   return id != null && isVideoId(id) ? SharedRow.id(id) : SharedRow.search(t.artist ?? '', t.title);
 }
 
@@ -26,9 +27,9 @@ String buildShareCaption(SharedKind kind, String title, List<Track> tracks) {
 /// 50 tracks with ids fit and a long list of titles does not turn into a link a chat app may cut.
 const _maxLinkChars = 2000;
 
-/// Longest link whose QR a phone reads reliably from the 1080 px share card printed or on a screen:
-/// 666 bytes is QR version 20 at level M (97 modules, about 6 px each at 600 px). Above it the card has no QR.
-const _maxQrLinkChars = 666;
+/// Longest link whose QR a phone reads from a picture seen on another phone: 412 bytes is QR version 15
+/// at level M (77 modules, about 6 px each at the card's 480 px). Version 20 left about 3.7 px per module. Above it the card has no QR.
+const _maxQrLinkChars = 412;
 
 /// True when a QR of [link] stays readable (the card shows it only then, D-713).
 bool shareLinkFitsQr(String link) => link.length <= _maxQrLinkChars;

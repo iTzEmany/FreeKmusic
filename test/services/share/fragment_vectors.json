@@ -190,5 +190,23 @@
     "name": "FK2 search title too long",
     "error": true,
     "fragment": "H4sIAAAAAAAAA3PzNuIq4PLNrOCqc-SsoDYAADI0pileAAAA"
+  },
+  {
+    "name": "FK2 emoji across the 60/80 cut",
+    "kind": "p",
+    "title": "Emoji",
+    "rows": [
+      "dQw4w9WgXcQ",
+      {
+        "artist": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🎵",
+        "title": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb🎵"
+      }
+    ],
+    "fragment": "H4sIAAAAAAACA3PzNuIq4HLNzc_K5EoJLDcptwxPj0gO5KpLJB98mN-3lTOJugBkJgCMH-QArAAAAA"
+  },
+  {
+    "name": "FK2 artist of 61 code points with emoji",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4HLNzc_K5EoJLDcptwxPj0gO5KpLpAB8mN-3lbMCAIhkZXNbAAAA"
   }
 ]

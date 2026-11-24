@@ -9,6 +9,7 @@ import 'package:codecore/services/share/share_fragment.dart';
 import 'package:codecore/services/share/share_m3u8.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart' show QrCode, QrErrorCorrectLevel;
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fake_share.dart';
@@ -86,9 +87,17 @@ void main() {
     expect(decodeShareFragment(text.split('#').last).rows, [const SharedRow.search('Band', 'Song 1')]);
   });
 
-  test('shareLinkFitsQr: 666 characters fit, one more does not', () {
-    expect(shareLinkFitsQr('x' * 666), isTrue);
-    expect(shareLinkFitsQr('x' * 667), isFalse);
+  test('a streamed row: the id of its address wins over an old videoId', () {
+    expect(shareRowOf(_t(1).copyWith(videoId: const Value('dQw4w9WgXcQ'))), const SharedRow.id('abcdefgh0_1'));
+  });
+
+  test('shareLinkFitsQr: 412 characters fit, one more does not', () {
+    expect(shareLinkFitsQr('x' * 412), isTrue);
+    expect(shareLinkFitsQr('x' * 413), isFalse);
+  });
+
+  test('a link at the QR limit is QR version 15 or less at level M', () {
+    expect(QrCode.fromData(data: 'x' * 412, errorCorrectLevel: QrErrorCorrectLevel.M).typeNumber, lessThanOrEqualTo(15));
   });
 
   test('exceedsShareLimit: more than 50 tracks even if local; 50 fit; a link that is too long does not', () {
@@ -130,7 +139,7 @@ void main() {
       });
     }
 
-    test('file: streamed rows only with their links; an older share file is deleted', () async {
+    test('file: every row, streamed by its link and local by a search; an older share file is deleted', () async {
       final old = File('${tmp.path}/freekmusic_share/old.m3u8')..createSync(recursive: true);
       final tracks = [for (var i = 0; i < 51; i++) _t(i), _t(99, stream: false)];
       await actions.share(SharedKind.playlist, 'Mix', tracks);
@@ -138,6 +147,7 @@ void main() {
       expect(fake.files.single, endsWith('Mix.m3u8'));
       expect(fake.fileBody, contains('https://music.youtube.com/watch?v=abcdefgh0_1'));
       expect(fake.fileBody, isNot(contains('/m/99.mp3')));
+      expect(fake.fileBody, contains('#EXTINF:1,Band - Song 99\nhttps://music.youtube.com/search?q=Band+Song+99\n'));
     });
 
     test('only the folder of its own is emptied: a sibling of the temp folder is kept', () async {
@@ -147,10 +157,18 @@ void main() {
       expect(fake.files.single, contains('freekmusic_share'));
     });
 
-    test('51 rows, only 30 streamed: still a file (every track counts)', () async {
+    test('51 rows, only 30 streamed: still a file with all 51 rows (every track counts)', () async {
       await actions.share(SharedKind.playlist, 'Mix', [for (var i = 0; i < 51; i++) _t(i, stream: i < 30)]);
       expect(fake.texts, isEmpty);
       expect(fake.files.length, 1);
+      expect(RegExp('#EXTINF').allMatches(fake.fileBody!), hasLength(51));
+    });
+
+    test('a file downloaded before the id was kept: the download index gives its id', () async {
+      final withIndex = ExternalShareActions(fake, () async => tmp, canShareFiles: true,
+          downloadedId: (path) async => path == '/m/7.mp3' ? 'dQw4w9WgXcQ' : null);
+      await withIndex.share(SharedKind.playlist, 'Mix', [_t(7, stream: false)]);
+      expect(decodeShareFragment(fake.texts.single.split('#').last).rows, [const SharedRow.id('dQw4w9WgXcQ')]);
     });
 
     group('clipboard', () {

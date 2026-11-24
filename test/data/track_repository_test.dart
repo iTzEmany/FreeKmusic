@@ -49,6 +49,16 @@ void main() {
   });
   tearDown(() => db.close());
 
+  test('setVideoId keeps a YouTube id on a file row only: other sources and malformed ids leave it alone', () async {
+    await repo.upsertBatch([row('/a.mp3', 'A')]);
+    final id = (await db.select(db.tracks).getSingle()).id;
+    await repo.setVideoId(id, 'soundcloud:123');
+    await repo.setVideoId(id, 'youtube:short');
+    expect((await repo.getById(id))!.videoId, isNull);
+    await repo.setVideoId(id, 'youtube:dQw4w9WgXcQ');
+    expect((await repo.getById(id))!.videoId, 'dQw4w9WgXcQ');
+  });
+
   test('upsert twice keeps one row and preserves favorite', () async {
     await repo.upsertBatch([row('/a.mp3', 'A')]);
     final id = (await db.select(db.tracks).getSingle()).id;

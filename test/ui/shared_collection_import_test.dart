@@ -117,4 +117,21 @@ void main() {
     expect(await playlists(t, h), isEmpty);
     await h.dispose(t);
   });
+
+  testWidgets('rows searched by name, all failing on the network: the network message, no playlist', (t) async {
+    final (h, _) = await pump(t,
+        netDown: true,
+        page: const SharedCollection(SharedFragment(SharedKind.playlist, 'Locali', [
+          SharedRow.search('Oasis', 'Wonderwall'),
+          SharedRow.search('Nobody', 'Nothing'),
+        ])));
+    await t.tap(find.text('Salva in Libreria'));
+    for (var i = 0; i < 40 && find.text('Controlla la connessione e riprova').evaluate().isEmpty; i++) {
+      await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 500)));
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    expect(find.text('Controlla la connessione e riprova'), findsOneWidget);
+    expect(await playlists(t, h), isEmpty);
+    await h.dispose(t);
+  });
 }
