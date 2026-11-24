@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
 import 'package:codecore/providers/external_share_provider.dart';
-import 'package:codecore/services/share/external_share.dart' show ExternalShareUnavailable;
 import 'package:codecore/ui/widgets/download_bar.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart'
@@ -1105,7 +1104,7 @@ void main() {
   });
 
   testWidgets('«Condividi» that fails copies the text and says so', (tester) async {
-    final fake = FakeShare()..error = const ExternalShareUnavailable('no mail client');
+    final fake = FakeShare()..error = StateError('no mail client');
     final copied = <String>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
       if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
@@ -1120,20 +1119,10 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('without a TrackMenuHost the menu does not open and nothing is thrown', (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Consumer(
-            builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, _stub()), child: const Text('open')),
-          ),
-        ),
-      ),
-    );
-    await tester.tap(find.text('open'));
-    await tester.pump(const Duration(milliseconds: 300));
+  testWidgets('without a TrackMenuHost the menu does not open (debug: assert)', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MaterialApp(home: Text('open'))));
+    await expectLater(showTrackActions(tester.element(find.text('open')), _stub()), throwsAssertionError);
     expect(find.byType(BottomSheet), findsNothing);
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('a saved stream row has no «Mostra nella cartella», no preview and no send to a device', (tester) async {

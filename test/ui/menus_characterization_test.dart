@@ -348,7 +348,7 @@ void main() {
         'add',
         'cover',
         'favorite',
-        'share',
+        'sendToDevice',
         'export',
         'rename',
         'delete',
@@ -372,7 +372,7 @@ void main() {
   );
 
   testWidgets(
-    'album page: queue, playlist, share, enrich, cover, merge; «queue» adds the album and says so',
+    'album page: queue, playlist, sendToDevice, enrich, cover, merge; «queue» adds the album and says so',
     (tester) async {
       _phone(tester);
       final h = await Harness.create(tester, tracks: 4);
@@ -385,7 +385,7 @@ void main() {
         'queue',
         'playlist',
         'favorite',
-        'share',
+        'sendToDevice',
         'enrich',
         'cover',
         'merge',

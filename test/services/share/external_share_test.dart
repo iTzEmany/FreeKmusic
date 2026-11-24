@@ -12,17 +12,10 @@ void main() {
     expect(got!.files!.single.mimeType, 'audio/x-mpegurl');
   });
 
-  test('a failing share_plus call becomes ExternalShareUnavailable', () {
-    final share = SharePlusExternalShare.withRunner(
-      (_) async => throw UnimplementedError('no share sheet'),
-    );
-    expect(
-      () => share.shareText('hi'),
-      throwsA(isA<ExternalShareUnavailable>()),
-    );
-    expect(
-      () => share.shareFile('/tmp/x.m3u8'),
-      throwsA(isA<ExternalShareUnavailable>()),
-    );
+  test('on Linux the sheet is never opened: the caller gets an error and copies the text', () {
+    var called = false;
+    final share = SharePlusExternalShare.withRunner((_) async => called = true, linux: true);
+    expect(() => share.shareText('hi'), throwsUnsupportedError);
+    expect(called, isFalse);
   });
 }

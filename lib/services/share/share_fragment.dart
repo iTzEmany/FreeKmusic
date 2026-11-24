@@ -8,9 +8,17 @@ const int kMaxSharedTracks = 50;
 const int _maxTitle = 120;
 const int _maxDecompressed = 64 * 1024;
 const _idLen = 11;
+
+/// The page that opens a shared link (D-702); the fragment after `#` carries the tracks.
+const kSharePageUrl = 'https://itzemany.github.io/FreeKmusic/';
 final _idChars = RegExp(r'^[A-Za-z0-9_-]+$');
+
+/// A YouTube video id: 11 url-safe characters.
+bool isVideoId(String s) => s.length == _idLen && _idChars.hasMatch(s);
 final _b64Body = RegExp(r'^([A-Za-z0-9_-]+)(={0,2})$');
-const _untitled = 'Senza titolo';
+
+/// Title of a collection without a name.
+const untitledShare = 'Senza titolo';
 
 enum SharedKind {
   track('t'),
@@ -41,7 +49,7 @@ String encodeShareFragment(SharedFragment f) {
   _validate(f.ids);
   final title = f.title.replaceAll(RegExp(r'[\r\n]'), ' ').trim();
   final clipped = title.isEmpty
-      ? _untitled
+      ? untitledShare
       : String.fromCharCodes(title.runes.take(_maxTitle));
   final payload = 'FK1\n${f.kind.code}\n$clipped\n${f.ids.join()}';
   return base64Url

@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/external_share_actions.dart';
-import 'package:codecore/services/share/external_share.dart';
 import 'package:codecore/services/share/external_share_text.dart';
 import 'package:codecore/services/share/share_fragment.dart';
 import 'package:codecore/services/share/share_m3u8.dart';
@@ -23,6 +22,17 @@ Track _t(int i, {bool stream = true, String? album}) => Track(
 );
 
 void main() {
+  test('a blank title falls back to the fragment one, not an empty line', () {
+    final lines = buildShareText(SharedKind.playlist, '  ', [_t(1)]).split('\n');
+    expect(lines[0], untitledShare);
+  });
+
+  test('isVideoId accepts 11 url-safe chars only', () {
+    expect(isVideoId('abcdefgh0_1'), isTrue);
+    expect(isVideoId('short'), isFalse);
+    expect(isVideoId('abcdefgh0_1x'), isFalse);
+  });
+
   test('track: label, YouTube Music link and page link with the id in the fragment', () {
     final text = buildShareText(SharedKind.track, 'Song 1', [_t(1)]);
     final lines = text.split('\n');
@@ -142,7 +152,7 @@ void main() {
       tearDown(() => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
 
       test('the sheet fails: the text is copied and the caller is told', () async {
-        fake.error = const ExternalShareUnavailable('no mail client');
+        fake.error = StateError('no mail client');
         expect(await actions.share(SharedKind.playlist, 'Mix', [_t(1)]), isTrue);
         expect(copied.single, startsWith('Mix'));
       });

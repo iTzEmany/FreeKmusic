@@ -1,5 +1,4 @@
 import '../../core/app_log.dart';
-import '../share/external_share_text.dart' show kSharePageUrl;
 import '../share/share_fragment.dart';
 import 'external_links.dart';
 import 'youtube_urls.dart';

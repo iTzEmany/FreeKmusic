@@ -113,7 +113,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       case _PlaylistAction.favorite:
         final uuid = widget.playlist.uuid;
         if (uuid != null) await ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, uuid);
-      case _PlaylistAction.share:
+      case _PlaylistAction.sendToDevice:
         DevicesSheet.show(context, trackIds: [for (final t in tracks) if (t.kind != kStreamKind) t.id]);
       case _PlaylistAction.export:
         await exportPlaylistFlow(
@@ -236,7 +236,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             value: _PlaylistAction.favorite,
           ),
         if (tracks.any((t) => t.kind != kStreamKind))
-          CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _PlaylistAction.share),
+          CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _PlaylistAction.sendToDevice),
         CcAction(
           icon: Icons.ios_share_rounded,
           label: l.exportPlaylist,
@@ -462,7 +462,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 }
 
-enum _PlaylistAction { sort, edit, add, cover, clearCover, favorite, share, export, rename, delete }
+enum _PlaylistAction { sort, edit, add, cover, clearCover, favorite, sendToDevice, export, rename, delete }
 
 class _EditRow extends StatelessWidget {
   const _EditRow({

@@ -16,7 +16,7 @@ D-677, D-669, D-670, D-691 (stesso spirito per i servizi esterni), D-662, D-699.
   - File: `lib/services/share/share_fragment.dart` (nuovo: ID YouTube compressi con gzip e base64url, titolo e tipo), `test/services/share/share_fragment_test.dart` (nuovo).
   - Passi: 1) `encode(items)`/`decode(fragment)` puri; 2) circa 13 caratteri per brano (100 brani ≈ 1,3 KB); 3) test di andata e ritorno e con input malformato (nessuna eccezione non gestita, errore tipizzato).
   - Comando mirato: `flutter test test/services/share/share_fragment_test.dart`
-  - Fatto quando: andata e ritorno per 1, 50 e 100 brani; frammento corrotto → errore gestito.
+  - Fatto quando: andata e ritorno per 1 e 50 brani (il tetto del frammento); frammento corrotto → errore gestito.
 - [x] 145.3 Proposta all'utente: pagina statica e limite di brani (D-669) — **chiedere prima, non decidere**
   - File: nessuno da scrivere.
   - Passi: 1) scrivere all'utente (testo nel terminale, opzioni numerate): (a) dove vive la pagina: cartella `site/` o `docs/` di questo repo servita da GitHub Pages, oppure un repo a parte; (b) l'indirizzo (`<utente>.github.io/...`, quindi anche il dominio dell'App Link); (c) il limite di brani oltre il quale si passa al file m3u8 (la ricerca indica 50-100; lunghezza massima degli URL su WhatsApp non verificata); 2) registrare la risposta in `../decisioni.md` come D-xxx; 3) 145.4 e 145.7 aspettano la risposta.
@@ -46,13 +46,13 @@ D-677, D-669, D-670, D-691 (stesso spirito per i servizi esterni), D-662, D-699.
   - Aggiorna `../architettura/online.md` (condivisione esterna, frammento `#`), `sync-backup-jam.md` (LAN dal menu ⋮), `piattaforme.md` (App Link, `share_plus`), `qualita-e-rilascio.md` (dove vive la pagina e come si pubblica), `00-panoramica.md` (nuovo pacchetto); «Trappole»: il frammento non arriva mai al server.
 
 ## Tocca a te
-- [ ] Attivare GitHub Pages sul repo (Impostazioni › Pages, ramo e cartella scelti in 145.3).
+- [x] Attivare GitHub Pages sul repo: già attivo (`build_type: workflow`, `pages.yml`); la pagina si verifica con `curl` dopo il merge.
 - [x] Fornire il fingerprint SHA-256 del certificato di firma di release (chiave di D-569) e pubblicare `assetlinks.json` su Pages (`/.well-known/assetlinks.json`): fatto, il file è su `https://itzemany.github.io/.well-known/assetlinks.json` (200, `com.freekmusic.player`). Resta da verificare l'App Link sul telefono (`adb shell pm get-app-links <pacchetto>`); l'APK debug non è firmato con la chiave di release: `adb shell pm set-app-links --package com.freekmusic.player 2 itzemany.github.io` o scelta a mano.
-- [ ] Rispondere alla proposta di 145.3.
+- [x] Rispondere alla proposta di 145.3 (D-702).
 - [ ] (con la 147) provare la condivisione su WhatsApp dal telefono.
 
 ## Note di deviazione
-- 145.1: nessun elenco dei pacchetti in `00-panoramica.md` (lo stack è in `CLAUDE.md`, che l'agente non modifica): `share_plus` è descritto in `piattaforme.md`. Su Linux `share_plus` non ha un foglio di sistema (testo via `mailto:`, file non supportati): l'app copia il testo negli appunti.
+- 145.1: nessun elenco dei pacchetti in `00-panoramica.md` (lo stack è in `CLAUDE.md`, che l'agente non modifica): `share_plus` è descritto in `piattaforme.md`. Su Linux `share_plus` non ha un foglio di sistema (apre un `mailto:` e risponde «unavailable» senza errore, file non supportati): `SharePlusExternalShare` lancia un errore prima di chiamarlo e l'app copia il testo negli appunti. Su Windows (10 RS5 o più) il foglio c'è e accetta anche i file; prima di RS5 `share_plus` lancia e l'app copia. Il `ShareResult` non si legge: Android e Windows rispondono «unavailable» anche a condivisione riuscita.
 - 145.4: l'azione «Condividi» vive in `lib/providers/external_share_actions.dart`, non in `share_hub.dart` (che resta la LAN).
 - 145.6: la pagina in `docs/site/` è pubblicata da `.github/workflows/pages.yml`; il test della decodifica sta in `test/site/` per non finire online. `assetlinks.json` sta alla radice del dominio (repo `iTzEmany.github.io`), non in `docs/site/`.
 - 145.7: il link importa i brani solo dopo una conferma (titolo e numero di brani), una importazione alla volta; un brano singolo apre Cerca. Il manifest accetta solo `/FreeKmusic`, `/FreeKmusic/` e `/FreeKmusic/index.html`.

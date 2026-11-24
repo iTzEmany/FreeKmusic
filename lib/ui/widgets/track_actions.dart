@@ -536,6 +536,7 @@ Future<void> showTrackActions(
   TrackAction? lead,
 }) async {
   final host = _host;
+  assert(host != null, 'showTrackActions needs a TrackMenuHost above the app');
   if (host == null || !host.mounted) {
     AppLog.w('track menu: no TrackMenuHost mounted, menu not opened');
     return;

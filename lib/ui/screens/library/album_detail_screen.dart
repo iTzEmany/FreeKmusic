@@ -330,7 +330,7 @@ class _AlbumMenu extends ConsumerWidget {
                 label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
                 value: _AlbumAction.favorite,
               ),
-              CcAction(icon: Icons.share_rounded, label: l.sendToDeviceMenu, value: _AlbumAction.share),
+              CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _AlbumAction.sendToDevice),
               CcAction(icon: Icons.auto_fix_high_rounded, label: l.enrichAlbum, value: _AlbumAction.enrich),
               CcAction(icon: Icons.image_outlined, label: l.coverChange, value: _AlbumAction.cover),
               if (list.any((t) => t.coverSource == 1))
@@ -356,7 +356,7 @@ class _AlbumMenu extends ConsumerWidget {
             showAddToPlaylistSheet(context, ref, list);
           case _AlbumAction.favorite:
             await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey);
-          case _AlbumAction.share:
+          case _AlbumAction.sendToDevice:
             DevicesSheet.show(context, trackIds: [for (final t in list) t.id]);
           case _AlbumAction.enrich:
             try {
@@ -394,4 +394,4 @@ class _AlbumMenu extends ConsumerWidget {
   }
 }
 
-enum _AlbumAction { queue, playlist, favorite, share, enrich, cover, restoreCover, merge }
+enum _AlbumAction { queue, playlist, favorite, sendToDevice, enrich, cover, restoreCover, merge }

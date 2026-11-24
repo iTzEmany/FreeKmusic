@@ -22,7 +22,7 @@ export async function decodeFragment(fragment) {
   // The stream checks each member's CRC; ISIZE of the last one must equal the total, as in Dart (rejects extra members).
   if (new DataView(bytes.buffer).getUint32(bytes.length - 4, true) !== all.length) fail('gzip trailer');
   let text;
-  try { text = new TextDecoder('utf-8', { fatal: true }).decode(all); } catch (e) { fail('utf8'); }
+  try { text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(all); } catch (e) { fail('utf8'); }
   const lines = text.split('\n');
   if (lines.length !== 4 || lines[0] !== 'FK1') fail('header');
   const [, kind, title, idStr] = lines;

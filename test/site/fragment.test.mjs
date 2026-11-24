@@ -31,6 +31,8 @@ test('rejects corrupt, truncated, oversized and non-utf8 input', async () => {
     await assert.rejects(decodeFragment(bad), bad);
   await assert.rejects(decodeFragment(b64u(await gz(Buffer.alloc(70000, 65)))));
   await assert.rejects(decodeFragment(b64u(await gz(Buffer.from([0x46, 0x4b, 0x31, 0x0a, 0xff, 0xfe, 0x0a, 0x0a])))));
+  // A leading BOM must not be stripped silently: Dart rejects it too.
+  await assert.rejects(decodeFragment(b64u(await gz(Buffer.from(`\ufeffFK1\nt\nx\n${ID1}`, 'utf8')))));
 });
 
 test('title limit counts code points; kind is exactly one of t, a, p', async () => {

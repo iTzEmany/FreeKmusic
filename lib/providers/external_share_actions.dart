@@ -17,12 +17,13 @@ import 'external_share_provider.dart';
 /// «Condividi» (D-677): the system share sheet with readable text and links, or an m3u8 above the limit (D-702).
 class ExternalShareActions {
   ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles})
-    : _canShareFiles = canShareFiles ?? !(Platform.isLinux || Platform.isWindows);
+    : _canShareFiles = canShareFiles ?? !Platform.isLinux;
 
   final ExternalShare _share;
   final Future<Directory> Function() _tempDir;
 
-  /// Linux and Windows have no sheet that takes a file: the text goes to the clipboard.
+  /// Linux has no sheet (D-702): the text goes to the clipboard. Windows takes files from 10 RS5;
+  /// on older ones share_plus throws and the catch below copies.
   final bool _canShareFiles;
   bool _busy = false;
 

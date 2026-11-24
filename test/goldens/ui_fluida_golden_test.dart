@@ -9,6 +9,7 @@ import 'package:codecore/ui/screens/home/home_screen.dart' show clockProvider;
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/widgets/cover_image.dart';
+import 'package:codecore/ui/widgets/track_actions.dart' show TrackMenuHost;
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -74,7 +75,7 @@ void main() {
 
   testWidgets('track actions sheet', (tester) => withGoldenShot(tester, ShotSize.phone, (s) async {
         // Search is online only now: the sheet opens from a library list.
-        await s.show(const AllTracksScreen());
+        await s.show(const TrackMenuHost(child: AllTracksScreen()));
         await tester.tap(find.descendant(
             of: find.byType(TrackRow).first, matching: find.byIcon(Icons.more_vert_rounded)));
         await s.settle();
