@@ -740,4 +740,37 @@ void main() {
       expect(await FavoriteCollectionsRepository(db).watch('album').first, ['a', 'b']);
     });
   });
+
+  test('a local favourite the backup does not have is kept, and a local track outside the backup is untouched', () async {
+    // characterization: merge only adds; an unfavourite in the backup never removes a favourite here.
+    await (db.update(db.tracks)..where((r) => r.title.equals('a'))).write(const TracksCompanion(isFavorite: Value(true)));
+    await (db.update(db.tracks)..where((r) => r.title.equals('c'))).write(const TracksCompanion(isFavorite: Value(true)));
+    final before = await track('b');
+    final r = await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: ref('a'), favorite: false)]));
+    expect(r.favoritesAdded, 0);
+    expect((await track('a')).isFavorite, isTrue);
+    expect((await track('c')).isFavorite, isTrue);
+    expect(await track('b'), before);
+    expect(await db.select(db.tracks).get(), hasLength(3));
+  });
+
+  test('a saved stream track here stays saved when the backup says not saved', () async {
+    // characterization: saved only goes up in a merge.
+    const key = 'youtube:abcdefghijk';
+    final tr = TrackRef(title: 'S', artist: 'Art', streamKey: key);
+    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true)]));
+    expect(await (db.select(db.tracks)..where((r) => r.title.equals('S'))).map((r) => r.saved).getSingle(), isTrue);
+    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: false)]));
+    expect(await (db.select(db.tracks)..where((r) => r.title.equals('S'))).map((r) => r.saved).getSingle(), isTrue);
+  });
+
+  test('a playlist or a favourite album only here survives a merge of a backup without them', () async {
+    final pl = await PlaylistRepository(db).create('Mine');
+    await PlaylistRepository(db).addTracks(pl, [(await track('a')).id]);
+    await FavoriteCollectionsRepository(db).add('album', 'k1');
+    await merge(UserData(createdAt: 1, favoriteCollections: [const FavoriteCollectionData(kind: 'album', key: 'k2')]));
+    expect((await db.select(db.playlists).get()).map((p) => p.name), ['Mine']);
+    expect(await db.select(db.playlistTracks).get(), hasLength(1));
+    expect((await db.select(db.favoriteCollections).get()).map((r) => r.key).toSet(), {'k1', 'k2'});
+  });
 }

@@ -147,6 +147,56 @@ void main() {
     expect(await pc.db.select(pc.db.playlists).get(), isEmpty, reason: 'not even the first one stays');
   });
 
+  test('deleted on one side and still on the other: the playlist comes back, nothing is deleted', () async {
+    // characterization: no tombstones in v23, a delete does not travel.
+    await pc.sync.apply(await pc.planFrom(phone));
+    await pc.playlists.delete((await pc.sync.local()).single.id);
+    expect(await pc.sync.local(), isEmpty);
+
+    final plan = await pc.planFrom(phone);
+    expect(plan.toAdd, hasLength(1));
+    await pc.sync.apply(plan);
+    expect(await pc.titlesOf('Road'), ['a', 'b']);
+
+    // And the other way: a sync from a device without the playlist leaves the phone's one alone.
+    await pc.playlists.delete((await pc.sync.local()).single.id);
+    final back = await phone.planFrom(pc);
+    expect(back.entries, isEmpty);
+    await phone.sync.apply(back);
+    expect(await phone.titlesOf('Road'), ['a', 'b', 'c']);
+  });
+
+  test('a playlist only the PC has stays after syncing from the phone', () async {
+    await pc.playlists.create('Only PC');
+    await pc.sync.apply(await pc.planFrom(phone));
+    expect((await pc.sync.local()).map((p) => p.name), unorderedEquals(['Road', 'Only PC']));
+  });
+
+  test('the same stamp with another order here: nothing is written on either side', () async {
+    await pc.sync.apply(await pc.planFrom(phone));
+    final list = (await pc.sync.local()).single.id;
+    await pc.playlists.reorder(list, 1, 0); // b, a
+    await pc.setStamp('Road', 1000);
+
+    final plan = await pc.planFrom(phone);
+    expect(plan.sameCount, 1);
+    expect(plan.isEmpty, isTrue);
+    await pc.sync.apply(plan);
+    expect(await pc.titlesOf('Road'), ['b', 'a']);
+    expect((await phone.planFrom(pc)).isEmpty, isTrue);
+  });
+
+  test('applying a sync never changes the library tracks (kind 0): same rows, same favourites', () async {
+    final before = await pc.db.select(pc.db.tracks).get();
+    final a = before.firstWhere((t) => t.title == 'a');
+    await pc.db.customUpdate('UPDATE tracks SET is_favorite = 1 WHERE id = ?',
+        variables: [Variable.withInt(a.id)], updates: {pc.db.tracks});
+    await pc.sync.apply(await pc.planFrom(phone));
+    final after = await pc.db.select(pc.db.tracks).get();
+    expect(after.map((t) => (t.id, t.path, t.kind, t.isFavorite)),
+        before.map((t) => (t.id, t.path, t.kind, t.title == 'a')));
+  });
+
   group('streamed tracks in a playlist (D-524)', () {
     late int shadow;
     late List<String> log;

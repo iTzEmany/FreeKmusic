@@ -155,4 +155,11 @@ void main() {
     expect(plan.entries.single.remote.name, 'Road');
     expect(plan.entries.single.trackIds, [1, 2]);
   });
+
+  test('a playlist only this device has is never dropped: it is not in the plan at all', () {
+    // characterization: the sync has no delete, so one removed on the other side comes back from here.
+    final plan = planSync([_local('u1', 'Road', 10, [1])], [], _resolve);
+    expect(plan.entries, isEmpty);
+    expect(plan.isEmpty, isTrue);
+  });
 }

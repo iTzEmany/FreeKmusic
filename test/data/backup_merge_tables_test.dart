@@ -141,6 +141,21 @@ void main() {
     expect((a.hasCover, a.coverKey, a.coverSource), (true, 'abc', 0));
   });
 
+  test('what only the local database has survives a merge, and library tracks (kind 0) are not changed', () async {
+    // characterization: the table merge never deletes or rewrites local rows.
+    await addTracks(local);
+    await local.into(local.plays).insert(PlaysCompanion.insert(trackId: 1, playedAt: 7));
+    await local.into(local.userTags).insert(UserTagsCompanion.insert(name: 'Mine only'));
+    await local.into(local.smartPlaylists).insert(SmartPlaylistsCompanion.insert(name: 'Local', rules: 'y', createdAt: 1));
+    final tracksBefore = await local.select(local.tracks).get();
+    await buildBackup();
+    await merge();
+    expect((await local.select(local.plays).get()).map((p) => p.playedAt), containsAll([7, 1000]));
+    expect((await local.select(local.userTags).get()).map((t) => t.name), containsAll(['Mine only', 'Rock']));
+    expect((await local.select(local.smartPlaylists).get()).map((t) => t.name), contains('Local'));
+    expect(await local.select(local.tracks).get(), tracksBefore, reason: 'no track row created or changed');
+  });
+
   test('merging twice adds nothing the second time', () async {
     await addTracks(local);
     await buildBackup(coverKey: 'abc');
