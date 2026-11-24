@@ -3798,11 +3798,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get updateFromBrowser => 'Descarregar pelo navegador';
 
   @override
-  String updateFile(String name, int size) {
-    return 'Ficheiro: $name, $size MB';
-  }
-
-  @override
   String updateProgress(int done, int total) {
     return '$done de $total MB';
   }
@@ -8572,4 +8567,25 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get updateAllChanges => 'Todas as alterações no GitHub';
+
+  @override
+  String whatsNewTitle(String version) {
+    return 'Atualizada para a $version';
+  }
+
+  @override
+  String get whatsNewSafe =>
+      'A biblioteca, as playlists e as definições estão onde as deixaste.';
+
+  @override
+  String get whatsNewStart => 'Começar';
+
+  @override
+  String get whatsNewTile => 'Novidades da versão';
+
+  @override
+  String get updateNews => 'Novidades';
+
+  @override
+  String get updateNew => 'nova';
 }

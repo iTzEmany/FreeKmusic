@@ -2059,17 +2059,6 @@
   "updateFailed": "Die neueste Version lässt sich nicht lesen. Prüfe die Verbindung.",
   "updateDo": "Aktualisieren",
   "updateFromBrowser": "Im Browser herunterladen",
-  "updateFile": "Datei: {name}, {size} MB",
-  "@updateFile": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "size": {
-        "type": "int"
-      }
-    }
-  },
   "updateProgress": "{done} von {total} MB",
   "@updateProgress": {
     "placeholders": {
@@ -4186,5 +4175,18 @@
     }
   },
   "updateFixesGeneric": "Korrekturen und Verbesserungen",
-  "updateAllChanges": "Alle Änderungen auf GitHub"
+  "updateAllChanges": "Alle Änderungen auf GitHub",
+  "whatsNewTitle": "Aktualisiert auf {version}",
+  "@whatsNewTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "whatsNewSafe": "Bibliothek, Playlists und Einstellungen sind unverändert.",
+  "whatsNewStart": "Los geht's",
+  "whatsNewTile": "Neues in dieser Version",
+  "updateNews": "Neuheiten",
+  "updateNew": "neu"
 }

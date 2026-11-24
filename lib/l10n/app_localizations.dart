@@ -5932,12 +5932,6 @@ abstract class AppLocalizations {
   /// **'Scarica dal browser'**
   String get updateFromBrowser;
 
-  /// No description provided for @updateFile.
-  ///
-  /// In it, this message translates to:
-  /// **'File: {name}, {size} MB'**
-  String updateFile(String name, int size);
-
   /// No description provided for @updateProgress.
   ///
   /// In it, this message translates to:
@@ -13356,6 +13350,42 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Tutte le modifiche su GitHub'**
   String get updateAllChanges;
+
+  /// No description provided for @whatsNewTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiornata alla {version}'**
+  String whatsNewTitle(String version);
+
+  /// No description provided for @whatsNewSafe.
+  ///
+  /// In it, this message translates to:
+  /// **'La libreria, le playlist e le impostazioni sono dove le avevi lasciate.'**
+  String get whatsNewSafe;
+
+  /// No description provided for @whatsNewStart.
+  ///
+  /// In it, this message translates to:
+  /// **'Inizia'**
+  String get whatsNewStart;
+
+  /// No description provided for @whatsNewTile.
+  ///
+  /// In it, this message translates to:
+  /// **'Novità della versione'**
+  String get whatsNewTile;
+
+  /// No description provided for @updateNews.
+  ///
+  /// In it, this message translates to:
+  /// **'Novità'**
+  String get updateNews;
+
+  /// No description provided for @updateNew.
+  ///
+  /// In it, this message translates to:
+  /// **'nuova'**
+  String get updateNew;
 }
 
 class _AppLocalizationsDelegate

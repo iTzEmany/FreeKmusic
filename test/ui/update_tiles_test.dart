@@ -23,10 +23,15 @@ const _block = '''
 * feat(136): arricchimento unico by @x in https://x/pull/208
 ''';
 
-final _info = UpdateInfo(version: '9.9.9', url: 'https://x/rel', notes: _block, assets: [
-  UpdateAsset(name: _apk, url: Uri.parse('https://x/$_apk'), size: 84 * _mb, sha256: 'ab'),
-  UpdateAsset(name: 'freekmusic_9.9.9_amd64.deb', url: Uri.parse('https://x/d.deb'), size: 31 * _mb, sha256: 'ab'),
-]);
+final _info = UpdateInfo(
+  version: '9.9.9',
+  url: 'https://x/rel',
+  notes: _block,
+  assets: [
+    UpdateAsset(name: _apk, url: Uri.parse('https://x/$_apk'), size: 84 * _mb, sha256: 'ab'),
+    UpdateAsset(name: 'freekmusic_9.9.9_amd64.deb', url: Uri.parse('https://x/d.deb'), size: 31 * _mb, sha256: 'ab'),
+  ],
+);
 
 class _Flow extends UpdateDownloadNotifier {
   _Flow(this.initial);
@@ -56,10 +61,14 @@ void main() {
   }) async {
     flow = _Flow(state);
     final h = await Harness.create(tester);
-    await h.pump(tester, UpdatePage(info: _info), extraOverrides: [
-      updateTargetProvider.overrideWith((_) => UpdateTarget(kind: kind, abi: 'arm64-v8a')),
-      updateDownloadProvider.overrideWith(() => flow),
-    ]);
+    await h.pump(
+      tester,
+      UpdatePage(info: _info, wide: tester.view.physicalSize.width / tester.view.devicePixelRatio >= 840),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => UpdateTarget(kind: kind, abi: 'arm64-v8a')),
+        updateDownloadProvider.overrideWith(() => flow),
+      ],
+    );
     return h;
   }
 
@@ -82,6 +91,8 @@ void main() {
     expect(find.text('Ascolta subito'), findsOneWidget);
     expect(find.text('Correzioni (2)'), findsOneWidget);
     expect(find.text('La musica riparte'), findsNothing);
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pump();
     await tester.tap(find.text('Correzioni (2)'));
     await tester.pumpAndSettle();
     expect(find.text('La musica riparte'), findsOneWidget);
@@ -92,9 +103,13 @@ void main() {
   testWidgets('without the block (raw GitHub notes): «Correzioni e miglioramenti» and the link only', (tester) async {
     final h = await Harness.create(tester);
     final raw = UpdateInfo(version: '9.9.9', url: 'https://x/rel', notes: "## What's Changed\n* feat(1): x by @y");
-    await h.pump(tester, UpdatePage(info: raw), extraOverrides: [
-      updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
-    ]);
+    await h.pump(
+      tester,
+      UpdatePage(info: raw, wide: false),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
+      ],
+    );
     expect(find.text('Correzioni e miglioramenti'), findsOneWidget);
     expect(find.text('Tutte le modifiche su GitHub'), findsOneWidget);
     expect(find.textContaining('feat('), findsNothing);
@@ -193,12 +208,20 @@ void main() {
 
   testWidgets('the start-up notice has «Aggiorna», which opens the update page', (tester) async {
     final h = await Harness.create(tester);
-    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
-      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
-      child: const Text('go'),
-    ))), extraOverrides: [
-      updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
-    ]);
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
+      ],
+    );
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -212,12 +235,20 @@ void main() {
 
   testWidgets('a tap on the text of the start-up notice opens the page too', (tester) async {
     final h = await Harness.create(tester);
-    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
-      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
-      child: const Text('go'),
-    ))), extraOverrides: [
-      updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
-    ]);
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
+      ],
+    );
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -232,10 +263,17 @@ void main() {
 
   testWidgets('the start-up notice times out', (tester) async {
     final h = await Harness.create(tester);
-    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
-      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
-      child: const Text('go'),
-    ))));
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+    );
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));

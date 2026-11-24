@@ -2217,17 +2217,6 @@
   "updateFailed": "Não consigo ler a última versão. Verifica a ligação.",
   "updateDo": "Atualizar",
   "updateFromBrowser": "Descarregar pelo navegador",
-  "updateFile": "Ficheiro: {name}, {size} MB",
-  "@updateFile": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "size": {
-        "type": "int"
-      }
-    }
-  },
   "updateProgress": "{done} de {total} MB",
   "@updateProgress": {
     "placeholders": {
@@ -4372,5 +4361,18 @@
     }
   },
   "updateFixesGeneric": "Correções e melhorias",
-  "updateAllChanges": "Todas as alterações no GitHub"
+  "updateAllChanges": "Todas as alterações no GitHub",
+  "whatsNewTitle": "Atualizada para a {version}",
+  "@whatsNewTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "whatsNewSafe": "A biblioteca, as playlists e as definições estão onde as deixaste.",
+  "whatsNewStart": "Começar",
+  "whatsNewTile": "Novidades da versão",
+  "updateNews": "Novidades",
+  "updateNew": "nova"
 }

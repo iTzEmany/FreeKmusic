@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/app_info.dart' show kAppVersion;
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
@@ -21,6 +22,7 @@ import '../../data/settings/settings_store.dart'
         genreRereadAfterKey,
         genreRereadDoneKey,
         handWrittenLyricsKey,
+        lastSeenVersionKey,
         manualRomanizationKey,
         recogPassAfterKey,
         recogPassDoneKey,
@@ -301,6 +303,8 @@ Future<bool> applyPendingRestore({
         jsonDecode(settings.readAsStringSync()) as Map<String, dynamic>,
       );
     }
+    // A restore is not an update: no «Aggiornata alla X» page for it.
+    await prefs.setString(lastSeenVersionKey, kAppVersion);
     // «Non mi piace» choices replace the current ones; a backup without the
     // file (older than fase 101) leaves them as they are, like downloads.json.
     final dislikes = File(p.join(staging.path, _stagedDislikes));

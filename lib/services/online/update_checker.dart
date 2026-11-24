@@ -94,11 +94,14 @@ class UpdateResult {
 /// Asks GitHub for the latest release of [repo] (`owner/name`). Only when
 /// called: nothing here schedules a check.
 class UpdateChecker {
-  UpdateChecker(this._web, {required this.repo, required this.current});
+  UpdateChecker(this._web, {required this.repo, required this.current, this.onNewer});
 
   final WebClient _web;
   final String repo;
   final String current;
+
+  /// Told of the release when a check finds a newer one (the app keeps its notes).
+  final void Function(UpdateInfo info)? onNewer;
 
   Future<UpdateResult> check() async {
     if (repo.isEmpty) return const UpdateResult(UpdateStatus.failed);
@@ -125,6 +128,7 @@ class UpdateChecker {
         assets: _assetsOf(json['assets']),
       );
       final newer = compareVersions(info.version, current) > 0;
+      if (newer) onNewer?.call(info);
       return UpdateResult(newer ? UpdateStatus.newer : UpdateStatus.upToDate, info);
     } on RateLimitedException {
       return const UpdateResult(UpdateStatus.rateLimited);
