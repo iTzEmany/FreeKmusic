@@ -452,6 +452,7 @@ void streamCacheSettingTests() {
     final store = await SettingsStore.open();
     final c = ProviderContainer(overrides: [settingsStoreProvider.overrideWithValue(store)]);
     addTearDown(c.dispose);
+    c.read(settingsFlushOnPauseProvider);
     c.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeOn: true, streamCacheMb: 2048));
     TestWidgetsFlutterBinding.ensureInitialized().handleAppLifecycleStateChanged(AppLifecycleState.paused);
     await Future<void>.delayed(Duration.zero);

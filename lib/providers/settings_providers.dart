@@ -16,19 +16,7 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   @override
   AppSettings build() {
-    // A pending write would be lost if the app is closed: flush it when it leaves the foreground (D-664).
-    final life = AppLifecycleListener(
-      onStateChange: (s) {
-        if ((s == AppLifecycleState.paused || s == AppLifecycleState.detached) && _debounce?.isActive == true) {
-          _debounce!.cancel();
-          _save();
-        }
-      },
-    );
-    ref.onDispose(() {
-      life.dispose();
-      _debounce?.cancel();
-    });
+    ref.onDispose(() => _debounce?.cancel());
     return ref.read(settingsStoreProvider).readSettings();
   }
 
@@ -46,6 +34,13 @@ class SettingsNotifier extends Notifier<AppSettings> {
     }
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), _save);
+  }
+
+  /// Writes a pending change now instead of waiting for the debounce.
+  void flush() {
+    if (_debounce?.isActive != true) return;
+    _debounce!.cancel();
+    _save();
   }
 
   void _save() {
@@ -147,3 +142,16 @@ class ShazamAutoDownloadNotifier extends Notifier<bool> {
 
 final shazamAutoDownloadProvider =
     NotifierProvider<ShazamAutoDownloadNotifier, bool>(ShazamAutoDownloadNotifier.new);
+
+/// Flushes a pending settings write when the app leaves the foreground (D-664).
+/// Listened by the app root, so the notifier itself needs no binding.
+final settingsFlushOnPauseProvider = Provider<void>((ref) {
+  final life = AppLifecycleListener(
+    onStateChange: (s) {
+      if (s == AppLifecycleState.paused || s == AppLifecycleState.detached) {
+        ref.read(settingsProvider.notifier).flush();
+      }
+    },
+  );
+  ref.onDispose(life.dispose);
+});
