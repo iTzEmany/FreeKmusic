@@ -7,6 +7,6 @@ const bool kEnableYoutube = bool.fromEnvironment('CODECORE_YOUTUBE', defaultValu
 const kInputDebounce = Duration(milliseconds: 250);
 
 /// Address of the anonymous-report service (tools/report-worker, D-669/D-701).
-/// Empty until it is deployed: the report screen then offers only «Copia testo»
+/// Empty means not deployed: the report screen then offers only «Copia testo»
 /// and the GitHub page.
-const kReportEndpoint = '';
+const kReportEndpoint = 'https://freekmusic-report.itzemany.workers.dev/';
