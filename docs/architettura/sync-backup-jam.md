@@ -19,9 +19,10 @@ Tutto ciò che parla con altri dispositivi o esce dal dispositivo: condivisione 
 | `pairing_client.dart` | `PairingClient`, `PairedPeer` | Lato che digita il PIN. |
 | `request_signing.dart` | `signRequest` e `verifyRequest`, `kCertHeader`, `kTimeHeader`, `kSigHeader` | Firma di ogni richiesta fidata (`timestamp, metodo, percorso, SHA-256(corpo)`). |
 | `trusted_devices.dart` | `TrustedDevices`, `TrustedDevice`, `formatFingerprint` | Elenco immutabile dei fidati, confronto di impronte normalizzate. `TrustedDevice.mine`: relazione «dispositivo mio» (D-668), scelta dall'utente nelle Impostazioni, falsa per i dati salvati prima; `myDevicesProvider` li elenca. Le cancellazioni (tombstone) viaggiano solo verso e da questi. |
-| `sync_routes.dart` | `buildSyncRouter`, `TrackRequest` | Rotte `/sync/playlists` e `/sync/want`, solo HTTPS e solo per un firmatario fidato. |
-| `sync_client.dart` | `SyncClient`, `SyncError` | Lato che avvia il sync. Sempre HTTPS, firmato, impronta fissata. |
-| `playlist_sync.dart` | `planSync`, `SyncPlan`, `SyncAction` | Piano puro: decide per `uuid` cosa aggiungere o sostituire. |
+| `sync_routes.dart` | `buildSyncRouter`, `TrackRequest` | Rotte `GET /sync/playlists`, `GET /sync/favorites`, `GET /sync/streams`, `POST /sync/tombstones` e `POST /sync/want`, solo HTTPS e solo per un firmatario fidato. |
+| `sync_client.dart` | `SyncClient`, `SyncError` | Lato che avvia il sync. Sempre HTTPS, firmato, impronta fissata; `collections` legge preferiti, stream e (solo da un dispositivo «mio») tombstone. |
+| `playlist_sync.dart` | `planSync`, `SyncPlan`, `SyncAction` | Piano puro: decide per `uuid` cosa aggiungere, sostituire o cancellare. |
+| `collection_sync.dart` | `planCollections`, `CollectionPlan`, `SyncSide`, `StreamEntry`, `kMaxSyncItems` | Piano puro di preferiti di collezione, brani in streaming salvati o col cuore e tombstone. |
 | `share_link.dart` | `parseShareLink` | Legge il testo di un QR. Rifiuta tutto ciò che non è rete locale con PIN a 6 cifre. |
 | `share_notifier.dart` | `ShareNotifier`, `AndroidShareNotifier` | Servizio in primo piano e notifiche (canale `codecore/share`). |
 
@@ -89,12 +90,17 @@ Il dispositivo A mostra un PIN, B lo digita (o legge un QR). B calcola `HMAC-SHA
 ### Richieste fidate
 TLS autentica solo il server (un server Dart non prende un certificato client autofirmato). Il chiamante quindi firma la richiesta e manda certificato e firma negli header; `verifyRequest` mette l'impronta nel contesto (`kCallerKey`). Le rotte `/sync` rispondono solo se quell'impronta è fra i fidati. Finestra di validità: `kSignatureWindow`, 2 minuti.
 
-### Sync delle playlist
-1. `SyncClient` legge `/sync/playlists` dell'altro.
-2. `planSync` confronta per `uuid`: vince `updated_at` più recente. Niente viene cancellato, e preferiti, testi e modifiche non viaggiano.
-3. L'utente vede l'anteprima (`sync_preview_dialog.dart`), poi `PlaylistSyncRepository.apply` scrive in una transazione.
-4. I brani si abbinano con `TrackResolver` (come nel ripristino). I mancanti si chiedono con `/sync/want`, che l'altro risolve con un'offerta nell'altro verso.
-5. Le righe ombra (brani in streaming, D-524) non entrano nell'export e in un `replace` restano in coda dopo i brani sincronizzati (D-537).
+### Sync fra dispositivi (playlist, preferiti, salvati, cancellazioni)
+1. `SyncClient` legge `/sync/playlists`, `/sync/favorites`, `/sync/streams` dell'altro e, solo se il dispositivo è «mio» (`TrustedDevice.mine`), `/sync/tombstones` (POST con `{since?}` nel corpo firmato: la firma copre il percorso senza query). Il server risponde ai tombstone solo a un chiamante che ritiene «suo»: a un fidato non «mio» manda una lista vuota.
+2. `planSync` (puro) confronta elemento per elemento, la data più recente vince: `updatedAt` per le playlist, `addedAt` per preferiti di collezione e brani salvati, `favorited_at` per il cuore di un brano in streaming; senza data = più vecchio di tutto, a parità resta l'elemento. Un tombstone più recente dell'elemento lo cancella, uno più vecchio o pari è scartato. Un tombstone per qualcosa che qui non c'è si memorizza (`learned`), così l'elemento non rientra da un terzo dispositivo.
+3. Cancellazioni e tombstone remoti valgono **solo** se il dispositivo remoto è «mio» e la richiesta è firmata. Verso e da un dispositivo non «mio» viaggiano solo aggiunte. Un'aggiunta coperta da un tombstone **locale** più recente non si applica per nessun dispositivo; `apply` toglie un tombstone solo se l'elemento che arriva è più recente.
+4. L'utente vede l'anteprima, poi `PlaylistSyncRepository.apply` scrive in una transazione: playlist, poi cancellazioni (ogni scrittura rilegge le date di adesso: il piano può essere più vecchio della conferma), poi preferiti (dopo le playlist: un preferito di playlist il cui uuid non c'è si scarta), poi righe in streaming.
+5. Le cancellazioni applicate tolgono **solo righe o flag**: playlist visibili (mai quelle nascoste di «Scarica album»), preferiti, `saved` e cuore di righe in streaming (kind 2; la riga resta, la pulizia delle ombre è quella di sempre). Mai file, mai righe locali (kind 0). Il tombstone si registra con la data della cancellazione remota.
+6. Le righe in streaming entrano da fuori da un solo punto, `TrackRepository.ingestStream` (sync, offerte LAN in `saveReceivedStreams`, unione del backup): non scrive nulla se il file c'è già (`hasFile` per chiave; nel sync viene dall'indice dei download) o se il tombstone locale è più recente dell'arrivo (data dell'elemento; un'offerta è un gesto dell'utente, data = adesso). Non coperto: Jam e import (azioni dirette dell'utente, usano `saveStream`).
+7. Chiavi non trasferibili: i preferiti con chiave `unknown|…` (percorso locale) non viaggiano. I brani si abbinano con `TrackResolver`, i mancanti si chiedono con `/sync/want`.
+8. Le righe ombra (brani in streaming, D-524) non entrano nell'export delle playlist e in un `replace` restano in coda dopo i brani sincronizzati (D-537).
+
+Confine di fiducia (tutto ciò che arriva è input non fidato): al massimo `kMaxSyncItems` (20000) voci per lista; chiavi e testi ≤ `kMaxKeyLength` (512); `StreamEntry.tryParse` richiede una chiave valida (`isStreamKey`) e un `albumBrowseId` valido; i tombstone con tipo ignoto, chiave non adatta al tipo o data ≤ 0 o oltre `kTombstoneMaxFuture` si scartano; le date di elementi fuori intervallo diventano «senza data» (`sanePastDate`), così una data nel futuro non vince ogni confronto.
 
 ### Backup
 Lo zip contiene `manifest.json`, `settings.json` (senza `kDeviceBoundKeys`), `user_data.json`, `codecore.sqlite` da `VACUUM INTO`, `covers/`, `theme/` (immagini di sfondo dei temi), `downloads.json`, `dislikes.json`. Il ripristino completo non scrive subito: `stageFullRestore` estrae in `<appSupport>/restore` (`restoreStagingDir`, `lib/core/paths.dart`) e `main.dart` chiama `applyPendingRestore` prima di aprire il DB. L'unione (`mergeBackup`) è una sola transazione, idempotente, e non cancella nulla. Porta:
@@ -140,14 +146,14 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - Il PIN non viaggia mai in chiaro: solo la prova HMAC. Confronti sui segreti con `constantTimeEquals`.
 - Un'impronta mostrata durante l'abbinamento è quella salvata, non quella dichiarata (`PairedPeer.fingerprint`).
 - Le rotte `/pair` e `/sync` esistono solo su HTTPS; `/jam` solo su HTTP.
-- Il sync non cancella mai e non tocca preferiti, testi o modifiche.
+- Il sync cancella solo per D-668: righe e flag (playlist, preferiti, `saved`/cuore di righe in streaming) per tombstone di un dispositivo «mio»; mai file, mai righe locali. Testi e modifiche non viaggiano ancora (146.6).
 - I segreti della Jam (`JamSecretStore`, chiavi amici, gate) restano fuori da ogni backup. Aggiungere una chiave legata al dispositivo vuol dire aggiungerla a `kDeviceBoundKeys`.
 - Su desktop i segreti stanno in `<appSupportDir>/jam_secrets.json` (D-269), non in `shared_preferences.json`.
 - Nessun `catch (_) {}` muto: `AppLog`. Il ponte conta gli scarti con `JamDropLog` (un messaggio al minuto).
 
 ## Come si estende
 - **Nuova rotta fidata**: aggiungila in `buildSyncRouter` (`sync_routes.dart`), verifica `callerFingerprint(r)` contro `TrustedDevices`, aggiungi il metodo a `SyncClient` e un test con un `WebClient` finto. Non montarla su HTTP.
-- **Nuovo dato nel sync delle playlist**: estendi `RemotePlaylist` e `planSync` (puro, testalo lì), poi `PlaylistSyncRepository.export` e `apply`. Se il brano può essere una riga ombra, decidi cosa succede in `replace` (D-537).
+- **Nuovo dato nel sync**: estendi `RemotePlaylist` e `planSync` o `planCollections` (puri, testali lì), poi `PlaylistSyncRepository.export` e `apply`; una rotta nuova ha il suo limite di voci e un parser che scarta. Se il brano può essere una riga ombra, decidi cosa succede in `replace` (D-537).
 - **Nuovo comando di Jam**: aggiungilo a `JamState`/`applyCommand` con i permessi; se passa dal ponte, serve anche un tipo in `JamMsg` e il limite di dimensione in `JamWire`. Aggiorna [`feature-jam-distanza.md`](../storico/feature/feature-jam-distanza.md).
 - **Nuovo broker predefinito**: in fondo a `kDefaultJamBrokers` (l'indice è scritto nei QR e nei codici, mai riordinare), certificato verificato col nome dell'host.
 - **Nuova impostazione che non deve viaggiare**: aggiungi la chiave a `kDeviceBoundKeys` e un test sul backup.
@@ -156,7 +162,10 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - **Nuovo file grande verso l'utente**: `saveFileAt`, mai `Uint8List` sul canale.
 
 ## Trappole
-- **Tombstone** (146.4): nascono solo nei repository (vedi `libreria-e-dati.md`), mai per file né per righe locali (kind 0); l'unica eccezione all'invariante «il sync non cancella» è D-668, e solo fra dispositivi «miei». `backup_merge` toglie il tombstone di ciò che rimette: playlist ricreate con il loro uuid, cuori di collezione (`add`) e cuori dei brani (`setFavoriteMany`: data `favorited_at` e tombstone `favoriteStream`). Il confronto con le date resta a `planSync` (146.5). Una playlist nascosta di «Scarica album» non lascia tombstone.
+- **Tombstone** (146.4): nascono solo nei repository (vedi `libreria-e-dati.md`), mai per file né per righe locali (kind 0); l'unica eccezione all'invariante «il sync non cancella» è D-668, e solo fra dispositivi «miei». `backup_merge` toglie il tombstone di ciò che rimette: playlist ricreate con il loro uuid, cuori di collezione (`add`) e cuori dei brani (`setFavoriteMany`: data `favorited_at` e tombstone `favoriteStream`). Il confronto con le date lo fa `planSync` (146.5); la riga in streaming che arriva da fuori passa da `ingestStream`. Una playlist nascosta di «Scarica album» non lascia tombstone.
+- **Un cuore messo per sbaglio e annullato lascia un tombstone `favoriteStream` datato adesso** (caso accettato, 146.5): se un altro dispositivo «mio» aveva un cuore più vecchio sullo stesso brano, al prossimo sync lo perde. Non c'è un annullamento che ripristini lo stato precedente.
+- **Un tombstone non è mai riletto con l'ora di adesso**: `apply` registra quello remoto con la sua data (`record(at:)`), mai `setSaved`/`remove` dei repository (scriverebbero un tombstone nuovo e più recente, che cancellerebbe anche la copia che un altro ha cambiato dopo).
+- **La firma copre il percorso senza query**: una rotta con parametri li riceve in un corpo POST (come `since` dei tombstone).
 - **Le chiavi degli stream ricevute in LAN sono input non fidato** (fase 140): `StreamOffer.tryParse` le valida con `isStreamKey` prima che finiscano nell'URL di yt-dlp o nel nome di un file.
 - **`SystemNavigator.pop()` non chiude il processo** su Android (chiude solo l'Activity): un ripristino preparato non si applica finché il processo vive. Per ripartire davvero c'è `AppRestart` (fase 137).
 - **Ucciso a metà scrittura, SQLite lascia un `-journal` caldo** (il DB è in `journal_mode` DELETE): se resta accanto a un DB diverso, al prossimo avvio viene applicato a quello. Va spostato insieme al file a cui appartiene.
@@ -186,6 +195,7 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 | [D-269](../decisioni.md) | `jam_secrets.json` su desktop, DataStore su Android, fuori dal backup. |
 | [D-272](../decisioni.md) | `JamCrypto` espone i tipi di `sodium`; il rollback cambia anche i chiamanti. |
 | [D-383](../decisioni.md) | HiveMQ come broker di riserva, in fondo alla lista. |
+| [D-668](../decisioni.md) | Cancellazioni fra i miei dispositivi (tombstone), unica eccezione all'invariante. |
 | [D-537](../decisioni.md) | Sync playlist: le righe ombra restano in coda su un `replace`. |
 | [D-545](../decisioni.md) | Unione: impostazioni e temi, con esclusioni per chiavi legate a id o dispositivo. |
 | [D-546](../decisioni.md) | «Unisci»: ascolti di brani non riconosciuti saltati e contati, nessuna riga ombra creata apposta. |

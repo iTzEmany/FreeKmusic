@@ -203,6 +203,8 @@ class TrackUserData {
 /// What an album page id looks like; a backup is untrusted, the id ends up in a request.
 final _browseIdRe = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
 
+bool isBrowseId(String s) => _browseIdRe.hasMatch(s);
+
 class PlaylistData {
   const PlaylistData({
     required this.name,
@@ -467,6 +469,16 @@ class ArtistImageData {
       : null;
 }
 
+/// Longest key or title read from another device or a backup (honest ones are far shorter).
+const kMaxKeyLength = 512;
+
+/// A date from outside (epoch ms) as an int; null when it is not a finite number, is <= 0 or is more than
+/// [kTombstoneMaxFuture] ahead (a wrong clock must not win every comparison).
+int? sanePastDate(Object? v) {
+  final at = _finiteInt(v);
+  return at == null || at <= 0 || at > nowMs() + kTombstoneMaxFuture.inMilliseconds ? null : at;
+}
+
 /// A favourite album (`kind` 'album', [key] = album key) or playlist ('playlist', [key] = playlist uuid).
 class FavoriteCollectionData {
   const FavoriteCollectionData({required this.kind, required this.key, this.addedAt});
@@ -478,8 +490,12 @@ class FavoriteCollectionData {
 
   /// Null for a malformed entry or an unknown kind: it is dropped, the backup still reads.
   static FavoriteCollectionData? tryParse(Object? j) =>
-      j is Map && (j['kind'] == 'album' || j['kind'] == 'playlist') && j['key'] is String && (j['key'] as String).isNotEmpty
-          ? FavoriteCollectionData(kind: j['kind'] as String, key: j['key'] as String, addedAt: _finiteInt(j['addedAt']))
+      j is Map &&
+          (j['kind'] == 'album' || j['kind'] == 'playlist') &&
+          j['key'] is String &&
+          (j['key'] as String).isNotEmpty &&
+          (j['key'] as String).length <= kMaxKeyLength
+          ? FavoriteCollectionData(kind: j['kind'] as String, key: j['key'] as String, addedAt: sanePastDate(j['addedAt']))
           : null;
 }
 
@@ -497,7 +513,7 @@ class TombstoneData {
   static TombstoneData? tryParse(Object? j) {
     if (j is! Map || !kTombstoneKinds.contains(j['kind'])) return null;
     final kind = j['kind'] as String, key = j['key'], at = _finiteInt(j['deletedAt']);
-    if (key is! String || key.isEmpty || key.length > 512 || at == null) return null;
+    if (key is! String || key.isEmpty || key.length > kMaxKeyLength || at == null) return null;
     if (at <= 0 || at > nowMs() + kTombstoneMaxFuture.inMilliseconds) return null;
     final ok = switch (kind) {
       TombstoneKind.favoriteAlbum => !key.startsWith('unknown|'), // not transferable between devices
@@ -514,7 +530,7 @@ final _uuidRe = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-
 const kMaxTombstones = 20000;
 
 /// Parsed tombstones; of a repeated (kind, key) the highest `deletedAt` is kept.
-List<TombstoneData> _latestTombstones(Iterable<Object?> raw) {
+List<TombstoneData> latestTombstones(Iterable<Object?> raw) {
   final best = <(String, String), TombstoneData>{};
   for (final t in raw) {
     final d = TombstoneData.tryParse(t);
@@ -633,7 +649,7 @@ class UserData {
       favoriteCollections: [
         for (final f in (j['favoriteCollections'] as List? ?? const [])) ?FavoriteCollectionData.tryParse(f),
       ],
-      tombstones: _latestTombstones((j['tombstones'] as List? ?? const []).take(kMaxTombstones)),
+      tombstones: latestTombstones((j['tombstones'] as List? ?? const []).take(kMaxTombstones)),
     );
   }
 }

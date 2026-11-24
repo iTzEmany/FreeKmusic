@@ -684,7 +684,11 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       '/pair': pairing.buildRouter().call,
       '/sync': buildSyncRouter(
         export: sync.export,
+        exportFavorites: sync.favorites,
+        exportStreams: sync.streams,
+        exportTombstones: (since) => sync.tombstones(since: since),
         isTrusted: (fp) => ref.read(trustedDevicesProvider).byFingerprint(fp) != null,
+        isMine: (fp) => ref.read(trustedDevicesProvider).byFingerprint(fp)?.mine ?? false,
         onWant: _offerWanted,
       ).call,
     };
@@ -736,13 +740,19 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     if (peer?.tlsPort == null) throw const SyncException(SyncError.unreachable);
     final db = ref.read(databaseProvider);
     final repo = PlaylistSyncRepository(db);
-    final remote = await SyncClient(ref.read(lanClientProvider))
-        .playlists(peer!.host, peer.tlsPort!, pin: device.fingerprint);
+    final client = SyncClient(ref.read(lanClientProvider));
+    final remote = await client.playlists(peer!.host, peer.tlsPort!, pin: device.fingerprint);
+    final side = await client.collections(peer.host, peer.tlsPort!, pin: device.fingerprint, mine: device.mine);
     final resolver = await repo.resolver(caseInsensitive: Platform.isWindows);
-    return planSync(await repo.local(), remote, resolver.resolve);
+    final index = await ref.read(downloadIndexProvider.future);
+    return planSync(await repo.local(), remote, resolver.resolve,
+        localSide: await repo.side(), remoteSide: side, mine: device.mine, hasFile: (k) => index.pathForKey(k) != null);
   }
 
-  Future<void> applyPlaylistSync(SyncPlan plan) => PlaylistSyncRepository(ref.read(databaseProvider)).apply(plan);
+  Future<void> applyPlaylistSync(SyncPlan plan) async {
+    final index = await ref.read(downloadIndexProvider.future);
+    await PlaylistSyncRepository(ref.read(databaseProvider)).apply(plan, hasFile: (k) => index.pathForKey(k) != null);
+  }
 
   /// «Chiedi i brani mancanti»: the other device offers us the tracks of [plan]
   /// that it has. Returns how many it found.

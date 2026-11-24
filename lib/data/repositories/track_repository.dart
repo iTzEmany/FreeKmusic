@@ -458,6 +458,31 @@ class TrackRepository {
     return id;
   });
 
+  /// The one door for a streamed track that arrives from outside (LAN sync, offer, backup merge): nothing
+  /// is written when a file of it is already here ([hasFile], by key) or when what the user deleted here
+  /// (the `savedStream` tombstone, or `favoriteStream` when not [save]) is at least as recent as the
+  /// arrival [at] (epoch ms; 0 = unknown, older than any deletion). With [save] the row is saved and, if
+  /// it was not before, dated [at]; otherwise it is only created (the caller hearts it).
+  /// Returns the row id, or null when nothing was written.
+  Future<int?> ingestStream(YtResult r, {required int at, bool save = true, bool Function(String key)? hasFile}) =>
+      _db.transaction(() async {
+        final key = r.indexKey;
+        if (hasFile?.call(key) ?? false) return null;
+        final gone = await SyncTombstoneRepository(_db)
+            .deletedAt(save ? TombstoneKind.savedStream : TombstoneKind.favoriteStream, key);
+        if (gone != null && at <= gone) return null;
+        if (!save) {
+          final id = await ensureStreamRow(r);
+          return (await getById(id))?.kind == kStreamKind ? id : null;
+        }
+        final wasSaved = (await streamRow(key))?.saved ?? false;
+        final id = await saveStream(r);
+        if (id != null && !wasSaved && at > 0) {
+          await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(TracksCompanion(addedAt: Value(at)));
+        }
+        return id;
+      });
+
   TracksCompanion _streamRow(
     String key,
     YtResult r, {

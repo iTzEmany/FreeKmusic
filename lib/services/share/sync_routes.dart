@@ -5,6 +5,7 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../backup/user_data.dart';
+import 'collection_sync.dart';
 import 'offer_node.dart' show callerFingerprint;
 import 'playlist_sync.dart';
 
@@ -25,10 +26,19 @@ const kMaxWantedTracks = 500;
 /// only to a **trusted** signer: a device that merely knows the address gets 403.
 ///
 /// * `GET /playlists` — every playlist in the portable format.
+/// * `GET /favorites` — the favourite albums and playlists (`{kind, key, addedAt}`).
+/// * `GET /streams` — the streamed tracks saved to the library or hearted (`StreamEntry`, with their dates).
+/// * `POST /tombstones` `{since?}` — the deletions (`{kind, key, deletedAt}`), only to a caller that is one of
+///   the user's own devices ([isMine]); any other trusted caller gets an empty list, so nothing is deleted there.
+///   A POST so that `since` is in the signed body.
 /// * `POST /want` — «send me these tracks»: answered by an offer in the other direction.
 Router buildSyncRouter({
   required Future<List<RemotePlaylist>> Function() export,
+  required Future<List<FavoriteCollectionData>> Function() exportFavorites,
+  required Future<List<StreamEntry>> Function() exportStreams,
+  required Future<List<TombstoneData>> Function(int? since) exportTombstones,
   required bool Function(String fingerprint) isTrusted,
+  required bool Function(String fingerprint) isMine,
   required Future<int> Function(String callerHost, String callerFingerprint, TrackRequest request) onWant,
 }) {
   Response json(int code, Object body) =>
@@ -43,6 +53,31 @@ Router buildSyncRouter({
   router.get('/playlists', (Request r) async {
     if (trustedCaller(r) == null) return json(403, {'error': 'not trusted'});
     return json(200, {'playlists': [for (final p in await export()) p.toJson()]});
+  });
+
+  router.get('/favorites', (Request r) async {
+    if (trustedCaller(r) == null) return json(403, {'error': 'not trusted'});
+    return json(200, {'favorites': [for (final f in await exportFavorites()) f.toJson()]});
+  });
+
+  router.get('/streams', (Request r) async {
+    if (trustedCaller(r) == null) return json(403, {'error': 'not trusted'});
+    return json(200, {'streams': [for (final e in await exportStreams()) e.toJson()]});
+  });
+
+  router.post('/tombstones', (Request r) async {
+    final fp = trustedCaller(r);
+    if (fp == null) return json(403, {'error': 'not trusted'});
+    final Object? body;
+    try {
+      body = jsonDecode(await r.readAsString());
+    } on FormatException {
+      return json(400, {'error': 'bad json'});
+    }
+    if (body is! Map) return json(400, {'error': 'bad request'});
+    final since = body['since'];
+    final all = isMine(fp) ? await exportTombstones(since is int ? since : null) : const <TombstoneData>[];
+    return json(200, {'tombstones': [for (final t in all) t.toJson()]});
   });
 
   router.post('/want', (Request r) async {

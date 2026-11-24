@@ -14,6 +14,7 @@ import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
+import 'package:codecore/data/repositories/sync_tombstone_repository.dart';
 import 'package:codecore/data/repositories/release_repository.dart';
 import 'package:codecore/services/online/ytm_artist_parser.dart';
 import 'package:codecore/services/releases/release_checker.dart';
@@ -772,5 +773,23 @@ void main() {
     expect((await db.select(db.playlists).get()).map((p) => p.name), ['Mine']);
     expect(await db.select(db.playlistTracks).get(), hasLength(1));
     expect((await db.select(db.favoriteCollections).get()).map((r) => r.key).toSet(), {'k1', 'k2'});
+  });
+
+  test('a saved stream the backup holds from before it was removed here does not come back; a newer one does', () async {
+    const key = 'youtube:abcdefghijk';
+    final tr = TrackRef(title: 'S', artist: 'Art', streamKey: key);
+    await SyncTombstoneRepository(db).record('savedStream', key, at: 1000);
+    Future<bool> saved() async =>
+        (await (db.select(db.tracks)..where((r) => r.title.equals('S'))).map((r) => r.saved).getSingleOrNull()) ?? false;
+
+    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true, addedAt: 900)]));
+    expect(await saved(), isFalse);
+    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true)]));
+    expect(await saved(), isFalse, reason: 'no date = older than any deletion');
+
+    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true, addedAt: 1500)]));
+    expect(await saved(), isTrue);
+    expect((await db.select(db.tracks).get()).firstWhere((t) => t.title == 'S').addedAt, 1500);
+    expect(await SyncTombstoneRepository(db).deletedAt('savedStream', key), isNull);
   });
 }

@@ -22,6 +22,10 @@ class SyncTombstoneRepository {
   Future<void> clear(String kind, String key) =>
       (_db.delete(_db.syncTombstones)..where((t) => t.kind.equals(kind) & t.key.equals(key))).go();
 
+  /// When the item was deleted here (null when it was not).
+  Future<int?> deletedAt(String kind, String key) async =>
+      (await (_db.select(_db.syncTombstones)..where((t) => t.kind.equals(kind) & t.key.equals(key))).getSingleOrNull())?.deletedAt;
+
   /// Tombstones deleted after [since] (all of them when null).
   Future<List<SyncTombstone>> all({int? since}) => (_db.select(_db.syncTombstones)
         ..where((t) => since == null ? const Constant(true) : t.deletedAt.isBiggerThanValue(since)))

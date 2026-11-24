@@ -1,4 +1,6 @@
+import '../../data/db/tables.dart' show TombstoneKind;
 import '../backup/user_data.dart';
+import 'collection_sync.dart';
 
 /// A playlist as the other device describes it: portable track references and
 /// the `updated_at` that decides who is newer.
@@ -27,9 +29,9 @@ class RemotePlaylist {
         uuid: j['uuid'] as String? ?? '',
         name: j['name'] as String? ?? '',
         createdAt: (j['createdAt'] as num?)?.toInt() ?? 0,
-        updatedAt: (j['updatedAt'] as num?)?.toInt() ?? 0,
+        updatedAt: sanePastDate(j['updatedAt']) ?? 0, // a date from the future would win every comparison
         items: [
-          for (final i in (j['items'] as List? ?? const []))
+          for (final i in (j['items'] as List? ?? const []).take(kMaxSyncItems))
             TrackRef.fromJson(i as Map<String, dynamic>),
         ],
       );
@@ -102,9 +104,12 @@ class SyncEntry {
 }
 
 class SyncPlan {
-  const SyncPlan(this.entries);
+  const SyncPlan(this.entries, [this.collections = const CollectionPlan()]);
 
   final List<SyncEntry> entries;
+
+  /// Favourites, saved and hearted streamed tracks, and the deletions (playlists too).
+  final CollectionPlan collections;
 
   Iterable<SyncEntry> _of(SyncAction a) => entries.where((e) => e.action == a);
 
@@ -126,23 +131,34 @@ class SyncPlan {
     ];
   }
 
-  bool get isEmpty => toWrite.isEmpty;
+  bool get isEmpty => toWrite.isEmpty && collections.isEmpty;
 }
 
 /// Decides, playlist by playlist (matched by `uuid`), what a sync does. The
 /// most recent change wins; nothing is ever deleted because the other device
-/// does not have a playlist. [resolve] finds the local track of a reference
-/// (the same matching as a backup restore) or null.
+/// does not have a playlist, only because it has a more recent tombstone, and
+/// only when [mine] (an own device, D-668). A playlist covered by a newer tombstone
+/// known here is not added back, whoever sends it. [resolve] finds the local track of a
+/// reference (the same matching as a backup restore) or null. [localSide] and [remoteSide]
+/// carry the rest (favourites, streamed tracks, tombstones): see [planCollections].
 SyncPlan planSync(
   List<LocalPlaylist> local,
   List<RemotePlaylist> remote,
-  int? Function(TrackRef) resolve,
-) {
+  int? Function(TrackRef) resolve, {
+  SyncSide localSide = const SyncSide(),
+  SyncSide remoteSide = const SyncSide(),
+  bool mine = false,
+  bool Function(String key)? hasFile,
+}) {
+  final collections = planCollections(localSide, remoteSide,
+      mine: mine, playlistDates: {for (final l in local) l.uuid: l.updatedAt}, hasFile: hasFile);
+  final deleting = {for (final t in collections.deletes) if (t.kind == TombstoneKind.playlist) t.key};
+  final block = blockingTombstones(localSide, remoteSide, mine: mine);
   final byUuid = {for (final l in local) l.uuid: l};
   final seen = <String>{};
   final entries = <SyncEntry>[];
   for (final r in remote) {
-    if (r.uuid.isEmpty || !seen.add(r.uuid)) continue;
+    if (r.uuid.isEmpty || !seen.add(r.uuid) || deleting.contains(r.uuid)) continue;
     final l = byUuid[r.uuid];
     final resolved = <int>[];
     final missing = <TrackRef>[];
@@ -155,6 +171,10 @@ SyncPlan planSync(
       }
     }
     if (l == null) {
+      if (r.updatedAt <= (block[(TombstoneKind.playlist, r.uuid)] ?? -1)) {
+        entries.add(SyncEntry(action: SyncAction.keep, remote: r)); // deleted here, more recently
+        continue;
+      }
       entries.add(SyncEntry(
           action: SyncAction.add,
           remote: r,
@@ -193,7 +213,7 @@ SyncPlan planSync(
       reordered: reordered,
     ));
   }
-  return SyncPlan(entries);
+  return SyncPlan(entries, collections);
 }
 
 bool _sameSet(List<int> a, List<int> b) =>

@@ -110,13 +110,12 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       }
       final key = u.ref.streamKey;
       if (u.saved && key != null) {
-        final wasSaved = (await trackRepo.getById(id))?.saved ?? false;
-        // saveStream groups the row with the saved tracks of its album; the backup's date keeps it out of «recent».
-        await trackRepo.saveStream(streamResultOf(key,
-            title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs, albumId: u.albumBrowseId));
-        if (!wasSaved && u.addedAt != null) {
-          await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(TracksCompanion(addedAt: Value(u.addedAt!)));
-        }
+        // The one door for streamed rows: it groups the row with the saved tracks of its album, dates it with the
+        // backup's date (out of «recent») and does not bring back what was deleted here after that date.
+        await trackRepo.ingestStream(
+            streamResultOf(key,
+                title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs, albumId: u.albumBrowseId),
+            at: u.addedAt ?? 0);
       }
       final t = await (db.select(db.tracks)..where((r) => r.id.equals(id))).getSingleOrNull();
       if (t == null) continue;

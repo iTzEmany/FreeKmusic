@@ -1,4 +1,5 @@
 import '../backup/user_data.dart';
+import 'collection_sync.dart';
 import 'lan_client.dart';
 import 'playlist_sync.dart';
 
@@ -27,18 +28,40 @@ class SyncClient {
     throw const SyncException(SyncError.failed);
   }
 
-  Future<List<RemotePlaylist>> playlists(String host, int tlsPort, {required String pin}) async {
+  /// The list under [key] of a sync answer, cut to [kMaxSyncItems]: what the other device sends is not trusted.
+  Future<List<Object?>> _items(Future<SecureReply> Function() call, String key) async {
     try {
-      final r = await _client.secureGet(host, tlsPort, '/sync/playlists', pin: pin);
+      final r = await call();
       if (r.status == 403) throw const SyncException(SyncError.notTrusted);
-      final list = r.json?['playlists'];
+      final list = r.json?[key];
       if (r.status != 200 || list is! List) throw const SyncException(SyncError.failed);
-      return [for (final p in list) if (p is Map<String, dynamic>) RemotePlaylist.fromJson(p)];
+      return list.take(kMaxSyncItems).toList();
     } on SyncException {
       rethrow;
     } on Object catch (e) {
       _fail(e);
     }
+  }
+
+  Future<List<RemotePlaylist>> playlists(String host, int tlsPort, {required String pin}) async => [
+        for (final p in await _items(() => _client.secureGet(host, tlsPort, '/sync/playlists', pin: pin), 'playlists'))
+          if (p is Map<String, dynamic>) RemotePlaylist.fromJson(p),
+      ];
+
+  /// The other device's favourites, saved and hearted streamed tracks and, only when [mine] (it is one of
+  /// the user's own devices; it also has to think so of this one), its deletions after [since].
+  /// Malformed entries, unknown kinds and impossible dates are dropped.
+  Future<SyncSide> collections(String host, int tlsPort, {required String pin, required bool mine, int? since}) async {
+    final favorites = await _items(() => _client.secureGet(host, tlsPort, '/sync/favorites', pin: pin), 'favorites');
+    final streams = await _items(() => _client.secureGet(host, tlsPort, '/sync/streams', pin: pin), 'streams');
+    final tombstones = !mine
+        ? const <Object?>[]
+        : await _items(() => _client.securePost(host, tlsPort, '/sync/tombstones', {'since': ?since}, pin: pin), 'tombstones');
+    return SyncSide(
+      favorites: [for (final f in favorites) ?FavoriteCollectionData.tryParse(f)],
+      streams: [for (final s in streams) ?StreamEntry.tryParse(s)],
+      tombstones: latestTombstones(tombstones),
+    );
   }
 
   /// Asks the other device to offer [refs] back (to [port]/[tlsPort] here).
