@@ -8547,6 +8547,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get syncOff => 'désactivé';
 
   @override
+  String get syncSettingUndo => 'Message d’annulation après une action';
+
+  @override
+  String get syncSettingSortDirection => 'Sens du tri';
+
+  @override
+  String get syncSettingShuffleEvery =>
+      'Aléatoire+: une suggestion tous les combien de titres';
+
+  @override
+  String get syncSettingCrossfade => 'Durée du fondu enchaîné';
+
+  @override
   String get syncRemovalNote =>
       'Certains éléments seront retirés de la bibliothèque de cet appareil. Les fichiers ne sont jamais supprimés.';
 

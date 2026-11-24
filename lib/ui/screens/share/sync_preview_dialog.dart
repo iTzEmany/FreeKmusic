@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../data/db/tables.dart' show TombstoneKind;
 import '../../../l10n/l10n_ext.dart';
 import '../../../services/share/playlist_sync.dart';
+import 'sync_setting_labels.dart';
 
 enum SyncDecision { apply, applyAndAsk }
 
@@ -38,20 +39,6 @@ class _SyncPreviewDialogState extends State<SyncPreviewDialog> {
   final _picked = <String>{};
 
   SyncChoice _choice(SyncDecision d) => (decision: d, settings: {..._picked});
-
-  // shortcut: setting names are the store keys split into words, not translated; upgrade with a label per key.
-  static String _name(String key) =>
-      key.replaceAllMapped(RegExp('[A-Z]'), (m) => ' ${m[0]!.toLowerCase()}');
-
-  String _value(Object? v) {
-    final l = context.l10n;
-    return switch (v) {
-      null => '—',
-      true => l.syncOn,
-      false => l.syncOff,
-      _ => '$v',
-    };
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,8 +111,8 @@ class _SyncPreviewDialogState extends State<SyncPreviewDialog> {
                     controlAffinity: ListTileControlAffinity.leading,
                     value: _picked.contains(s.key),
                     onChanged: (v) => setState(() => v == true ? _picked.add(s.key) : _picked.remove(s.key)),
-                    title: Text(_name(s.key)),
-                    subtitle: Text(l.syncSettingValues(_value(s.local), _value(s.remote))),
+                    title: Text(syncSettingLabel(l, s.key)),
+                    subtitle: Text(l.syncSettingValues(syncSettingValue(l, s.key, s.local), syncSettingValue(l, s.key, s.remote))),
                   ),
               ],
             ],

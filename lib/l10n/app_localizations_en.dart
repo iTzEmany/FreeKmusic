@@ -8450,6 +8450,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncOff => 'off';
 
   @override
+  String get syncSettingUndo => 'Undo message after an action';
+
+  @override
+  String get syncSettingSortDirection => 'Sort direction';
+
+  @override
+  String get syncSettingShuffleEvery => 'Shuffle+: how often a suggestion';
+
+  @override
+  String get syncSettingCrossfade => 'Crossfade length';
+
+  @override
   String get syncRemovalNote =>
       'Some items will be removed from this device’s library. Files are never deleted.';
 

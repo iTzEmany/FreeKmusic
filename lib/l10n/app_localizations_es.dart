@@ -8503,6 +8503,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncOff => 'desactivado';
 
   @override
+  String get syncSettingUndo => 'Mensaje para deshacer tras una acción';
+
+  @override
+  String get syncSettingSortDirection => 'Dirección del orden';
+
+  @override
+  String get syncSettingShuffleEvery =>
+      'Aleatorio+: cada cuántas canciones un sugerido';
+
+  @override
+  String get syncSettingCrossfade => 'Duración del fundido';
+
+  @override
   String get syncRemovalNote =>
       'Algunos elementos se quitarán de la biblioteca de este dispositivo. Los archivos nunca se borran.';
 

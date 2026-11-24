@@ -13243,6 +13243,30 @@ abstract class AppLocalizations {
   /// **'disattivo'**
   String get syncOff;
 
+  /// No description provided for @syncSettingUndo.
+  ///
+  /// In it, this message translates to:
+  /// **'Messaggio con «Annulla»'**
+  String get syncSettingUndo;
+
+  /// No description provided for @syncSettingSortDirection.
+  ///
+  /// In it, this message translates to:
+  /// **'Direzione dell’ordinamento'**
+  String get syncSettingSortDirection;
+
+  /// No description provided for @syncSettingShuffleEvery.
+  ///
+  /// In it, this message translates to:
+  /// **'Casuale+: un suggerito ogni quanti brani'**
+  String get syncSettingShuffleEvery;
+
+  /// No description provided for @syncSettingCrossfade.
+  ///
+  /// In it, this message translates to:
+  /// **'Durata della dissolvenza'**
+  String get syncSettingCrossfade;
+
   /// No description provided for @syncRemovalNote.
   ///
   /// In it, this message translates to:

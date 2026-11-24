@@ -8487,6 +8487,19 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncOff => 'desativado';
 
   @override
+  String get syncSettingUndo => 'Aviso para desfazer após uma ação';
+
+  @override
+  String get syncSettingSortDirection => 'Direção da ordenação';
+
+  @override
+  String get syncSettingShuffleEvery =>
+      'Aleatório+: a cada quantas músicas um sugerido';
+
+  @override
+  String get syncSettingCrossfade => 'Duração do crossfade';
+
+  @override
   String get syncRemovalNote =>
       'Alguns itens serão removidos da biblioteca deste dispositivo. Os arquivos nunca são apagados.';
 

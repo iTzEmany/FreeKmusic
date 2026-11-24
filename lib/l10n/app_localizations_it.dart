@@ -8476,6 +8476,19 @@ class AppLocalizationsIt extends AppLocalizations {
   String get syncOff => 'disattivo';
 
   @override
+  String get syncSettingUndo => 'Messaggio con «Annulla»';
+
+  @override
+  String get syncSettingSortDirection => 'Direzione dell’ordinamento';
+
+  @override
+  String get syncSettingShuffleEvery =>
+      'Casuale+: un suggerito ogni quanti brani';
+
+  @override
+  String get syncSettingCrossfade => 'Durata della dissolvenza';
+
+  @override
   String get syncRemovalNote =>
       'Alcuni elementi verranno tolti dalla libreria di questo dispositivo. I file non vengono mai cancellati.';
 

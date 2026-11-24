@@ -5,6 +5,7 @@ import 'package:codecore/services/share/tables_sync.dart';
 import 'package:codecore/services/share/collection_sync.dart';
 import 'package:codecore/services/share/playlist_sync.dart';
 import 'package:codecore/ui/screens/share/sync_preview_dialog.dart';
+import 'package:codecore/ui/screens/share/sync_setting_labels.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -24,6 +25,10 @@ LocalPlaylist _local(String uuid, String name, int at, List<int> ids) =>
 int? _resolve(TrackRef r) => const {'a': 1, 'b': 2, 'c': 3}[r.title];
 
 void main() {
+  test('every synced setting has a label', () {
+    expect(syncSettingLabels.keys.toSet(), syncedSettingKeys);
+  });
+
   testWidgets('shows the counts and one line per playlist that will change', (tester) async {
     final h = await Harness.create(tester);
     final plan = planSync(
@@ -125,7 +130,7 @@ void main() {
     CollectionPlan(
       favoriteAdds: const [FavoriteCollectionData(kind: 'album', key: 'c|d', addedAt: 1)],
       deletes: [tomb, TombstoneData(kind: TombstoneKind.playlist, key: 'u9', deletedAt: 5)],
-      settings: const [SettingChange('theme', 'dark', 'light'), SettingChange('autoLyrics', true, false)],
+      settings: const [SettingChange('theme', 'notte', 'chiaro'), SettingChange('autoLyrics', true, false)],
       tables: TablesBundle(plays: [PlayEntry(ref: TrackRef(title: 'a'), playedAt: 1)]),
     ),
   );
@@ -155,11 +160,13 @@ void main() {
     final h = await Harness.create(tester);
     SyncChoice? result;
     await open(tester, h, plan, (c) => result = c);
-    expect(find.text('qui: dark, lì: light'), findsOneWidget);
+    expect(find.text('qui: Colore d\'accento, lì: x'), findsNothing);
+    expect(find.text('Tema'), findsOneWidget);
+    expect(find.text('qui: Notte viola, lì: Chiaro'), findsOneWidget);
     expect(find.text('qui: attivo, lì: disattivo'), findsOneWidget);
     expect(tester.widgetList<CheckboxListTile>(find.byType(CheckboxListTile)).any((c) => c.value == true), isFalse);
-    await tester.ensureVisible(find.text('auto lyrics'));
-    await tester.tap(find.text('auto lyrics'));
+    await tester.ensureVisible(find.text('Testi automatici'));
+    await tester.tap(find.text('Testi automatici'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Applica e togli 2 elementi'));
     await tester.pumpAndSettle();
