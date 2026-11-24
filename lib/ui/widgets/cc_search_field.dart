@@ -130,10 +130,8 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
         final VoidCallback? action = hasText
             ? (widget.onClear ?? _clear)
             : widget.onCloseEmpty ?? (focused ? focusNode.unfocus : null);
-        // The hint is also the field's name for TalkBack.
-        return Semantics(
-          label: widget.hint,
-          child: TextField(
+        // The hint is the field's name for TalkBack (an outer Semantics label made it read twice).
+        return TextField(
             controller: controller,
             focusNode: focusNode,
             textInputAction: TextInputAction.search,
@@ -160,7 +158,6 @@ class _CcSearchFieldState extends ConsumerState<CcSearchField> {
               enabledBorder: bare ? InputBorder.none : null,
               focusedBorder: bare ? InputBorder.none : null,
             ),
-          ),
         );
       },
     );

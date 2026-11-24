@@ -101,6 +101,10 @@ void main() {
     await _settle(tester);
     expect(find.text('Album 0'), findsWidgets);
     expect(find.text('Artist'), findsOneWidget);
+    // The artist link is a 48 dp touch target and a named link for TalkBack.
+    expect(tester.getSize(find.ancestor(of: find.text('Artist'), matching: find.byType(InkWell)).first).height,
+        greaterThanOrEqualTo(48));
+    expect(find.bySemanticsLabel('Artist'), findsOneWidget);
     expect(find.byTooltip('Riproduci'), findsOneWidget);
     expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
     expect(find.text('Song 0'), findsOneWidget);
@@ -223,6 +227,12 @@ void main() {
       }
       return (h, id);
     }
+
+    testWidgets('the filter field is named for TalkBack', (tester) async {
+      final (h, _) = await open(tester);
+      expect(find.bySemanticsLabel('Cerca'), findsOneWidget); // also with text typed
+      await h.dispose(tester);
+    });
 
     testWidgets('a result plays the whole playlist from there', (tester) async {
       final (h, _) = await open(tester);
