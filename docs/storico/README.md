@@ -174,3 +174,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 143 | Registro e segnalazioni: Ferma/Annulla tutto, Segnala, invio anonimo tramite Worker (#220) | [`fase-143-registro-e-segnalazioni.md`](fasi/fase-143-registro-e-segnalazioni.md) |
 | 144 | Modelli e dizionari: catalogo unico, pagina con scarica ed elimina (#221) | [`fase-144-modelli-e-dizionari.md`](fasi/fase-144-modelli-e-dizionari.md) |
 | 145 | Condivisione esterna: Condividi con il foglio di sistema, pagina su Pages, App Link (#222) | [`fase-145-condivisione-esterna.md`](fasi/fase-145-condivisione-esterna.md) |
+| 146 | Sincronizzazione tra dispositivi: tombstone v24, «Mio dispositivo», sync firmato con cancellazioni fra i dispositivi miei (#223) | [`fase-146-sincronizzazione-dispositivi.md`](fasi/fase-146-sincronizzazione-dispositivi.md) |
