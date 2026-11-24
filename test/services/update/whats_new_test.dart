@@ -34,6 +34,11 @@ void main() {
     expect(loaded, ['1.7.0']);
   });
 
+  test('last seen key present (older version) with an empty library: the page', () async {
+    final w = await make({lastSeenVersionKey: '1.6.0'}, data: false);
+    expect(await w.atStart(), isNotNull);
+  });
+
   test('first install (no key, no data): no page, key written', () async {
     final w = await make({}, data: false);
     expect(await w.atStart(), isNull);

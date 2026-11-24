@@ -283,6 +283,17 @@ void main() {
     }
   });
 
+  test('a search row with no artist and no title round-trips as «Senza titolo»', () {
+    final f = SharedFragment(SharedKind.track, 'x', const [SharedRow.search('A', '')]);
+    expect(decodeShareFragment(encodeShareFragment(f)).rows.single, const SharedRow.search('A', untitledShare));
+  });
+
+  test('gzip with the right CRC and a wrong ISIZE is rejected', () {
+    final raw = gzip.encode(utf8.encode('FK1\nt\nT\nabcdefghijk'));
+    raw[raw.length - 4] ^= 1;
+    expect(() => decodeShareFragment(_b64(raw)), throwsA(isA<ShareFragmentError>()));
+  });
+
   test('shared vectors: positive decode, negative are rejected', () {
     final v = jsonDecode(
       File('test/services/share/fragment_vectors.json').readAsStringSync(),

@@ -38,6 +38,17 @@ void main() {
     expect(parseReleaseNotes('').isEmpty, isTrue);
   });
 
+  test('news with an empty title or text are dropped; «---» and «-» under fixes are not fixes', () {
+    final n = parseReleaseNotes('## Novità\n- mic | | testo\n- mic | Titolo | \n## Correzioni\n---\n-\n- uno');
+    expect(n.news, isEmpty);
+    expect(n.fixes, ['uno']);
+  });
+
+  test('«MIC» and «Evidenza» in capitals are recognised', () {
+    final n = parseReleaseNotes('## Novità\n- EVIDENZA | MIC | A | a');
+    expect((n.highlight!.icon, n.highlight!.title), ('mic', 'A'));
+  });
+
   test('an unknown icon becomes the generic one, and every name has a Material icon', () {
     expect(parseReleaseNotes(_block).news.last.icon, kReleaseNoteGenericIcon);
     for (final name in kReleaseNoteIcons) {

@@ -208,5 +208,15 @@
     "name": "FK2 artist of 61 code points with emoji",
     "error": true,
     "fragment": "H4sIAAAAAAACA3PzNuIq4HLNzc_K5EoJLDcptwxPj0gO5KpLpAB8mN-3lbMCAIhkZXNbAAAA"
+  },
+  {
+    "name": "FK2 row with two tabs",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4QrhqnPkdOJ0BgCWthNTDgAAAA"
+  },
+  {
+    "name": "FK2 search title of only U+0085",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4QrhqnPkPNQKANeBwnANAAAA"
   }
 ]

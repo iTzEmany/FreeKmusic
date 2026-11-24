@@ -109,6 +109,41 @@ void main() {
     expect(exceedsShareLimit(wordy), isTrue);
   });
 
+  test('exceedsShareLimit: no tracks never exceeds; the link boundary is 2000 (fits) and 2001 (does not)', () {
+    expect(exceedsShareLimit([]), isFalse);
+    final r = Random(5); // random text does not compress; tune two titles until the link has the wanted length
+    String word(int n) => String.fromCharCodes([for (var j = 0; j < n; j++) 97 + r.nextInt(26)]);
+    final tracks = [for (var i = 0; i < 49; i++) _t(i, stream: false).copyWith(title: word(44), artist: const Value(''))];
+    final byLen = <int, List<Track>>{};
+    for (var a = 1; a <= 80; a++) {
+      for (var b = 1; b <= 60; b++) {
+        final all = [...tracks, _t(50, stream: false).copyWith(title: word(a), artist: Value(word(b)))];
+        byLen[shareLink(SharedKind.playlist, '', all).length] = all;
+      }
+    }
+    // Not every length is reachable (base64 steps), so take the nearest on each side of the limit.
+    final below = byLen.keys.where((l) => l <= 2000).reduce(max), above = byLen.keys.where((l) => l > 2000).reduce(min);
+    expect(below, greaterThanOrEqualTo(1999));
+    expect(above, lessThanOrEqualTo(2002));
+    expect(exceedsShareLimit(byLen[below]!), isFalse);
+    expect(exceedsShareLimit(byLen[above]!), isTrue);
+  });
+
+  test('a track share of one local row without id does not throw', () {
+    expect(buildShareText(SharedKind.track, 'x', [_t(1, stream: false)]), startsWith('Band - Song 1\n'));
+  });
+
+  test('buildShareCaption with a whitespace-only title uses the fallback', () {
+    expect(buildShareCaption(SharedKind.playlist, '   ', [_t(1)]).split('\n').first, untitledShare);
+  });
+
+  test('m3u8: duration 0 is -1, and newlines in names cannot start a foreign line', () {
+    final t = _t(1, stream: false).copyWith(durationMs: 0, title: 'a\nhttp://evil', artist: const Value('b\r\nhttp://evil2'));
+    final lines = shareM3u8Body('Mix\nhttp://evil3', [t]).trim().split('\n');
+    expect(lines.where((l) => !l.startsWith('#') && !l.startsWith('https://music.youtube.com/')), isEmpty);
+    expect(lines.any((l) => l.startsWith('#EXTINF:-1,')), isTrue);
+  });
+
   test('a file name from a title with / and .. stays inside the folder', () async {
     final dir = Directory.systemTemp.createTempSync('share_name');
     addTearDown(() => dir.deleteSync(recursive: true));
