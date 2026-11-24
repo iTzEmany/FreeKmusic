@@ -14,6 +14,7 @@ List<UpdateAsset> _release(String v) => [
     'freekmusic-lite-arm64-v8a-release.apk',
     'freekmusic-lite-armeabi-v7a-release.apk',
     'FreeKmusic-Setup-$v.exe',
+    'freekmusic-$v.flatpak',
     'freekmusic.flatpak',
     'freekmusic_${v}_amd64.deb',
   ])
@@ -29,7 +30,7 @@ void main() {
     (const UpdateTarget(kind: UpdateKind.windows), (v) => 'FreeKmusic-Setup-$v.exe'),
     (const UpdateTarget(kind: UpdateKind.appImage), (v) => 'freekmusic-$v-x86_64.AppImage'),
     (const UpdateTarget(kind: UpdateKind.deb), (v) => 'freekmusic_${v}_amd64.deb'),
-    (const UpdateTarget(kind: UpdateKind.flatpak), (v) => 'freekmusic.flatpak'),
+    (const UpdateTarget(kind: UpdateKind.flatpak), (v) => 'freekmusic-$v.flatpak'),
     (const UpdateTarget(kind: UpdateKind.linuxZip), (v) => 'freekmusic-linux-x64.zip'),
     (const UpdateTarget(kind: UpdateKind.macos), (v) => 'FreeKmusic-$v-macos.zip'),
   ];

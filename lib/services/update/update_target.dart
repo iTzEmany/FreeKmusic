@@ -58,7 +58,7 @@ UpdateAsset? pickUpdateAsset(List<UpdateAsset> assets, UpdateTarget t) {
     UpdateKind.windows => RegExp(r'^FreeKmusic-Setup-.+\.exe$'),
     UpdateKind.appImage => RegExp(r'^freekmusic-.+-x86_64\.AppImage$'),
     UpdateKind.deb => RegExp(r'^freekmusic_.+_amd64\.deb$'),
-    UpdateKind.flatpak => RegExp(r'^freekmusic\.flatpak$'),
+    UpdateKind.flatpak => RegExp(r'^freekmusic(-[0-9][0-9.]*)?\.flatpak$'),
     UpdateKind.linuxZip => RegExp(r'^freekmusic-linux-x64\.zip$'),
     UpdateKind.macos => RegExp(r'^FreeKmusic-.+-macos\.zip$'),
   };

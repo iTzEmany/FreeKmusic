@@ -66,7 +66,7 @@ modules:
   - name: freekmusic
     buildsystem: simple
     build-commands:
-      - mkdir -p /app/freekmusic /app/bin /app/share/applications /app/share/metainfo /app/share/icons/hicolor/512x512/apps
+      - mkdir -p /app/lib/ffmpeg /app/freekmusic /app/bin /app/share/applications /app/share/metainfo /app/share/icons/hicolor/512x512/apps
       - cp -r bundle/* /app/freekmusic/
       - ln -s /app/freekmusic/freekmusic /app/bin/freekmusic
       - install -Dm644 com.freekmusic.player.desktop /app/share/applications/com.freekmusic.player.desktop

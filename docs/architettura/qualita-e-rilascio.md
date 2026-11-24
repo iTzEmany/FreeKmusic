@@ -98,7 +98,7 @@ I test in `test/live/*` parlano con servizi veri e partono solo con `CODECORE_LI
 ### Aggiornamento dall'app e Release
 - L'aggiornamento dall'app funziona solo con APK firmati con la chiave della Release (D-569): una build di debug o locale dà «Firma diversa» e non si installa.
 - Funziona solo con asset che hanno il `digest` (SHA-256) nella Release di GitHub; senza, l'app apre il browser.
-- I nomi degli asset in `release.yml` sono un contratto con `pickUpdateAsset` (`lib/services/update/update_target.dart`): `freekmusic-{full,lite}-<abi>-release.apk`, `FreeKmusic-Setup-*.exe`, `freekmusic-*-x86_64.AppImage`, `freekmusic_*_amd64.deb`, `freekmusic.flatpak`, `freekmusic-linux-x64.zip`, `FreeKmusic-*-macos.zip`. Cambiarli rompe l'aggiornamento: aggiorna anche `test/services/update/update_target_test.dart`.
+- I nomi degli asset in `release.yml` sono un contratto con `pickUpdateAsset` (`lib/services/update/update_target.dart`): `freekmusic-{full,lite}-<abi>-release.apk`, `FreeKmusic-Setup-*.exe`, `freekmusic-*-x86_64.AppImage`, `freekmusic_*_amd64.deb`, `freekmusic-<versione>.flatpak` (il vecchio `freekmusic.flatpak` resta accettato), `freekmusic-linux-x64.zip`, `FreeKmusic-*-macos.zip`. Cambiarli rompe l'aggiornamento: aggiorna anche `test/services/update/update_target_test.dart`.
 
 ### Linux: la glibc del runner è il minimo (fase 134)
 - L'AppImage include le librerie di libmpv prese dal sistema che la costruisce: la glibc del runner diventa la più vecchia su cui parte. Per questo i job Linux di `release.yml` e `ci.yml` sono fissati su `ubuntu-24.04` (glibc 2.39), non `ubuntu-latest`: la 1.6.3, costruita su glibc 2.43, non partiva su Ubuntu 24.04. Non scendere sotto 24.04: lì `libmpv.so.2` non c'è.

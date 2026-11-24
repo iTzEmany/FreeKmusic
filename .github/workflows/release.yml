@@ -70,12 +70,15 @@ jobs:
           cp -r dl/unzipped/freekmusic build/linux/x64/release/bundle
       - name: Build the bundle
         run: |
+          # The metainfo release line must match pubspec (flatpak info, GNOME Software).
+          v=$(sed -n 's/^version:[[:space:]]*\([0-9.]*\).*/\1/p' pubspec.yaml)
+          sed -i "s|<release version=\"[^\"]*\" date=\"[^\"]*\"/>|<release version=\"$v\" date=\"$(date -u +%F)\"/>|" packaging/flatpak/com.freekmusic.player.metainfo.xml
           flatpak-builder --user --force-clean --repo=repo build-dir packaging/flatpak/com.freekmusic.player.yml
-          flatpak build-bundle repo freekmusic.flatpak com.freekmusic.player
+          flatpak build-bundle repo freekmusic-$v.flatpak com.freekmusic.player
       - uses: actions/upload-artifact@v7
         with:
           name: flatpak
-          path: freekmusic.flatpak
+          path: freekmusic-*.flatpak
           if-no-files-found: error
 
   android:
