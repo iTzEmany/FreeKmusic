@@ -65,8 +65,8 @@ class _Device {
         favorites: await other.sync.favorites(),
         streams: await other.sync.streams(),
         tombstones: mine == true ? await other.sync.tombstones() : const []);
-    return planSync(await sync.local(), await other.sync.export(), resolver.resolve,
-        localSide: await sync.side(), remoteSide: there, mine: mine ?? true, hasFile: hasFile);
+    return sync.plan(await other.sync.export(), there,
+        resolver: resolver, settings: const {}, mine: mine ?? true, history: true, hasFile: hasFile);
   }
 }
 
@@ -583,15 +583,15 @@ void main() {
               ),
             );
       }
-      final episodes = await pc.sync.episodeStreamKeys();
-      expect(episodes, {keyA, keyB});
-      final plan = await pc.planFrom(phone, hasFile: episodes.contains);
+      expect(await pc.sync.episodeStreamKeys(), {keyA, keyB});
+      // No hasFile: the episodes alone make the plan empty, and the apply leaves their rows as they are.
+      final plan = await pc.planFrom(phone);
       expect(plan.collections.isEmpty, isTrue);
       await pc.applyAll(plan);
-      expect(
-        (await pc.planFrom(phone, hasFile: episodes.contains)).isEmpty,
-        isTrue,
-      );
+      final rows = await pc.db.select(pc.db.tracks).get();
+      expect([for (final t in rows) if (t.path.startsWith('stream:')) (t.path, t.kind, t.title, t.saved, t.isFavorite)],
+          unorderedEquals([for (final k in [keyA, keyB]) ('stream:$k', 1, 'Episode', false, false)]));
+      expect((await pc.planFrom(phone)).isEmpty, isTrue);
     });
 
     test('a newer deletion known here after the plan stops every kind of addition, a tie lets it in', () async {

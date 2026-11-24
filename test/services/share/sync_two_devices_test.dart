@@ -503,7 +503,7 @@ void main() {
     }
   });
 
-  test('three devices, A-B and B-C «mine» (A and C not paired): a tombstone B learned from A keeps the playlist from coming back from C', () async {
+  test('three devices, A-B and B-C «mine» (the playlist reaches C through B): a tombstone B learned from A keeps the playlist from coming back from C', () async {
     late String uuid;
     await a.at(() async {
       final pa = await a.playlists.create('PA');
@@ -609,6 +609,8 @@ void main() {
     );
     expect(again.toWrite, isEmpty);
     expect([for (final c in again.collections.settings) c.key], ['accent'], reason: 'only the setting not picked is left');
-    expect(again.collections.additions + again.collections.tables.texts.length, 0);
+    final left = again.collections;
+    expect(left.additions + left.tables.texts.length, 0);
+    expect(left.tables.isEmpty && left.deletes.isEmpty && left.learned.isEmpty, isTrue);
   });
 }

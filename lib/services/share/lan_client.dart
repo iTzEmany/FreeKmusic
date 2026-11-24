@@ -122,13 +122,15 @@ class LanClient {
           {String? pin}) =>
       _secureCall('POST', host, tlsPort, path, body: body, pin: pin);
 
-  Future<SecureReply> secureGet(String host, int tlsPort, String path, {String? pin}) =>
-      _secureCall('GET', host, tlsPort, path, pin: pin);
+  /// [receiveTimeout] overrides the default one for a big answer.
+  Future<SecureReply> secureGet(String host, int tlsPort, String path, {String? pin, Duration? receiveTimeout}) =>
+      _secureCall('GET', host, tlsPort, path, pin: pin, receiveTimeout: receiveTimeout);
 
   Future<SecureReply> _secureCall(String method, String host, int tlsPort, String path,
-      {Map<String, Object?>? body, String? pin}) async {
+      {Map<String, Object?>? body, String? pin, Duration? receiveTimeout}) async {
     String? seen;
-    final dio = Dio(_dio.options.copyWith());
+    // A big answer (`/sync/collections`) is decoded in an isolate, not in the UI thread.
+    final dio = Dio(_dio.options.copyWith())..transformer = BackgroundTransformer();
     dio.httpClientAdapter = IOHttpClientAdapter(
       createHttpClient: () => HttpClient()
         ..badCertificateCallback = (cert, h, p) {
@@ -143,6 +145,7 @@ class LanClient {
           data: text,
           options: Options(
             method: method,
+            receiveTimeout: receiveTimeout,
             contentType: text == null ? null : 'application/json',
             headers: {if (id != null) ...signRequest(id, method, path, text == null ? const [] : utf8.encode(text))},
           ));

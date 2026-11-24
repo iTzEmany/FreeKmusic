@@ -109,7 +109,7 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 
 ## Da controllare (review e scheggia della fase 146)
 - Parità al millisecondo: due modifiche della stessa playlist con lo stesso `updatedAt` su due dispositivi non convergono (1 caso su 300 nel fuzz a passo 0); serve un criterio di spareggio deterministico (es. uuid del dispositivo).
-- `/sync/plays` rimanda ogni volta gli ultimi 20000 ascolti: aggiungere un `since` nel corpo (anche i tombstone ora mandano tutto).
+- `GET /sync/collections` rimanda ogni volta gli ultimi 20000 ascolti (e tutti i tombstone; misurati 13 MB in circa 2 s): un `since` futuro richiede di tornare a un POST, perché la firma non copre la query.
 - `hasFile` viene dall'indice dei download in memoria; i cuori su brani che qui sono file non viaggiano.
 - Annullare un cuore messo per sbaglio lascia un tombstone `favoriteStream` datato adesso (caso accettato).
 - Prova reale (Mi A3 e Redmi come «miei», mai il Motorola): «Sincronizza ora» con aggiunte e rimozioni, conferma, impostazioni scelte, dispositivo non «mio» che porta solo playlist.
@@ -119,3 +119,4 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - R11: `_drop` di una playlist importata deve ripulire le prefs `importDownloadToo.<id>`.
 - R12: `apply` restituisce i conteggi reali, per il messaggio finale.
 - R13: togliere i test doppi e aggiungere: tre dispositivi (`learned`), giro completo nell'hub, peer di versione diversa.
+- `ShareHub.planPlaylistSync` (caseInsensitive, keepTexts, recordHistory) resta senza test diretto: limite accettato, i pezzi sono coperti da `sync_two_devices_test` e `sync_transport_test`.

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 import 'dart:io' show HttpConnectionInfo;
 
 import 'package:shelf/shelf.dart';
@@ -9,6 +10,9 @@ import 'collection_sync.dart';
 import 'offer_node.dart' show callerFingerprint;
 import 'playlist_sync.dart';
 import 'tables_sync.dart';
+
+// Top level so the isolate's closure holds nothing but [body] (the router's callbacks cannot cross isolates).
+Future<String> _encodeOffThread(Object body) => Isolate.run(() => jsonEncode(body));
 
 /// A request to be sent these tracks («Chiedi i brani mancanti»).
 class TrackRequest {
@@ -71,7 +75,7 @@ Router buildSyncRouter({
       });
     }
     final tags = await exportTags();
-    return json(200, {
+    final body = {
       'favorites': [for (final f in await exportFavorites()) f.toJson()],
       'streams': [for (final e in await exportStreams()) e.toJson()],
       'tombstones': [for (final t in await exportTombstones()) t.toJson()],
@@ -79,7 +83,9 @@ Router buildSyncRouter({
       'plays': [for (final p in await exportPlays()) p.toJson()],
       'tags': [for (final t in tags.tags) t.toJson()],
       'tagged': [for (final t in tags.tagged) t.toJson()],
-    });
+    };
+    // Several MB of JSON: encoded in an isolate so the server's own thread (the UI's) does not stall.
+    return Response(200, body: await _encodeOffThread(body), headers: {'content-type': 'application/json'});
   });
 
   router.post('/texts', (Request r) async {

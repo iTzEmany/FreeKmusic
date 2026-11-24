@@ -16,7 +16,7 @@ import '../db/app_database.dart';
 import '../db/tables.dart' show TombstoneKind, kTombstoneKinds;
 import 'backup_merge.dart' show mergeUserData;
 import 'backup_merge_tables.dart' show mergeTablesData;
-import 'backup_queries.dart' show trackRefFor;
+import 'backup_queries.dart' show trackRefFor, trackRefOf;
 import 'favorite_collections_repository.dart';
 import 'hidden_playlists.dart';
 import 'sync_tombstone_repository.dart';
@@ -156,8 +156,23 @@ class PlaylistSyncRepository {
     final all = ids.toList(), out = <int, TrackRef>{};
     for (var i = 0; i < all.length; i += 500) {
       final chunk = all.sublist(i, min(i + 500, all.length));
-      for (final t in await (_db.select(_db.tracks)..where((t) => t.id.isIn(chunk) & t.kind.isNotValue(kEpisodeKind))).get()) {
-        out[t.id] = trackRefFor(t, folders);
+      // Only the columns a reference needs: the lyrics of 20000 tracks would weigh megabytes.
+      final t = _db.tracks;
+      final rows = await (_db.selectOnly(t)
+            ..addColumns([t.id, t.path, t.kind, t.folderId, t.title, t.artist, t.durationMs, t.sha256])
+            ..where(t.id.isIn(chunk) & t.kind.isNotValue(kEpisodeKind)))
+          .get();
+      for (final r in rows) {
+        final folderId = r.read(t.folderId);
+        out[r.read(t.id)!] = trackRefOf(
+          path: r.read(t.path)!,
+          kind: r.read(t.kind),
+          folderRoot: folderId == null ? null : folders[folderId],
+          title: r.read(t.title)!,
+          artist: r.read(t.artist),
+          durationMs: r.read(t.durationMs)!,
+          sha256: r.read(t.sha256),
+        );
       }
     }
     return out;

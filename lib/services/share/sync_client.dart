@@ -22,6 +22,10 @@ class _NoCollectionRoutes implements Exception {
   const _NoCollectionRoutes();
 }
 
+/// `/sync/collections` is one answer of several MB (listens, tags, tombstones), where the other calls were small: it
+/// gets a longer receive timeout than the client's 30 s.
+const kCollectionsTimeout = Duration(minutes: 2);
+
 /// The initiator side of the sync: reads the other device's playlists and asks
 /// for the tracks this one lacks. Always over HTTPS, signed, pinned.
 class SyncClient {
@@ -92,7 +96,7 @@ class SyncClient {
     if (!mine) return const SyncSide();
     final Map<String, dynamic> body;
     try {
-      body = await _reply(() => _client.secureGet(host, tlsPort, '/sync/collections', pin: pin), missingOk: true);
+      body = await _reply(() => _client.secureGet(host, tlsPort, '/sync/collections', pin: pin, receiveTimeout: kCollectionsTimeout), missingOk: true);
     } on _NoCollectionRoutes {
       AppLog.w('sync: the other device is of an older version, only the playlists are synced');
       return const SyncSide();

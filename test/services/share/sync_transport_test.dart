@@ -110,6 +110,54 @@ void main() {
 
   SyncClient client(DeviceIdentity id) => SyncClient(LanClient(identity: id));
 
+  test('a full /sync/collections (20000 listens, 20000 tag pairs) is served and read in a reasonable time', () async {
+    TrackRef ref(int i) => TrackRef(
+          folder: '/storage/emulated/0/Music',
+          relPath: 'Artist $i/Album $i/${i.toString().padLeft(2, '0')} - A fairly long song title $i.mp3',
+          title: 'A fairly long song title $i',
+          artist: 'Artist $i',
+          durationMs: 200000 + i,
+          sha256: i.toRadixString(16).padLeft(64, '0'),
+        );
+    final big = OfferNode(
+      OfferService(deviceId: 'big', deviceName: 'Big', allowLoopback: true),
+      allowLoopback: true,
+      identity: idB,
+      secureRoutes: {
+        '/sync': buildSyncRouter(
+          export: () async => [],
+          exportFavorites: () async => [],
+          exportStreams: () async => [],
+          exportTombstones: () async => [],
+          exportSettings: () async => {},
+          exportPlays: () async => [for (var i = 0; i < 20000; i++) PlayEntry(ref: ref(i), playedAt: 1000 + i, msPlayed: 5, context: 2, contextName: 'Mix $i')],
+          exportTags: () async => (
+            tags: [const TagEntry(name: 'rock', color: 3)],
+            tagged: [for (var i = 0; i < 20000; i++) TaggedTrack(ref: ref(i), tags: const ['rock'])],
+          ),
+          exportTexts: (after) async => (texts: <TextEntry>[], next: null),
+          isTrusted: trusted.contains,
+          isMine: mine.contains,
+          onWant: (host, fp, req) async => 0,
+        ).call,
+      },
+    );
+    await big.start();
+    addTearDown(big.stop);
+    final watch = Stopwatch()..start();
+    final reply = await LanClient(identity: idA).secureGet('127.0.0.1', big.tlsPort!, '/sync/collections',
+        pin: idB.fingerprint, receiveTimeout: kCollectionsTimeout);
+    final took = watch.elapsedMilliseconds;
+    final json = reply.json!;
+    final bytes = utf8.encode(jsonEncode(json)).length;
+    // ignore: avoid_print
+    print('collections: $bytes bytes, $took ms (serve + transfer + decode)');
+    expect(reply.status, 200);
+    expect((json['plays'] as List).length, 20000);
+    expect((json['tagged'] as List).length, 20000);
+    expect(took, lessThan(20000));
+  }, timeout: const Timeout(Duration(seconds: 60)));
+
   test('a trusted device reads the playlists in the portable format', () async {
     final list = await client(idA)
         .playlists('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint);
