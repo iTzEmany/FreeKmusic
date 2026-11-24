@@ -217,7 +217,7 @@ class _OwnRow extends ConsumerWidget {
       overflow: TextOverflow.ellipsis,
     ),
     onPlay,
-    () => showTrackActions(context, ref, track),
+    () => showTrackActions(context, track),
     () async {
       final added = await ref
           .read(playerControllerProvider)

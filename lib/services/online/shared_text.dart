@@ -1,3 +1,5 @@
+import '../../core/app_log.dart';
+import '../share/share_fragment.dart';
 import 'external_links.dart';
 import 'youtube_urls.dart';
 
@@ -19,10 +21,41 @@ class ShazamShare extends SharedText {
   final String? shazamUrl;
 }
 
+/// A link of the share page (D-702) whose fragment holds a list of tracks.
+class SharedCollection extends SharedText {
+  const SharedCollection(this.fragment);
+  final SharedFragment fragment;
+}
+
+/// A link of the share page whose fragment cannot be read: «link non valido».
+class InvalidShareLink extends SharedText {
+  const InvalidShareLink();
+}
+
 /// Anything else: goes to Cerca as typed.
 class PlainShare extends SharedText {
   const PlainShare(this.text);
   final String text;
+}
+
+// The page address, scheme and host in any case. A token that starts with it (then «/», «?»,
+// «#» or the end) is ours: without a readable fragment it is an invalid link, not a search.
+final _pageBase = RegExp.escape(kSharePageUrl.substring(0, kSharePageUrl.length - 1));
+final _sharePrefix = RegExp('^$_pageBase(?=[/?#]|\$)', caseSensitive: false);
+final _sharePage = RegExp('^$_pageBase/?(?:index\\.html)?(?:\\?[^#]*)?#(.*)\$', caseSensitive: false);
+final _wrapChars = RegExp('^[.,)!(<>"\']+|[.,)!(<>"\']+\$');
+
+SharedText? _parseSharePage(String raw) {
+  final token = raw.replaceAll(_wrapChars, '');
+  if (!_sharePrefix.hasMatch(token)) return null;
+  final m = _sharePage.firstMatch(token);
+  if (m == null) return const InvalidShareLink();
+  try {
+    return SharedCollection(decodeShareFragment(m[1]!));
+  } on ShareFragmentError catch (e) {
+    AppLog.d('share page link not readable: $e');
+    return const InvalidShareLink();
+  }
 }
 
 bool _isKnownLink(String s) =>
@@ -52,9 +85,15 @@ ShazamShare? _parseShazam(String body) {
 /// The first known link in [text]; [subject] only stands in for an empty text.
 SharedText routeSharedText(String text, {String? subject}) {
   final body = text.trim().isEmpty ? (subject ?? '').trim() : text.trim();
+  final tokens = body.split(RegExp(r'\s+'));
+  // The share page wins over any other link in the text (a title may hold a YouTube one).
+  for (final token in tokens) {
+    final page = _parseSharePage(token);
+    if (page != null) return page;
+  }
   final shazam = _parseShazam(body);
   if (shazam != null) return shazam;
-  for (final token in body.split(RegExp(r'\s+'))) {
+  for (final token in tokens) {
     if (_isKnownLink(token)) return SharedLink(token);
   }
   return PlainShare(body);

@@ -64,6 +64,15 @@ object IncomingBridge {
             Intent.ACTION_SEND -> stream?.takeIf { isZipOrCsv(ctx, it, intent.type) }
             else -> null
         }
+        // An https App Link is text for Dart; toString() keeps the #fragment (the shared list).
+        if (intent.action == Intent.ACTION_VIEW && uri?.scheme == "https" &&
+            uri.host.equals("itzemany.github.io", ignoreCase = true)
+        ) {
+            intent.action = null
+            pendingTexts.add(uri.toString())
+            channel?.invokeMethod("incomingText", null)
+            return
+        }
         if (uri == null) {
             if (intent.action != Intent.ACTION_SEND || stream != null) return
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }
@@ -76,6 +85,8 @@ object IncomingBridge {
         }
         // Handled once, even if the activity is recreated with the same intent.
         intent.action = null
+        // Only a content:// uri is copied: this activity is exported, a file:// one is not trusted.
+        if (uri.scheme != "content") return
         copier.execute {
             val path = copyToCache(ctx, uri)
             if (path != null) {

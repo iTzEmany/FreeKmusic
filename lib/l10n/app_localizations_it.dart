@@ -817,6 +817,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareMenu => 'Condividi…';
 
   @override
+  String get shareAction => 'Condividi';
+
+  @override
+  String get shareCopied => 'Testo copiato negli appunti';
+
+  @override
   String get sendToDeviceMenu => 'Invia a un dispositivo';
 
   @override
@@ -7666,6 +7672,38 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get extSaveNothing => 'Nessun brano pronto da salvare';
+
+  @override
+  String get shareLinkInvalid => 'Link di condivisione non valido';
+
+  @override
+  String get shareImportBusy => 'Importazione già in corso';
+
+  @override
+  String get shareImportNeedsYoutube =>
+      'Questa versione non può cercare i brani online';
+
+  @override
+  String get shareImportOffline => 'Serve la connessione per importare i brani';
+
+  @override
+  String get shareImportNetwork => 'Controlla la connessione e riprova';
+
+  @override
+  String shareImportSearching(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count brani',
+      one: '1 brano',
+    );
+    return 'Cerco $_temp0…';
+  }
+
+  @override
+  String extSavedPartial(String name, int found, int total) {
+    return 'Salvata come «$name»: $found su $total';
+  }
 
   @override
   String get extRefresh => 'Aggiorna';

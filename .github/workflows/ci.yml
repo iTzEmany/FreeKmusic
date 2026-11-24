@@ -80,6 +80,8 @@ jobs:
       # node is preinstalled on ubuntu-latest.
       - name: Report Worker tests
         run: node --test tools/report-worker/test/*.test.js
+      - name: Share page tests
+        run: node --test test/site/fragment.test.mjs
       # Covers lib, test, test/live, test_shots and integration_test.
       - if: steps.scope.outputs.docs != 'true'
         run: flutter analyze

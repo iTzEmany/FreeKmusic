@@ -64,6 +64,17 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="text/plain"/>
             </intent-filter>
+            <!-- App Link of the share page (D-702); assetlinks.json is served by the iTzEmany.github.io repo, at the domain root. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="https"/>
+                <data android:host="itzemany.github.io"/>
+                <data android:path="/FreeKmusic"/>
+                <data android:path="/FreeKmusic/"/>
+                <data android:path="/FreeKmusic/index.html"/>
+            </intent-filter>
         </activity>
         <!-- icon-aliases:start -->
         <activity-alias

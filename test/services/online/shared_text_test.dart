@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:codecore/data/db/app_database.dart' show Track;
 import 'package:codecore/services/online/shared_text.dart';
+import 'package:codecore/services/share/external_share_text.dart';
+import 'package:codecore/services/share/share_fragment.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -66,5 +69,81 @@ void main() {
       (routeSharedText('  ', subject: 'https://youtu.be/dQw4w9WgXcQ') as SharedLink).url,
       'https://youtu.be/dQw4w9WgXcQ',
     );
+  });
+
+  group('share page link (D-702)', () {
+    final frag = encodeShareFragment(const SharedFragment(SharedKind.playlist, 'Mix', ['dQw4w9WgXcQ', 'abcdefghijk']));
+    final link = 'https://itzemany.github.io/FreeKmusic/#$frag';
+
+    test('alone and inside a text it gives the title and the ids', () {
+      for (final text in [link, 'Guarda questa playlist\n$link\nciao']) {
+        final r = routeSharedText(text) as SharedCollection;
+        expect(r.fragment.title, 'Mix');
+        expect(r.fragment.ids, ['dQw4w9WgXcQ', 'abcdefghijk']);
+      }
+    });
+
+    test('a corrupt fragment is an invalid link, not a crash', () {
+      expect(routeSharedText('https://itzemany.github.io/FreeKmusic/#xx!!'), isA<InvalidShareLink>());
+      expect(routeSharedText('https://itzemany.github.io/FreeKmusic/#'), isA<InvalidShareLink>());
+    });
+
+    test('another host or path is not ours', () {
+      expect(routeSharedText('https://example.com/FreeKmusic/#$frag'), isA<PlainShare>());
+      expect(routeSharedText('https://itzemany.github.io/Other/#$frag'), isA<PlainShare>());
+    });
+
+    test('punctuation around the link does not hide it', () {
+      for (final text in ['Ascolta $link. Bello', '($link)', '<<$link>>', '"$link"', '$link!', "'$link',"]) {
+        expect(routeSharedText(text), isA<SharedCollection>(), reason: text);
+      }
+    });
+
+    test('a ?query before the # and any case of scheme and host are accepted', () {
+      for (final l in [
+        'https://itzemany.github.io/FreeKmusic/?utm=1#$frag',
+        'HTTPS://ITZEMANY.GITHUB.IO/FreeKmusic/index.html#$frag',
+      ]) {
+        expect(routeSharedText(l), isA<SharedCollection>(), reason: l);
+      }
+    });
+
+    test('our address without a readable fragment is an invalid link, not a search', () {
+      for (final l in [
+        'https://itzemany.github.io/FreeKmusic',
+        'https://itzemany.github.io/FreeKmusic/',
+        'https://itzemany.github.io/FreeKmusic/?x=1#zz!',
+      ]) {
+        expect(routeSharedText(l), isA<InvalidShareLink>(), reason: l);
+      }
+    });
+
+    test('look-alike addresses are not ours', () {
+      for (final l in [
+        'https://itzemany.github.io.evil.com/FreeKmusic/#$frag',
+        'https://evil.com/?u=https://itzemany.github.io/FreeKmusic/#$frag',
+        'https://itzemanyXgithub.io/FreeKmusic/#$frag',
+        'http://itzemany.github.io/FreeKmusic/#$frag',
+        'https://itzemany.github.io:8080/FreeKmusic/#$frag',
+        'https://user@itzemany.github.io/FreeKmusic/#$frag',
+        'https://itzemany.github.io/FreeKmusicOther/#$frag',
+      ]) {
+        expect(routeSharedText(l), isA<PlainShare>(), reason: l);
+      }
+    });
+
+    test('what the app shares comes back, even with a YouTube link in the title', () {
+      final t = Track(
+        saved: false, coverSource: 0, id: 1,
+        path: 'stream:youtube:abcdefgh0_1',
+        title: 'Song', artist: 'Band', albumKey: 'k', durationMs: 1000,
+        format: 'mp3', sizeBytes: 1, mtimeMs: 1, hasCover: false, isFavorite: false,
+        enrichStatus: 0, userEdited: false, missing: false, ignored: false,
+        kind: 2, addedAt: 1, playCount: 0,
+      );
+      final text = buildShareText(SharedKind.playlist, 'Mix https://youtu.be/dQw4w9WgXcQ', [t]);
+      final r = routeSharedText(text) as SharedCollection;
+      expect(r.fragment.ids, ['abcdefgh0_1']);
+    });
   });
 }

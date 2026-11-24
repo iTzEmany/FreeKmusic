@@ -1,43 +1,45 @@
-import '../../../core/app_log.dart';
-import '../../widgets/cc_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_log.dart';
+import '../../../core/constants.dart' show kEnableYoutube;
 import '../../../data/db/app_database.dart';
 import '../../../data/repositories/library_queries.dart';
+import '../../../data/settings/settings_store.dart' show StorageMode;
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
-import '../../../providers/selection_providers.dart';
+import '../../../providers/cover_ops.dart';
 import '../../../providers/favorite_collections_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/online_providers.dart';
 import '../../../providers/player_providers.dart';
+import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
+import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../../providers/ytm_catalog_providers.dart' show albumMissingTracksProvider;
+import '../../../services/online/ytm_artist.dart' show YtmAlbumTrack;
+import '../../../services/share/share_fragment.dart' show SharedKind;
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/async_body.dart';
+import '../../widgets/cc_sheet.dart';
 import '../../widgets/collection_header.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/cover_picker_sheet.dart';
-import '../../../providers/cover_ops.dart';
-import '../../widgets/async_body.dart';
+import '../../widgets/motion.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/selection_bar.dart';
-import '../../../core/constants.dart' show kEnableYoutube;
-import '../../../data/settings/settings_store.dart' show StorageMode;
-import '../../../services/online/ytm_artist.dart' show YtmAlbumTrack;
-import '../online/online_selection_scope.dart';
-import '../online/online_song_row.dart';
-import '../../../providers/ytm_catalog_providers.dart' show albumMissingTracksProvider;
+import '../../widgets/share_collection.dart';
+import '../../widgets/show_msg.dart';
 import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
-import '../devices/devices_sheet.dart';
 import '../cleanup/album_merge_dialog.dart';
+import '../devices/devices_sheet.dart';
+import '../online/online_selection_scope.dart';
+import '../online/online_song_row.dart';
 import '../playlists/playlist_dialogs.dart';
 import 'artist_screen.dart';
-import '../../widgets/motion.dart';
-import '../../widgets/show_msg.dart';
-import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 /// «1 ora e 52 minuti»; never «0 minuti» (under a minute rounds up).
 String durationWords(AppLocalizations l, int ms) {
@@ -171,6 +173,9 @@ EntranceScope(
         shuffleIds: list.isEmpty ? null : [for (final t in list) t.id],
         shuffleKey: shuffleKey,
         downloadTracks: list,
+        onShare: list.isEmpty
+            ? null
+            : (r) => shareTracks(context, ref, SharedKind.album, name, list, subtitle: album.artist, origin: r),
         scrollerCount: list.length,
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [
@@ -325,7 +330,7 @@ class _AlbumMenu extends ConsumerWidget {
                 label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
                 value: _AlbumAction.favorite,
               ),
-              CcAction(icon: Icons.share_rounded, label: l.sendToDeviceMenu, value: _AlbumAction.share),
+              CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _AlbumAction.sendToDevice),
               CcAction(icon: Icons.auto_fix_high_rounded, label: l.enrichAlbum, value: _AlbumAction.enrich),
               CcAction(icon: Icons.image_outlined, label: l.coverChange, value: _AlbumAction.cover),
               if (list.any((t) => t.coverSource == 1))
@@ -351,7 +356,7 @@ class _AlbumMenu extends ConsumerWidget {
             showAddToPlaylistSheet(context, ref, list);
           case _AlbumAction.favorite:
             await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey);
-          case _AlbumAction.share:
+          case _AlbumAction.sendToDevice:
             DevicesSheet.show(context, trackIds: [for (final t in list) t.id]);
           case _AlbumAction.enrich:
             try {
@@ -389,4 +394,4 @@ class _AlbumMenu extends ConsumerWidget {
   }
 }
 
-enum _AlbumAction { queue, playlist, favorite, share, enrich, cover, restoreCover, merge }
+enum _AlbumAction { queue, playlist, favorite, sendToDevice, enrich, cover, restoreCover, merge }

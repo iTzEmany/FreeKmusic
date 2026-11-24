@@ -819,6 +819,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get shareMenu => 'Compartir…';
 
   @override
+  String get shareAction => 'Compartir';
+
+  @override
+  String get shareCopied => 'Texto copiado al portapapeles';
+
+  @override
   String get sendToDeviceMenu => 'Enviar a un dispositivo';
 
   @override
@@ -7692,6 +7698,39 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get extSaveNothing => 'Ninguna canción lista para guardar';
+
+  @override
+  String get shareLinkInvalid => 'Este enlace para compartir no es válido';
+
+  @override
+  String get shareImportBusy => 'Ya hay una importación en curso';
+
+  @override
+  String get shareImportNeedsYoutube =>
+      'Esta versión no puede buscar canciones en línea';
+
+  @override
+  String get shareImportOffline =>
+      'Se necesita conexión para importar las canciones';
+
+  @override
+  String get shareImportNetwork => 'Comprueba la conexión e inténtalo de nuevo';
+
+  @override
+  String shareImportSearching(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count canciones',
+      one: '1 canción',
+    );
+    return 'Busco $_temp0…';
+  }
+
+  @override
+  String extSavedPartial(String name, int found, int total) {
+    return 'Guardada como «$name»: $found de $total';
+  }
 
   @override
   String get extRefresh => 'Actualizar';

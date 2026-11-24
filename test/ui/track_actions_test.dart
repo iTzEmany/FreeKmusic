@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:async';
 
 import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
+import 'package:codecore/providers/external_share_provider.dart';
 import 'package:codecore/ui/widgets/download_bar.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/repositories/track_kinds.dart'
@@ -36,6 +37,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 import '../support/fake_backend.dart';
+import '../support/fake_share.dart';
+
+Track _stub() => const Track(
+  saved: false, coverSource: 0, id: 1, path: '/m/1.mp3', title: 'Song', artist: 'Band', album: null, albumKey: 'k',
+  durationMs: 1000, format: 'mp3', sizeBytes: 1, mtimeMs: 1, hasCover: false, isFavorite: false, enrichStatus: 0,
+  userEdited: false, missing: false, ignored: false, kind: 0, addedAt: 1, playCount: 0,
+);
 
 Future<void> _settle(WidgetTester tester) async {
   // Two rounds: the menu's reload is a chain of real I/O steps (DB, then the file signature).
@@ -303,7 +311,7 @@ void main() {
                 ? const SizedBox()
                 : Consumer(
                     builder: (context, ref, _) => TextButton(
-                      onPressed: () => showTrackActions(context, ref, t),
+                      onPressed: () => showTrackActions(context, t),
                       child: const Text('open'),
                     ),
                   ),
@@ -441,7 +449,7 @@ void main() {
       expect(find.text('Dettagli'), findsOneWidget);
       for (final gone in [
         'Modifica info',
-        'Condividi…',
+        'Invia a un dispositivo',
         'Anteprima 20 s',
         'Aggiungi a playlist…',
         'Scarica',
@@ -629,28 +637,6 @@ void main() {
     await _settle(tester);
     expect(await tester.runAsync(() => h.db.select(h.db.tracks).get()), isEmpty);
     expect(tester.takeException(), isNull);
-    await h.dispose(tester);
-  });
-
-  testWidgets('the overlay host of the menu is removed when it closes, with or without an action', (tester) async {
-    final downloads = _Downloads();
-    final h = await openSheet(
-      tester,
-      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', title: 'Streamed'),
-      mode: StorageMode.stream,
-      extra: [downloadsProvider.overrideWith(() => downloads)],
-    );
-    int hosts() => find.byType(Consumer, skipOffstage: false).evaluate().length;
-    await tester.tapAt(const Offset(5, 5)); // the barrier: closed without an action
-    await _settle(tester);
-    expect(find.text('Aggiungi alla libreria'), findsNothing);
-    final base = hosts();
-    await tester.tap(find.text('open'));
-    await _settle(tester);
-    expect(hosts(), greaterThan(base));
-    await tester.tap(find.text('Aggiungi alla libreria')); // closed by an action
-    await _settle(tester);
-    expect(hosts(), base);
     await h.dispose(tester);
   });
 
@@ -938,7 +924,7 @@ void main() {
           builder: (context, ref, _) => Column(
             children: [
               for (final t in rows)
-                TextButton(onPressed: () => showTrackActions(context, ref, t), child: Text('open${t.id}')),
+                TextButton(onPressed: () => showTrackActions(context, t), child: Text('open${t.id}')),
             ],
           ),
         ),
@@ -958,7 +944,6 @@ void main() {
     final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
     final shown = ValueNotifier(true);
     BuildContext? gone;
-    WidgetRef? goneRef;
     await h.pump(
       tester,
       ValueListenableBuilder<bool>(
@@ -967,7 +952,6 @@ void main() {
             ? const SizedBox()
             : Consumer(builder: (c, r, _) {
                 gone = c;
-                goneRef = r;
                 return const Text('row');
               }),
       ),
@@ -975,7 +959,7 @@ void main() {
     shown.value = false;
     await tester.pump();
     try {
-      await showTrackActions(gone!, goneRef!, t);
+      await showTrackActions(gone!, t);
     } on Object {
       // either outcome is fine; what matters is below
     }
@@ -983,7 +967,7 @@ void main() {
     expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsNothing);
     await h.pump(
       tester,
-      Scaffold(body: Consumer(builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, r, t), child: const Text('open')))),
+      Scaffold(body: Consumer(builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, t), child: const Text('open')))),
     );
     await tester.tap(find.text('open'));
     await _settle(tester);
@@ -991,7 +975,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a row inside a nested overlay opens the sheet, its host goes to the root overlay and leaves with it', (tester) async {
+  testWidgets('a row inside a nested overlay opens the sheet, the host stays', (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 1);
     final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
@@ -1002,21 +986,16 @@ void main() {
           initialEntries: [
             OverlayEntry(
               builder: (_) => Consumer(
-                builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, r, t), child: const Text('open')),
+                builder: (c, r, _) => TextButton(onPressed: () => showTrackActions(c, t), child: const Text('open')),
               ),
             ),
           ],
         ),
       ),
     );
-    final base = find.byType(Consumer, skipOffstage: false).evaluate().length;
     await tester.tap(find.text('open'));
     await _settle(tester);
     expect(find.text('Elimina dal dispositivo', skipOffstage: false), findsOneWidget);
-    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, greaterThan(base), reason: 'the host is in the tree');
-    await tester.tapAt(const Offset(5, 5));
-    await _settle(tester);
-    expect(find.byType(Consumer, skipOffstage: false).evaluate().length, base, reason: 'closed without an action: host removed');
     await h.dispose(tester);
   });
 
@@ -1085,9 +1064,71 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a saved stream row has no «Mostra nella cartella», no preview and no share', (tester) async {
+  testWidgets('«Condividi» in the track menu shares through ExternalShare with the row rectangle', (tester) async {
+    final fake = FakeShare();
+    final h = await openSheet(tester, (t) => t, extra: [externalShareProvider.overrideWithValue(fake)]);
+    await tester.tap(find.text('Condividi', skipOffstage: false));
+    await _settle(tester);
+    expect(fake.texts.single, startsWith('Artist - Song 0'));
+    expect(fake.origins.single, tester.getRect(find.byType(TextButton)));
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Condividi» on a streamed row shares the YouTube Music link', (tester) async {
+    final fake = FakeShare();
+    final h = await openSheet(
+      tester,
+      (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abcdefghijk', saved: true),
+      extra: [externalShareProvider.overrideWithValue(fake)],
+    );
+    await tester.tap(find.text('Condividi', skipOffstage: false));
+    await _settle(tester);
+    expect(fake.texts.single, contains('https://music.youtube.com/watch?v=abcdefghijk'));
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Condividi» on an online entry not saved yet shares its link, anchored on the row', (tester) async {
+    final fake = FakeShare();
+    final online = OnlineEntries();
+    final id = online.register(const YtResult(id: 'abcdefghijk', title: 'Streamed', channel: 'Chan', duration: null));
+    final h = await openSheet(
+      tester,
+      (_) => online.trackOf(id)!,
+      extra: [externalShareProvider.overrideWithValue(fake), onlineEntriesProvider.overrideWithValue(online)],
+    );
+    await tester.tap(find.text('Condividi', skipOffstage: false));
+    await _settle(tester);
+    expect(fake.texts.single, contains('https://music.youtube.com/watch?v=abcdefghijk'));
+    expect(fake.origins.single, tester.getRect(find.byType(TextButton)));
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Condividi» that fails copies the text and says so', (tester) async {
+    final fake = FakeShare()..error = StateError('no mail client');
+    final copied = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.setData') copied.add((call.arguments as Map)['text'] as String);
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final h = await openSheet(tester, (t) => t, extra: [externalShareProvider.overrideWithValue(fake)]);
+    await tester.tap(find.text('Condividi', skipOffstage: false));
+    await _settle(tester);
+    expect(copied.single, startsWith('Artist - Song 0'));
+    expect(find.text('Testo copiato negli appunti'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('without a TrackMenuHost the menu does not open (debug: assert)', (tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MaterialApp(home: Text('open'))));
+    await expectLater(showTrackActions(tester.element(find.text('open')), _stub()), throwsAssertionError);
+    expect(find.byType(BottomSheet), findsNothing);
+  });
+
+  testWidgets('a saved stream row has no «Mostra nella cartella», no preview and no send to a device', (tester) async {
     final h = await openSheet(tester, (t) => t.copyWith(kind: kStreamKind, path: 'stream:youtube:abc', saved: true));
-    for (final t in ['Mostra nella cartella', 'Anteprima 20 s', 'Condividi…']) {
+    expect(find.text('Condividi', skipOffstage: false), findsOneWidget);
+    for (final t in ['Mostra nella cartella', 'Anteprima 20 s', 'Invia a un dispositivo']) {
       expect(find.text(t, skipOffstage: false), findsNothing, reason: t);
     }
     await h.dispose(tester);

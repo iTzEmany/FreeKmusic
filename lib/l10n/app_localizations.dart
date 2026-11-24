@@ -1444,6 +1444,18 @@ abstract class AppLocalizations {
   /// **'Condividi…'**
   String get shareMenu;
 
+  /// No description provided for @shareAction.
+  ///
+  /// In it, this message translates to:
+  /// **'Condividi'**
+  String get shareAction;
+
+  /// No description provided for @shareCopied.
+  ///
+  /// In it, this message translates to:
+  /// **'Testo copiato negli appunti'**
+  String get shareCopied;
+
   /// No description provided for @sendToDeviceMenu.
   ///
   /// In it, this message translates to:
@@ -12168,6 +12180,48 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Nessun brano pronto da salvare'**
   String get extSaveNothing;
+
+  /// No description provided for @shareLinkInvalid.
+  ///
+  /// In it, this message translates to:
+  /// **'Link di condivisione non valido'**
+  String get shareLinkInvalid;
+
+  /// No description provided for @shareImportBusy.
+  ///
+  /// In it, this message translates to:
+  /// **'Importazione già in corso'**
+  String get shareImportBusy;
+
+  /// No description provided for @shareImportNeedsYoutube.
+  ///
+  /// In it, this message translates to:
+  /// **'Questa versione non può cercare i brani online'**
+  String get shareImportNeedsYoutube;
+
+  /// No description provided for @shareImportOffline.
+  ///
+  /// In it, this message translates to:
+  /// **'Serve la connessione per importare i brani'**
+  String get shareImportOffline;
+
+  /// No description provided for @shareImportNetwork.
+  ///
+  /// In it, this message translates to:
+  /// **'Controlla la connessione e riprova'**
+  String get shareImportNetwork;
+
+  /// No description provided for @shareImportSearching.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerco {count, plural, one{1 brano} other{{count} brani}}…'**
+  String shareImportSearching(int count);
+
+  /// No description provided for @extSavedPartial.
+  ///
+  /// In it, this message translates to:
+  /// **'Salvata come «{name}»: {found} su {total}'**
+  String extSavedPartial(String name, int found, int total);
 
   /// No description provided for @extRefresh.
   ///

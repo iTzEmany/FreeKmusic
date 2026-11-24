@@ -1,0 +1,167 @@
+[
+  {
+    "kind": "t",
+    "title": "Bohemian Rhapsody",
+    "ids": [
+      "fJ9rUzIMcZQ"
+    ],
+    "fragment": "H4sIAAAAAAAAA3PzNuQq4XLKz0jNzUzMUwjKSCwozk-p5ErzsiwKrfL0TY4KBABEvYszIwAAAA"
+  },
+  {
+    "kind": "a",
+    "title": "Città – 日本語 🎵",
+    "ids": [
+      "dQw4w9WgXcQ",
+      "kJQP7kiw5Fk",
+      "9bZkp7q19f0"
+    ],
+    "fragment": "H4sIAAAAAAAAAwFBAL7_RksxCmEKQ2l0dMOgIOKAkyDml6XmnKzoqp4g8J-OtQpkUXc0dzlXZ1hjUWtKUVA3a2l3NUZrOWJaa3A3cTE5ZjCRc5YpQQAAAA"
+  },
+  {
+    "kind": "p",
+    "title": "Mix",
+    "ids": [
+      "abcdefgh0_0",
+      "abcdefgh0_1",
+      "abcdefgh0_2",
+      "abcdefgh0_3",
+      "abcdefgh0_4",
+      "abcdefgh0_5",
+      "abcdefgh0_6",
+      "abcdefgh0_7",
+      "abcdefgh0_8",
+      "abcdefgh0_9",
+      "abcdefgh1_0",
+      "abcdefgh1_1",
+      "abcdefgh1_2",
+      "abcdefgh1_3",
+      "abcdefgh1_4",
+      "abcdefgh1_5",
+      "abcdefgh1_6",
+      "abcdefgh1_7",
+      "abcdefgh1_8",
+      "abcdefgh1_9",
+      "abcdefgh2_0",
+      "abcdefgh2_1",
+      "abcdefgh2_2",
+      "abcdefgh2_3",
+      "abcdefgh2_4",
+      "abcdefgh2_5",
+      "abcdefgh2_6",
+      "abcdefgh2_7",
+      "abcdefgh2_8",
+      "abcdefgh2_9",
+      "abcdefgh3_0",
+      "abcdefgh3_1",
+      "abcdefgh3_2",
+      "abcdefgh3_3",
+      "abcdefgh3_4",
+      "abcdefgh3_5",
+      "abcdefgh3_6",
+      "abcdefgh3_7",
+      "abcdefgh3_8",
+      "abcdefgh3_9",
+      "abcdefgh4_0",
+      "abcdefgh4_1",
+      "abcdefgh4_2",
+      "abcdefgh4_3",
+      "abcdefgh4_4",
+      "abcdefgh4_5",
+      "abcdefgh4_6",
+      "abcdefgh4_7",
+      "abcdefgh4_8",
+      "abcdefgh4_9"
+    ],
+    "fragment": "H4sIAAAAAAAAA0XNqRHCUBQAQP-ryTsgpAEMQw0ZIFwOSfkoZt26PZ5ifMb5_R2X6227P56vaZ0wMLGwcYd7nPGAy59hC1vYwha2sIUtbGELW9rSlra0pS1taUtb2tJWtrKVrWxlK1vZyla2srWtbW1rW9va1ra2ta3X5QcGCBkYMAIAAA"
+  },
+  {
+    "name": "empty title",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4eJKCSw3KbcMT49IDgQAw9AHFRIAAAA"
+  },
+  {
+    "name": "blank title",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4VJQUOBKCSw3KbcMT49IDgQAobHhfhUAAAA"
+  },
+  {
+    "name": "title over 120",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4aoYKMCVElhuUm4Znh6RHAgAAbDQ3IsAAAA"
+  },
+  {
+    "name": "id with newline",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4argSgksNynnsgxPj0gOBABmJDawFAAAAA"
+  },
+  {
+    "name": "unknown kind",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuSq4qrgSgksNym3DE-PSA4EAON0MIsTAAAA"
+  },
+  {
+    "name": "bad prefix",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4argSgksNym3DE-PSA4EABI32TUTAAAA"
+  },
+  {
+    "name": "standard alphabet",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4aow4EoJLDcptwxPj0gOBACXz7+aFAAAAA"
+  },
+  {
+    "name": "wrong padding",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuQq4argSgksNym3DE-PSA4EAJZsQ2YTAAAA="
+  },
+  {
+    "name": "space inside",
+    "error": true,
+    "fragment": "H4sI AAAAAAACA3PzNuQq4argSgksNym3DE-PSA4EAJZsQ2YTAAAA"
+  },
+  {
+    "name": "truncated gzip: last byte cut",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3D3Ech-JUAQA"
+  },
+  {
+    "name": "truncated gzip: trailer cut",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3Dw"
+  },
+  {
+    "name": "truncated gzip: 20 bytes cut",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmsg"
+  },
+  {
+    "name": "trailing bytes: 1",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3D3Ech-JUAQAAAA"
+  },
+  {
+    "name": "trailing bytes: 3",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3D3Ech-JUAQAAAQID"
+  },
+  {
+    "name": "zlib, not gzip",
+    "error": true,
+    "fragment": "eJzdzacRgFAURUH_qvk5NIBhqOEMGRyS8lG3Cdy6HUZvj033a_OybvtxXg4nerwYCGIkiokkZrJYKGKlio0mdvqftw9vSHgn"
+  },
+  {
+    "name": "two gzip members",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuQq4argAgDUUbOnCAAAAB-LCAAAAAAAAANLCSw3KbcMT49IDgQAFAhyXgsAAAA"
+  },
+  {
+    "name": "title of only U+0085",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuQq4TrUypUSWG5SbhmeHpEcCABxxRHaFAAAAA"
+  },
+  {
+    "name": "non-zero trailing bits in the last character",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuQq4aqo5EoJLDcptwxPj0gOBADUVKegFAAAAB"
+  }
+]

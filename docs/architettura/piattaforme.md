@@ -28,7 +28,7 @@ Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchett
 |---|---|
 | `MainActivity.kt` | Registra i ponti. Canali propri: `codecore/audio` (`outputRoute`, `bluetoothOutputs`, `netPrefix`, `bluetoothOutputActive`, permessi Bluetooth), `codecore/screen` (`keepOn`), `codecore/share` (`startService`, `stopService`, `showOffer`). |
 | `CodecoreApp.kt` | `Application`: vive quanto il processo, ridisegna widget e tile quando Dart scrive un nuovo stato. |
-| `IncomingBridge.kt` | `codecore/incoming`: ZIP/CSV aperto con FreeKmusic («Apri con», «Condividi»). Copia nella cache (massimo 20 MB), `takeIncoming`, `takeIncomingText`. |
+| `IncomingBridge.kt` | `codecore/incoming`: ZIP/CSV aperto con FreeKmusic («Apri con», «Condividi»). Copia nella cache (massimo 20 MB), `takeIncoming`, `takeIncomingText`. Gli App Link `https://itzemany.github.io/FreeKmusic/…` (intent-filter `autoVerify` in `MainActivity`, D-702) arrivano come testo con il `#frammento` (`Uri.toString` lo conserva), all'avvio e con `onNewIntent`. |
 | `VolumeBridge.kt` | `codecore/volume`: `get` (0..1), `start`/`stop` di un `ContentObserver` che manda `changed`. Alla base della pausa a volume zero. |
 | `IconBridge.kt` | `codecore/icon`: l'icona è uno di 16 `activity-alias` di `MainActivity` (`.IconViolaDark`…). `setIcon` ricorda la scelta, `apply` cambia in background. |
 | `NetworkBridge.kt` | `codecore/net`: `isMetered`, evento `changed`. Shuffle+ evita i dati mobili. |
@@ -50,6 +50,8 @@ Codice Kotlin in `android/app/src/main/kotlin/com/codecore/player/` (il pacchett
 | `src/lite/kotlin/.../YtDlpChannel.kt` | Variante lite: stesso nome, senza yt-dlp. |
 | `android/app/build.gradle.kts` | `namespace`, `applicationId`, varianti, firma, minify. |
 | `android/app/src/main/AndroidManifest.xml` | Permessi, servizi, widget, tile, `AudioService`, metadati Android Auto. |
+
+L'`assetlinks.json` dell'App Link sta nel repo `iTzEmany.github.io` (radice del dominio, `/.well-known/`), non in `docs/site`. L'import da link chiede conferma prima di ogni rete, uno alla volta; un brano singolo apre Cerca.
 
 ### Windows, Linux, macOS
 | Percorso | Ruolo |
@@ -139,6 +141,7 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Database desktop nella cartella dati dell'app**: su Windows, Linux (anche Flatpak, dove Documenti non è raggiungibile) e macOS `databaseFile()` è `<appSupport>/codecore.sqlite`; `databaseDir()` (`lib/core/paths.dart`) è l'unica fonte del percorso, usata anche da `driftDatabase`. Al primo avvio `resolveDatabaseDir` COPIA il vecchio `<Documenti>/codecore.sqlite` (e `-wal`/`-shm`/`-journal`) se il nuovo non esiste, senza toccare l'originale; se la copia fallisce, quell'avvio usa ancora Documenti e riprova al successivo. Su Android e iOS resta la cartella documenti (già privata dell'app).
 
 ## Trappole
+- **`share_plus` (D-670) solo dietro `ExternalShare`** (`lib/services/share/external_share.dart`, provider `externalShareProvider`): foglio di sistema di Android/Linux/Windows; `origin` ancora il foglio su desktop. Se `share_plus` lancia, la UI ripiega su «Copia testo». Su Linux `shareText` aprirebbe un `mailto:` e risponderebbe «unavailable» senza errore: `SharePlusExternalShare` lancia prima di chiamarlo (e `ExternalShareActions` non scrive il file m3u8), quindi si copia sempre. Windows ha il foglio e accetta i file da 10 RS5 (prima `UnimplementedError` → copia). Il `ShareResult` non si legge (Android e Windows dicono «unavailable» anche a condivisione riuscita). I test usano un finto, mai il canale nativo.
 - **`file_picker` passa dal SAF** e non c'è `MANAGE_EXTERNAL_STORAGE`: una cartella scelta a mano non è scrivibile con `dart:io` su Android; per questo i backup vanno in `Documents/FreeKmusic` e i download sulla SD nella cartella dell'app.
 - **`flutter build apk` vuole il JDK 17 di JetBrains**: `JAVA_HOME=~/.jdks/jbr-17.0.14 PATH=~/.jdks/jbr-17.0.14/bin:$PATH flutter build apk --debug`. Con il Java di sistema Gradle fallisce.
 - **`gradlew --stop` di un agente ferma la build di un altro**: due build Gradle in parallelo non si fidano; una alla volta. Dopo un processo interrotto, «Gradle build daemon disappeared unexpectedly»: `cd android && ./gradlew --stop` e si rilancia.

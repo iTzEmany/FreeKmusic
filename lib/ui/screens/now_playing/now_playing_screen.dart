@@ -500,7 +500,7 @@ class _PlayerHeader extends ConsumerWidget {
                   IconButton(
                     tooltip: l.moreActions,
                     icon: const Icon(Icons.more_vert_rounded),
-                    onPressed: () => showTrackActions(context, ref, track),
+                    onPressed: () => showTrackActions(context, track),
                   ),
                 ],
               ),

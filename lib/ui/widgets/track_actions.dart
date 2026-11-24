@@ -21,6 +21,7 @@ import '../../core/platform.dart';
 import '../../data/db/app_database.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/equalizer_providers.dart';
+import '../../services/share/share_fragment.dart' show SharedKind;
 import '../../data/settings/settings_store.dart' show StorageMode;
 import '../../providers/library_add_providers.dart';
 import '../../providers/pending_playlist_adds.dart' show addToPlaylistTag;
@@ -60,6 +61,7 @@ import 'favorite_actions.dart';
 import 'format_utils.dart';
 import 'quality_tag.dart';
 import '../../services/jam/jam_models.dart' show jamFullResult;
+import 'share_collection.dart';
 import 'show_msg.dart';
 
 /// One entry of the track menu.
@@ -102,14 +104,15 @@ bool entryInLibrary(WidgetRef ref, int id) {
 }
 
 /// Streamed (online) entries are not library rows: no favourites, tags,
-/// playlists by id, edit, lyrics, share, details of a file or deletion. They
-/// can be downloaded, downloaded into a playlist, disliked or taken out of
+/// playlists by id, edit, lyrics, details of a file or deletion. They can be
+/// shared (the link of the video), downloaded, downloaded into a playlist, disliked or taken out of
 /// the queue.
 List<TrackActionGroup> onlineTrackActions(
   BuildContext outer,
   WidgetRef ref,
   Track track, {
   Track? row,
+  Rect? anchor,
 }) {
   final l = outer.l10n;
   final actions = ref.read(suggestionActionsProvider);
@@ -171,6 +174,11 @@ List<TrackActionGroup> onlineTrackActions(
         ),
       ),
     ]),
+    // Not saved yet: the entry's own video link; with a row, its «Condividi» is merged in below.
+    if (row == null && entry != null)
+      TrackActionGroup(l.groupOther, [
+        _shareAction(outer, ref, track.copyWith(kind: kStreamKind, path: 'stream:${entry.result.indexKey}'), anchor),
+      ]),
     TrackActionGroup(l.groupQueue, [
       if (ref.read(onlineEntriesProvider)?[track.id]?.suggested ?? false)
         TrackAction(
@@ -188,7 +196,7 @@ List<TrackActionGroup> onlineTrackActions(
   if (row == null) return groups;
   // The row's own actions that neither touch the queue nor delete a file; same-titled groups merge.
   final extra = [
-    for (final g in trackActions(outer, ref, row))
+    for (final g in trackActions(outer, ref, row, anchor: anchor))
       TrackActionGroup(g.title, [for (final a in g.actions) if (a.onOnlineEntry) a]),
   ].where((g) => g.actions.isNotEmpty);
   return [
@@ -201,6 +209,14 @@ List<TrackActionGroup> onlineTrackActions(
       if (!groups.any((g) => g.title == x.title)) x,
   ];
 }
+
+TrackAction _shareAction(BuildContext outer, WidgetRef ref, Track track, Rect? anchor) => TrackAction(
+  Icons.share_rounded,
+  outer.l10n.shareAction,
+  () => shareTracks(outer, ref, SharedKind.track, track.title, [track], subtitle: track.artist, origin: anchor),
+  onStreamRow: true,
+  onOnlineEntry: true,
+);
 
 /// A radio in the queue is not a track: it can be saved in «Le mie radio» (or
 /// taken out), the song on air looked up, and the station taken out of the
@@ -248,10 +264,11 @@ List<TrackActionGroup> trackActions(
   Track track, {
   Track? row,
   bool isDownloadedFile = false,
+  Rect? anchor, // the row's rectangle, when the menu was opened from one (a share sheet on iPad/desktop)
 }) {
   final radio = radioOfTrackRead(ref, track);
   if (radio != null) return radioTrackActions(outer, ref, track, radio);
-  if (isOnlineId(track.id)) return onlineTrackActions(outer, ref, track, row: row);
+  if (isOnlineId(track.id)) return onlineTrackActions(outer, ref, track, row: row, anchor: anchor);
   final l = outer.l10n;
   final ctrl = ref.read(playerControllerProvider);
 
@@ -434,10 +451,11 @@ List<TrackActionGroup> trackActions(
         TrackAction(Icons.equalizer_rounded, l.equalizer, () async {
           ShellNav.openOnTop<void>(outer, ref, const EqualizerScreen());
         }),
+      _shareAction(outer, ref, track, anchor),
       if (track.kind != kStreamKind)
         TrackAction(
           Icons.devices_rounded,
-          l.shareMenu,
+          l.sendToDeviceMenu,
           () async => DevicesSheet.show(outer, trackIds: [track.id]),
         ),
       TrackAction(Icons.info_outline_rounded, l.details, () async {
@@ -479,19 +497,54 @@ List<TrackActionGroup> trackActions(
 /// A menu is being prepared (a double tap, or two rows tapped within the check, must not open two sheets).
 var _opening = false;
 
+/// Lives for the whole app, inside the root navigator: the menu takes its context and ref from here, so
+/// they outlast the row that opened it (a dialog or a delete after the confirm, when the list changed).
+class TrackMenuHost extends ConsumerStatefulWidget {
+  const TrackMenuHost({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  ConsumerState<TrackMenuHost> createState() => _TrackMenuHostState();
+}
+
+_TrackMenuHostState? _host;
+
+class _TrackMenuHostState extends ConsumerState<TrackMenuHost> {
+  @override
+  void initState() {
+    super.initState();
+    _host = this;
+  }
+
+  @override
+  void dispose() {
+    if (_host == this) _host = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
 /// The track sheet; [lead] goes first (e.g. «Rimuovi dalla playlist»). Also the
 /// desktop right click, and the ⋮ of a selection through [showTrackActionGroups].
+/// [context] is the row: its rectangle anchors a share sheet (iPad, desktop); the rest runs on [TrackMenuHost].
 Future<void> showTrackActions(
   BuildContext context,
-  WidgetRef ref,
   Track track, {
   TrackAction? lead,
 }) async {
-  if (_opening) return;
-  // Taken before the wait: the row may be unmounted by then, the root overlay is not.
-  // Before the guard: a context already gone must not leave it taken.
-  final overlay = Overlay.maybeOf(context, rootOverlay: true);
-  final container = ProviderScope.containerOf(context, listen: false);
+  final host = _host;
+  assert(host != null, 'showTrackActions needs a TrackMenuHost above the app');
+  if (host == null || !host.mounted) {
+    AppLog.w('track menu: no TrackMenuHost mounted, menu not opened');
+    return;
+  }
+  if (!context.mounted || _opening) return;
+  final box = context.findRenderObject();
+  final anchor = box is RenderBox && box.attached && box.hasSize ? box.localToGlobal(Offset.zero) & box.size : null;
+  final container = ProviderScope.containerOf(host.context, listen: false);
   _opening = true;
   var isDownloadedFile = false;
   try {
@@ -511,51 +564,25 @@ Future<void> showTrackActions(
   } finally {
     _opening = false;
   }
-  // The row that was tapped may be gone by now (its list changed): the root overlay stands in.
-  final anchor = context.mounted ? context : overlay?.context;
-  if (anchor == null || !anchor.mounted) return;
+  // The row that was tapped may be gone by now (its list changed): the host stands in.
+  if (!host.mounted) return;
+  final sheetContext = context.mounted ? context : host.context;
+
   // The menu follows the state of the song, not the Track it was opened with: a download
   // or a save swaps it for the library row and the groups are rebuilt (D-697).
   final entryKey = container.read(onlineEntriesProvider)?[track.id]?.result.indexKey;
   final key = trackStateKey(track, streamKey: entryKey);
-  // The caller (a row) may be unmounted while the sheet is open (its list changed), and the sheet itself is
-  // gone once an action runs: a host in the root overlay, kept until the action is done, gives them a live
-  // context and ref (a dialog and a delete after the confirm).
-  BuildContext? hostContext;
-  WidgetRef? hostRef;
-  final host = OverlayEntry(
-    builder: (_) => Consumer(
-      builder: (c, r, _) {
-        hostContext = c;
-        hostRef = r;
-        return const SizedBox.shrink();
-      },
-    ),
-  );
-  overlay?.insert(host);
-  var hostGone = false;
-  void dropHost() {
-    if (hostGone) return;
-    hostGone = true;
-    host.remove();
-    host.dispose();
-  }
 
   var live = track;
   Track? liveRow; // the library row behind an online entry (negative id), once saved or downloaded
   // «Libera spazio» needs the file to be the very one downloaded: checked off the UI thread, not while building.
   Future<bool> pristine() async =>
       (await container.read(downloadIndexProvider.future)).signatureMatchesPath(live.path);
-  // Always built with the host's context and ref: the caller (a row) may be gone by the time an action runs.
-  List<TrackActionGroup> build() => hostRef == null && !context.mounted
-      ? const [] // the host is not built yet and the caller is gone: the next frame fills the sheet
-      : [
-          if (lead != null) TrackActionGroup('', [lead]),
-          ...trackActions(hostContext ?? context, hostRef ?? ref, live, row: liveRow, isDownloadedFile: isDownloadedFile),
-        ];
+  List<TrackActionGroup> build() => [
+    if (lead != null) TrackActionGroup('', [lead]),
+    ...trackActions(host.context, host.ref, live, row: liveRow, isDownloadedFile: isDownloadedFile, anchor: anchor),
+  ];
 
-  late List<TrackActionGroup> last;
-  List<TrackActionGroup> groups() => (hostContext ?? context).mounted ? last = build() : last;
   final changed = ValueNotifier(0);
   var closed = false;
   var calls = 0; // only the last call counts: an older lookup finishing late must not undo a newer one
@@ -591,25 +618,18 @@ Future<void> showTrackActions(
     }
     // «Libera spazio» reads the download index (a user's file is not in it): keep it loaded and follow it.
     indexSub = container.listen(downloadIndexProvider, (_, _) => follow());
-    // The host builds on the next frame: until then the caller's context stands in, then the groups are rebuilt.
-    last = build();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!closed) changed.value++;
-    });
     // The row of an entry saved before the sheet opened, and a later change of «Libera spazio».
     if (track.kind == kMusicKind || container.read(onlineEntriesProvider)?[track.id]?.trackId != null) unawaited(follow());
-    final chosen = await showTrackActionGroups(
-      anchor,
-      last,
+    if (!sheetContext.mounted) return;
+    await showTrackActionGroups(
+      sheetContext,
+      build(),
       header: _TrackHeader(track: track, downloadKey: key.startsWith('#') ? null : key),
       refresh: changed,
-      regroup: groups,
-      onActionDone: dropHost,
+      regroup: build,
     );
-    if (chosen == null) dropHost(); // closed without an action
   } on Object catch (e, st) {
     AppLog.w('track menu: sheet failed', e, st);
-    dropHost(); // the host must not outlive a sheet that never opened
     rethrow;
   } finally {
     closed = true;
@@ -641,7 +661,6 @@ Future<TrackAction?> showTrackActionGroups(
   String? title,
   Listenable? refresh,
   List<TrackActionGroup> Function()? regroup,
-  VoidCallback? onActionDone,
 }) {
   List<List<CcAction<TrackAction>>> rows(List<TrackActionGroup> gs) => [
     for (final g in gs)
@@ -653,11 +672,7 @@ Future<TrackAction?> showTrackActionGroups(
             value: a,
             destructive: a.destructive,
             onTap: () async {
-              try {
-                await a.run();
-              } finally {
-                onActionDone?.call();
-              }
+              await a.run();
             },
           ),
       ],
