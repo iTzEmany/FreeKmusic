@@ -12,7 +12,7 @@ Future<void> showWhatsNew(BuildContext context, UpdateInfo info) {
   final page = WhatsNewPage(info: info);
   return MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint
       ? showDialog<void>(context: context, builder: (_) => page)
-      : Navigator.of(context).push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => page));
+      : Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => page));
 }
 
 class WhatsNewPage extends StatelessWidget {

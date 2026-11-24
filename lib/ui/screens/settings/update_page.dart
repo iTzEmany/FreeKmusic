@@ -18,7 +18,7 @@ Future<void> showUpdate(BuildContext context, {UpdateInfo? info}) {
   final page = UpdatePage(info: info, wide: wide);
   return wide
       ? showDialog<void>(context: context, builder: (_) => page)
-      : Navigator.of(context).push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => page));
+      : Navigator.of(context, rootNavigator: true).push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => page));
 }
 
 class UpdatePage extends ConsumerStatefulWidget {

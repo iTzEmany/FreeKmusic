@@ -77,7 +77,8 @@ Future<void> handleSharedPage(BuildContext context, WidgetRef ref, SharedText s)
 }
 
 /// The rows with an id are looked up by it, the others by artist + title like an imported playlist (D-713);
-/// a row that is not found stays in the list as «non trovato». Null: the ids failed on the network.
+/// a row that is not found is a `TrackNotFound` in the result: `saveToLibrary` saves only the found ones and the
+/// partial message («N su M») says it. Null: the ids failed on the network.
 Future<List<TrackMatch>?> _lookUp(WidgetRef ref, List<SharedRow> rows) async {
   final out = <TrackMatch>[for (final _ in rows) const TrackNotFound()];
   final idAt = [for (var i = 0; i < rows.length; i++) if (rows[i].id != null) i];
