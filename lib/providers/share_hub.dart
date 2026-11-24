@@ -23,7 +23,10 @@ import '../services/share/pairing.dart';
 import '../services/share/pairing_client.dart';
 import '../services/share/sync_client.dart';
 import '../services/share/sync_routes.dart';
+import '../services/share/collection_sync.dart' show SyncSide;
 import '../services/share/playlist_sync.dart';
+import '../services/share/settings_sync.dart';
+import '../services/share/tables_sync.dart' show TablesBundle;
 import '../services/share/trusted_devices.dart';
 import '../services/share/share_notifier.dart';
 import '../core/paths.dart';
@@ -684,7 +687,16 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       '/pair': pairing.buildRouter().call,
       '/sync': buildSyncRouter(
         export: sync.export,
+        exportFavorites: sync.favorites,
+        exportStreams: sync.streams,
+        exportTombstones: sync.tombstones,
+        exportSettings: () async => syncedSettings(ref.read(settingsProvider)),
+        // With the history off here nothing is sent: the listens of this device are not recorded, nor shared.
+        exportPlays: () async => ref.read(settingsProvider).recordHistory ? sync.plays() : const [],
+        exportTags: sync.tags,
+        exportTexts: sync.texts,
         isTrusted: (fp) => ref.read(trustedDevicesProvider).byFingerprint(fp) != null,
+        isMine: (fp) => ref.read(trustedDevicesProvider).byFingerprint(fp)?.mine ?? false,
         onWant: _offerWanted,
       ).call,
     };
@@ -736,13 +748,57 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     if (peer?.tlsPort == null) throw const SyncException(SyncError.unreachable);
     final db = ref.read(databaseProvider);
     final repo = PlaylistSyncRepository(db);
-    final remote = await SyncClient(ref.read(lanClientProvider))
-        .playlists(peer!.host, peer.tlsPort!, pin: device.fingerprint);
+    final client = SyncClient(ref.read(lanClientProvider));
+    final remote = await client.playlists(peer!.host, peer.tlsPort!, pin: device.fingerprint);
     final resolver = await repo.resolver(caseInsensitive: Platform.isWindows);
-    return planSync(await repo.local(), remote, resolver.resolve);
+    final side = await client.collections(
+      peer.host,
+      peer.tlsPort!,
+      pin: device.fingerprint,
+      mine: device.mine,
+      keepTexts: (page) => repo.newTexts(page, resolver),
+    );
+    final index = await ref.read(downloadIndexProvider.future);
+    // An episode cannot become a streamed row, like a track already downloaded: neither is planned.
+    final episodes = await repo.episodeStreamKeys();
+    return planSync(
+      await repo.local(),
+      remote,
+      resolver.resolve,
+      localSide: await repo.side(settings: syncedSettings(ref.read(settingsProvider))),
+      remoteSide: SyncSide(
+        favorites: side.favorites,
+        streams: side.streams,
+        tombstones: side.tombstones,
+        settings: side.settings,
+        // Only the news: what the plan shows is what the merge would add.
+        tables: device.mine ? await repo.newTables(side.tables, resolver, plays: ref.read(settingsProvider).recordHistory) : const TablesBundle(),
+      ),
+      mine: device.mine,
+      hasFile: (k) => index.pathForKey(k) != null || episodes.contains(k),
+    );
   }
 
-  Future<void> applyPlaylistSync(SyncPlan plan) => PlaylistSyncRepository(ref.read(databaseProvider)).apply(plan);
+  /// Writes the playlists of [plan]; its collections only when [collections] (the user confirmed them). Returns
+  /// how many playlists were written.
+  Future<int> applyPlaylistSync(
+    SyncPlan plan, {
+    bool collections = false,
+  }) async {
+    final index = await ref.read(downloadIndexProvider.future);
+    final repo = PlaylistSyncRepository(ref.read(databaseProvider));
+    return repo.apply(
+      plan,
+      applyCollections: collections,
+      hasFile: (k) => index.pathForKey(k) != null,
+      resolver: collections ? await repo.resolver(caseInsensitive: Platform.isWindows) : null,
+    );
+  }
+
+  /// Applies the settings of [plan] whose keys the user picked ([keys]): they have no date, so none is applied by itself.
+  void applySettingsSync(SyncPlan plan, Set<String> keys) => ref
+      .read(settingsProvider.notifier)
+      .update((s) => applySettings(s, [for (final c in plan.collections.settings) if (keys.contains(c.key)) c]));
 
   /// «Chiedi i brani mancanti»: the other device offers us the tracks of [plan]
   /// that it has. Returns how many it found.

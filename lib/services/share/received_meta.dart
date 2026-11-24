@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import '../../data/repositories/credits_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import '../covers/cover_store.dart';
@@ -52,9 +53,9 @@ Future<int> saveReceivedStreams(
   for (final s in streams) {
     try {
       final r = streamResultOf(s.key, title: s.title, artist: s.artist, album: s.album, durationMs: s.durationMs);
-      if (hasFile(r)) continue;
       final wasSaved = (await tracks.streamRow(s.key))?.saved ?? false;
-      final id = await tracks.saveStream(r);
+      // An offer is something the user did (date: now), so only an existing file stops it.
+      final id = await tracks.ingestStream(r, at: nowMs(), hasFile: (_) => hasFile(r));
       if (id == null) continue;
       if (!wasSaved) n++;
       final m = s.meta;

@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:codecore/core/text_utils.dart';
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/repositories/sync_tombstone_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/covers/cover_store.dart';
 import 'package:codecore/services/share/offers.dart' show StreamOffer;
@@ -226,5 +227,14 @@ void main() {
     const a = StreamOffer(key: 'youtube:abcdefghijk', title: 'Live');
     expect(await saveReceivedStreams(repo, [a], hasFile: (_) => false), 1);
     expect(await saveReceivedStreams(repo, [a], hasFile: (_) => false), 0);
+  });
+
+  test('an offer is a new decision: it saves a stream deleted here before, but not one that is already a file', () async {
+    const a = StreamOffer(key: 'youtube:abcdefghijk', title: 'Live');
+    await SyncTombstoneRepository(db).record('savedStream', a.key, at: 1000);
+    expect(await saveReceivedStreams(repo, [a], hasFile: (_) => true), 0);
+    expect(await repo.byPath('stream:youtube:abcdefghijk'), isNull);
+    expect(await saveReceivedStreams(repo, [a], hasFile: (_) => false), 1);
+    expect(await SyncTombstoneRepository(db).deletedAt('savedStream', a.key), isNull);
   });
 }

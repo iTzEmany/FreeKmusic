@@ -469,6 +469,17 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _favoritedAtMeta = const VerificationMeta(
+    'favoritedAt',
+  );
+  @override
+  late final GeneratedColumn<int> favoritedAt = GeneratedColumn<int>(
+    'favorited_at',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -512,6 +523,7 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
     isrc,
     coverSource,
     albumBrowseId,
+    favoritedAt,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -821,6 +833,15 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         ),
       );
     }
+    if (data.containsKey('favorited_at')) {
+      context.handle(
+        _favoritedAtMeta,
+        favoritedAt.isAcceptableOrUnknown(
+          data['favorited_at']!,
+          _favoritedAtMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -994,6 +1015,10 @@ class $TracksTable extends Tracks with TableInfo<$TracksTable, Track> {
         DriftSqlType.string,
         data['${effectivePrefix}album_browse_id'],
       ),
+      favoritedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}favorited_at'],
+      ),
     );
   }
 
@@ -1063,6 +1088,9 @@ class Track extends DataClass implements Insertable<Track> {
   /// YouTube Music `browseId` of the album a saved stream row came from (D-675): opens the whole
   /// album from the library page. Null on local rows and on rows saved without an album page.
   final String? albumBrowseId;
+
+  /// When the heart was put on (ms; v24, D-708); null = never set. Lets «latest wins» apply to the heart in a sync.
+  final int? favoritedAt;
   const Track({
     required this.id,
     required this.path,
@@ -1105,6 +1133,7 @@ class Track extends DataClass implements Insertable<Track> {
     this.isrc,
     required this.coverSource,
     this.albumBrowseId,
+    this.favoritedAt,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1194,6 +1223,9 @@ class Track extends DataClass implements Insertable<Track> {
     if (!nullToAbsent || albumBrowseId != null) {
       map['album_browse_id'] = Variable<String>(albumBrowseId);
     }
+    if (!nullToAbsent || favoritedAt != null) {
+      map['favorited_at'] = Variable<int>(favoritedAt);
+    }
     return map;
   }
 
@@ -1280,6 +1312,9 @@ class Track extends DataClass implements Insertable<Track> {
       albumBrowseId: albumBrowseId == null && nullToAbsent
           ? const Value.absent()
           : Value(albumBrowseId),
+      favoritedAt: favoritedAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(favoritedAt),
     );
   }
 
@@ -1330,6 +1365,7 @@ class Track extends DataClass implements Insertable<Track> {
       isrc: serializer.fromJson<String?>(json['isrc']),
       coverSource: serializer.fromJson<int>(json['coverSource']),
       albumBrowseId: serializer.fromJson<String?>(json['albumBrowseId']),
+      favoritedAt: serializer.fromJson<int?>(json['favoritedAt']),
     );
   }
   @override
@@ -1377,6 +1413,7 @@ class Track extends DataClass implements Insertable<Track> {
       'isrc': serializer.toJson<String?>(isrc),
       'coverSource': serializer.toJson<int>(coverSource),
       'albumBrowseId': serializer.toJson<String?>(albumBrowseId),
+      'favoritedAt': serializer.toJson<int?>(favoritedAt),
     };
   }
 
@@ -1422,6 +1459,7 @@ class Track extends DataClass implements Insertable<Track> {
     Value<String?> isrc = const Value.absent(),
     int? coverSource,
     Value<String?> albumBrowseId = const Value.absent(),
+    Value<int?> favoritedAt = const Value.absent(),
   }) => Track(
     id: id ?? this.id,
     path: path ?? this.path,
@@ -1468,6 +1506,7 @@ class Track extends DataClass implements Insertable<Track> {
     albumBrowseId: albumBrowseId.present
         ? albumBrowseId.value
         : this.albumBrowseId,
+    favoritedAt: favoritedAt.present ? favoritedAt.value : this.favoritedAt,
   );
   Track copyWithCompanion(TracksCompanion data) {
     return Track(
@@ -1546,6 +1585,9 @@ class Track extends DataClass implements Insertable<Track> {
       albumBrowseId: data.albumBrowseId.present
           ? data.albumBrowseId.value
           : this.albumBrowseId,
+      favoritedAt: data.favoritedAt.present
+          ? data.favoritedAt.value
+          : this.favoritedAt,
     );
   }
 
@@ -1592,7 +1634,8 @@ class Track extends DataClass implements Insertable<Track> {
           ..write('lastPlayedAt: $lastPlayedAt, ')
           ..write('isrc: $isrc, ')
           ..write('coverSource: $coverSource, ')
-          ..write('albumBrowseId: $albumBrowseId')
+          ..write('albumBrowseId: $albumBrowseId, ')
+          ..write('favoritedAt: $favoritedAt')
           ..write(')'))
         .toString();
   }
@@ -1640,6 +1683,7 @@ class Track extends DataClass implements Insertable<Track> {
     isrc,
     coverSource,
     albumBrowseId,
+    favoritedAt,
   ]);
   @override
   bool operator ==(Object other) =>
@@ -1685,7 +1729,8 @@ class Track extends DataClass implements Insertable<Track> {
           other.lastPlayedAt == this.lastPlayedAt &&
           other.isrc == this.isrc &&
           other.coverSource == this.coverSource &&
-          other.albumBrowseId == this.albumBrowseId);
+          other.albumBrowseId == this.albumBrowseId &&
+          other.favoritedAt == this.favoritedAt);
 }
 
 class TracksCompanion extends UpdateCompanion<Track> {
@@ -1730,6 +1775,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
   final Value<String?> isrc;
   final Value<int> coverSource;
   final Value<String?> albumBrowseId;
+  final Value<int?> favoritedAt;
   const TracksCompanion({
     this.id = const Value.absent(),
     this.path = const Value.absent(),
@@ -1772,6 +1818,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.isrc = const Value.absent(),
     this.coverSource = const Value.absent(),
     this.albumBrowseId = const Value.absent(),
+    this.favoritedAt = const Value.absent(),
   });
   TracksCompanion.insert({
     this.id = const Value.absent(),
@@ -1815,6 +1862,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     this.isrc = const Value.absent(),
     this.coverSource = const Value.absent(),
     this.albumBrowseId = const Value.absent(),
+    this.favoritedAt = const Value.absent(),
   }) : path = Value(path),
        title = Value(title),
        albumKey = Value(albumKey),
@@ -1864,6 +1912,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Expression<String>? isrc,
     Expression<int>? coverSource,
     Expression<String>? albumBrowseId,
+    Expression<int>? favoritedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1907,6 +1956,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       if (isrc != null) 'isrc': isrc,
       if (coverSource != null) 'cover_source': coverSource,
       if (albumBrowseId != null) 'album_browse_id': albumBrowseId,
+      if (favoritedAt != null) 'favorited_at': favoritedAt,
     });
   }
 
@@ -1952,6 +2002,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
     Value<String?>? isrc,
     Value<int>? coverSource,
     Value<String?>? albumBrowseId,
+    Value<int?>? favoritedAt,
   }) {
     return TracksCompanion(
       id: id ?? this.id,
@@ -1995,6 +2046,7 @@ class TracksCompanion extends UpdateCompanion<Track> {
       isrc: isrc ?? this.isrc,
       coverSource: coverSource ?? this.coverSource,
       albumBrowseId: albumBrowseId ?? this.albumBrowseId,
+      favoritedAt: favoritedAt ?? this.favoritedAt,
     );
   }
 
@@ -2124,6 +2176,9 @@ class TracksCompanion extends UpdateCompanion<Track> {
     if (albumBrowseId.present) {
       map['album_browse_id'] = Variable<String>(albumBrowseId.value);
     }
+    if (favoritedAt.present) {
+      map['favorited_at'] = Variable<int>(favoritedAt.value);
+    }
     return map;
   }
 
@@ -2170,7 +2225,8 @@ class TracksCompanion extends UpdateCompanion<Track> {
           ..write('lastPlayedAt: $lastPlayedAt, ')
           ..write('isrc: $isrc, ')
           ..write('coverSource: $coverSource, ')
-          ..write('albumBrowseId: $albumBrowseId')
+          ..write('albumBrowseId: $albumBrowseId, ')
+          ..write('favoritedAt: $favoritedAt')
           ..write(')'))
         .toString();
   }
@@ -13384,6 +13440,266 @@ class FavoriteCollectionsCompanion extends UpdateCompanion<FavoriteCollection> {
   }
 }
 
+class $SyncTombstonesTable extends SyncTombstones
+    with TableInfo<$SyncTombstonesTable, SyncTombstone> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncTombstonesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _kindMeta = const VerificationMeta('kind');
+  @override
+  late final GeneratedColumn<String> kind = GeneratedColumn<String>(
+    'kind',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _keyMeta = const VerificationMeta('key');
+  @override
+  late final GeneratedColumn<String> key = GeneratedColumn<String>(
+    'key',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<int> deletedAt = GeneratedColumn<int>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    clientDefault: nowMs,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [kind, key, deletedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_tombstones';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncTombstone> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('kind')) {
+      context.handle(
+        _kindMeta,
+        kind.isAcceptableOrUnknown(data['kind']!, _kindMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_kindMeta);
+    }
+    if (data.containsKey('key')) {
+      context.handle(
+        _keyMeta,
+        key.isAcceptableOrUnknown(data['key']!, _keyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_keyMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {kind, key};
+  @override
+  SyncTombstone map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncTombstone(
+      kind: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}kind'],
+      )!,
+      key: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}key'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncTombstonesTable createAlias(String alias) {
+    return $SyncTombstonesTable(attachedDatabase, alias);
+  }
+}
+
+class SyncTombstone extends DataClass implements Insertable<SyncTombstone> {
+  final String kind;
+  final String key;
+  final int deletedAt;
+  const SyncTombstone({
+    required this.kind,
+    required this.key,
+    required this.deletedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['kind'] = Variable<String>(kind);
+    map['key'] = Variable<String>(key);
+    map['deleted_at'] = Variable<int>(deletedAt);
+    return map;
+  }
+
+  SyncTombstonesCompanion toCompanion(bool nullToAbsent) {
+    return SyncTombstonesCompanion(
+      kind: Value(kind),
+      key: Value(key),
+      deletedAt: Value(deletedAt),
+    );
+  }
+
+  factory SyncTombstone.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncTombstone(
+      kind: serializer.fromJson<String>(json['kind']),
+      key: serializer.fromJson<String>(json['key']),
+      deletedAt: serializer.fromJson<int>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'kind': serializer.toJson<String>(kind),
+      'key': serializer.toJson<String>(key),
+      'deletedAt': serializer.toJson<int>(deletedAt),
+    };
+  }
+
+  SyncTombstone copyWith({String? kind, String? key, int? deletedAt}) =>
+      SyncTombstone(
+        kind: kind ?? this.kind,
+        key: key ?? this.key,
+        deletedAt: deletedAt ?? this.deletedAt,
+      );
+  SyncTombstone copyWithCompanion(SyncTombstonesCompanion data) {
+    return SyncTombstone(
+      kind: data.kind.present ? data.kind.value : this.kind,
+      key: data.key.present ? data.key.value : this.key,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncTombstone(')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(kind, key, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncTombstone &&
+          other.kind == this.kind &&
+          other.key == this.key &&
+          other.deletedAt == this.deletedAt);
+}
+
+class SyncTombstonesCompanion extends UpdateCompanion<SyncTombstone> {
+  final Value<String> kind;
+  final Value<String> key;
+  final Value<int> deletedAt;
+  final Value<int> rowid;
+  const SyncTombstonesCompanion({
+    this.kind = const Value.absent(),
+    this.key = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncTombstonesCompanion.insert({
+    required String kind,
+    required String key,
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : kind = Value(kind),
+       key = Value(key);
+  static Insertable<SyncTombstone> custom({
+    Expression<String>? kind,
+    Expression<String>? key,
+    Expression<int>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (kind != null) 'kind': kind,
+      if (key != null) 'key': key,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncTombstonesCompanion copyWith({
+    Value<String>? kind,
+    Value<String>? key,
+    Value<int>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return SyncTombstonesCompanion(
+      kind: kind ?? this.kind,
+      key: key ?? this.key,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (kind.present) {
+      map['kind'] = Variable<String>(kind.value);
+    }
+    if (key.present) {
+      map['key'] = Variable<String>(key.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<int>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncTombstonesCompanion(')
+          ..write('kind: $kind, ')
+          ..write('key: $key, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -13424,6 +13740,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $ArtistNotSameTable artistNotSame = $ArtistNotSameTable(this);
   late final $FavoriteCollectionsTable favoriteCollections =
       $FavoriteCollectionsTable(this);
+  late final $SyncTombstonesTable syncTombstones = $SyncTombstonesTable(this);
   late final Index tracksAlbumKey = Index(
     'tracks_album_key',
     'CREATE INDEX tracks_album_key ON tracks (album_key)',
@@ -13514,6 +13831,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     artistAliases,
     artistNotSame,
     favoriteCollections,
+    syncTombstones,
     tracksAlbumKey,
     tracksArtist,
     tracksFavorite,
@@ -13675,6 +13993,7 @@ typedef $$TracksTableCreateCompanionBuilder = TracksCompanion Function({
   Value<String?> isrc,
   Value<int> coverSource,
   Value<String?> albumBrowseId,
+  Value<int?> favoritedAt,
 });
 typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
   Value<int> id,
@@ -13718,6 +14037,7 @@ typedef $$TracksTableUpdateCompanionBuilder = TracksCompanion Function({
   Value<String?> isrc,
   Value<int> coverSource,
   Value<String?> albumBrowseId,
+  Value<int?> favoritedAt,
 });
 
 final class $$TracksTableReferences
@@ -14089,6 +14409,11 @@ class $$TracksTableFilterComposer
 
   ColumnFilters<String> get albumBrowseId => $composableBuilder(
     column: $table.albumBrowseId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get favoritedAt => $composableBuilder(
+    column: $table.favoritedAt,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -14506,6 +14831,11 @@ class $$TracksTableOrderingComposer
     column: $table.albumBrowseId,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get favoritedAt => $composableBuilder(
+    column: $table.favoritedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TracksTableAnnotationComposer
@@ -14671,6 +15001,11 @@ class $$TracksTableAnnotationComposer
 
   GeneratedColumn<String> get albumBrowseId => $composableBuilder(
     column: $table.albumBrowseId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get favoritedAt => $composableBuilder(
+    column: $table.favoritedAt,
     builder: (column) => column,
   );
 
@@ -14954,6 +15289,7 @@ class $$TracksTableTableManager
                 Value<String?> isrc = const Value.absent(),
                 Value<int> coverSource = const Value.absent(),
                 Value<String?> albumBrowseId = const Value.absent(),
+                Value<int?> favoritedAt = const Value.absent(),
               }) => TracksCompanion(
                 id: id,
                 path: path,
@@ -14996,6 +15332,7 @@ class $$TracksTableTableManager
                 isrc: isrc,
                 coverSource: coverSource,
                 albumBrowseId: albumBrowseId,
+                favoritedAt: favoritedAt,
               ),
           createCompanionCallback:
               ({
@@ -15040,6 +15377,7 @@ class $$TracksTableTableManager
                 Value<String?> isrc = const Value.absent(),
                 Value<int> coverSource = const Value.absent(),
                 Value<String?> albumBrowseId = const Value.absent(),
+                Value<int?> favoritedAt = const Value.absent(),
               }) => TracksCompanion.insert(
                 id: id,
                 path: path,
@@ -15082,6 +15420,7 @@ class $$TracksTableTableManager
                 isrc: isrc,
                 coverSource: coverSource,
                 albumBrowseId: albumBrowseId,
+                favoritedAt: favoritedAt,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -23307,6 +23646,179 @@ typedef $$FavoriteCollectionsTableProcessedTableManager =
       FavoriteCollection,
       PrefetchHooks Function()
     >;
+typedef $$SyncTombstonesTableCreateCompanionBuilder =
+    SyncTombstonesCompanion Function({
+      required String kind,
+      required String key,
+      Value<int> deletedAt,
+      Value<int> rowid,
+    });
+typedef $$SyncTombstonesTableUpdateCompanionBuilder =
+    SyncTombstonesCompanion Function({
+      Value<String> kind,
+      Value<String> key,
+      Value<int> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$SyncTombstonesTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncTombstonesTable> {
+  $$SyncTombstonesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncTombstonesTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncTombstonesTable> {
+  $$SyncTombstonesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get key => $composableBuilder(
+    column: $table.key,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncTombstonesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncTombstonesTable> {
+  $$SyncTombstonesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
+
+  GeneratedColumn<String> get key =>
+      $composableBuilder(column: $table.key, builder: (column) => column);
+
+  GeneratedColumn<int> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$SyncTombstonesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncTombstonesTable,
+          SyncTombstone,
+          $$SyncTombstonesTableFilterComposer,
+          $$SyncTombstonesTableOrderingComposer,
+          $$SyncTombstonesTableAnnotationComposer,
+          $$SyncTombstonesTableCreateCompanionBuilder,
+          $$SyncTombstonesTableUpdateCompanionBuilder,
+          (
+            SyncTombstone,
+            BaseReferences<_$AppDatabase, $SyncTombstonesTable, SyncTombstone>,
+          ),
+          SyncTombstone,
+          PrefetchHooks Function()
+        > {
+  $$SyncTombstonesTableTableManager(
+    _$AppDatabase db,
+    $SyncTombstonesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncTombstonesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncTombstonesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncTombstonesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> kind = const Value.absent(),
+                Value<String> key = const Value.absent(),
+                Value<int> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncTombstonesCompanion(
+                kind: kind,
+                key: key,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String kind,
+                required String key,
+                Value<int> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncTombstonesCompanion.insert(
+                kind: kind,
+                key: key,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncTombstonesTable, SyncTombstone>(table),
+                  BaseReferences<
+                    _$AppDatabase,
+                    $SyncTombstonesTable,
+                    SyncTombstone
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncTombstonesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncTombstonesTable,
+      SyncTombstone,
+      $$SyncTombstonesTableFilterComposer,
+      $$SyncTombstonesTableOrderingComposer,
+      $$SyncTombstonesTableAnnotationComposer,
+      $$SyncTombstonesTableCreateCompanionBuilder,
+      $$SyncTombstonesTableUpdateCompanionBuilder,
+      (
+        SyncTombstone,
+        BaseReferences<_$AppDatabase, $SyncTombstonesTable, SyncTombstone>,
+      ),
+      SyncTombstone,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -23361,4 +23873,6 @@ class $AppDatabaseManager {
       $$ArtistNotSameTableTableManager(_db, _db.artistNotSame);
   $$FavoriteCollectionsTableTableManager get favoriteCollections =>
       $$FavoriteCollectionsTableTableManager(_db, _db.favoriteCollections);
+  $$SyncTombstonesTableTableManager get syncTombstones =>
+      $$SyncTombstonesTableTableManager(_db, _db.syncTombstones);
 }

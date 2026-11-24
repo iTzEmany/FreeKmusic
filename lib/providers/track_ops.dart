@@ -137,12 +137,12 @@ class TrackOps {
 
   /// «Rimuovi dalla libreria» of saved streamed rows: they stay in playlists and history. Returns how many left.
   Future<int> removeSavedStreams(List<Track> rows) async {
-    var n = 0;
+    final keys = <String>[];
     for (final t in rows) {
       final key = keyOfStreamPath(t.path);
-      if (t.kind == kStreamKind && t.saved && key != null) n += await _repo.setSaved(key, false);
+      if (t.kind == kStreamKind && t.saved && key != null) keys.add(key);
     }
-    return n;
+    return _repo.unsaveMany(keys);
   }
 
   Future<void> deleteTrack(int id) => _repo.deleteTrack(id);

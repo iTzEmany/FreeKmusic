@@ -14,6 +14,7 @@ import 'package:codecore/data/repositories/follow_repository.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/track_genre_repository.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
+import 'package:codecore/data/repositories/sync_tombstone_repository.dart';
 import 'package:codecore/data/repositories/release_repository.dart';
 import 'package:codecore/services/online/ytm_artist_parser.dart';
 import 'package:codecore/services/releases/release_checker.dart';
@@ -739,5 +740,107 @@ void main() {
       ]));
       expect(await FavoriteCollectionsRepository(db).watch('album').first, ['a', 'b']);
     });
+  });
+
+  test('a local favourite the backup does not have is kept, and a local track outside the backup is untouched', () async {
+    // characterization: merge only adds; an unfavourite in the backup never removes a favourite here.
+    await (db.update(db.tracks)..where((r) => r.title.equals('a'))).write(const TracksCompanion(isFavorite: Value(true)));
+    await (db.update(db.tracks)..where((r) => r.title.equals('c'))).write(const TracksCompanion(isFavorite: Value(true)));
+    final before = await track('b');
+    final r = await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: ref('a'), favorite: false)]));
+    expect(r.favoritesAdded, 0);
+    expect((await track('a')).isFavorite, isTrue);
+    expect((await track('c')).isFavorite, isTrue);
+    expect(await track('b'), before);
+    expect(await db.select(db.tracks).get(), hasLength(3));
+  });
+
+  test('a saved stream track here stays saved when the backup says not saved', () async {
+    // characterization: saved only goes up in a merge.
+    const key = 'youtube:abcdefghijk';
+    final tr = TrackRef(title: 'S', artist: 'Art', streamKey: key);
+    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true)]));
+    expect(await (db.select(db.tracks)..where((r) => r.title.equals('S'))).map((r) => r.saved).getSingle(), isTrue);
+    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: false)]));
+    expect(await (db.select(db.tracks)..where((r) => r.title.equals('S'))).map((r) => r.saved).getSingle(), isTrue);
+  });
+
+  test('a playlist or a favourite album only here survives a merge of a backup without them', () async {
+    final pl = await PlaylistRepository(db).create('Mine');
+    await PlaylistRepository(db).addTracks(pl, [(await track('a')).id]);
+    await FavoriteCollectionsRepository(db).add('album', 'k1');
+    await merge(UserData(createdAt: 1, favoriteCollections: [const FavoriteCollectionData(kind: 'album', key: 'k2')]));
+    expect((await db.select(db.playlists).get()).map((p) => p.name), ['Mine']);
+    expect(await db.select(db.playlistTracks).get(), hasLength(1));
+    expect((await db.select(db.favoriteCollections).get()).map((r) => r.key).toSet(), {'k1', 'k2'});
+  });
+
+  test('a merge is a decision of the user: a stream removed here before comes back with the backup\'s date, out of «recent»', () async {
+    const key = 'youtube:abcdefghijk';
+    final tr = TrackRef(title: 'S', artist: 'Art', streamKey: key);
+    await SyncTombstoneRepository(db).record('savedStream', key, at: 1000);
+    final r = await merge(
+      UserData(
+        createdAt: 1,
+        tracks: [TrackUserData(ref: tr, saved: true, addedAt: 900)],
+      ),
+    );
+    final t = await track('S');
+    expect((t.saved, t.addedAt), (true, 900));
+    expect(r.recognized, 1);
+    expect(
+      await SyncTombstoneRepository(db).deletedAt('savedStream', key),
+      isNull,
+    );
+  });
+
+  test('a stream removed here from a clock ahead of this one is discarded: no shadow row is made, none is counted', () async {
+    const key = 'youtube:abcdefghijk';
+    await SyncTombstoneRepository(db).record(
+      'savedStream',
+      key,
+      at: DateTime.now().millisecondsSinceEpoch + 3600000,
+    );
+    final r = await merge(
+      UserData(
+        createdAt: 1,
+        tracks: [
+          TrackUserData(
+            ref: TrackRef(title: 'S', artist: 'Art', streamKey: key),
+            saved: true,
+            addedAt: 900,
+            favorite: true,
+          ),
+        ],
+      ),
+    );
+    expect(
+      await (db.select(db.tracks)..where((t) => t.title.equals('S'))).get(),
+      isEmpty,
+    );
+    expect((r.recognized, r.favoritesAdded), (0, 0));
+  });
+
+  test('the heart of a backup comes back after the user removed it (a merge is a gesture of the user), dated and without tombstone', () async {
+    const key = 'youtube:abcdefghijk';
+    await SyncTombstoneRepository(db).record('favoriteStream', key, at: 1000);
+    await merge(
+      UserData(
+        createdAt: 1,
+        tracks: [
+          TrackUserData(
+            ref: TrackRef(title: 'H', artist: 'Art', streamKey: key),
+            favorite: true,
+          ),
+        ],
+      ),
+    );
+    final t = await track('H');
+    expect(t.isFavorite, isTrue);
+    expect(t.favoritedAt, isNotNull);
+    expect(
+      await SyncTombstoneRepository(db).deletedAt('favoriteStream', key),
+      isNull,
+    );
   });
 }

@@ -117,4 +117,20 @@ void main() {
     expect(formatFingerprint('A1:F3:09'), 'A1F3-09', reason: 'a short tail is its own group');
     expect(formatFingerprint(''), '');
   });
+
+  group('mine', () {
+    test('data saved before the field existed reads as not mine; the flag round-trips', () {
+      final old = TrustedDevices.decode('[{"id":"a","name":"A","fingerprint":"AB12","pairedAt":1,"autoAccept":true}]');
+      expect(old.byId('a')!.mine, isFalse);
+      final back = TrustedDevices.decode(old.setMine('a', true).encode());
+      expect(back.byId('a')!.mine, isTrue);
+      expect(back.byId('a')!.autoAccept, isTrue);
+    });
+
+    test('pairing again keeps the choice', () {
+      final d = TrustedDevices([const TrustedDevice(id: 'a', name: 'A', fingerprint: 'AB12', pairedAt: 1, mine: true)])
+          .add(const TrustedDevice(id: 'a', name: 'A', fingerprint: 'CD34', pairedAt: 2));
+      expect(d.byId('a')!.mine, isTrue);
+    });
+  });
 }

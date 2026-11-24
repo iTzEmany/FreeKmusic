@@ -335,6 +335,7 @@ Future<void> main() async {
     WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) async {
       await Future<void>.delayed(const Duration(seconds: 5));
       await covers.fillMissingThumbnails();
+      await db.pruneSyncTombstones().then<void>((_) {}, onError: (Object e, StackTrace st) => AppLog.w('tombstone prune failed', e, st));
     }),
   );
 }

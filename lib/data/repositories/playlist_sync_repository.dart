@@ -1,13 +1,27 @@
+import 'dart:math' show min;
+
 import 'package:drift/drift.dart';
 
 import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import '../../core/import_row.dart';
 import '../../services/backup/track_resolver.dart';
+import '../../services/backup/user_data.dart';
+import '../../services/share/collection_sync.dart';
 import '../../services/share/playlist_sync.dart';
+import '../../services/share/tables_sync.dart';
+import '../../services/online/youtube_service.dart' show YtResult;
+import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
+import '../db/tables.dart' show TombstoneKind, kTombstoneKinds;
+import 'backup_merge.dart' show mergeUserData;
+import 'backup_merge_tables.dart' show mergeTablesData;
 import 'backup_queries.dart' show trackRefFor;
+import 'favorite_collections_repository.dart';
 import 'hidden_playlists.dart';
+import 'sync_tombstone_repository.dart';
 import 'track_kinds.dart';
+import 'track_repository.dart';
 
 /// Reads the playlists in the shapes [planSync] needs, and writes a plan.
 class PlaylistSyncRepository {
@@ -85,6 +99,219 @@ class PlaylistSyncRepository {
     });
   }
 
+  /// What `GET /sync/favorites` sends: favourite albums and playlists (an `unknown|` album key is a local folder path: no).
+  Future<List<FavoriteCollectionData>> favorites() async => [
+        for (final f in await _db.select(_db.favoriteCollections).get())
+          if (!(f.kind == FavoriteCollectionsRepository.album && f.key.startsWith('unknown|')))
+            FavoriteCollectionData(kind: f.kind, key: f.key, addedAt: f.addedAt),
+      ];
+
+  /// What `GET /sync/streams` sends: the streamed rows (kind 2) that are saved or hearted.
+  Future<List<StreamEntry>> streams() async {
+    final rows = await (_db.select(_db.tracks)
+          ..where((t) => t.kind.equals(kStreamKind) & (t.saved.equals(true) | t.isFavorite.equals(true))))
+        .get();
+    return [
+      for (final t in rows)
+        if (keyOfStreamPath(t.path) case final key? when isStreamKey(key))
+          StreamEntry(
+            key: key,
+            title: t.title,
+            artist: t.artist,
+            album: t.album,
+            durationMs: t.durationMs,
+            albumBrowseId: t.albumBrowseId,
+            saved: t.saved,
+            addedAt: t.saved ? t.addedAt : null,
+            favorite: t.isFavorite,
+            favoritedAt: t.isFavorite ? t.favoritedAt : null,
+          ),
+    ];
+  }
+
+  /// Keys of the streamed tracks that are episodes here (kind 1, path `stream:<key>`): they cannot become streamed rows,
+  /// so a sync must not plan them ([planSync]'s `hasFile`).
+  Future<Set<String>> episodeStreamKeys() async => {
+    for (final path
+        in await (_db.selectOnly(_db.tracks)
+              ..addColumns([_db.tracks.path])
+              ..where(
+                _db.tracks.kind.equals(kEpisodeKind) &
+                    _db.tracks.path.like('stream:%'),
+              ))
+            .map((r) => r.read(_db.tracks.path)!)
+            .get())
+      ?keyOfStreamPath(path),
+  };
+
+  /// What `POST /sync/tombstones` sends: all the deletions.
+  Future<List<TombstoneData>> tombstones() async => [
+        for (final t in await SyncTombstoneRepository(_db).all())
+          if (kTombstoneKinds.contains(t.kind)) TombstoneData(kind: t.kind, key: t.key, deletedAt: t.deletedAt),
+      ];
+
+  /// Portable references of the tracks [ids] (a podcast episode has none).
+  Future<Map<int, TrackRef>> _refsOf(Set<int> ids) async {
+    final folders = {for (final f in await _db.select(_db.folders).get()) f.id: f.path};
+    final all = ids.toList(), out = <int, TrackRef>{};
+    for (var i = 0; i < all.length; i += 500) {
+      final chunk = all.sublist(i, min(i + 500, all.length));
+      for (final t in await (_db.select(_db.tracks)..where((t) => t.id.isIn(chunk) & t.kind.isNotValue(kEpisodeKind))).get()) {
+        out[t.id] = trackRefFor(t, folders);
+      }
+    }
+    return out;
+  }
+
+  /// What `GET /sync/plays` sends: the latest [kMaxSyncItems] listens (older ones stay on this device).
+  Future<List<PlayEntry>> plays() async {
+    final rows = await (_db.select(_db.plays)
+          ..orderBy([(p) => OrderingTerm.desc(p.playedAt)])
+          ..limit(kMaxSyncItems))
+        .get();
+    final refs = await _refsOf({for (final r in rows) r.trackId});
+    return [
+      for (final r in rows)
+        if (refs[r.trackId] case final ref?)
+          PlayEntry(ref: ref, playedAt: r.playedAt, msPlayed: r.msPlayed, context: r.context, contextName: r.contextName),
+    ];
+  }
+
+  /// What `GET /sync/tags` sends: the user's tags and the tags of each track.
+  Future<({List<TagEntry> tags, List<TaggedTrack> tagged})> tags() async {
+    final tags = await _db.select(_db.userTags).get();
+    final names = {for (final t in tags) t.id: t.name};
+    final byTrack = <int, List<String>>{};
+    for (final l in await _db.select(_db.trackTags).get()) {
+      if (names[l.tagId] case final n?) (byTrack[l.trackId] ??= []).add(n);
+    }
+    final refs = await _refsOf(byTrack.keys.toSet());
+    return (
+      tags: [for (final t in tags) TagEntry(name: t.name, color: t.color)],
+      tagged: limitTagged([
+        for (final e in byTrack.entries)
+          if (refs[e.key] case final ref?) TaggedTrack(ref: ref, tags: e.value),
+      ]),
+    );
+  }
+
+  /// What `POST /sync/texts` sends: a page of library tracks (kind 0) with lyrics or curiosities, after id [after];
+  /// `next` is the last id of a full page, null when it was the last one.
+  Future<({List<TextEntry> texts, int? next})> texts(int after) async {
+    final rows = await (_db.select(_db.tracks)
+          ..where((t) =>
+              t.id.isBiggerThanValue(after) &
+              t.kind.equals(kMusicKind) &
+              (t.lyricsPlain.isNotNull() | t.lyricsSynced.isNotNull() | t.curiosities.isNotNull()))
+          ..orderBy([(t) => OrderingTerm.asc(t.id)])
+          ..limit(kTextsPerPage))
+        .get();
+    final folders = {for (final f in await _db.select(_db.folders).get()) f.id: f.path};
+    return (
+      texts: [
+        for (final t in rows)
+          TextEntry(ref: trackRefFor(t, folders), plain: t.lyricsPlain, synced: t.lyricsSynced, curiosities: t.curiosities),
+      ],
+      next: rows.length == kTextsPerPage ? rows.last.id : null,
+    );
+  }
+
+  /// The id here of a track reference (null: not here), asked once per distinct track.
+  Future<int?> Function(TrackRef) _lookup(TrackResolver resolver) {
+    final tracks = TrackRepository(_db), seen = <String, int?>{};
+    return (r) async {
+      final k = refKey(r);
+      if (seen.containsKey(k)) return seen[k];
+      final key = r.streamKey;
+      return seen[k] = key == null ? resolver.resolve(r) : (await tracks.streamRow(key))?.id;
+    };
+  }
+
+  Future<List<TextEntry>> _newTexts(List<TextEntry> remote, Future<int?> Function(TrackRef) idOf) async {
+    final ids = [for (final e in remote) await idOf(e.ref)];
+    final here = <int, Track>{};
+    final wanted = {...ids.whereType<int>()}.toList();
+    for (var i = 0; i < wanted.length; i += 500) {
+      final chunk = wanted.sublist(i, min(i + 500, wanted.length));
+      for (final t in await (_db.select(_db.tracks)..where((t) => t.id.isIn(chunk))).get()) {
+        here[t.id] = t;
+      }
+    }
+    bool blank(String? s) => s == null || s.trim().isEmpty;
+    return [
+      for (var i = 0; i < remote.length; i++)
+        if (here[ids[i]] case final t?)
+          if ((blank(t.lyricsPlain) && remote[i].plain != null) ||
+              (blank(t.lyricsSynced) && remote[i].synced != null) ||
+              (blank(t.curiosities) && remote[i].curiosities != null))
+            remote[i],
+    ];
+  }
+
+  /// The texts of [remote] that fill a field empty here (a text for a track this library lacks is left out): the
+  /// filter of a page of `POST /sync/texts`, so the whole list never has to be held.
+  Future<List<TextEntry>> newTexts(List<TextEntry> remote, TrackResolver resolver) =>
+      remote.isEmpty ? Future.value(remote) : _newTexts(remote, _lookup(resolver));
+
+  /// [remote] cut to what this device lacks, by the rules of the merge that writes it ([apply]): a listen not here
+  /// (same track and moment), a tag not here, a tag of a track not here yet, a text for a field that is empty here. A
+  /// track this library does not have is left out. [plays] false (the history is off here): no listen is kept. Only
+  /// so the plan shows what would change; the merge decides.
+  Future<TablesBundle> newTables(TablesBundle remote, TrackResolver resolver, {bool plays = true}) async {
+    if (remote.isEmpty) return remote;
+    final idOf = _lookup(resolver);
+    final texts = await _newTexts(remote.texts, idOf);
+    final seen = {for (final r in await _db.select(_db.plays).get()) (r.trackId, r.playedAt)};
+    final newPlays = <PlayEntry>[];
+    for (final p in plays ? remote.plays : const <PlayEntry>[]) {
+      final id = await idOf(p.ref);
+      if (id != null && seen.add((id, p.playedAt))) newPlays.add(p);
+    }
+    final tagIds = {for (final t in await _db.select(_db.userTags).get()) t.name.toLowerCase(): t.id};
+    final linked = {for (final r in await _db.select(_db.trackTags).get()) (r.trackId, r.tagId)};
+    final tagged = <TaggedTrack>[];
+    for (final t in remote.tagged) {
+      final id = await idOf(t.ref);
+      if (id == null) continue;
+      final news = [
+        for (final name in t.tags)
+          if (!linked.contains((id, tagIds[name.toLowerCase()]))) name,
+      ];
+      if (news.isNotEmpty) tagged.add(TaggedTrack(ref: t.ref, tags: news));
+    }
+    return TablesBundle(
+      texts: texts,
+      plays: newPlays,
+      tags: [for (final t in remote.tags) if (!tagIds.containsKey(t.name.toLowerCase())) t],
+      tagged: tagged,
+    );
+  }
+
+  /// A track's play count and last play follow its listens: the larger of what it had and what its listens say
+  /// (as the backup restore does for the counters it brings), for the tracks [ids].
+  Future<void> _refreshPlayStats(Iterable<int> ids) async {
+    final all = {...ids}.toList();
+    for (var i = 0; i < all.length; i += 500) {
+      final chunk = all.sublist(i, min(i + 500, all.length));
+      await _db.customUpdate(
+        'UPDATE tracks SET '
+        'play_count = MAX(play_count, (SELECT COUNT(*) FROM plays WHERE track_id = tracks.id)), '
+        'last_played_at = MAX(COALESCE(last_played_at, 0), COALESCE((SELECT MAX(played_at) FROM plays WHERE track_id = tracks.id), 0)) '
+        'WHERE id IN (${List.filled(chunk.length, '?').join(',')})',
+        variables: [for (final id in chunk) Variable.withInt(id)],
+        updates: {_db.tracks},
+      );
+    }
+  }
+
+  /// This device's side of a sync besides the playlists, for [planSync]; [settings] are the allowed ones (`syncedSettings`).
+  Future<SyncSide> side({Map<String, Object> settings = const {}}) async => SyncSide(
+        favorites: await favorites(),
+        streams: await streams(),
+        tombstones: await tombstones(),
+        settings: settings,
+      );
+
   /// A resolver over this device's library, the one a backup restore uses.
   Future<TrackResolver> resolver({bool caseInsensitive = false}) async {
     final folders = {
@@ -112,20 +339,45 @@ class PlaylistSyncRepository {
   /// Writes the added and replaced playlists of [plan] in one transaction, so
   /// a failure leaves everything as it was. The playlist takes the other
   /// device's `updated_at`: both sides then compare equal until someone edits.
-  Future<void> apply(SyncPlan plan) {
+  ///
+  /// The rest of the plan (its collections) follows only when [applyCollections]: the caller says the user confirmed
+  /// it. Deletions and tombstones, then favourites (after the playlists, so a favourite playlist finds its uuid) and
+  /// streamed rows. Every write re-checks its date against what is here now, as the plan may be older than the
+  /// confirmation: on a tie the item stays, an item is deleted only if older than the deletion and a tombstone goes
+  /// only if the arriving item is not older. A deletion removes a row or a flag, never a file; [hasFile] says a
+  /// streamed track is already a file here (no row is made for it). The lyrics, listens and tags of the plan are
+  /// merged with the rules of a backup's merge (nothing is lost, a second run adds nothing), tracks found by [resolver]
+  /// (this library's, by default). Returns how many playlists were written. The settings of the plan are not
+  /// written here: they are not in the database.
+  Future<int> apply(
+    SyncPlan plan, {
+    bool Function(String key)? hasFile,
+    bool applyCollections = false,
+    TrackResolver? resolver,
+  }) async {
+    final tables = plan.collections.tables;
+    final found = applyCollections && !tables.isEmpty ? (resolver ?? await this.resolver()) : null;
     return _db.transaction(() async {
+      final tomb = SyncTombstoneRepository(_db);
+      var written = 0;
       for (final e in plan.toWrite) {
         final r = e.remote;
         final int playlistId;
         var kept = const <int>[];
         if (e.action == SyncAction.add) {
-          playlistId = await _db.into(_db.playlists).insert(
-              PlaylistsCompanion.insert(
-                name: r.name,
-                createdAt: r.createdAt,
-                uuid: Value(r.uuid),
-                updatedAt: Value(r.updatedAt),
-              ));
+          final gone = await tomb.deletedAt(TombstoneKind.playlist, r.uuid);
+          if (gone != null && r.updatedAt < gone) continue;
+          playlistId = await _db
+              .into(_db.playlists)
+              .insert(
+                PlaylistsCompanion.insert(
+                  name: r.name,
+                  createdAt: r.createdAt,
+                  uuid: Value(r.uuid),
+                  updatedAt: Value(r.updatedAt),
+                ),
+              );
+          await tomb.clear(TombstoneKind.playlist, r.uuid);
         } else {
           playlistId = e.local!.id;
           await (_db.update(_db.playlists)
@@ -145,15 +397,150 @@ class PlaylistSyncRepository {
                 ..where((t) => t.playlistId.equals(playlistId)))
               .go();
         }
-        final ids = [...e.trackIds, ...kept.where((id) => !e.trackIds.contains(id))];
+        written++;
+        final ids = [
+          ...e.trackIds,
+          ...kept.where((id) => !e.trackIds.contains(id)),
+        ];
         for (var i = 0; i < ids.length; i++) {
           await _db.into(_db.playlistTracks).insert(
               PlaylistTracksCompanion.insert(
                   playlistId: playlistId, trackId: ids[i], position: i));
         }
       }
-      AppLog.i('sync: ${plan.toAdd.length} playlists added, '
-          '${plan.toReplace.length} replaced');
+      if (applyCollections) {
+        await _applyCollections(plan.collections, tomb, hasFile);
+        if (found != null) {
+          await mergeTablesData(_db, tables.toBackupData(), found);
+          final idOf = _lookup(found);
+          await _refreshPlayStats([for (final p in tables.plays) ?await idOf(p.ref)]);
+          await mergeUserData(
+            _db,
+            UserData(createdAt: nowMs(), tracks: [
+              for (final t in tables.texts)
+                TrackUserData(ref: t.ref, lyricsPlain: t.plain, lyricsSynced: t.synced, curiosities: t.curiosities),
+            ]),
+            found,
+          );
+        }
+      }
+      AppLog.i(
+        'sync: ${plan.toAdd.length} playlists added, ${plan.toReplace.length} replaced'
+        '${applyCollections ? ', ${plan.collections.additions} favourites/streams added, ${plan.collections.deletes.length} deleted, '
+            '${tables.texts.length} texts, ${tables.plays.length} listens, ${tables.taggedCount} tags of tracks offered' : ''}',
+      );
+      return written;
     });
+  }
+
+  Future<void> _applyCollections(
+    CollectionPlan c,
+    SyncTombstoneRepository tomb,
+    bool Function(String key)? hasFile,
+  ) async {
+    for (final t in c.deletes) {
+      if (await _drop(t)) await tomb.record(t.kind, t.key, at: t.deletedAt);
+    }
+    for (final t in c.learned) {
+      await tomb.record(t.kind, t.key, at: t.deletedAt);
+    }
+    final uuids = {for (final p in await _db.select(_db.playlists).get()) ?p.uuid};
+    for (final f in c.favoriteAdds) {
+      if (f.kind == FavoriteCollectionsRepository.playlist && !uuids.contains(f.key)) continue;
+      final kind = f.kind == FavoriteCollectionsRepository.playlist ? TombstoneKind.favoritePlaylist : TombstoneKind.favoriteAlbum;
+      final gone = await tomb.deletedAt(kind, f.key);
+      if (gone != null && (f.addedAt ?? 0) < gone) continue;
+      await FavoriteCollectionsRepository(_db)
+          .add(f.kind, f.key, addedAt: f.addedAt);
+    }
+    final tracks = TrackRepository(_db);
+    for (final s in c.saves) {
+      await tracks.ingestStream(_resultOf(s), at: s.addedAt ?? 0, hasFile: hasFile);
+    }
+    for (final s in c.hearts) {
+      final id = await tracks.ingestStream(_resultOf(s), at: s.favoritedAt ?? 0, save: false, hasFile: hasFile);
+      if (id == null) continue;
+      final here = (await tracks.getById(id))!;
+      if (here.isFavorite && (here.favoritedAt ?? 0) >= (s.favoritedAt ?? 0)) {
+        continue; // a heart here at least as recent stays as it is
+      }
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+        TracksCompanion(
+          isFavorite: const Value(true),
+          favoritedAt: Value(s.favoritedAt),
+        ),
+      );
+      await tomb.clear(TombstoneKind.favoriteStream, s.key);
+    }
+  }
+
+  YtResult _resultOf(StreamEntry s) =>
+      streamResultOf(s.key, title: s.title, artist: s.artist, album: s.album, durationMs: s.durationMs, albumId: s.albumBrowseId);
+
+  /// Removes what [t] deletes, if it is older than the deletion (a tie keeps it). Rows and flags only: a playlist (not a
+  /// hidden one), a favourite, the `saved` or heart flag of a streamed row (kind 2, never a library file). The row stays.
+  /// True when something was removed.
+  Future<bool> _drop(TombstoneData t) async {
+    final at = t.deletedAt;
+    switch (t.kind) {
+      case TombstoneKind.playlist:
+        final p =
+            await (_db.select(_db.playlists)..where(
+                  (p) =>
+                      p.uuid.equals(t.key) &
+                      p.updatedAt.isSmallerThanValue(at) &
+                      _db.isPlaylistVisible(p),
+                ))
+                .getSingleOrNull();
+        if (p == null) return false;
+        await (_db.delete(_db.favoriteCollections)..where(
+              (f) =>
+                  f.kind.equals(FavoriteCollectionsRepository.playlist) &
+                  f.key.equals(t.key),
+            ))
+            .go();
+        await (_db.delete(_db.playlists)..where((x) => x.id.equals(p.id))).go();
+        return true;
+      case TombstoneKind.favoriteAlbum || TombstoneKind.favoritePlaylist:
+        final kind = t.kind == TombstoneKind.favoritePlaylist
+            ? FavoriteCollectionsRepository.playlist
+            : FavoriteCollectionsRepository.album;
+        return await (_db.delete(_db.favoriteCollections)..where(
+                  (f) =>
+                      f.kind.equals(kind) &
+                      f.key.equals(t.key) &
+                      f.addedAt.isSmallerThanValue(at),
+                ))
+                .go() >
+            0;
+      case TombstoneKind.savedStream:
+        return await (_db.update(_db.tracks)..where(
+                  (r) =>
+                      r.path.equals(streamPathOf(t.key)) &
+                      r.kind.equals(kStreamKind) &
+                      r.saved.equals(true) &
+                      r.addedAt.isSmallerThanValue(at),
+                ))
+                .write(const TracksCompanion(saved: Value(false))) >
+            0;
+      case TombstoneKind.favoriteStream:
+        return await (_db.update(_db.tracks)..where(
+                  (r) =>
+                      r.path.equals(streamPathOf(t.key)) &
+                      r.kind.equals(kStreamKind) &
+                      r.isFavorite.equals(true) &
+                      (r.favoritedAt.isNull() |
+                          r.favoritedAt.isSmallerThanValue(at)),
+                ))
+                .write(
+                  const TracksCompanion(
+                    isFavorite: Value(false),
+                    favoritedAt: Value(null),
+                  ),
+                ) >
+            0;
+      default:
+        return false;
+    }
   }
 }

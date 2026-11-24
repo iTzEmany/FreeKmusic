@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart' show AppLifecycleListener, AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
@@ -31,19 +32,24 @@ class SettingsNotifier extends Notifier<AppSettings> {
         AppLog.w('save settings failed', e, st);
       });
     }
-    void save() {
-      ref.read(settingsStoreProvider).writeSettings(state).catchError((
-        Object e,
-        StackTrace st,
-      ) {
-        AppLog.w('save settings failed', e, st);
-      });
-    }
-
     _debounce?.cancel();
-    // karaokeOn is saved at once: a debounced write is lost when the app is closed (D-664).
-    if (before.karaokeOn != state.karaokeOn) return save();
-    _debounce = Timer(const Duration(milliseconds: 400), save);
+    _debounce = Timer(const Duration(milliseconds: 400), _save);
+  }
+
+  /// Writes a pending change now instead of waiting for the debounce.
+  void flush() {
+    if (_debounce?.isActive != true) return;
+    _debounce!.cancel();
+    _save();
+  }
+
+  void _save() {
+    ref.read(settingsStoreProvider).writeSettings(state).catchError((
+      Object e,
+      StackTrace st,
+    ) {
+      AppLog.w('save settings failed', e, st);
+    });
   }
 }
 
@@ -136,3 +142,16 @@ class ShazamAutoDownloadNotifier extends Notifier<bool> {
 
 final shazamAutoDownloadProvider =
     NotifierProvider<ShazamAutoDownloadNotifier, bool>(ShazamAutoDownloadNotifier.new);
+
+/// Flushes a pending settings write when the app leaves the foreground (D-664).
+/// Listened by the app root, so the notifier itself needs no binding.
+final settingsFlushOnPauseProvider = Provider<void>((ref) {
+  final life = AppLifecycleListener(
+    onStateChange: (s) {
+      if (s == AppLifecycleState.paused || s == AppLifecycleState.detached) {
+        ref.read(settingsProvider.notifier).flush();
+      }
+    },
+  );
+  ref.onDispose(life.dispose);
+});

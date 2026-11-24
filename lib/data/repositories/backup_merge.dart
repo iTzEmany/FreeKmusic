@@ -4,12 +4,14 @@ import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import '../../core/text_utils.dart';
 import '../../services/tags/tag_reader.dart' show splitGenres;
 import '../../services/backup/track_resolver.dart';
 import '../../services/backup/user_data.dart';
 import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
+import '../db/tables.dart' show TombstoneKind;
 import 'artist_country_repository.dart';
 import 'backup_merge_helpers.dart';
 import 'backup_merge_tables.dart';
@@ -17,6 +19,7 @@ import 'artist_alias_repository.dart';
 import 'artist_info_repository.dart';
 import 'credits_repository.dart';
 import 'favorite_collections_repository.dart';
+import 'sync_tombstone_repository.dart';
 import 'track_genre_repository.dart';
 import 'track_kinds.dart';
 import 'track_repository.dart';
@@ -97,29 +100,43 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
   }
 
   return db.transaction(() async {
+    final genreRepo = TrackGenreRepository(db);
+    final newFavorites = <int>[]; // hearts go through setFavoriteMany: dated, and the favoriteStream tombstone goes
     for (final u in data.tracks) {
-      // A streamed track has no file to find: its shadow row is made here, and marked saved when the backup says so.
-      final id = u.ref.streamKey == null ? resolver.resolve(u.ref) : await _resolveItem(trackRepo, resolver, u.ref);
+      final key = u.ref.streamKey;
+      if (u.saved && key != null && isStreamKey(key)) {
+        // A streamed track has no file to find. The one door for streamed rows groups it with the saved tracks of its
+        // album and dates it with the backup's date (out of «recent»). A merge is a gesture of the user: it counts
+        // as now, so it brings back what was removed here. Only a deletion from a clock ahead of this one stops it,
+        // and then no row is made nor counted.
+        final done = await trackRepo.ingestStream(
+          streamResultOf(
+            key,
+            title: u.ref.title,
+            artist: u.ref.artist,
+            album: u.album,
+            durationMs: u.ref.durationMs,
+            albumId: u.albumBrowseId,
+          ),
+          at: nowMs(),
+          date: u.addedAt,
+        );
+        if (done == null) continue;
+      }
+      // A streamed track that is only hearted: its shadow row is made here.
+      final id = key == null
+          ? resolver.resolve(u.ref)
+          : await _resolveItem(trackRepo, resolver, u.ref);
       if (id == null) {
         missing(u.ref);
         continue;
-      }
-      final key = u.ref.streamKey;
-      if (u.saved && key != null) {
-        final wasSaved = (await trackRepo.getById(id))?.saved ?? false;
-        // saveStream groups the row with the saved tracks of its album; the backup's date keeps it out of «recent».
-        await trackRepo.saveStream(streamResultOf(key,
-            title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs, albumId: u.albumBrowseId));
-        if (!wasSaved && u.addedAt != null) {
-          await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(TracksCompanion(addedAt: Value(u.addedAt!)));
-        }
       }
       final t = await (db.select(db.tracks)..where((r) => r.id.equals(id))).getSingleOrNull();
       if (t == null) continue;
       report.recognized++;
       var upd = const TracksCompanion();
       if (u.favorite && !t.isFavorite) {
-        upd = upd.copyWith(isFavorite: const Value(true));
+        newFavorites.add(id);
         report.favoritesAdded++;
       }
       final e = u.edit;
@@ -131,7 +148,7 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
             ? streamAlbumKey(albumArtist: albumArtist, artist: artist, album: album)
             : computeAlbumKey(albumArtist: albumArtist, artist: artist, album: album, directory: p.dirname(t.path));
         // A row with an album pick leaves it behind when the edit moves it to another album.
-        await TrackRepository(db).settleMovedCover(t, newKey);
+        await trackRepo.settleMovedCover(t, newKey);
         upd = upd.copyWith(
           title: Value(e.title.trim()),
           artist: Value(artist),
@@ -173,7 +190,6 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
       }
       await (db.update(db.tracks)..where((r) => r.id.equals(id))).write(upd);
       // A hand edit here sets the genres from its text; otherwise the backup's only fill a track that has none.
-      final genreRepo = TrackGenreRepository(db);
       if (upd.userEdited.present) {
         // The backup's own list wins when it starts with the genre written by hand.
         final text = splitGenres([e!.genre]);
@@ -186,6 +202,8 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
         await CreditsRepository(db).saveIfNone(id, u.credits, u.details);
       }
     }
+
+    await trackRepo.setFavoriteMany(newFavorites, true);
 
     final local = await db.select(db.playlists).get();
     final names = {for (final p in local) p.name};
@@ -245,7 +263,10 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
           createdAt: pl.createdAt,
           coverKey: Value(pl.coverKey),
           uuid: keepUuid ? Value(pl.uuid) : const Value.absent()));
-      if (keepUuid) uuids.add(pl.uuid!);
+      if (keepUuid) {
+        uuids.add(pl.uuid!);
+        await SyncTombstoneRepository(db).clear(TombstoneKind.playlist, pl.uuid!);
+      }
       var position = 0;
       for (final id in ids) {
         await db.into(db.playlistTracks).insert(

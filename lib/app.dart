@@ -58,6 +58,7 @@ class CodecoreApp extends ConsumerWidget {
     ref.listen(streamEnrichTriggerProvider, (_, _) {});
     ref.watch(outputRouteSyncProvider);
     ref.listen(volumeZeroPauseProvider, (_, _) {});
+    ref.listen(settingsFlushOnPauseProvider, (_, _) {});
     ref.watch(importNotificationProvider);
     // Checks for new releases of followed artists (starts once settled).
     ref.watch(releaseCheckControllerProvider);

@@ -8,13 +8,15 @@ import 'package:codecore/data/repositories/folder_repository.dart';
 import 'package:codecore/data/repositories/hidden_playlists.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/favorite_collections_repository.dart';
+import 'package:codecore/core/clock.dart';
+import 'package:codecore/data/repositories/sync_tombstone_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/track_ops.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -618,6 +620,15 @@ void main() {
       expect((await pl.watchTracks(p).first).map((t) => t.id), [inList]);
     });
 
+    test('cache cleanup keeps a hearted shadow row (a favourite travels in the sync)', () async {
+      final hearted = await repo.ensureStreamRow(yt('hearted'));
+      final plain = await repo.ensureStreamRow(yt('plain'));
+      await repo.setFavoriteMany([hearted], true);
+      expect(await repo.deleteUnplayedStreamRows(), 1);
+      expect(await repo.getById(plain), equals(null));
+      expect((await repo.getById(hearted))?.isFavorite, isTrue);
+    });
+
     test('saveStream makes a saved shadow row with an album key, setSaved toggles, a saved row is kept', () async {
       final r = YtResult(id: 'a', title: 'T', channel: 'Ch', duration: null, artists: ['Art'], album: 'Alb');
       final id = await repo.saveStream(r);
@@ -808,18 +819,137 @@ void main() {
     });
   });
 
-  test('Retry: invalidating tracksProvider re-reads a plain stream that failed', () async {
-    var calls = 0;
-    final c = ProviderContainer(overrides: [
-      trackRepositoryProvider.overrideWithValue(_FlakyRepo(db, () => calls++ == 0)),
-    ]);
-    addTearDown(c.dispose);
-    const q = TrackQuery();
-    c.listen(tracksProvider(q), (_, _) {});
-    await expectLater(c.read(tracksProvider(q).future), throwsA(anything));
-    c.invalidate(tracksProvider(q));
-    expect(await c.read(tracksProvider(q).future), isEmpty);
-    expect(calls, 2, reason: 'one retry, no loop');
+  test(
+    'Retry: invalidating tracksProvider re-reads a plain stream that failed',
+    () async {
+      var calls = 0;
+      final c = ProviderContainer(
+        overrides: [
+          trackRepositoryProvider.overrideWithValue(
+            _FlakyRepo(db, () => calls++ == 0),
+          ),
+        ],
+      );
+      addTearDown(c.dispose);
+      const q = TrackQuery();
+      c.listen(tracksProvider(q), (_, _) {});
+      await expectLater(c.read(tracksProvider(q).future), throwsA(anything));
+      c.invalidate(tracksProvider(q));
+      expect(await c.read(tracksProvider(q).future), isEmpty);
+      expect(calls, 2, reason: 'one retry, no loop');
+    },
+  );
+
+  group('ingestStream, the one door for a streamed track from outside', () {
+    const key = 'youtube:abcdefghijk';
+    late int clock;
+    setUp(() {
+      clock = 10000;
+      nowMsOverride = () => clock;
+    });
+    tearDown(() => nowMsOverride = null);
+    YtResult r() => YtResult(
+      id: 'abcdefghijk',
+      title: 'Song',
+      channel: 'Ch',
+      duration: null,
+    );
+    Future<void> deleted(String kind, int at) =>
+        SyncTombstoneRepository(db).record(kind, key, at: at);
+
+    test('a deletion made here at or after the arrival stops it; on a tie the arriving item stays', () async {
+      await deleted('savedStream', 500);
+      expect(await repo.ingestStream(r(), at: 499), isNull);
+      expect(
+        await repo.streamRow(key),
+        isNull,
+        reason: 'no row is made for what is discarded',
+      );
+      expect(
+        await repo.ingestStream(r(), at: 0),
+        isNull,
+        reason: 'no date = older than any deletion',
+      );
+      final id = await repo.ingestStream(r(), at: 500);
+      expect(id, isNotNull);
+      expect(
+        await SyncTombstoneRepository(db).deletedAt('savedStream', key),
+        isNull,
+        reason: 'it is back: the tombstone goes',
+      );
+    });
+
+    test('a saved row takes the date of the arrival once; an unknown date (0) keeps the date of now; saved twice does not redate', () async {
+      final id = await repo.ingestStream(r(), at: 0);
+      expect((await repo.getById(id!))!.addedAt, 10000);
+      await repo.setSaved(key, false);
+      clock = 20000;
+      await repo.ingestStream(r(), at: 15000);
+      expect((await repo.streamRow(key))!.addedAt, 15000);
+      await repo.ingestStream(r(), at: 16000);
+      expect(
+        (await repo.streamRow(key))!.addedAt,
+        15000,
+        reason: 'it was saved already: the date stays',
+      );
+    });
+
+    test('a heart is judged by the favoriteStream tombstone, a save by the savedStream one', () async {
+      await deleted('favoriteStream', 500);
+      expect(await repo.ingestStream(r(), at: 100, save: false), isNull);
+      expect(await repo.streamRow(key), isNull);
+      final saved = await repo.ingestStream(r(), at: 100);
+      expect(
+        saved,
+        isNotNull,
+        reason: 'the heart tombstone says nothing about saving',
+      );
+      await repo.setSaved(key, false); // leaves its own savedStream tombstone
+      final hearted = await repo.ingestStream(r(), at: 1000, save: false);
+      expect(
+        hearted,
+        saved,
+        reason: 'the saved tombstone says nothing about hearting',
+      );
+      expect(
+        (await repo.getById(hearted!))!.saved,
+        isFalse,
+        reason: 'a heart alone does not save the row',
+      );
+    });
+
+    test('a file already here (hasFile) writes nothing; an episode on the same path is never a streamed row', () async {
+      expect(
+        await repo.ingestStream(r(), at: 100, hasFile: (k) => k == key),
+        isNull,
+      );
+      expect(
+        await repo.ingestStream(
+          r(),
+          at: 100,
+          save: false,
+          hasFile: (k) => k == key,
+        ),
+        isNull,
+      );
+      expect(await repo.streamRow(key), isNull);
+      await db
+          .into(db.tracks)
+          .insert(
+            TracksCompanion.insert(
+              path: 'stream:$key',
+              title: 'Episode',
+              albumKey: 'k',
+              format: 'mp3',
+              sizeBytes: 1,
+              mtimeMs: 1,
+              addedAt: 1,
+              kind: const Value(1),
+            ),
+          );
+      expect(await repo.ingestStream(r(), at: 100), isNull);
+      expect(await repo.ingestStream(r(), at: 100, save: false), isNull);
+    });
   });
 }
 

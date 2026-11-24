@@ -116,6 +116,8 @@ Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio 
 
 ### Segnalazione (`ReportIssueScreen`, fase 143)
 
+- **Anteprima del sync (146.7)**: `SyncPreviewDialog` è uno `StatefulWidget` che restituisce `SyncChoice` (decisione + chiavi delle impostazioni spuntate). Righe di riepilogo una per tipo, `CheckboxListTile` con etichetta e «qui: x, lì: y» (leggibile da TalkBack), il pulsante che cancella lo dice nel testo.
+
 Larghezza massima 600 dp, scelta Bug/Idea senza icone, descrizione da 4 a 6 righe, anteprima delle informazioni tecniche alta al massimo 132 dp con scorrimento (nascosta finché non sono lette). Pulsanti in `Wrap` («Invia» solo con `kReportEndpoint` non vuoto, «Copia testo», «Apri su GitHub»); a campi incompleti una riga spiega perché sono spenti. Si apre vuota dalle Impostazioni o precompilata (`title:`, `details:`) dal tasto «Segnala un problema» di `LogDetail` (voci fallite o fermate, dettagli redatti con `redactLog`). Titolo e dettagli precompilati sono redatti con nome del dispositivo. «Invia» attende le informazioni tecniche se ancora in caricamento; se il log è stato accorciato lo dice (`reportLogShortened`). Dopo l'invio riuscito mostra il link della issue.
 
 ### Accessibilità e TalkBack

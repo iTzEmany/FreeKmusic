@@ -15,12 +15,14 @@ import '../../services/library/rules/rule_country.dart';
 import '../../services/library/rules/rule_sql.dart';
 import '../../services/online/youtube_service.dart' show YtResult;
 import '../db/app_database.dart';
+import '../db/tables.dart' show TombstoneKind;
 import 'duplicate_repository.dart';
 import 'artist_info_repository.dart' show ArtistInfoRepository;
 import 'hidden_playlists.dart';
 import 'light_tracks.dart';
 import 'favorite_collections_repository.dart';
 import 'track_genre_repository.dart';
+import 'sync_tombstone_repository.dart';
 import 'track_kinds.dart';
 
 enum SortOption { defaultOrder, title, artist, album, year, addedAt, duration }
@@ -154,12 +156,13 @@ class TrackRepository {
 
   /// Deletes the shadow rows with no plays, except the [keepKeys] ones (still
   /// in the cache). Rows with plays stay (D-81), and so do the ones in a playlist
-  /// (D-524). Returns how many went.
+  /// (D-524) and the hearted ones (their heart travels with a sync). Returns how many went.
   Future<int> deleteUnplayedStreamRows({Set<String> keepKeys = const {}}) =>
       (_db.delete(_db.tracks)..where(
             (t) =>
                 t.kind.equals(kStreamKind) &
                 t.saved.equals(false) &
+                t.isFavorite.equals(false) &
                 t.path.isNotIn([for (final k in keepKeys) streamPathOf(k)]) &
                 notExistsQuery(
                   _db.select(_db.plays)
@@ -240,6 +243,8 @@ class TrackRepository {
         missing: const Value(false),
       ),
     );
+    await SyncTombstoneRepository(_db).clear(TombstoneKind.savedStream, key);
+    if (row.isFavorite) await SyncTombstoneRepository(_db).clear(TombstoneKind.favoriteStream, key);
     await FavoriteCollectionsRepository(_db).followAlbumKey(row.albumKey, albumKey);
     await settleMovedCover(row, albumKey);
     return row;
@@ -255,6 +260,7 @@ class TrackRepository {
   }
 
   /// Puts [before] (as returned by [demoteToStream]) back, when the file could not be deleted.
+  /// shortcut: the tombstones cleared by [demoteToStream] are not put back (a rare failed delete; the peer's copy wins next sync).
   Future<void> restoreRow(Track before) => _db.transaction(() async {
     final now = await getById(before.id);
     await _db.update(_db.tracks).replace(before);
@@ -312,7 +318,14 @@ class TrackRepository {
         missing: const Value(false),
       ),
     );
-    await settleMovedCover(row!, albumKey);
+    // The old key is gone from here (the peer must drop it), the new one is back.
+    final tomb = SyncTombstoneRepository(_db);
+    for (final (on, kind) in [(row!.saved, TombstoneKind.savedStream), (row.isFavorite, TombstoneKind.favoriteStream)]) {
+      if (!on) continue;
+      await tomb.record(kind, oldKey);
+      await tomb.clear(kind, newKey);
+    }
+    await settleMovedCover(row, albumKey);
     return true;
     });
     if (gone != null) {
@@ -368,10 +381,31 @@ class TrackRepository {
   });
 
   /// Returns how many rows changed.
-  Future<int> setSaved(String key, bool saved) =>
-      (_db.update(_db.tracks)
-            ..where((t) => t.path.equals(streamPathOf(key)) & t.kind.equals(kStreamKind)))
-          .write(TracksCompanion(saved: Value(saved)));
+  /// Unsaving a saved row leaves a `savedStream` tombstone (same transaction); saving clears it.
+  Future<int> setSaved(String key, bool saved) => _db.transaction(() async {
+    final was = (await streamRow(key))?.saved;
+    final n = await (_db.update(_db.tracks)
+          ..where((t) => t.path.equals(streamPathOf(key)) & t.kind.equals(kStreamKind)))
+        .write(TracksCompanion(saved: Value(saved)));
+    if (n > 0) {
+      final tomb = SyncTombstoneRepository(_db);
+      if (saved) {
+        await tomb.clear(TombstoneKind.savedStream, key);
+      } else if (was == true) {
+        await tomb.record(TombstoneKind.savedStream, key);
+      }
+    }
+    return n;
+  });
+
+  /// [setSaved]\(false) of many rows in one transaction; returns how many changed.
+  Future<int> unsaveMany(List<String> keys) => _db.transaction(() async {
+    var n = 0;
+    for (final k in keys) {
+      n += await setSaved(k, false);
+    }
+    return n;
+  });
 
   /// Cache keys (`<source>:<id>`) of the saved streamed tracks: «already in the library» for the online rows.
   Stream<Set<String>> watchSavedStreamKeys() =>
@@ -420,7 +454,43 @@ class TrackRepository {
         addedAt: row.saved ? const Value.absent() : Value(nowMs()),
       ),
     );
+    await SyncTombstoneRepository(_db).clear(TombstoneKind.savedStream, r.indexKey);
     await settleMovedCover(row, key);
+    return id;
+  });
+
+  /// The one door for a streamed track that arrives from outside (LAN sync, offer, backup merge): nothing
+  /// is written when a file of it is already here ([hasFile], by key) or when what the user deleted here
+  /// (the `savedStream` tombstone, or `favoriteStream` when not [save]) is at least as recent as the
+  /// arrival [at] (epoch ms; 0 = unknown, older than any deletion; a tie keeps the arrival). With [save] the row is
+  /// saved and, if it was not before, dated [date] (default [at]); otherwise it is only created (the caller hearts it).
+  /// Returns the row id, or null when nothing was written.
+  Future<int?> ingestStream(
+    YtResult r, {
+    required int at,
+    int? date,
+    bool save = true,
+    bool Function(String key)? hasFile,
+  }) => _db.transaction(() async {
+    final key = r.indexKey;
+    if (hasFile?.call(key) ?? false) return null;
+    final gone = await SyncTombstoneRepository(_db).deletedAt(
+      save ? TombstoneKind.savedStream : TombstoneKind.favoriteStream,
+      key,
+    );
+    if (gone != null && at < gone) return null;
+    if (!save) {
+      final id = await ensureStreamRow(r);
+      return (await getById(id))?.kind == kStreamKind ? id : null;
+    }
+    final wasSaved = (await streamRow(key))?.saved ?? false;
+    final id = await saveStream(r);
+    final when = date ?? at;
+    if (id != null && !wasSaved && when > 0) {
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+        TracksCompanion(addedAt: Value(when)),
+      );
+    }
     return id;
   });
 
@@ -1198,8 +1268,7 @@ class TrackRepository {
             ..orderBy([(t) => OrderingTerm.asc(t.path)]))
           .watch();
 
-  Future<void> deleteTrack(int id) =>
-      (_db.delete(_db.tracks)..where((t) => t.id.equals(id))).go();
+  Future<void> deleteTrack(int id) => deleteTracks([id]);
 
   /// Forgets cover info (not the hand-picked ones) and forces the next scan to re-read every file.
   Future<void> resetCovers() async {
@@ -1249,10 +1318,7 @@ class TrackRepository {
         TracksCompanion(userEdited: Value(value)),
       );
 
-  Future<void> setFavorite(int id, bool value) =>
-      (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
-        TracksCompanion(isFavorite: Value(value)),
-      );
+  Future<void> setFavorite(int id, bool value) => setFavoriteMany([id], value);
 
   /// Stores the lyrics of one track; a missing synced version clears the column.
   /// [byUser]: the user chose or wrote them, so the enrichment never replaces them.
@@ -1349,14 +1415,30 @@ class TrackRepository {
         TracksCompanion(curiosities: Value(text)),
       );
 
-  /// Sets the favourite flag of many tracks in one transaction.
+  /// Sets the favourite flag of many tracks in one transaction. A heart put on is dated (`favorited_at`)
+  /// and clears the `favoriteStream` tombstone; one taken off a streamed row leaves it (D-708).
   Future<void> setFavoriteMany(List<int> ids, bool value) async {
     if (ids.isEmpty) return;
     await _db.transaction(() async {
       for (final chunk in _chunks(ids, 500)) {
+        final changing = (_db.tracks.id.isIn(chunk) & _db.tracks.isFavorite.equals(!value));
+        final streams = await (_db.selectOnly(_db.tracks)
+              ..addColumns([_db.tracks.path])
+              ..where(changing & _db.tracks.kind.equals(kStreamKind)))
+            .map((r) => r.read(_db.tracks.path)!)
+            .get();
+        if (value) {
+          await (_db.update(_db.tracks)..where((t) => changing)).write(TracksCompanion(favoritedAt: Value(nowMs())));
+        }
         await (_db.update(_db.tracks)..where((t) => t.id.isIn(chunk))).write(
           TracksCompanion(isFavorite: Value(value)),
         );
+        final tomb = SyncTombstoneRepository(_db);
+        for (final path in streams) {
+          final key = keyOfStreamPath(path);
+          if (key == null) continue;
+          await (value ? tomb.clear(TombstoneKind.favoriteStream, key) : tomb.record(TombstoneKind.favoriteStream, key));
+        }
       }
     });
   }
@@ -1384,6 +1466,19 @@ class TrackRepository {
     return _db.transaction(() async {
       var removed = 0;
       for (final chunk in _chunks(ids, 500)) {
+        // A saved streamed row leaves the library: tombstone. A file row (kind 0) never gets one.
+        final t = _db.tracks;
+        final streams = await (_db.selectOnly(t)
+              ..addColumns([t.path, t.saved, t.isFavorite])
+              ..where(t.id.isIn(chunk) & t.kind.equals(kStreamKind) & (t.saved.equals(true) | t.isFavorite.equals(true))))
+            .get();
+        final tomb = SyncTombstoneRepository(_db);
+        for (final r in streams) {
+          final key = keyOfStreamPath(r.read(t.path)!);
+          if (key == null) continue;
+          if (r.read(t.saved)!) await tomb.record(TombstoneKind.savedStream, key);
+          if (r.read(t.isFavorite)!) await tomb.record(TombstoneKind.favoriteStream, key);
+        }
         removed += await (_db.delete(
           _db.tracks,
         )..where((t) => t.id.isIn(chunk))).go();

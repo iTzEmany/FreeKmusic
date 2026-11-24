@@ -2,6 +2,7 @@ import 'package:codecore/services/online/credits.dart';
 import 'dart:convert';
 
 import 'package:codecore/services/backup/user_data.dart';
+import 'package:codecore/services/share/collection_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 UserData sample() => const UserData(
@@ -117,5 +118,53 @@ void main() {
     final back = TrackUserData.fromJson(jsonDecode(jsonEncode(t.toJson())) as Map<String, dynamic>);
     expect((back.coverSource, back.coverKey), (0, 'auto_k'));
     expect(TrackUserData.fromJson({'ref': {'title': 'a'}}).coverKey, isNull);
+  });
+
+  const uuid = '123e4567-e89b-42d3-a456-426614174000';
+  final now = DateTime.now().millisecondsSinceEpoch;
+  List<TombstoneData> parse(List<Object?> l) => latestTombstones(l);
+
+  test('bad tombstone entries are dropped', () {
+    final bad = parse([
+      {'kind': 'nope', 'key': uuid, 'deletedAt': 1},
+      {'kind': 'stream', 'key': 'youtube:abcdefghijk', 'deletedAt': 1},
+      {'kind': 'playlist', 'key': '', 'deletedAt': 1},
+      {'kind': 'playlist', 'key': uuid, 'deletedAt': 'x'},
+      {'kind': 'playlist', 'key': uuid, 'deletedAt': 2},
+      5,
+    ]);
+    expect(bad.map((e) => e.deletedAt), [2]);
+  });
+
+  test('a tombstone dated zero, negative or more than a day ahead is dropped', () {
+    final day = const Duration(days: 1).inMilliseconds;
+    expect(parse([
+      for (final at in [0, -5, now + 2 * day]) {'kind': 'playlist', 'key': uuid, 'deletedAt': at},
+    ]), isEmpty);
+    expect(parse([{'kind': 'playlist', 'key': uuid, 'deletedAt': now}]), hasLength(1));
+  });
+
+  test('a tombstone key must fit its kind', () {
+    expect(parse([
+      {'kind': 'favoriteAlbum', 'key': 'unknown|/music', 'deletedAt': 1},
+      {'kind': 'savedStream', 'key': 'youtube:short', 'deletedAt': 1},
+      {'kind': 'favoriteStream', 'key': 'nothing', 'deletedAt': 1},
+      {'kind': 'playlist', 'key': 'not-a-uuid', 'deletedAt': 1},
+      {'kind': 'favoritePlaylist', 'key': 'not-a-uuid', 'deletedAt': 1},
+    ]), isEmpty);
+    expect(parse([
+      {'kind': 'favoriteAlbum', 'key': 'artist|album', 'deletedAt': 1},
+      {'kind': 'favoriteStream', 'key': 'youtube:abcdefghijk', 'deletedAt': 1},
+      {'kind': 'favoritePlaylist', 'key': uuid, 'deletedAt': 1},
+    ]), hasLength(3));
+  });
+
+  test('a repeated (kind, key) keeps the highest deletedAt', () {
+    final r = parse([
+      {'kind': 'playlist', 'key': uuid, 'deletedAt': 5},
+      {'kind': 'playlist', 'key': uuid, 'deletedAt': 9},
+      {'kind': 'playlist', 'key': uuid, 'deletedAt': 7},
+    ]);
+    expect(r.map((e) => e.deletedAt), [9]);
   });
 }

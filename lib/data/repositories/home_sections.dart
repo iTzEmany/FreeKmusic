@@ -1,4 +1,5 @@
 import '../db/app_database.dart';
+import '../play_context_kind.dart';
 import 'library_entries.dart';
 import 'library_queries.dart';
 import 'track_kinds.dart';
@@ -64,16 +65,26 @@ class ResumeItem {
   final int? queueIndex, queueLength;
 }
 
+/// The area a play context belongs to; radio is read from the stations (null). A kind this version does not know reads as the library.
+ResumeArea? resumeAreaOf(PlayContextKind kind) => switch (kind) {
+  PlayContextKind.album => ResumeArea.album,
+  PlayContextKind.playlist => ResumeArea.playlist,
+  PlayContextKind.radio => null,
+  PlayContextKind.podcast => ResumeArea.podcast,
+  PlayContextKind.daylist => ResumeArea.daylist,
+  _ => ResumeArea.track,
+};
+
 /// The latest of each area, the most recent first. [plays] are the latest
-/// play per area; an album or playlist play (with its context [name]) finds its
+/// play per context kind (its area is [resumeAreaOf]; radio plays are left out); an album or playlist play (with its context [name]) finds its
 /// entry in [entries], and without one the area falls back to the entry played
 /// last (a track of it, in any context). The playing queue wins its own area
-/// ([queueArea]) when that is track, podcast or daylist.
+/// ([queueKind]) when that is track, podcast or daylist.
 List<ResumeItem> lastPerArea({
   Track? current,
   List<Track> queue = const [],
-  ResumeArea? queueArea,
-  List<({ResumeArea area, Track track, int at, String? name})> plays = const [],
+  PlayContextKind? queueKind,
+  List<({PlayContextKind kind, Track track, int at, String? name})> plays = const [],
   List<Track> resumable = const [],
   List<LibraryEntry> entries = const [],
   List<SavedRadio> radios = const [],
@@ -91,6 +102,11 @@ List<ResumeItem> lastPerArea({
 
   // Album, playlist and radio tiles need their entry/station: they come from [entries]/[radios].
   final fromPlays = <ResumeArea>{};
+  final queueArea = queueKind == PlayContextKind.radio
+      ? ResumeArea.radio
+      : queueKind == null
+      ? null
+      : resumeAreaOf(queueKind);
   final playingArea = queueArea ?? (current == null ? null : ofTrack(current));
   if (current != null &&
       index >= 0 &&
@@ -118,7 +134,10 @@ List<ResumeItem> lastPerArea({
     return null;
   }
 
-  for (final p in plays) {
+  for (final play in plays) {
+    final area = resumeAreaOf(play.kind);
+    if (area == null) continue;
+    final p = (area: area, track: play.track, at: play.at, name: play.name);
     if (p.area == ResumeArea.album || p.area == ResumeArea.playlist) {
       final e = entryOf(p.area, p.track, p.name);
       if (e == null) continue;

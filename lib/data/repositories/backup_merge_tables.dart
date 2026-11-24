@@ -38,10 +38,21 @@ Future<TablesMergeReport> mergeBackupTables(
 }) async {
   // Synchronous sqlite I/O: off the UI isolate. The data is plain maps and TrackRefs.
   final data = await readBackupDbOffThread(backupDb);
-  final report = TablesMergeReport()..backupDbUnreadable = data.unreadable;
   if (data.error != null) AppLog.e('backup db unreadable: ${data.error}');
   // Which cover files exist, listed once off the UI isolate.
   final covers = coversDir == null ? const <String>{} : await _coverNames(coversDir);
+  return mergeTablesData(db, data, resolver, covers: covers);
+}
+
+/// The merge of [mergeBackupTables] over rows already read: the backup's file, or what a device of the user
+/// sends in a sync (plays, tags), so both follow the same rules. [covers]: the cover files that exist.
+Future<TablesMergeReport> mergeTablesData(
+  AppDatabase db,
+  BackupDbData data,
+  TrackResolver resolver, {
+  Set<String> covers = const {},
+}) async {
+  final report = TablesMergeReport()..backupDbUnreadable = data.unreadable;
   final repo = TrackRepository(db);
   return db.transaction(() async {
     // Backup track id -> local id; unresolved ones are left out. A streamed track

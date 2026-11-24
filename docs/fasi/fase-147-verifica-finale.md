@@ -83,3 +83,18 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - m3u8 cancellato a fine condivisione; su desktop negli appunti il testo leggibile, non il corpo `#EXTM3U`. CSP della pagina senza `unsafe-inline` (script in `main.js`). In `IncomingBridge.kt` controllo anche del percorso e un tetto a `pendingTexts`.
 - Brano singolo da link senza rete: Cerca mostra tre messaggi di rete e resta in errore finché non si preme Riprova.
 - Da provare (Mi A3 o Motorola): importazione completa da link con yt-dlp che risponde (sul Mi A3 le ricerche vanno in timeout dopo 45 s); condivisione di una playlist con più di 50 brani in streaming (file m3u8); App Link verificato con l'APK di release (`pm get-app-links`); «Apri in FreeKmusic» toccato dalla pagina in un browser vero; condivisione su WhatsApp (utente).
+
+## Da controllare (review e scheggia della fase 146)
+- Parità al millisecondo: due modifiche della stessa playlist con lo stesso `updatedAt` su due dispositivi non convergono (1 caso su 300 nel fuzz a passo 0); serve un criterio di spareggio deterministico (es. uuid del dispositivo).
+- `/sync/plays` rimanda ogni volta gli ultimi 20000 ascolti: aggiungere un `since` nel corpo (anche i tombstone ora mandano tutto).
+- `hasFile` viene dall'indice dei download in memoria; i cuori su brani che qui sono file non viaggiano.
+- Annullare un cuore messo per sbaglio lascia un tombstone `favoriteStream` datato adesso (caso accettato).
+- Prova reale (Mi A3 e Redmi come «miei», mai il Motorola): «Sincronizza ora» con aggiunte e rimozioni, conferma, impostazioni scelte, dispositivo non «mio» che porta solo playlist.
+- R2: l'anteprima si calcola con `apply` in una transazione annullata, oppure con un helper `olderThan` comune (oggi la precedenza è ripetuta in 7 punti).
+- R3: una sola `GET /sync/collections` (più `/texts` e `/want`) prima del primo rilascio con la 146, invece delle sei rotte separate.
+- R4: `planPlaylistSync` in `PlaylistSyncRepository.plan`, usato da hub e simulazione, con un solo `hasFile` (oggi il piano include gli episodi, `apply` no) e `recordHistory` letto una volta.
+- R9: dividere o rinominare `PlaylistSyncRepository` (`DeviceSyncRepository`) e riusare `_chunks`.
+- R10: `StreamEntry` su `StreamOffer`; le costanti di protocollo fuori da `tables.dart` (la UI importa `tables.dart`).
+- R11: `_drop` di una playlist importata deve ripulire le prefs `importDownloadToo.<id>`.
+- R12: `apply` restituisce i conteggi reali, per il messaggio finale.
+- R13: togliere i test doppi e aggiungere: tre dispositivi (`learned`), giro completo nell'hub, peer di versione diversa.

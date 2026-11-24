@@ -1,3 +1,7 @@
+import '../../core/clock.dart';
+import '../../data/db/tables.dart' show kTombstoneMaxFuture;
+import '../../data/repositories/favorite_collections_repository.dart'
+    show favoriteAlbumKey;
 import '../online/credits.dart';
 
 /// Portable user data: everything the user created, with tracks referenced by
@@ -199,6 +203,8 @@ class TrackUserData {
 
 /// What an album page id looks like; a backup is untrusted, the id ends up in a request.
 final _browseIdRe = RegExp(r'^[A-Za-z0-9_-]{1,64}$');
+
+bool isBrowseId(String s) => _browseIdRe.hasMatch(s);
 
 class PlaylistData {
   const PlaylistData({
@@ -464,6 +470,16 @@ class ArtistImageData {
       : null;
 }
 
+/// Longest key or title read from another device or a backup (honest ones are far shorter).
+const kMaxKeyLength = 512;
+
+/// A date from outside (epoch ms) as an int; null when it is not a finite number, is <= 0 or is more than
+/// [kTombstoneMaxFuture] ahead (a wrong clock must not win every comparison).
+int? sanePastDate(Object? v) {
+  final at = _finiteInt(v);
+  return at == null || at <= 0 || at > nowMs() + kTombstoneMaxFuture.inMilliseconds ? null : at;
+}
+
 /// A favourite album (`kind` 'album', [key] = album key) or playlist ('playlist', [key] = playlist uuid).
 class FavoriteCollectionData {
   const FavoriteCollectionData({required this.kind, required this.key, this.addedAt});
@@ -474,10 +490,22 @@ class FavoriteCollectionData {
   Map<String, Object?> toJson() => _nonNull({'kind': kind, 'key': key, 'addedAt': addedAt});
 
   /// Null for a malformed entry or an unknown kind: it is dropped, the backup still reads.
-  static FavoriteCollectionData? tryParse(Object? j) =>
-      j is Map && (j['kind'] == 'album' || j['kind'] == 'playlist') && j['key'] is String && (j['key'] as String).isNotEmpty
-          ? FavoriteCollectionData(kind: j['kind'] as String, key: j['key'] as String, addedAt: _finiteInt(j['addedAt']))
-          : null;
+  /// An album key is the canonical one ([favoriteAlbumKey]: `stream|x` is `x`), so both forms are one favourite.
+  static FavoriteCollectionData? tryParse(Object? j) {
+    if (j is! Map || (j['kind'] != 'album' && j['kind'] != 'playlist')) {
+      return null;
+    }
+    final raw = j['key'], kind = j['kind'] as String;
+    if (raw is! String || raw.length > kMaxKeyLength) return null;
+    final key = kind == 'album' ? favoriteAlbumKey(raw) : raw;
+    return key.isEmpty
+        ? null
+        : FavoriteCollectionData(
+            kind: kind,
+            key: key,
+            addedAt: sanePastDate(j['addedAt']),
+          );
+  }
 }
 
 /// A JSON number as int; anything else (wrong type, NaN, infinity) is null.
