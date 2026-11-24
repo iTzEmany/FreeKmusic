@@ -59,10 +59,10 @@ class JamKaraokeVideoNotifier extends Notifier<KaraokeVideoState> {
     final ids = StreamController<String?>(), playing = StreamController<bool>();
     // The first position at once: a guest joining mid-song must not start the video at 0.
     Stream<Duration> positions() async* {
-      while (true) {
+      while (ref.mounted) {
         final jam = ref.read(jamProvider).jam;
         if (jam != null) yield Duration(milliseconds: jam.positionAtTime(ref.read(jamProvider.notifier).jamNowMs()));
-        await Future<void>.delayed(const Duration(milliseconds: 250));
+        await Future<void>.delayed(const Duration(milliseconds: 250)); // ref is checked again by the loop
       }
     }
 
