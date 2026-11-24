@@ -106,6 +106,7 @@ class StreamPromoter {
     await _step(key, 'index', () async => (await index()).add(r.id, dest, source: r.source));
     await _step(key, 'scan', () => scan(folder, dest));
     final id = row?.id;
+    if (id != null) await _step(key, 'video id', () => tracks.setVideoId(id, key));
     if (id != null) await _step(key, 'tag', () => tag(id));
     return true;
   }

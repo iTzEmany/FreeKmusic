@@ -9,7 +9,7 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 24;
+const kSchemaVersion = 25;
 
 /// A tombstone older than this is dropped: longer than the time between two manual syncs of own devices.
 const kTombstoneKeep = Duration(days: 180);
@@ -264,6 +264,16 @@ class AppDatabase extends _$AppDatabase {
         };
         if (cols.isNotEmpty && !cols.contains('favorited_at')) {
           await m.addColumn(tracks, tracks.favoritedAt);
+        }
+      }
+      if (from < 25) {
+        // Nullable, no backfill (D-713); same guard as v24.
+        final cols = {
+          for (final c in await customSelect('PRAGMA table_info(tracks)').get())
+            c.read<String>('name'),
+        };
+        if (cols.isNotEmpty && !cols.contains('video_id')) {
+          await m.addColumn(tracks, tracks.videoId);
         }
       }
     },

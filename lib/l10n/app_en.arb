@@ -2059,17 +2059,6 @@
   "updateFailed": "I can’t read the latest version. Check your connection.",
   "updateDo": "Update",
   "updateFromBrowser": "Download from the browser",
-  "updateFile": "File: {name} ({size} MB)",
-  "@updateFile": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "size": {
-        "type": "int"
-      }
-    }
-  },
   "updateProgress": "{done} of {total} MB",
   "@updateProgress": {
     "placeholders": {
@@ -4147,5 +4136,59 @@
   "@syncApplyRemoving": {"placeholders": {"count": {"type": "int"}}},
   "syncNotMineNote": "Only playlists are coming. If you expected more, mark this device as yours on the other one too.",
   "syncDone": "{count, plural, =0{Nothing to sync} one{Synced: 1 item} other{Synced: {count} items}}",
-  "@syncDone": {"placeholders": {"count": {"type": "int"}}}
+  "@syncDone": {"placeholders": {"count": {"type": "int"}}},
+  "updateArrived": "{version} has arrived",
+  "@updateArrived": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateFrom": "from {version}",
+  "@updateFrom": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateWithSize": "Update ({size} MB)",
+  "@updateWithSize": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateSelfHint": "The app closes, updates and reopens. Your data stays.",
+  "updateBrowserHint": "The browser opens to download the file. Your data stays.",
+  "updateKeepListening": "You can keep listening.",
+  "updateHighlight": "Highlight",
+  "updateAlsoHere": "Also in this version",
+  "updateFixes": "Fixes ({count})",
+  "@updateFixes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateFixesGeneric": "Fixes and improvements",
+  "updateAllChanges": "All changes on GitHub",
+  "whatsNewTitle": "Updated to {version}",
+  "@whatsNewTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "whatsNewSafe": "Your library, playlists and settings are where you left them.",
+  "whatsNewStart": "Get started",
+  "whatsNewTile": "What's new in this version",
+  "updateNews": "What’s new",
+  "updateNew": "new",
+  "shareKindTrack": "Track",
+  "shareUntitled": "Untitled"
 }

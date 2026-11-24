@@ -3830,11 +3830,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get updateFromBrowser => 'Télécharger depuis le navigateur';
 
   @override
-  String updateFile(String name, int size) {
-    return 'Fichier : $name, $size Mo';
-  }
-
-  @override
   String updateProgress(int done, int total) {
     return '$done sur $total Mo';
   }
@@ -8589,4 +8584,74 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String updateArrived(String version) {
+    return 'La $version est arrivée';
+  }
+
+  @override
+  String updateFrom(String version) {
+    return 'depuis la $version';
+  }
+
+  @override
+  String updateWithSize(int size) {
+    return 'Mettre à jour ($size Mo)';
+  }
+
+  @override
+  String get updateSelfHint =>
+      'L’appli se ferme, se met à jour et se rouvre. Tes données restent.';
+
+  @override
+  String get updateBrowserHint =>
+      'Le navigateur s’ouvre pour télécharger le fichier. Tes données restent.';
+
+  @override
+  String get updateKeepListening => 'Tu peux continuer à écouter.';
+
+  @override
+  String get updateHighlight => 'À la une';
+
+  @override
+  String get updateAlsoHere => 'Aussi dans cette version';
+
+  @override
+  String updateFixes(int count) {
+    return 'Corrections ($count)';
+  }
+
+  @override
+  String get updateFixesGeneric => 'Corrections et améliorations';
+
+  @override
+  String get updateAllChanges => 'Toutes les modifications sur GitHub';
+
+  @override
+  String whatsNewTitle(String version) {
+    return 'Mise à jour vers la $version';
+  }
+
+  @override
+  String get whatsNewSafe =>
+      'La bibliothèque, les playlists et les réglages sont là où vous les aviez laissés.';
+
+  @override
+  String get whatsNewStart => 'Commencer';
+
+  @override
+  String get whatsNewTile => 'Nouveautés de la version';
+
+  @override
+  String get updateNews => 'Nouveautés';
+
+  @override
+  String get updateNew => 'nouvelle';
+
+  @override
+  String get shareKindTrack => 'Titre';
+
+  @override
+  String get shareUntitled => 'Sans titre';
 }

@@ -33,15 +33,16 @@ const KINDS = { t: 'Brano', a: 'Album', p: 'Playlist' };
 const $ = (id) => document.getElementById(id);
 if (location.hash.length > 1) {
   try {
-    const { kind, title, ids } = await decodeFragment(location.hash);
+    const { kind, title, rows } = await decodeFragment(location.hash);
     document.title = title + ' - FreeKmusic';
     $('title').textContent = title;
-    $('kind').textContent = KINDS[kind] + ' condiviso con FreeKmusic, ' + ids.length + (ids.length === 1 ? ' brano' : ' brani');
+    $('kind').textContent = KINDS[kind] + ' condiviso con FreeKmusic, ' + rows.length + (rows.length === 1 ? ' brano' : ' brani');
     $('intro').hidden = true;
-    ids.forEach((id, i) => {
+    rows.forEach((r, i) => {
       const a = document.createElement('a');
-      a.href = 'https://music.youtube.com/watch?v=' + id;
-      a.textContent = 'Brano ' + (i + 1) + ' su YouTube Music';
+      // A row with an id opens the video; one without searches YouTube Music (D-713).
+      a.href = typeof r === 'string' ? 'https://music.youtube.com/watch?v=' + r : 'https://music.youtube.com/search?q=' + encodeURIComponent((r.artist + ' ' + r.title).trim());
+      a.textContent = typeof r === 'string' ? 'Brano ' + (i + 1) + ' su YouTube Music' : (r.artist ? r.artist + ' - ' : '') + r.title + ' (cerca su YouTube Music)';
       a.rel = 'noopener noreferrer';
       const li = document.createElement('li');
       li.appendChild(a);

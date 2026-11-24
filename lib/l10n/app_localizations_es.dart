@@ -3802,11 +3802,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get updateFromBrowser => 'Descargar desde el navegador';
 
   @override
-  String updateFile(String name, int size) {
-    return 'Archivo: $name, $size MB';
-  }
-
-  @override
   String updateProgress(int done, int total) {
     return '$done de $total MB';
   }
@@ -8545,4 +8540,74 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String updateArrived(String version) {
+    return 'Ha llegado la $version';
+  }
+
+  @override
+  String updateFrom(String version) {
+    return 'desde la $version';
+  }
+
+  @override
+  String updateWithSize(int size) {
+    return 'Actualizar ($size MB)';
+  }
+
+  @override
+  String get updateSelfHint =>
+      'La app se cierra, se actualiza y se reabre. Tus datos se quedan.';
+
+  @override
+  String get updateBrowserHint =>
+      'Se abre el navegador para descargar el archivo. Tus datos se quedan.';
+
+  @override
+  String get updateKeepListening => 'Puedes seguir escuchando.';
+
+  @override
+  String get updateHighlight => 'Destacado';
+
+  @override
+  String get updateAlsoHere => 'También en esta versión';
+
+  @override
+  String updateFixes(int count) {
+    return 'Correcciones ($count)';
+  }
+
+  @override
+  String get updateFixesGeneric => 'Correcciones y mejoras';
+
+  @override
+  String get updateAllChanges => 'Todos los cambios en GitHub';
+
+  @override
+  String whatsNewTitle(String version) {
+    return 'Actualizada a la $version';
+  }
+
+  @override
+  String get whatsNewSafe =>
+      'La biblioteca, las listas y los ajustes están donde los dejaste.';
+
+  @override
+  String get whatsNewStart => 'Empezar';
+
+  @override
+  String get whatsNewTile => 'Novedades de la versión';
+
+  @override
+  String get updateNews => 'Novedades';
+
+  @override
+  String get updateNew => 'nueva';
+
+  @override
+  String get shareKindTrack => 'Canción';
+
+  @override
+  String get shareUntitled => 'Sin título';
 }

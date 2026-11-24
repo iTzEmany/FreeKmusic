@@ -1,3 +1,4 @@
+import 'package:codecore/data/settings/settings_store.dart' show lastSeenVersionKey;
 import 'dart:convert';
 import 'dart:io';
 
@@ -243,6 +244,12 @@ void main() {
       expect(fresh.getString('playlistSorts'), '{"12":"title:asc"}');
     },
   );
+
+  test('the last seen version never travel in a backup', () async {
+    SharedPreferences.setMockInitialValues({lastSeenVersionKey: '1.6.0', 'theme': 'oled'});
+    final json = settingsToJson(await SharedPreferences.getInstance());
+    expect(json.keys, ['theme']);
+  });
 
   test('«scarica anche» keys of the imports never travel in a backup, neither written nor applied', () async {
     SharedPreferences.setMockInitialValues({'importDownloadToo.4': true, 'theme': 'oled'});

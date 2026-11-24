@@ -3807,11 +3807,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get updateFromBrowser => 'Im Browser herunterladen';
 
   @override
-  String updateFile(String name, int size) {
-    return 'Datei: $name, $size MB';
-  }
-
-  @override
   String updateProgress(int done, int total) {
     return '$done von $total MB';
   }
@@ -8555,4 +8550,74 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String updateArrived(String version) {
+    return 'Version $version ist da';
+  }
+
+  @override
+  String updateFrom(String version) {
+    return 'von $version';
+  }
+
+  @override
+  String updateWithSize(int size) {
+    return 'Aktualisieren ($size MB)';
+  }
+
+  @override
+  String get updateSelfHint =>
+      'Die App schließt sich, aktualisiert sich und öffnet sich neu. Deine Daten bleiben.';
+
+  @override
+  String get updateBrowserHint =>
+      'Der Browser öffnet sich zum Herunterladen der Datei. Deine Daten bleiben.';
+
+  @override
+  String get updateKeepListening => 'Du kannst weiterhören.';
+
+  @override
+  String get updateHighlight => 'Neu im Fokus';
+
+  @override
+  String get updateAlsoHere => 'Auch in dieser Version';
+
+  @override
+  String updateFixes(int count) {
+    return 'Korrekturen ($count)';
+  }
+
+  @override
+  String get updateFixesGeneric => 'Korrekturen und Verbesserungen';
+
+  @override
+  String get updateAllChanges => 'Alle Änderungen auf GitHub';
+
+  @override
+  String whatsNewTitle(String version) {
+    return 'Aktualisiert auf $version';
+  }
+
+  @override
+  String get whatsNewSafe =>
+      'Bibliothek, Playlists und Einstellungen sind unverändert.';
+
+  @override
+  String get whatsNewStart => 'Los geht\'s';
+
+  @override
+  String get whatsNewTile => 'Neues in dieser Version';
+
+  @override
+  String get updateNews => 'Neuheiten';
+
+  @override
+  String get updateNew => 'neu';
+
+  @override
+  String get shareKindTrack => 'Titel';
+
+  @override
+  String get shareUntitled => 'Ohne Titel';
 }

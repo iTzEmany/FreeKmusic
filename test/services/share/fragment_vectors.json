@@ -102,7 +102,7 @@
   {
     "name": "bad prefix",
     "error": true,
-    "fragment": "H4sIAAAAAAACA3PzNuIq4argSgksNym3DE-PSA4EABI32TUTAAAA"
+    "fragment": "H4sIAAAAAAAAA3PzNuYq4argSgksNym3DE-PSA4EAFH8f7ITAAAA"
   },
   {
     "name": "standard alphabet",
@@ -163,5 +163,60 @@
     "name": "non-zero trailing bits in the last character",
     "error": true,
     "fragment": "H4sIAAAAAAAAA3PzNuQq4aqo5EoJLDcptwxPj0gOBADUVKegFAAAAB"
+  },
+  {
+    "name": "FK2 mixed rows",
+    "kind": "p",
+    "title": "Mix locale",
+    "rows": [
+      "dQw4w9WgXcQ",
+      {
+        "artist": "Città",
+        "title": "Canzone 日本語"
+      },
+      {
+        "artist": "",
+        "title": "Solo titolo"
+      }
+    ],
+    "fragment": "H4sIAAAAAAAAA3PzNuIq4PLNrFDIyU9OzEnlSgksNym3DE-PSA7kqnPOLCk5vIDTOTGvKj8vVeHZ9KXP5qx5sWoeVx1ncH5OvkJJZgmQAgAypI52RAAAAA"
+  },
+  {
+    "name": "FK2 empty row",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuIq4PLNrOBKTEpOSU1Lz8jMyuYCAFjnU9UWAAAA"
+  },
+  {
+    "name": "FK2 search title too long",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuIq4PLNrOCqc-SsoDYAADI0pileAAAA"
+  },
+  {
+    "name": "FK2 emoji across the 60/80 cut",
+    "kind": "p",
+    "title": "Emoji",
+    "rows": [
+      "dQw4w9WgXcQ",
+      {
+        "artist": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🎵",
+        "title": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb🎵"
+      }
+    ],
+    "fragment": "H4sIAAAAAAACA3PzNuIq4HLNzc_K5EoJLDcptwxPj0gO5KpLJB98mN-3lTOJugBkJgCMH-QArAAAAA"
+  },
+  {
+    "name": "FK2 artist of 61 code points with emoji",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4HLNzc_K5EoJLDcptwxPj0gO5KpLpAB8mN-3lbMCAIhkZXNbAAAA"
+  },
+  {
+    "name": "FK2 row with two tabs",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4QrhqnPkdOJ0BgCWthNTDgAAAA"
+  },
+  {
+    "name": "FK2 search title of only U+0085",
+    "error": true,
+    "fragment": "H4sIAAAAAAACA3PzNuIq4QrhqnPkPNQKANeBwnANAAAA"
   }
 ]

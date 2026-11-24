@@ -267,6 +267,15 @@ class TrackRepository {
     if (now != null) await FavoriteCollectionsRepository(_db).followAlbumKey(now.albumKey, before.albumKey);
   });
 
+  /// Keeps the YouTube video id of the download [indexKey] (`youtube:<id>`) on the file row [id] (D-713).
+  /// Other sources and malformed ids leave the row alone.
+  Future<void> setVideoId(int id, String indexKey) async {
+    if (!indexKey.startsWith('youtube:')) return;
+    final v = indexKey.substring('youtube:'.length);
+    if (!ytIdRe.hasMatch(v)) return;
+    await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(TracksCompanion(videoId: Value(v)));
+  }
+
   /// A fresh download [keepId] of the track [key] was streamed before: its listens,
   /// counts, lyrics and curiosities move to [keepId] (as in `DuplicateRepository.merge`)
   /// and the shadow row goes. Returns the id of the deleted shadow row (a queue may still
@@ -1498,6 +1507,9 @@ class TrackRepository {
     )..addColumns([_db.tracks.id])).get();
     return {for (final r in rows) r.read(_db.tracks.id)!};
   }
+
+  /// Any track row at all (library or streamed).
+  Future<bool> hasAny() async => (await (_db.select(_db.tracks)..limit(1)).get()).isNotEmpty;
 
   /// How many music tracks there are (podcast episodes are not counted).
   Future<int> countAll() async {

@@ -2217,17 +2217,6 @@
   "updateFailed": "Não consigo ler a última versão. Verifica a ligação.",
   "updateDo": "Atualizar",
   "updateFromBrowser": "Descarregar pelo navegador",
-  "updateFile": "Ficheiro: {name}, {size} MB",
-  "@updateFile": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      },
-      "size": {
-        "type": "int"
-      }
-    }
-  },
   "updateProgress": "{done} de {total} MB",
   "@updateProgress": {
     "placeholders": {
@@ -4333,5 +4322,59 @@
   "@syncApplyRemoving": {"placeholders": {"count": {"type": "int"}}},
   "syncNotMineNote": "Só chegam as playlists. Se esperavas mais, marca este dispositivo como teu também no outro.",
   "syncDone": "{count, plural, =0{Nada para sincronizar} one{Sincronizado: 1 item} other{Sincronizados: {count} itens}}",
-  "@syncDone": {"placeholders": {"count": {"type": "int"}}}
+  "@syncDone": {"placeholders": {"count": {"type": "int"}}},
+  "updateArrived": "Chegou a {version}",
+  "@updateArrived": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateFrom": "da {version}",
+  "@updateFrom": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "updateWithSize": "Atualizar ({size} MB)",
+  "@updateWithSize": {
+    "placeholders": {
+      "size": {
+        "type": "int"
+      }
+    }
+  },
+  "updateSelfHint": "O app fecha, atualiza e reabre. Os teus dados ficam.",
+  "updateBrowserHint": "O navegador abre para descarregar o ficheiro. Os teus dados ficam.",
+  "updateKeepListening": "Podes continuar a ouvir.",
+  "updateHighlight": "Em destaque",
+  "updateAlsoHere": "Também nesta versão",
+  "updateFixes": "Correções ({count})",
+  "@updateFixes": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "updateFixesGeneric": "Correções e melhorias",
+  "updateAllChanges": "Todas as alterações no GitHub",
+  "whatsNewTitle": "Atualizada para a {version}",
+  "@whatsNewTitle": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "whatsNewSafe": "A biblioteca, as playlists e as definições estão onde as deixaste.",
+  "whatsNewStart": "Começar",
+  "whatsNewTile": "Novidades da versão",
+  "updateNews": "Novidades",
+  "updateNew": "nova",
+  "shareKindTrack": "Faixa",
+  "shareUntitled": "Sem título"
 }

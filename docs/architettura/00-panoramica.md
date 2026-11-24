@@ -93,7 +93,7 @@ La coda di riproduzione è separata dalla lista mostrata: la UI passa uno **snap
 
 Override del container: `databaseProvider`, `settingsStoreProvider`, `audioHandlerProvider`, `radioClientProvider`, `ytDlpServiceProvider`, `playbackPersistenceProvider`, `playerErrorsProvider`, `coversDirProvider`, `streamCacheProvider`, `systemDeviceNameProvider`, `systemDeviceModelProvider`.
 
-`CodecoreApp` (`lib/app.dart`) tiene vivi dalla radice i provider di servizio: `shareAutoStartProvider`, `activityLogProvider`, `equalizerApplierProvider`, `streamEnrichTriggerProvider`, `outputRouteSyncProvider`, `volumeZeroPauseProvider`, `importNotificationProvider`, `releaseCheckControllerProvider`, `dislikeStoreProvider`, `enrichCompleterStartProvider`, `mp3LengthFixStartProvider`, `podcastOrphansStartProvider`, `genreRereadStartProvider`, `artistCountryStartProvider`, `updateOnStartProvider`, `promoteErrorsProvider`, `jamOnlineFailuresProvider`, `audioPermissionProvider` (D-678). Un nuovo servizio in background si aggancia qui.
+`CodecoreApp` (`lib/app.dart`) tiene vivi dalla radice i provider di servizio: `shareAutoStartProvider`, `activityLogProvider`, `equalizerApplierProvider`, `streamEnrichTriggerProvider`, `outputRouteSyncProvider`, `volumeZeroPauseProvider`, `importNotificationProvider`, `releaseCheckControllerProvider`, `dislikeStoreProvider`, `enrichCompleterStartProvider`, `mp3LengthFixStartProvider`, `podcastOrphansStartProvider`, `genreRereadStartProvider`, `artistCountryStartProvider`, `updateOnStartProvider`, `whatsNewOnStartProvider`, `promoteErrorsProvider`, `jamOnlineFailuresProvider`, `audioPermissionProvider` (D-678). Un nuovo servizio in background si aggancia qui.
 
 ### Log
 
@@ -101,7 +101,7 @@ Override del container: `databaseProvider`, `settingsStoreProvider`, `audioHandl
 
 ## Invarianti da non rompere
 
-- `ui` non usa `databaseProvider`, `*RepositoryProvider`, `*QueriesProvider` (D-24). Niente `PopupMenuButton` / `showMenu(`: i menu sono sheet. Lo impone `test/ui/architecture_test.dart`.
+- `ui` non usa `databaseProvider`, `*RepositoryProvider`, `*QueriesProvider` (D-24). Niente `PopupMenuButton` / `showMenu(`: i menu sono sheet. `lib/services` non importa `lib/ui` (eccezioni: i tipi di tema di `app_icon.dart` e `restore_service.dart`). Lo impone `test/ui/architecture_test.dart`.
 - La UI non parla né con SQLite né col pacchetto audio.
 - Il DB è la fonte di verità. I tag si scrivono nei file solo con `writeTagsToFiles && tagsAlsoInFile`, via `SafeTagWriter`.
 - Mai cancellare righe dell'utente in automatico: un file sparito diventa `missing = true`.

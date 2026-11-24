@@ -6,6 +6,9 @@ import 'dart:io';
 const int kMaxSharedTracks = 50;
 
 const int _maxTitle = 120;
+// A search row (D-713) keeps the artist and the title short: 50 rows must stay a short link.
+const int _maxRowArtist = 60;
+const int _maxRowTitle = 80;
 const int _maxDecompressed = 64 * 1024;
 const _idLen = 11;
 
@@ -29,11 +32,23 @@ enum SharedKind {
   final String code;
 }
 
+/// One track of a shared link: a YouTube video [id], or (no id) an [artist] + [title] to search for (D-713).
+class SharedRow {
+  const SharedRow.id(String this.id) : artist = null, title = null;
+  const SharedRow.search(String this.artist, String this.title) : id = null;
+  final String? id, artist, title;
+
+  @override
+  bool operator ==(Object other) => other is SharedRow && other.id == id && other.artist == artist && other.title == title;
+  @override
+  int get hashCode => Object.hash(id, artist, title);
+}
+
 class SharedFragment {
-  const SharedFragment(this.kind, this.title, this.ids);
+  const SharedFragment(this.kind, this.title, this.rows);
   final SharedKind kind;
   final String title;
-  final List<String> ids;
+  final List<SharedRow> rows;
 }
 
 class ShareFragmentError implements Exception {
@@ -43,15 +58,23 @@ class ShareFragmentError implements Exception {
   String toString() => 'ShareFragmentError: $message';
 }
 
-/// `FK1\n<kind>\n<title>\n<ids>` -> gzip -> base64url without padding.
-/// The title is non-blank and at most 120 chars; a blank one becomes "Senza titolo".
+String _clip(String s, int max) => String.fromCharCodes(s.replaceAll(RegExp(r'[\r\n\t]'), ' ').trim().runes.take(max));
+
+/// `FK1\n<kind>\n<title>\n<ids>` (all rows are ids) or, with a search row (D-713),
+/// `FK2\n<kind>\n<title>\n<row>\n<row>…` where a row is an id or `~<artist>\t<title>`;
+/// -> gzip -> base64url without padding. The title is non-blank and at most 120 chars;
+/// a blank one becomes "Senza titolo". A search row keeps at most 60 + 80 chars (a blank title becomes "Senza titolo").
 String encodeShareFragment(SharedFragment f) {
-  _validate(f.ids);
-  final title = f.title.replaceAll(RegExp(r'[\r\n]'), ' ').trim();
-  final clipped = title.isEmpty
-      ? untitledShare
-      : String.fromCharCodes(title.runes.take(_maxTitle));
-  final payload = 'FK1\n${f.kind.code}\n$clipped\n${f.ids.join()}';
+  final rows = [
+    for (final r in f.rows)
+      r.id != null ? r : SharedRow.search(_clip(r.artist!, _maxRowArtist), _clip(r.title!, _maxRowTitle)),
+  ];
+  _validate(rows);
+  final title = _clip(f.title, _maxTitle);
+  final head = '${f.kind.code}\n${title.isEmpty ? untitledShare : title}';
+  final payload = rows.every((r) => r.id != null)
+      ? 'FK1\n$head\n${rows.map((r) => r.id).join()}'
+      : 'FK2\n$head\n${rows.map((r) => r.id ?? '~${r.artist}\t${r.title!.isEmpty ? untitledShare : r.title}').join('\n')}';
   return base64Url
       .encode(gzip.encode(utf8.encode(payload)))
       .replaceAll('=', '');
@@ -87,7 +110,7 @@ SharedFragment _decode(String fragment) {
   final raw = out.takeBytes();
   _checkGzipTrailer(bytes, raw);
   final lines = utf8.decode(raw).split('\n');
-  if (lines.length != 4 || lines[0] != 'FK1') {
+  if (lines.length < 4 || (lines[0] != 'FK1' && lines[0] != 'FK2') || (lines[0] == 'FK1' && lines.length != 4)) {
     throw const ShareFragmentError('bad prefix or layout');
   }
   final kind = SharedKind.values.firstWhere(
@@ -98,16 +121,29 @@ SharedFragment _decode(String fragment) {
   if (title.trim().isEmpty || title.runes.length > _maxTitle) {
     throw const ShareFragmentError('bad title');
   }
-  final s = lines[3];
+  final rows = lines[0] == 'FK1' ? _idRows(lines[3]) : [for (final l in lines.skip(3)) _row(l)];
+  _validate(rows);
+  return SharedFragment(kind, title, rows);
+}
+
+List<SharedRow> _idRows(String s) {
   if (s.isNotEmpty && !_idChars.hasMatch(s)) {
     throw const ShareFragmentError('invalid id characters');
   }
   if (s.length % _idLen != 0) throw const ShareFragmentError('bad ids length');
-  final ids = [
-    for (var i = 0; i < s.length; i += _idLen) s.substring(i, i + _idLen),
-  ];
-  _validate(ids);
-  return SharedFragment(kind, title, ids);
+  return [for (var i = 0; i < s.length; i += _idLen) SharedRow.id(s.substring(i, i + _idLen))];
+}
+
+SharedRow _row(String l) {
+  if (!l.startsWith('~')) {
+    if (!isVideoId(l)) throw const ShareFragmentError('bad row');
+    return SharedRow.id(l);
+  }
+  final parts = l.substring(1).split('\t');
+  if (parts.length != 2 || parts[1].trim().isEmpty || parts[1].runes.length > _maxRowTitle || parts[0].runes.length > _maxRowArtist) {
+    throw const ShareFragmentError('bad search row');
+  }
+  return SharedRow.search(parts[0], parts[1]);
 }
 
 /// dart:io does not check the gzip trailer: a truncated stream, trailing bytes or
@@ -134,15 +170,14 @@ int _crc32(Uint8List data) {
   return c ^ 0xFFFFFFFF;
 }
 
-void _validate(List<String> ids) {
-  if (ids.isEmpty) throw const ShareFragmentError('no ids');
-  if (ids.length > kMaxSharedTracks) {
+void _validate(List<SharedRow> rows) {
+  if (rows.isEmpty) throw const ShareFragmentError('no ids');
+  if (rows.length > kMaxSharedTracks) {
     throw const ShareFragmentError('too many tracks');
   }
-  for (final id in ids) {
-    if (id.length != _idLen || !_idChars.hasMatch(id)) {
-      throw ShareFragmentError('invalid id: $id');
-    }
+  for (final r in rows) {
+    final id = r.id;
+    if (id != null && !isVideoId(id)) throw ShareFragmentError('invalid id: $id');
   }
 }
 

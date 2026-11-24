@@ -440,6 +440,9 @@ const genreRereadDoneKey = 'genreRereadDone';
 /// D-665 one-off step done on this device (device-bound: a restored backup neither repeats nor blocks it).
 const storageModeD665Key = 'storageModeD665';
 
+/// Last version whose «Aggiornata alla X» page was decided on. Device-bound: a restore must not show the page nor hide it.
+const lastSeenVersionKey = 'lastSeenVersion';
+
 class SettingsStore {
   SettingsStore(this._prefs);
 
@@ -737,6 +740,10 @@ class SettingsStore {
 
   Future<void> writeLastUpdateCheckDay(int day) =>
       _prefs.setInt('lastUpdateCheckDay', day);
+
+  String? readLastSeenVersion() => _prefs.getString(lastSeenVersionKey);
+
+  Future<void> writeLastSeenVersion(String v) => _prefs.setString(lastSeenVersionKey, v);
 
   /// Background enrichment bookmark: id of the last track tried (0 = none).
   /// Device-bound, never in a backup.

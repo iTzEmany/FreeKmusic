@@ -5932,12 +5932,6 @@ abstract class AppLocalizations {
   /// **'Scarica dal browser'**
   String get updateFromBrowser;
 
-  /// No description provided for @updateFile.
-  ///
-  /// In it, this message translates to:
-  /// **'File: {name}, {size} MB'**
-  String updateFile(String name, int size);
-
   /// No description provided for @updateProgress.
   ///
   /// In it, this message translates to:
@@ -13290,6 +13284,120 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{count, plural, =0{Niente da sincronizzare} one{Sincronizzato: 1 elemento} other{Sincronizzati: {count} elementi}}'**
   String syncDone(int count);
+
+  /// No description provided for @updateArrived.
+  ///
+  /// In it, this message translates to:
+  /// **'È arrivata la {version}'**
+  String updateArrived(String version);
+
+  /// No description provided for @updateFrom.
+  ///
+  /// In it, this message translates to:
+  /// **'dalla {version}'**
+  String updateFrom(String version);
+
+  /// No description provided for @updateWithSize.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiorna ({size} MB)'**
+  String updateWithSize(int size);
+
+  /// No description provided for @updateSelfHint.
+  ///
+  /// In it, this message translates to:
+  /// **'L’app si chiude, si aggiorna e si riapre. I tuoi dati restano.'**
+  String get updateSelfHint;
+
+  /// No description provided for @updateBrowserHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Si apre il browser per scaricare il file. I tuoi dati restano.'**
+  String get updateBrowserHint;
+
+  /// No description provided for @updateKeepListening.
+  ///
+  /// In it, this message translates to:
+  /// **'Puoi continuare ad ascoltare.'**
+  String get updateKeepListening;
+
+  /// No description provided for @updateHighlight.
+  ///
+  /// In it, this message translates to:
+  /// **'In evidenza'**
+  String get updateHighlight;
+
+  /// No description provided for @updateAlsoHere.
+  ///
+  /// In it, this message translates to:
+  /// **'Anche in questa versione'**
+  String get updateAlsoHere;
+
+  /// No description provided for @updateFixes.
+  ///
+  /// In it, this message translates to:
+  /// **'Correzioni ({count})'**
+  String updateFixes(int count);
+
+  /// No description provided for @updateFixesGeneric.
+  ///
+  /// In it, this message translates to:
+  /// **'Correzioni e miglioramenti'**
+  String get updateFixesGeneric;
+
+  /// No description provided for @updateAllChanges.
+  ///
+  /// In it, this message translates to:
+  /// **'Tutte le modifiche su GitHub'**
+  String get updateAllChanges;
+
+  /// No description provided for @whatsNewTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiornata alla {version}'**
+  String whatsNewTitle(String version);
+
+  /// No description provided for @whatsNewSafe.
+  ///
+  /// In it, this message translates to:
+  /// **'La libreria, le playlist e le impostazioni sono dove le avevi lasciate.'**
+  String get whatsNewSafe;
+
+  /// No description provided for @whatsNewStart.
+  ///
+  /// In it, this message translates to:
+  /// **'Inizia'**
+  String get whatsNewStart;
+
+  /// No description provided for @whatsNewTile.
+  ///
+  /// In it, this message translates to:
+  /// **'Novità della versione'**
+  String get whatsNewTile;
+
+  /// No description provided for @updateNews.
+  ///
+  /// In it, this message translates to:
+  /// **'Novità'**
+  String get updateNews;
+
+  /// No description provided for @updateNew.
+  ///
+  /// In it, this message translates to:
+  /// **'nuova'**
+  String get updateNew;
+
+  /// No description provided for @shareKindTrack.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano'**
+  String get shareKindTrack;
+
+  /// No description provided for @shareUntitled.
+  ///
+  /// In it, this message translates to:
+  /// **'Senza titolo'**
+  String get shareUntitled;
 }
 
 class _AppLocalizationsDelegate

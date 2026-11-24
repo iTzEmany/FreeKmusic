@@ -1,0 +1,64 @@
+import 'dart:async' show TimeoutException;
+import 'dart:io';
+import 'dart:ui' show Color, Locale;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/app_log.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/share/external_share_text.dart';
+import '../../services/share/share_card_renderer.dart';
+import '../../services/share/share_fragment.dart' show SharedKind;
+import '../theme/cover_tint.dart';
+import '../theme/tokens.dart' show CcColors;
+import 'cover_image.dart';
+import 'format_utils.dart' show formatDuration;
+import 'share_card.dart';
+import '../../providers/settings_providers.dart';
+
+/// The texts of the share in the app's language.
+AppLocalizations shareL10n(Ref ref) => lookupAppLocalizations(Locale(ref.read(settingsProvider).language));
+
+/// The default [ShareCardMaker]: covers and tint from the library, texts in the app's language.
+ShareCardMaker shareCardMaker(
+  Ref ref,
+) => (kind, title, subtitle, tracks) async {
+  final l = shareL10n(ref);
+  final keys = {for (final t in tracks) ?t.coverKey}
+      .take(kind == SharedKind.playlist ? 4 : 1)
+      .toList();
+  final files = <File>[for (final k in keys) ?ref.read(coverFileProvider(k))];
+  Color? tint;
+  if (keys.isNotEmpty) {
+    try {
+      tint = await ref
+          .read(coverTintProvider(keys.first).future)
+          .timeout(kShareCardTimeout);
+    } on TimeoutException catch (e) {
+      AppLog.w('share card: cover tint late, default colours', e);
+    }
+  }
+  final base = CcColors.notte.heroBase;
+  final ms = tracks.fold<int>(0, (a, t) => a + t.durationMs);
+  final time = ms > 0 ? formatDuration(ms) : null;
+  final count = l.tracksCount(tracks.length);
+  return renderShareCardPng(
+    files,
+    kShareCardSize,
+    (images) => ShareCard(
+      kind: kind,
+      brand: l.appName,
+      kindLabel: switch (kind) {
+        SharedKind.track => l.shareKindTrack,
+        SharedKind.album => l.kindAlbum,
+        SharedKind.playlist => l.kindPlaylist,
+      },
+      title: title.trim().isEmpty ? l.shareUntitled : title,
+      subtitle: subtitle,
+      meta: kind == SharedKind.track ? (time ?? '') : [count, ?time].join(', '),
+      tint: tint == null ? base : heroTint(tint, base),
+      covers: images,
+      qrLink: shareCardLink(kind, title, tracks),
+    ),
+  );
+};

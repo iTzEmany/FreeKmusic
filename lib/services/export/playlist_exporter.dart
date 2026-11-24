@@ -24,7 +24,7 @@ String? streamUrlOf(Track t) {
 /// M3U8 (UTF-8). Paths are absolute, or relative to [relativeTo] with `/`. A streamed
 /// track has no file: its line carries the YouTube Music link (D-674).
 String toM3u8(String name, List<Track> tracks, {String? relativeTo}) {
-  final b = StringBuffer('#EXTM3U\n#PLAYLIST:$name\n');
+  final b = StringBuffer('#EXTM3U\n#PLAYLIST:${oneLine(name)}\n');
   for (final t in tracks) {
     final url = streamUrlOf(t);
     if (t.kind == kStreamKind && url == null) {
@@ -32,9 +32,9 @@ String toM3u8(String name, List<Track> tracks, {String? relativeTo}) {
       continue;
     }
     final secs = t.durationMs > 0 ? (t.durationMs / 1000).round() : -1;
-    final label = t.artist == null || t.artist!.isEmpty
+    final label = oneLine(t.artist == null || t.artist!.isEmpty
         ? t.title
-        : '${t.artist} - ${t.title}';
+        : '${t.artist} - ${t.title}');
     final path = url ??
         (relativeTo == null
             ? t.path

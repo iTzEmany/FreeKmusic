@@ -1,5 +1,5 @@
 // Decodes the share fragment (rules: docs/architettura/online.md, "Il frammento del link di condivisione").
-const MAX_BYTES = 65536, MAX_IDS = 50, MAX_TITLE = 120;
+const MAX_BYTES = 65536, MAX_IDS = 50, MAX_TITLE = 120, MAX_ROW_ARTIST = 60, MAX_ROW_TITLE = 80;
 const RELEASE_URL = 'https://github.com/iTzEmany/FreeKmusic/releases/latest';
 
 export class FragmentError extends Error {}
@@ -24,14 +24,28 @@ export async function decodeFragment(fragment) {
   let text;
   try { text = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(all); } catch (e) { fail('utf8'); }
   const lines = text.split('\n');
-  if (lines.length !== 4 || lines[0] !== 'FK1') fail('header');
-  const [, kind, title, idStr] = lines;
+  const v2 = lines[0] === 'FK2';
+  if ((!v2 && lines[0] !== 'FK1') || lines.length < 4 || (!v2 && lines.length !== 4)) fail('header');
+  const [, kind, title] = lines;
   if (!['t', 'a', 'p'].includes(kind)) fail('kind');
   if (/^[\s\u0085]*$/.test(title) || [...title].length > MAX_TITLE) fail('title');
-  if (!/^[A-Za-z0-9_-]*$/.test(idStr) || idStr.length % 11 !== 0 || idStr.length / 11 > MAX_IDS) fail('ids');
-  const ids = idStr.match(/.{11}/g) || [];
-  if (!ids.length) fail('ids');
-  return { kind, title, ids };
+  // A row is a video id (a string) or, in FK2 only, a search: `~<artist>\t<title>` -> {artist, title}.
+  let rows;
+  if (v2) rows = lines.slice(3).map(row);
+  else {
+    const idStr = lines[3];
+    if (!/^[A-Za-z0-9_-]*$/.test(idStr) || idStr.length % 11 !== 0) fail('ids');
+    rows = idStr.match(/.{11}/g) || [];
+  }
+  if (!rows.length || rows.length > MAX_IDS) fail('ids');
+  return { kind, title, rows };
+}
+
+function row(l) {
+  if (!l.startsWith('~')) return /^[A-Za-z0-9_-]{11}$/.test(l) ? l : fail('row');
+  const p = l.slice(1).split('\t');
+  if (p.length !== 2 || /^[\s\u0085]*$/.test(p[1]) || [...p[1]].length > MAX_ROW_TITLE || [...p[0]].length > MAX_ROW_ARTIST) fail('search row');
+  return { artist: p[0], title: p[1] };
 }
 
 async function gunzipLimited(bytes) {

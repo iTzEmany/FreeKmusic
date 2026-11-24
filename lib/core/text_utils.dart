@@ -120,6 +120,9 @@ final _illegalChars = RegExp(r'[\\/:*?"<>|%\u0000-\u001F]');
 final _reserved = RegExp(r'^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$',
     caseSensitive: false);
 
+/// [s] on one line: a newline in a tag would start a foreign line in an m3u8.
+String oneLine(String s) => s.replaceAll(RegExp(r'[\r\n]'), ' ');
+
 String sanitizeFileName(String name) {
   var s = name.replaceAll(_illegalChars, '');
   s = s.replaceAll(RegExp(r' {2,}'), ' ').trim();

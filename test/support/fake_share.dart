@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show utf8;
 import 'dart:io';
 import 'dart:ui' show Rect;
 
@@ -8,6 +9,7 @@ import 'package:codecore/services/share/external_share.dart';
 class FakeShare implements ExternalShare {
   final texts = <String>[];
   final files = <String>[];
+  final fileTexts = <String?>[];
   final origins = <Rect?>[];
   String? fileBody;
   Object? error;
@@ -24,7 +26,8 @@ class FakeShare implements ExternalShare {
   @override
   Future<void> shareFile(String path, {String? text, Rect? origin}) async {
     files.add(path);
-    fileBody = File(path).readAsStringSync();
+    fileTexts.add(text);
+    fileBody = utf8.decode(File(path).readAsBytesSync(), allowMalformed: true); // a PNG is not text
     origins.add(origin);
     await gate?.future;
     if (error != null) throw error!;

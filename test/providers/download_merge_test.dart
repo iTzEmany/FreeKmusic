@@ -22,7 +22,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import '../support/fake_backend.dart';
 
-const _r = YtResult(id: 'abc', title: 'Song', channel: 'Chan', duration: Duration(seconds: 200));
+const _r = YtResult(id: 'abcdefghijk', title: 'Song', channel: 'Chan', duration: Duration(seconds: 200));
 
 class _Yt implements YoutubeService {
   @override
@@ -60,6 +60,33 @@ class _Settings extends SettingsNotifier {
 }
 
 void main() {
+  test('a finished download without a shadow row still keeps its video id on the file row', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final dir = await Directory.systemTemp.createTemp('dl_merge');
+    addTearDown(() => dir.delete(recursive: true));
+    final tracks = TrackRepository(db);
+    final handler = CodecoreAudioHandler(FakeBackend(), PlayQueue(), tracks, onError: (_) {});
+    addTearDown(handler.dispose);
+    final c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      folderRepositoryProvider.overrideWithValue(FolderRepository(db)),
+      trackRepositoryProvider.overrideWithValue(tracks),
+      audioHandlerProvider.overrideWithValue(handler),
+      onlineEntriesProvider.overrideWithValue(OnlineEntries()),
+      youtubeServiceProvider.overrideWithValue(_Yt()),
+      settingsProvider.overrideWith(() => _Settings(dir.path)),
+      libraryScannerProvider.overrideWithValue(_Scanner(db)),
+      downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('${dir.path}/downloads.json'))),
+    ]);
+    addTearDown(c.dispose);
+
+    c.read(downloadsProvider.notifier).add(_r, tag: 'x');
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+
+    expect((await db.select(db.tracks).getSingle()).videoId, _r.id);
+  });
+
   test('a finished download swaps the queue id of the shadow row and points the online entry at the file row', () async {
     final db = AppDatabase(NativeDatabase.memory());
     addTearDown(db.close);
@@ -93,5 +120,6 @@ void main() {
     final file = (await db.select(db.tracks).get()).singleWhere((t) => t.path.endsWith('Song.m4a'));
     expect(handler.queueIds, [playing, file.id]);
     expect(online.entryOf(entry)!.trackId, file.id);
+    expect(file.videoId, _r.id, reason: 'the id of the download stays on the file row (D-713)');
   });
 }

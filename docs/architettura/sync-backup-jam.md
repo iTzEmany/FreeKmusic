@@ -152,6 +152,7 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - Le rotte `/pair` e `/sync` esistono solo su HTTPS; `/jam` solo su HTTP.
 - Il sync cancella solo per D-668: righe e flag (playlist, preferiti, `saved`/cuore di righe in streaming) per tombstone di un dispositivo «mio»; mai file, mai righe locali. Anche impostazioni, testi, ascolti e tag viaggiano, ma solo fra dispositivi «miei» (146.6).
 - I segreti della Jam (`JamSecretStore`, chiavi amici, gate) restano fuori da ogni backup. Aggiungere una chiave legata al dispositivo vuol dire aggiungerla a `kDeviceBoundKeys`.
+- `lastSeenVersionKey` (pagina «Aggiornata alla X») è legata al dispositivo (`kDeviceBoundKeys`) e il ripristino la scrive con la versione corrente: un ripristino non è un aggiornamento.
 - Su desktop i segreti stanno in `<appSupportDir>/jam_secrets.json` (D-269), non in `shared_preferences.json`.
 - Nessun `catch (_) {}` muto: `AppLog`. Il ponte conta gli scarti con `JamDropLog` (un messaggio al minuto).
 

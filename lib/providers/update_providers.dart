@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_info.dart';
@@ -10,7 +11,9 @@ import '../services/online/update_checker.dart';
 import '../services/update/android_update.dart';
 import '../services/update/desktop_update.dart';
 import '../services/update/update_installer.dart';
+import '../services/update/whats_new.dart';
 import '../services/update/update_target.dart';
+import 'database_providers.dart' show trackRepositoryProvider;
 import 'issue_providers.dart' show linkOpenerProvider;
 import 'online_providers.dart';
 import 'settings_providers.dart';
@@ -25,6 +28,25 @@ final updateCheckerProvider = Provider<UpdateChecker?>((ref) {
   if (repo.isEmpty) return null;
   return UpdateChecker(ref.watch(webClientProvider), repo: repo, current: kAppVersion);
 });
+
+/// «Aggiornata alla X»: when to show it and with which notes.
+final whatsNewProvider = Provider<WhatsNew>((ref) {
+  final repo = ref.watch(releaseRepoProvider);
+  final tracks = ref.read(trackRepositoryProvider);
+  return WhatsNew(
+    ref.read(settingsStoreProvider),
+    current: kAppVersion,
+    url: 'https://github.com/$repo/releases/tag/v$kAppVersion',
+    hasData: tracks.hasAny,
+    load: (version) => rootBundle.loadString('release-notes/$version.md'),
+  );
+});
+
+/// The notes to show once after an update; null for no page. Starts once the app is settled.
+final whatsNewOnStartProvider = FutureProvider<UpdateInfo?>((ref) async {
+  await ref.watch(startupSettledProvider.future);
+  return ref.read(whatsNewProvider).atStart();
+}, retry: (_, _) => null);
 
 /// «Controlla all'avvio»: off by default.
 class CheckUpdatesOnStartNotifier extends Notifier<bool> {

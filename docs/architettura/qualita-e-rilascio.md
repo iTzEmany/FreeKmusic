@@ -109,7 +109,9 @@ I test in `test/live/*` parlano con servizi veri e partono solo con `CODECORE_LI
 
 1. Alza `version` in `pubspec.yaml` e `kAppVersion` in `lib/core/app_info.dart` (devono coincidere).
 2. Entra con una PR.
-3. Un tag `v*` su `master` fa partire `release.yml`.
+3. Il file `release-notes/<versione>.md` (formato in `release-notes/README.md`, D-711) si scrive nella stessa PR del bump: `master` è protetto e l'app lo legge dagli asset (D-741), quindi non si può aggiungere dopo. Lo esige `test/core/app_version_test.dart` (dalla 1.7.0 esclusa).
+   Senza il file il job `notes` fa fallire la release prima delle build; `publish` lo mette in cima alla Release. L'app mostra solo quel blocco.
+4. Un tag `v*` su `master` fa partire `release.yml`.
 
 Se un job della release fallisce, il tag esiste ma la release no. È successo con v1.4.0 (D-538): si corregge e si pubblica una versione nuova (v1.4.1), non si riscrive il tag.
 

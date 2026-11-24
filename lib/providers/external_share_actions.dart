@@ -1,23 +1,37 @@
 import 'dart:io';
 import 'dart:ui' show Rect;
 
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../core/app_log.dart';
+import '../data/repositories/track_kinds.dart' show kStreamKind;
 import '../data/db/app_database.dart' show Track;
 import '../services/share/external_share.dart';
 import '../services/share/external_share_text.dart';
+import '../services/share/share_card_renderer.dart';
 import '../services/share/share_fragment.dart';
 import '../services/share/share_m3u8.dart';
 import 'external_share_provider.dart';
+import '../ui/widgets/share_card_maker.dart';
+import 'youtube_providers.dart' show downloadIndexProvider;
 
 /// «Condividi» (D-677): the system share sheet with readable text and links, or an m3u8 above the limit (D-702).
 class ExternalShareActions {
-  ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles})
+  ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles, this.cardMaker, this.downloadedId, this.untitled})
     : _canShareFiles = canShareFiles ?? !Platform.isLinux;
+
+  /// Draws the share card (D-712); null, or a failure, shares the text instead.
+  final ShareCardMaker? cardMaker;
+
+  /// The name of a share with no title, in the app's language (the caption); null: the fragment's own.
+  final String Function()? untitled;
+
+  /// The video id a file was downloaded from (the download index): for files saved before the id was kept on the row.
+  final Future<String?> Function(String path)? downloadedId;
 
   final ExternalShare _share;
   final Future<Directory> Function() _tempDir;
@@ -29,21 +43,27 @@ class ExternalShareActions {
 
   /// [origin] anchors the sheet on iPad and desktop. True when the text was copied to the clipboard
   /// instead of shared (the caller says so); false when shared, or when another share is in progress.
-  Future<bool> share(SharedKind kind, String title, List<Track> tracks, {String? subtitle, Rect? origin}) async {
+  Future<bool> share(SharedKind kind, String title, List<Track> rows, {String? subtitle, Rect? origin}) async {
     if (_busy) return false;
     _busy = true;
     String? text;
     try {
-      if (exceedsShareLimit(tracks)) {
+      final tracks = await _withIds(rows);
+      if (exceedsShareLimit(tracks, kind: kind, title: title)) {
         text = shareM3u8Body(title, tracks);
         if (!_canShareFiles) return await _copy(text);
         // A folder of our own: only it is emptied before a new file is written.
-        final dir = Directory(p.join((await _tempDir()).path, 'freekmusic_share'));
+        final dir = await _shareDir();
         final file = await writeShareM3u8(dir, title, tracks);
         await _share.shareFile(file.path, text: title, origin: origin);
       } else {
         text = buildShareText(kind, title, tracks, subtitle: subtitle);
-        await _share.shareText(text, subject: title, origin: origin);
+        final png = _canShareFiles ? await _card(kind, title, subtitle, tracks) : null;
+        if (png != null) {
+          await _share.shareFile(png.path, text: buildShareCaption(kind, title, tracks, untitled: untitled?.call() ?? untitledShare), origin: origin);
+        } else {
+          await _share.shareText(text, subject: title, origin: origin);
+        }
       }
       return false;
     } on Object catch (e, st) {
@@ -53,6 +73,28 @@ class ExternalShareActions {
       _busy = false;
     }
   }
+
+  Future<List<Track>> _withIds(List<Track> rows) async {
+    final lookup = downloadedId;
+    if (lookup == null) return rows;
+    return [
+      for (final t in rows)
+        t.kind == kStreamKind || t.videoId != null ? t : t.copyWith(videoId: Value(await lookup(t.path))),
+    ];
+  }
+
+  /// The card as a file in our own folder, or null (logged) when it cannot be drawn in time.
+  Future<File?> _card(SharedKind kind, String title, String? subtitle, List<Track> tracks) async {
+    try {
+      final png = await cardMaker?.call(kind, title, subtitle, tracks);
+      return png == null ? null : await writeSharePng(await _shareDir(), title, png);
+    } on Object catch (e, st) {
+      AppLog.w('share card failed, sharing text', e, st);
+      return null;
+    }
+  }
+
+  Future<Directory> _shareDir() async => Directory(p.join((await _tempDir()).path, 'freekmusic_share'));
 
   Future<bool> _copy(String text) async {
     try {
@@ -66,5 +108,11 @@ class ExternalShareActions {
 }
 
 final externalShareActionsProvider = Provider<ExternalShareActions>(
-  (ref) => ExternalShareActions(ref.watch(externalShareProvider), getTemporaryDirectory),
+  (ref) => ExternalShareActions(
+    ref.watch(externalShareProvider),
+    getTemporaryDirectory,
+    cardMaker: shareCardMaker(ref),
+    untitled: () => shareL10n(ref).shareUntitled,
+    downloadedId: (path) async => (await ref.read(downloadIndexProvider.future)).idForPath(path),
+  ),
 );

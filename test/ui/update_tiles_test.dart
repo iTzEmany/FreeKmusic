@@ -2,6 +2,7 @@ import 'package:codecore/providers/update_providers.dart';
 import 'package:codecore/services/online/update_checker.dart';
 import 'package:codecore/services/update/update_installer.dart';
 import 'package:codecore/services/update/update_target.dart';
+import 'package:codecore/ui/screens/settings/update_page.dart';
 import 'package:codecore/ui/screens/settings/update_tiles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,10 +12,26 @@ import '../support/app_harness.dart';
 const _apk = 'freekmusic-full-arm64-v8a-release.apk';
 const _mb = 1048576;
 
-final _info = UpdateInfo(version: '9.9.9', url: 'https://x/rel', assets: [
-  UpdateAsset(name: _apk, url: Uri.parse('https://x/$_apk'), size: 84 * _mb, sha256: 'ab'),
-  UpdateAsset(name: 'freekmusic_9.9.9_amd64.deb', url: Uri.parse('https://x/d.deb'), size: 31 * _mb, sha256: 'ab'),
-]);
+const _block = '''
+## Novità
+- evidenza | mic | Video karaoke nella Jam | Metti un video karaoke.
+- play | Ascolta subito | I brani partono in streaming.
+## Correzioni
+- La musica riparte
+- Il karaoke riprende
+## What's Changed
+* feat(136): arricchimento unico by @x in https://x/pull/208
+''';
+
+final _info = UpdateInfo(
+  version: '9.9.9',
+  url: 'https://x/rel',
+  notes: _block,
+  assets: [
+    UpdateAsset(name: _apk, url: Uri.parse('https://x/$_apk'), size: 84 * _mb, sha256: 'ab'),
+    UpdateAsset(name: 'freekmusic_9.9.9_amd64.deb', url: Uri.parse('https://x/d.deb'), size: 31 * _mb, sha256: 'ab'),
+  ],
+);
 
 class _Flow extends UpdateDownloadNotifier {
   _Flow(this.initial);
@@ -44,30 +61,78 @@ void main() {
   }) async {
     flow = _Flow(state);
     final h = await Harness.create(tester);
-    await h.pump(tester, UpdateDialog(info: _info), extraOverrides: [
-      updateTargetProvider.overrideWith((_) => UpdateTarget(kind: kind, abi: 'arm64-v8a')),
-      updateDownloadProvider.overrideWith(() => flow),
-    ]);
+    await h.pump(
+      tester,
+      UpdatePage(info: _info, wide: tester.view.physicalSize.width / tester.view.devicePixelRatio >= 840),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => UpdateTarget(kind: kind, abi: 'arm64-v8a')),
+        updateDownloadProvider.overrideWith(() => flow),
+      ],
+    );
     return h;
   }
 
   final apk = _info.assets.first;
   const idle = UpdateDownloadState(UpdatePhase.idle);
 
-  testWidgets('newer: «Aggiorna» with the file and its size, no link to copy', (tester) async {
+  testWidgets('newer: the button says «Aggiorna (84 MB)», which TalkBack reads too', (tester) async {
     final h = await open(tester, idle);
-    expect(find.text('Disponibile la versione 9.9.9'), findsOneWidget);
-    expect(find.text('File: $_apk, 84 MB'), findsOneWidget);
+    expect(find.text('È arrivata la 9.9.9'), findsOneWidget);
     expect(find.text('Copia indirizzo'), findsNothing);
-    await tester.tap(find.text('Aggiorna'));
+    expect(tester.getSemantics(find.widgetWithText(FilledButton, 'Aggiorna (84 MB)')).label, contains('84 MB'));
+    await tester.tap(find.text('Aggiorna (84 MB)'));
     expect(flow.calls, ['start']);
     await h.dispose(tester);
+  });
+
+  testWidgets('with the block: highlight, news and «Correzioni (2)» closed; no GitHub «feat(» line', (tester) async {
+    final h = await open(tester, idle);
+    expect(find.text('Video karaoke nella Jam'), findsOneWidget);
+    expect(find.text('Ascolta subito'), findsOneWidget);
+    expect(find.text('Correzioni (2)'), findsOneWidget);
+    expect(find.text('La musica riparte'), findsNothing);
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pump();
+    await tester.tap(find.text('Correzioni (2)'));
+    await tester.pumpAndSettle();
+    expect(find.text('La musica riparte'), findsOneWidget);
+    expect(find.textContaining('feat('), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('without the block (raw GitHub notes): «Correzioni e miglioramenti» and the link only', (tester) async {
+    final h = await Harness.create(tester);
+    final raw = UpdateInfo(version: '9.9.9', url: 'https://x/rel', notes: "## What's Changed\n* feat(1): x by @y");
+    await h.pump(
+      tester,
+      UpdatePage(info: raw, wide: false),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
+      ],
+    );
+    expect(find.text('Correzioni e miglioramenti'), findsOneWidget);
+    expect(find.text('Tutte le modifiche su GitHub'), findsOneWidget);
+    expect(find.textContaining('feat('), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('wide: a two-column dialog; narrow: a full-screen page', (tester) async {
+    final h = await open(tester, idle);
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.byType(Scaffold), findsWidgets);
+    await h.dispose(tester);
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final w = await open(tester, idle);
+    expect(find.byType(Dialog), findsOneWidget);
+    await w.dispose(tester);
   });
 
   testWidgets('a file that does not install itself: «Scarica dal browser»', (tester) async {
     final h = await open(tester, idle, kind: UpdateKind.deb);
     expect(find.text('Scarica dal browser'), findsOneWidget);
-    expect(find.text('Aggiorna'), findsNothing);
+    expect(find.textContaining('Aggiorna ·'), findsNothing);
     await h.dispose(tester);
   });
 
@@ -141,14 +206,22 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('the start-up notice has «Aggiorna», which opens the update dialog', (tester) async {
+  testWidgets('the start-up notice has «Aggiorna», which opens the update page', (tester) async {
     final h = await Harness.create(tester);
-    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
-      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
-      child: const Text('go'),
-    ))), extraOverrides: [
-      updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
-    ]);
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
+      ],
+    );
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
@@ -156,36 +229,51 @@ void main() {
     await tester.tap(find.text('Aggiorna'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('File: $_apk, 84 MB'), findsOneWidget);
+    expect(find.text('È arrivata la 9.9.9'), findsOneWidget);
     await h.dispose(tester);
   });
 
-  testWidgets('a tap on the text of the start-up notice opens the dialog too', (tester) async {
+  testWidgets('a tap on the text of the start-up notice opens the page too', (tester) async {
     final h = await Harness.create(tester);
-    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
-      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
-      child: const Text('go'),
-    ))), extraOverrides: [
-      updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
-    ]);
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+      extraOverrides: [
+        updateTargetProvider.overrideWith((_) => const UpdateTarget(kind: UpdateKind.androidFull, abi: 'arm64-v8a')),
+      ],
+    );
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     await tester.tap(find.text('Disponibile la versione 9.9.9'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
-    expect(find.text('File: $_apk, 84 MB'), findsOneWidget);
+    expect(find.text('È arrivata la 9.9.9'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1)); // the snack bar's exit animation
-    expect(find.byType(SnackBar), findsNothing); // the dialog repeats the text, so look for the snack bar itself
+    expect(find.byType(SnackBar), findsNothing);
     await h.dispose(tester);
   });
 
   testWidgets('the start-up notice times out', (tester) async {
     final h = await Harness.create(tester);
-    await h.pump(tester, Scaffold(body: Builder(builder: (c) => TextButton(
-      onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
-      child: const Text('go'),
-    ))));
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => ScaffoldMessenger.of(c).showSnackBar(updateSnackBar(c, _info, const Duration(seconds: 8))),
+            child: const Text('go'),
+          ),
+        ),
+      ),
+    );
     await tester.tap(find.text('go'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));

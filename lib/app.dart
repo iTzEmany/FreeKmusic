@@ -30,6 +30,7 @@ import 'providers/dislike_store_provider.dart' show dislikeStoreProvider;
 import 'providers/permission_providers.dart';
 import 'providers/releases_providers.dart' show releaseCheckControllerProvider;
 import 'ui/screens/settings/update_tiles.dart' show updateSnackBar;
+import 'ui/screens/settings/whats_new_page.dart' show showWhatsNew;
 import 'ui/shell/app_shell.dart';
 import 'ui/widgets/app_icon_sync.dart';
 import 'ui/widgets/track_actions.dart' show TrackMenuHost;
@@ -81,13 +82,20 @@ class CodecoreApp extends ConsumerWidget {
     // A new version, at most once a day and only if the user asked for it.
     ref.listen(updateOnStartProvider, (_, next) {
       final info = next.value;
-      if (info == null) return;
+      // Not on top of «Aggiornata alla X»: that start has the page only.
+      if (info == null || ref.read(whatsNewOnStartProvider).value != null) return;
       final c = _navigatorKey.currentState?.overlay?.context;
       if (c == null) {
         AppLog.w('no navigator to show the update notice on');
         return;
       }
       _messengerKey.currentState?.showSnackBar(updateSnackBar(c, info, _updateSnack));
+    });
+    // «Aggiornata alla X», once after an update.
+    ref.listen(whatsNewOnStartProvider, (_, next) {
+      final info = next.value;
+      final c = _navigatorKey.currentState?.overlay?.context;
+      if (info != null && c != null && c.mounted) showWhatsNew(c, info);
     });
     ref.listen(promoteErrorsProvider, (_, next) {
       final e = next.value;

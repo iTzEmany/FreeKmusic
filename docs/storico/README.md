@@ -175,3 +175,4 @@ Archivio di ciò che è chiuso. **Non si aggiorna più**; le fasi chiuse nuove s
 | 144 | Modelli e dizionari: catalogo unico, pagina con scarica ed elimina (#221) | [`fase-144-modelli-e-dizionari.md`](fasi/fase-144-modelli-e-dizionari.md) |
 | 145 | Condivisione esterna: Condividi con il foglio di sistema, pagina su Pages, App Link (#222) | [`fase-145-condivisione-esterna.md`](fasi/fase-145-condivisione-esterna.md) |
 | 146 | Sincronizzazione tra dispositivi: tombstone v24, «Mio dispositivo», sync firmato con cancellazioni fra i dispositivi miei (#223) | [`fase-146-sincronizzazione-dispositivi.md`](fasi/fase-146-sincronizzazione-dispositivi.md) |
+| 149 | Novità dell'aggiornamento e scheda di condivisione: pagine «Aggiornamento disponibile» e «Aggiornata alla X», release-notes, scheda PNG con QR, link per i brani locali (v25, FK2) (#233) | [`fase-149-novita-e-scheda-di-condivisione.md`](fasi/fase-149-novita-e-scheda-di-condivisione.md) |

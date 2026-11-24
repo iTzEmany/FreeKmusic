@@ -27,14 +27,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 const _r = YtResult(
-  id: 'abc',
+  id: 'abcdefghijk',
   title: 'Song',
   channel: 'Chan',
   duration: Duration(seconds: 200),
   artists: ['Artist'],
   album: 'Album',
 );
-const _key = 'youtube:abc';
+const _key = 'youtube:abcdefghijk';
 
 class _Yt implements YoutubeService {
   @override
@@ -188,6 +188,7 @@ void main() {
     expect(scanned, [dest]);
     expect(scanSkipped, isTrue, reason: 'no second row after the scan');
     expect(await db.select(db.tracks).get(), hasLength(1));
+    expect(row.videoId, 'abcdefghijk', reason: 'the video id stays on the local row (D-713)');
   });
 
   test('the cover of the shadow row follows the new album key', () async {
@@ -345,6 +346,7 @@ void main() {
     expect(tagged, [libId]);
     expect(await tracks.getById(shadowId), isNull, reason: 'the shadow merged into the library row');
     expect((await db.select(db.plays).get()).single.trackId, libId);
+    expect((await tracks.getById(libId))!.videoId, 'abcdefghijk', reason: 'the library row gets the id too (D-713)');
   });
 
   test('no download folder: nothing is promoted and the cache keeps the file', () async {

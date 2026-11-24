@@ -7,6 +7,7 @@ import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/app_info.dart' show kAppVersion;
 import '../../core/app_log.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/backup_merge.dart';
@@ -21,6 +22,7 @@ import '../../data/settings/settings_store.dart'
         genreRereadAfterKey,
         genreRereadDoneKey,
         handWrittenLyricsKey,
+        lastSeenVersionKey,
         manualRomanizationKey,
         recogPassAfterKey,
         recogPassDoneKey,
@@ -280,6 +282,8 @@ Future<bool> applyPendingRestore({
     }
     stagedDb.renameSync(dbFile.path);
     dbReplaced = true;
+    // A restore is not an update: no «Aggiornata alla X» page for it.
+    await prefs.setString(lastSeenVersionKey, kAppVersion);
     // The restored rows may be older: the recognition pass must run again.
     await prefs.remove(recogPassAfterKey);
     await prefs.remove(recogPassDoneKey);

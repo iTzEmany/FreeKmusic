@@ -1,3 +1,5 @@
+import 'package:codecore/core/app_info.dart' show kAppVersion;
+import 'package:codecore/data/settings/settings_store.dart' show lastSeenVersionKey;
 import 'dart:convert';
 import 'dart:io';
 
@@ -231,6 +233,7 @@ void main() {
       expect(await titles(dbFile), unorderedEquals(['n1', 'n2']));
       expect(await titles(File('${dbFile.path}.before-restore')), ['old']);
       expect(prefs.getString('theme'), 'oled');
+      expect(prefs.getString(lastSeenVersionKey), kAppVersion, reason: 'a restore is not an update');
       expect(
         prefs.getString('deviceId'),
         'this-device',
