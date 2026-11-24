@@ -99,14 +99,14 @@ class PlaylistSyncRepository {
     });
   }
 
-  /// What `GET /sync/favorites` sends: favourite albums and playlists (an `unknown|` album key is a local folder path: no).
+  /// What `GET /sync/collections` sends under `favorites`: favourite albums and playlists (an `unknown|` album key is a local folder path: no).
   Future<List<FavoriteCollectionData>> favorites() async => [
         for (final f in await _db.select(_db.favoriteCollections).get())
           if (!(f.kind == FavoriteCollectionsRepository.album && f.key.startsWith('unknown|')))
             FavoriteCollectionData(kind: f.kind, key: f.key, addedAt: f.addedAt),
       ];
 
-  /// What `GET /sync/streams` sends: the streamed rows (kind 2) that are saved or hearted.
+  /// What `GET /sync/collections` sends under `streams`: the streamed rows (kind 2) that are saved or hearted.
   Future<List<StreamEntry>> streams() async {
     final rows = await (_db.select(_db.tracks)
           ..where((t) => t.kind.equals(kStreamKind) & (t.saved.equals(true) | t.isFavorite.equals(true))))
@@ -129,8 +129,8 @@ class PlaylistSyncRepository {
     ];
   }
 
-  /// Keys of the streamed tracks that are episodes here (kind 1, path `stream:<key>`): they cannot become streamed rows,
-  /// so a sync must not plan them ([planSync]'s `hasFile`).
+  /// Keys of the streamed tracks that are episodes here (kind 1, path `stream:<key>`): they cannot become streamed rows
+  /// ([_noRow]).
   Future<Set<String>> episodeStreamKeys() async => {
     for (final path
         in await (_db.selectOnly(_db.tracks)
@@ -144,7 +144,7 @@ class PlaylistSyncRepository {
       ?keyOfStreamPath(path),
   };
 
-  /// What `POST /sync/tombstones` sends: all the deletions.
+  /// What `GET /sync/collections` sends under `tombstones`: all the deletions.
   Future<List<TombstoneData>> tombstones() async => [
         for (final t in await SyncTombstoneRepository(_db).all())
           if (kTombstoneKinds.contains(t.kind)) TombstoneData(kind: t.kind, key: t.key, deletedAt: t.deletedAt),
@@ -163,7 +163,7 @@ class PlaylistSyncRepository {
     return out;
   }
 
-  /// What `GET /sync/plays` sends: the latest [kMaxSyncItems] listens (older ones stay on this device).
+  /// What `GET /sync/collections` sends under `plays`: the latest [kMaxSyncItems] listens (older ones stay on this device).
   Future<List<PlayEntry>> plays() async {
     final rows = await (_db.select(_db.plays)
           ..orderBy([(p) => OrderingTerm.desc(p.playedAt)])
@@ -177,7 +177,7 @@ class PlaylistSyncRepository {
     ];
   }
 
-  /// What `GET /sync/tags` sends: the user's tags and the tags of each track.
+  /// What `GET /sync/collections` sends under `tags`: the user's tags and the tags of each track.
   Future<({List<TagEntry> tags, List<TaggedTrack> tagged})> tags() async {
     final tags = await _db.select(_db.userTags).get();
     final names = {for (final t in tags) t.id: t.name};
@@ -312,6 +312,44 @@ class PlaylistSyncRepository {
         settings: settings,
       );
 
+  /// A streamed track that cannot become a row here: it is already a file ([hasFile], by key) or an episode. One
+  /// check for the plan and for [apply], so a plan never offers what the apply would refuse.
+  Future<bool Function(String key)> _noRow(bool Function(String key)? hasFile) async {
+    final episodes = await episodeStreamKeys();
+    return (k) => (hasFile?.call(k) ?? false) || episodes.contains(k);
+  }
+
+  /// What a sync with a device does, from its playlists [remote] and what [side] it sent ([SyncClient.collections]
+  /// reads it): the one place that builds the plan, for the app and for the tests. [resolver] finds this library's
+  /// tracks, [settings] are the allowed ones here (`syncedSettings`), [history] is `recordHistory` (off: no listen
+  /// is kept). Of an own device ([mine]) only what is new is kept of its lyrics, listens and tags, so the plan shows
+  /// what [apply] would add.
+  Future<SyncPlan> plan(
+    List<RemotePlaylist> remote,
+    SyncSide side, {
+    required TrackResolver resolver,
+    required Map<String, Object> settings,
+    required bool mine,
+    required bool history,
+    bool Function(String key)? hasFile,
+  }) async {
+    return planSync(
+      await local(),
+      remote,
+      resolver.resolve,
+      localSide: await this.side(settings: settings),
+      remoteSide: SyncSide(
+        favorites: side.favorites,
+        streams: side.streams,
+        tombstones: side.tombstones,
+        settings: side.settings,
+        tables: mine ? await newTables(side.tables, resolver, plays: history) : const TablesBundle(),
+      ),
+      mine: mine,
+      hasFile: await _noRow(hasFile),
+    );
+  }
+
   /// A resolver over this device's library, the one a backup restore uses.
   Future<TrackResolver> resolver({bool caseInsensitive = false}) async {
     final folders = {
@@ -345,7 +383,7 @@ class PlaylistSyncRepository {
   /// streamed rows. Every write re-checks its date against what is here now, as the plan may be older than the
   /// confirmation: on a tie the item stays, an item is deleted only if older than the deletion and a tombstone goes
   /// only if the arriving item is not older. A deletion removes a row or a flag, never a file; [hasFile] says a
-  /// streamed track is already a file here (no row is made for it). The lyrics, listens and tags of the plan are
+  /// streamed track is already a file or an episode here (no row is made for it). The lyrics, listens and tags of the plan are
   /// merged with the rules of a backup's merge (nothing is lost, a second run adds nothing), tracks found by [resolver]
   /// (this library's, by default). Returns how many playlists were written. The settings of the plan are not
   /// written here: they are not in the database.
@@ -409,7 +447,7 @@ class PlaylistSyncRepository {
         }
       }
       if (applyCollections) {
-        await _applyCollections(plan.collections, tomb, hasFile);
+        await _applyCollections(plan.collections, tomb, await _noRow(hasFile));
         if (found != null) {
           await mergeTablesData(_db, tables.toBackupData(), found);
           final idOf = _lookup(found);
@@ -436,7 +474,7 @@ class PlaylistSyncRepository {
   Future<void> _applyCollections(
     CollectionPlan c,
     SyncTombstoneRepository tomb,
-    bool Function(String key)? hasFile,
+    bool Function(String key) hasFile,
   ) async {
     for (final t in c.deletes) {
       if (await _drop(t)) await tomb.record(t.kind, t.key, at: t.deletedAt);

@@ -14,14 +14,14 @@ import 'package:codecore/services/share/tables_sync.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
 
 void main() {
   late DeviceIdentity idA, idB, idC, idD;
   late OfferNode nodeB;
   late Set<String> trusted, mine;
   late List<TombstoneData> tombstones;
-  var tombstoneCalls = 0;
-  late int favoritesCalls, streamsCalls, settingsCalls;
+  late int favoritesCalls, streamsCalls, tombstoneCalls, settingsCalls;
   late Future<({List<TextEntry> texts, int? next})> Function(int after) textsOf;
   late List<(String, TrackRequest)> wanted;
 
@@ -40,8 +40,7 @@ void main() {
     trusted = {idA.fingerprint, idD.fingerprint};
     mine = {idA.fingerprint};
     tombstones = [];
-    tombstoneCalls = 0;
-    favoritesCalls = streamsCalls = settingsCalls = 0;
+    favoritesCalls = streamsCalls = tombstoneCalls = settingsCalls = 0;
     textsOf = (after) async => (texts: <TextEntry>[], next: null);
     wanted = [];
     nodeB = OfferNode(
@@ -144,7 +143,7 @@ void main() {
     expect(wanted, hasLength(1));
   });
 
-  group('favourites, streamed tracks and tombstones', () {
+  group('collections: favourites, streamed tracks and tombstones', () {
     const uuid = '00000000-0000-4000-8000-000000000001';
 
     test(
@@ -171,108 +170,42 @@ void main() {
       },
     );
 
-    test('a trusted device that is not «mine» is served only the playlists: an empty answer on the other routes, and none is asked for', () async {
-      final asked = await client(idD).collections(
-        '127.0.0.1',
-        nodeB.tlsPort!,
-        pin: idB.fingerprint,
-        mine: true,
-      );
-      expect([
-        asked.favorites,
-        asked.streams,
-        asked.tombstones,
-      ], everyElement(isEmpty));
-      expect(
-        (favoritesCalls, streamsCalls),
-        (0, 0),
-        reason: 'the server does not even read them for it',
-      );
-      expect(
-        (await client(idD)
-            .playlists('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint)),
-        hasLength(1),
-      );
-
-      final none = await client(idA).collections(
-        '127.0.0.1',
-        nodeB.tlsPort!,
-        pin: idB.fingerprint,
-        mine: false,
-      );
-      expect([
-        none.favorites,
-        none.streams,
-        none.tombstones,
-      ], everyElement(isEmpty));
-      expect(
-        (favoritesCalls, streamsCalls),
-        (0, 0),
-        reason: 'the client does not ask when it does not think the server is its own',
-      );
-    });
-
-    test('tombstones go only to an own device, and only when asked: a device not «mine» gets none', () async {
-      tombstones = [
-        const TombstoneData(kind: 'playlist', key: uuid, deletedAt: 50),
-      ];
-      final mineSide = await client(idA).collections(
-        '127.0.0.1',
-        nodeB.tlsPort!,
-        pin: idB.fingerprint,
-        mine: true,
-      );
-      expect(mineSide.tombstones.single.key, uuid);
+    test('a trusted device that is not «mine» is served only the playlists: empty lists and settings, no tombstones, empty texts, and the server reads nothing for it', () async {
+      tombstones = [const TombstoneData(kind: 'playlist', key: uuid, deletedAt: 50)];
+      textsOf = (after) async => (texts: [const TextEntry(ref: TrackRef(title: 't', relPath: 't.mp3'), plain: 'w')], next: null);
       // The caller asks (it thinks the server is its own) but the server does not think so of it.
-      final other = await client(idD).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true);
-      expect(other.tombstones, isEmpty);
+      final asked = await client(idD).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true);
+      expect([asked.favorites, asked.streams, asked.tombstones, asked.settings, asked.tables.plays, asked.tables.tags, asked.tables.texts],
+          everyElement(isEmpty));
+      expect((favoritesCalls, streamsCalls, tombstoneCalls, settingsCalls), (0, 0, 0, 0));
+      expect(await client(idD).playlists('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint), hasLength(1));
+
       // Not asked at all when the caller does not think the server is its own.
-      tombstoneCalls = 0;
       final none = await client(idA).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: false);
-      expect(none.tombstones, isEmpty);
-      expect(tombstoneCalls, 0);
+      expect([none.favorites, none.streams, none.tombstones, none.settings], everyElement(isEmpty));
+      expect((favoritesCalls, streamsCalls, tombstoneCalls, settingsCalls), (0, 0, 0, 0));
+
+      // An own device does get the tombstones.
+      final mineSide = await client(idA).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true);
+      expect(mineSide.tombstones.single.key, uuid);
     });
 
-    test('an untrusted or unsigned caller is refused (403) on every route by itself, tombstones included', () async {
+    test('an untrusted or unsigned caller is refused (403) on every route by itself', () async {
       for (final lan in [LanClient(identity: idC), LanClient()]) {
-        for (final path in [
-          '/sync/playlists',
-          '/sync/favorites',
-          '/sync/streams',
-        ]) {
-          final r = await lan.secureGet(
-            '127.0.0.1',
-            nodeB.tlsPort!,
-            path,
-            pin: idB.fingerprint,
-          );
+        for (final path in ['/sync/playlists', '/sync/collections']) {
+          final r = await lan.secureGet('127.0.0.1', nodeB.tlsPort!, path, pin: idB.fingerprint);
           expect(r.status, 403, reason: path);
         }
-        final t = await lan.securePost(
-          '127.0.0.1',
-          nodeB.tlsPort!,
-          '/sync/tombstones',
-          {},
-          pin: idB.fingerprint,
-        );
-        expect(t.status, 403);
+        for (final path in ['/sync/texts', '/sync/want']) {
+          final r = await lan.securePost('127.0.0.1', nodeB.tlsPort!, path, {'after': 0}, pin: idB.fingerprint);
+          expect(r.status, 403, reason: path);
+        }
       }
-      expect((favoritesCalls, streamsCalls), (0, 0));
+      expect((favoritesCalls, streamsCalls, tombstoneCalls, settingsCalls), (0, 0, 0, 0));
       for (final c in [client(idC), SyncClient(LanClient())]) {
         await expectLater(
-          c.collections(
-            '127.0.0.1',
-            nodeB.tlsPort!,
-            pin: idB.fingerprint,
-            mine: true,
-          ),
-          throwsA(
-            isA<SyncException>().having(
-              (e) => e.error,
-              'error',
-              SyncError.notTrusted,
-            ),
-          ),
+          c.collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true),
+          throwsA(isA<SyncException>().having((e) => e.error, 'error', SyncError.notTrusted)),
         );
       }
       await expectLater(client(idA).collections('127.0.0.1', nodeB.tlsPort!, pin: idC.fingerprint, mine: true),
@@ -310,7 +243,7 @@ void main() {
     });
   });
 
-  group('settings, listens, tags and texts', () {
+  group('collections: settings, listens, tags and texts', () {
     TextEntry text(int i) => TextEntry(ref: TrackRef(title: 't$i', relPath: 't$i.mp3'), plain: 'words $i');
 
     test('an own device reads them; the settings are only the allowed ones', () async {
@@ -320,30 +253,6 @@ void main() {
       expect(side.tables.plays.single.context, 2);
       expect((side.tables.tags.single.name, side.tables.tags.single.color), ('rock', 3));
       expect(side.tables.tagged.single.tags, ['rock']);
-    });
-
-    test('a trusted device that is not «mine» gets nothing of them, and the server does not read them for it', () async {
-      final side = await client(idD).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true);
-      expect(side.settings, isEmpty);
-      expect(side.tables.isEmpty, isTrue);
-      expect(settingsCalls, 0);
-      textsOf = (after) async => (texts: [text(1)], next: null);
-      final raw = await LanClient(identity: idD).securePost('127.0.0.1', nodeB.tlsPort!, '/sync/texts', {'after': 0}, pin: idB.fingerprint);
-      expect(raw.json!['texts'], isEmpty, reason: 'the texts route answers empty too');
-      // And the client does not ask when it does not think the server is its own.
-      await client(idA).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: false);
-      expect(settingsCalls, 0);
-    });
-
-    test('an untrusted or unsigned caller is refused on every one of these routes', () async {
-      for (final lan in [LanClient(identity: idC), LanClient()]) {
-        for (final path in ['/sync/settings', '/sync/plays', '/sync/tags']) {
-          expect((await lan.secureGet('127.0.0.1', nodeB.tlsPort!, path, pin: idB.fingerprint)).status, 403, reason: path);
-        }
-        final r = await lan.securePost('127.0.0.1', nodeB.tlsPort!, '/sync/texts', {'after': 0}, pin: idB.fingerprint);
-        expect(r.status, 403);
-      }
-      expect(settingsCalls, 0);
     });
 
     test('texts come page by page; a page that does not move forward ends the reading', () async {
@@ -476,10 +385,29 @@ void main() {
       );
     });
 
-    test('a peer without the collection routes (404 on the first) syncs the playlists only; other statuses fail', () async {
-      status = 404;
-      final side = await client(idA).collections('127.0.0.1', raw.tlsPort!, pin: idB.fingerprint, mine: true);
-      expect([side.favorites, side.streams, side.tombstones], everyElement(isEmpty));
+    test('a peer without /sync/collections (404, as a version up to 1.6 answers) syncs the playlists only', () async {
+      // A router with only the routes a 1.6 device has: the others are a 404 of the router itself.
+      final old = OfferNode(
+        OfferService(deviceId: 'o', deviceName: 'O', allowLoopback: true),
+        allowLoopback: true,
+        identity: idB,
+        secureRoutes: {
+          '/sync': (Router()
+                ..get('/playlists', (Request r) async => Response.ok(jsonEncode({'playlists': [playlist()]}), headers: {'content-type': 'application/json'})))
+              .call,
+        },
+      );
+      await old.start();
+      addTearDown(old.stop);
+      expect(await client(idA).playlists('127.0.0.1', old.tlsPort!, pin: idB.fingerprint), hasLength(1));
+      final side = await client(idA).collections('127.0.0.1', old.tlsPort!, pin: idB.fingerprint, mine: true);
+      expect([side.favorites, side.streams, side.tombstones, side.settings], everyElement(isEmpty));
+      expect(side.tables.isEmpty, isTrue);
+    });
+
+    test('a collections answer whose list is not a list is a failure', () async {
+      body = {'favorites': 'x', 'streams': [], 'tombstones': [], 'plays': [], 'tags': [], 'tagged': []};
+      await expectLater(client(idA).collections('127.0.0.1', raw.tlsPort!, pin: idB.fingerprint, mine: true), failed());
     });
 
     test('a malformed playlist is a SyncError, never a TypeError; a good one is read', () async {

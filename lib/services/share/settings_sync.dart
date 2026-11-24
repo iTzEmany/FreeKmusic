@@ -198,7 +198,7 @@ final Map<String, _Spec> _synced = {
 /// The keys that may travel.
 Set<String> get syncedSettingKeys => _synced.keys.toSet();
 
-/// What `GET /sync/settings` sends: the allowed settings of [s] by key (JSON values: bool, number, string).
+/// What `GET /sync/collections` sends under `settings`: the allowed settings of [s] by key (JSON values: bool, number, string).
 Map<String, Object> syncedSettings(AppSettings s) => {
   for (final e in _synced.entries)
     // A custom theme stays here: it is not sent, and [planSettings] reads its absence as «keep mine».

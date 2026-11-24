@@ -27,17 +27,12 @@ const kMaxWantedTracks = 500;
 /// only to a **trusted** signer: a device that merely knows the address gets 403.
 ///
 /// * `GET /playlists` — every playlist in the portable format.
-/// * `GET /favorites` — the favourite albums and playlists (`{kind, key, addedAt}`), only to a caller that is one
-///   of the user's own devices ([isMine]); any other trusted caller gets an empty list.
-/// * `GET /streams` — the streamed tracks saved to the library or hearted (`StreamEntry`, with their dates), mine only.
-/// * `POST /tombstones` `{since?}` — the deletions (`{kind, key, deletedAt}`), mine only; any other trusted caller
-///   gets an empty list, so nothing is deleted there. A POST so that `since` is in the signed body.
-/// * `GET /settings` — the settings that do not depend on the device ([syncedSettings]), mine only.
-/// * `GET /plays` — the latest listens (`PlayEntry`), mine only.
-/// * `GET /tags` — the user's tags and the tags of each track, mine only.
+/// * `GET /collections` — everything else but the lyrics, mine only: favourite albums and playlists, streamed tracks
+///   saved or hearted (`StreamEntry`, with dates), deletions (`{kind, key, deletedAt}`), the settings that do not
+///   depend on the device ([syncedSettings]), the latest listens, the tags and the tags of each track. Any other
+///   trusted caller gets every list empty (and the server reads nothing), so nothing is deleted there.
 /// * `POST /texts` `{after}` — lyrics and curiosities of the library tracks with an id above `after`, one page
-///   ([kTextsPerPage]) with the id to continue from (`next`, null at the end), mine only.
-///   Anything the route sends to a caller that is not mine is empty.
+///   ([kTextsPerPage]) with the id to continue from (`next`, null at the end), mine only (empty to anyone else).
 /// * `POST /want` — «send me these tracks»: answered by an offer in the other direction.
 Router buildSyncRouter({
   required Future<List<RemotePlaylist>> Function() export,
@@ -66,52 +61,24 @@ Router buildSyncRouter({
     return json(200, {'playlists': [for (final p in await export()) p.toJson()]});
   });
 
-  router.get('/favorites', (Request r) async {
+  router.get('/collections', (Request r) async {
     final fp = trustedCaller(r);
     if (fp == null) return json(403, {'error': 'not trusted'});
+    if (!isMine(fp)) {
+      return json(200, {
+        'favorites': const [], 'streams': const [], 'tombstones': const [], 'settings': const {},
+        'plays': const [], 'tags': const [], 'tagged': const [],
+      });
+    }
+    final tags = await exportTags();
     return json(200, {
-      'favorites': [
-        if (isMine(fp))
-          for (final f in await exportFavorites()) f.toJson(),
-      ],
-    });
-  });
-
-  router.get('/streams', (Request r) async {
-    final fp = trustedCaller(r);
-    if (fp == null) return json(403, {'error': 'not trusted'});
-    return json(200, {
-      'streams': [
-        if (isMine(fp))
-          for (final e in await exportStreams()) e.toJson(),
-      ],
-    });
-  });
-
-  router.get('/settings', (Request r) async {
-    final fp = trustedCaller(r);
-    if (fp == null) return json(403, {'error': 'not trusted'});
-    return json(200, {'settings': isMine(fp) ? await exportSettings() : const {}});
-  });
-
-  router.get('/plays', (Request r) async {
-    final fp = trustedCaller(r);
-    if (fp == null) return json(403, {'error': 'not trusted'});
-    return json(200, {
-      'plays': [
-        if (isMine(fp))
-          for (final p in await exportPlays()) p.toJson(),
-      ],
-    });
-  });
-
-  router.get('/tags', (Request r) async {
-    final fp = trustedCaller(r);
-    if (fp == null) return json(403, {'error': 'not trusted'});
-    final all = isMine(fp) ? await exportTags() : (tags: const <TagEntry>[], tagged: const <TaggedTrack>[]);
-    return json(200, {
-      'tags': [for (final t in all.tags) t.toJson()],
-      'tagged': [for (final t in all.tagged) t.toJson()],
+      'favorites': [for (final f in await exportFavorites()) f.toJson()],
+      'streams': [for (final e in await exportStreams()) e.toJson()],
+      'tombstones': [for (final t in await exportTombstones()) t.toJson()],
+      'settings': await exportSettings(),
+      'plays': [for (final p in await exportPlays()) p.toJson()],
+      'tags': [for (final t in tags.tags) t.toJson()],
+      'tagged': [for (final t in tags.tagged) t.toJson()],
     });
   });
 
@@ -128,13 +95,6 @@ Router buildSyncRouter({
     final after = body['after'];
     final page = isMine(fp) ? await exportTexts(after is int && after > 0 ? after : 0) : (texts: const <TextEntry>[], next: null);
     return json(200, {'texts': [for (final t in page.texts) t.toJson()], 'next': page.next});
-  });
-
-  router.post('/tombstones', (Request r) async {
-    final fp = trustedCaller(r);
-    if (fp == null) return json(403, {'error': 'not trusted'});
-    final all = isMine(fp) ? await exportTombstones() : const <TombstoneData>[];
-    return json(200, {'tombstones': [for (final t in all) t.toJson()]});
   });
 
   router.post('/want', (Request r) async {

@@ -23,10 +23,8 @@ import '../services/share/pairing.dart';
 import '../services/share/pairing_client.dart';
 import '../services/share/sync_client.dart';
 import '../services/share/sync_routes.dart';
-import '../services/share/collection_sync.dart' show SyncSide;
 import '../services/share/playlist_sync.dart';
 import '../services/share/settings_sync.dart';
-import '../services/share/tables_sync.dart' show TablesBundle;
 import '../services/share/trusted_devices.dart';
 import '../services/share/share_notifier.dart';
 import '../core/paths.dart';
@@ -746,8 +744,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     await _ensureRunning();
     final peer = _peerOf(device.id);
     if (peer?.tlsPort == null) throw const SyncException(SyncError.unreachable);
-    final db = ref.read(databaseProvider);
-    final repo = PlaylistSyncRepository(db);
+    final repo = PlaylistSyncRepository(ref.read(databaseProvider));
     final client = SyncClient(ref.read(lanClientProvider));
     final remote = await client.playlists(peer!.host, peer.tlsPort!, pin: device.fingerprint);
     final resolver = await repo.resolver(caseInsensitive: Platform.isWindows);
@@ -758,24 +755,16 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       mine: device.mine,
       keepTexts: (page) => repo.newTexts(page, resolver),
     );
+    final settings = ref.read(settingsProvider);
     final index = await ref.read(downloadIndexProvider.future);
-    // An episode cannot become a streamed row, like a track already downloaded: neither is planned.
-    final episodes = await repo.episodeStreamKeys();
-    return planSync(
-      await repo.local(),
+    return repo.plan(
       remote,
-      resolver.resolve,
-      localSide: await repo.side(settings: syncedSettings(ref.read(settingsProvider))),
-      remoteSide: SyncSide(
-        favorites: side.favorites,
-        streams: side.streams,
-        tombstones: side.tombstones,
-        settings: side.settings,
-        // Only the news: what the plan shows is what the merge would add.
-        tables: device.mine ? await repo.newTables(side.tables, resolver, plays: ref.read(settingsProvider).recordHistory) : const TablesBundle(),
-      ),
+      side,
+      resolver: resolver,
+      settings: syncedSettings(settings),
       mine: device.mine,
-      hasFile: (k) => index.pathForKey(k) != null || episodes.contains(k),
+      history: settings.recordHistory,
+      hasFile: (k) => index.pathForKey(k) != null,
     );
   }
 

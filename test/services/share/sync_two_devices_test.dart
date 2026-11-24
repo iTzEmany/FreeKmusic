@@ -10,6 +10,11 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/share/collection_sync.dart';
+import 'package:codecore/services/share/device_identity.dart';
+import 'package:codecore/services/share/lan_client.dart';
+import 'package:codecore/services/share/offers.dart';
+import 'package:codecore/services/share/sync_client.dart';
+import 'package:codecore/services/share/sync_routes.dart';
 import 'package:codecore/services/share/playlist_sync.dart';
 import 'package:codecore/services/share/settings_sync.dart';
 import 'package:codecore/services/share/tables_sync.dart';
@@ -24,7 +29,7 @@ import 'package:path/path.dart' as p;
 
 int _clock = 0;
 int _current = 0;
-List<int> _skew = [0, 0];
+List<int> _skew = [0, 0, 0];
 
 YtResult _yt(String id) =>
     YtResult(id: id, title: 'T$id', channel: 'Ch', duration: null);
@@ -181,42 +186,31 @@ class _Dev {
 
 Future<SyncPlan> _plan(_Dev me, _Dev other, {required bool mine}) async {
   _current = me.i;
-  final resolver = await me.sync.resolver();
-  // The other device's data as the routes send it: through JSON.
+  // The other device's data as the routes send it: through JSON (and, as the client does for a device that is not
+  // «mine», nothing but the playlists is read).
   Object? wire(Object? j) => jsonDecode(jsonEncode(j));
   final tags = await other.sync.tags();
-  final theirs = TablesBundle(
-    texts: [
-      for (final t in (await other.sync.texts(0)).texts)
-        ?TextEntry.tryParse(wire(t.toJson())),
-    ],
-    plays: [
-      for (final x in await other.sync.plays())
-        ?PlayEntry.tryParse(wire(x.toJson())),
-    ],
-    tags: [for (final t in tags.tags) ?TagEntry.tryParse(wire(t.toJson()))],
-    tagged: [
-      for (final t in tags.tagged) ?TaggedTrack.tryParse(wire(t.toJson())),
-    ],
-  );
-  return planSync(
-    await me.sync.local(),
-    await other.sync.export(),
-    resolver.resolve,
-    localSide: await me.sync.side(settings: syncedSettings(me.settings)),
-    // As the client does for a device that is not «mine»: nothing but the playlists is read.
-    remoteSide: !mine
-        ? const SyncSide()
-        : SyncSide(
-            favorites: await other.sync.favorites(),
-            streams: await other.sync.streams(),
-            tombstones: mine ? await other.sync.tombstones() : const [],
-            settings: syncedSettings(other.settings),
-            tables: mine
-                ? await me.sync.newTables(theirs, resolver)
-                : const TablesBundle(),
+  final side = !mine
+      ? const SyncSide()
+      : SyncSide(
+          favorites: await other.sync.favorites(),
+          streams: await other.sync.streams(),
+          tombstones: await other.sync.tombstones(),
+          settings: syncedSettings(other.settings),
+          tables: TablesBundle(
+            texts: [for (final t in (await other.sync.texts(0)).texts) ?TextEntry.tryParse(wire(t.toJson()))],
+            plays: [for (final x in await other.sync.plays()) ?PlayEntry.tryParse(wire(x.toJson()))],
+            tags: [for (final t in tags.tags) ?TagEntry.tryParse(wire(t.toJson()))],
+            tagged: [for (final t in tags.tagged) ?TaggedTrack.tryParse(wire(t.toJson()))],
           ),
+        );
+  return me.sync.plan(
+    await other.sync.export(),
+    side,
+    resolver: await me.sync.resolver(),
+    settings: syncedSettings(me.settings),
     mine: mine,
+    history: true,
   );
 }
 
@@ -245,22 +239,25 @@ Future<bool> _round(_Dev a, _Dev b, {bool aFirst = true}) async {
 void main() {
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
   late Directory dir;
-  late _Dev a, b;
+  late _Dev a, b, c;
 
   setUp(() async {
     dir = Directory.systemTemp.createTempSync('sync-two');
     _clock = DateTime.now().millisecondsSinceEpoch - 5 * 86400000;
-    _skew = [0, 0];
+    _skew = [0, 0, 0];
     nowMsOverride = () => _clock + _skew[_current];
     a = _Dev(0, dir);
     b = _Dev(1, dir);
+    c = _Dev(2, dir);
     await a.seed();
     await b.seed();
+    await c.seed();
   });
   tearDown(() async {
     nowMsOverride = null;
     await a.db.close();
     await b.db.close();
+    await c.db.close();
     dir.deleteSync(recursive: true);
   });
 
@@ -398,9 +395,9 @@ void main() {
   );
 
   test('the same scenario with clocks a few minutes apart still converges and stays quiet', () async {
-    _skew = [0, 4 * 60 * 1000];
+    _skew = [0, 4 * 60 * 1000, 0];
     await scenario(strict: false);
-    _skew = [0, -7 * 60 * 1000];
+    _skew = [0, -7 * 60 * 1000, 0];
     await a.at(() async => a.playlists.create('PLate'));
     await b.at(() async => b.playlists.create('PEarly'));
     await twoRoundsThenQuiet('skewed clocks');
@@ -504,5 +501,114 @@ void main() {
         expect(File(p.join(d.root, '$n.mp3')).existsSync(), isTrue);
       }
     }
+  });
+
+  test('three devices, A-B and B-C «mine» (A and C not paired): a tombstone B learned from A keeps the playlist from coming back from C', () async {
+    late String uuid;
+    await a.at(() async {
+      final pa = await a.playlists.create('PA');
+      await a.playlists.addTracks(pa, [await a.id('a')]);
+      uuid = await a.playlistId('PA');
+    });
+    // C had the playlist from an earlier sync with A; B never had it.
+    await _pull(c, a);
+    expect(await c.state(), contains(uuid));
+    await a.at(() async => a.playlists.delete(await a.playlistRow('PA')));
+
+    // B learns the deletion from A: it has nothing to delete, so only the tombstone is kept.
+    final plan = await _plan(b, a, mine: true);
+    expect(plan.collections.learned.single.key, uuid);
+    await _pull(b, a);
+    expect(await b.state(), isNot(contains(uuid)));
+    expect((await b.tombstoneKeys()).single, startsWith('playlist/$uuid@'));
+
+    // B reads C: the playlist there is older than the tombstone, so it is not added back.
+    final fromC = await _plan(b, c, mine: true);
+    expect(fromC.toWrite, isEmpty, reason: 'the playlist came back from C');
+    await _pull(b, c);
+    expect(await b.state(), isNot(contains(uuid)));
+
+    // C reads B and the deletion reaches it; then everything is quiet.
+    await _pull(c, b);
+    expect(await c.state(), isNot(contains(uuid)));
+    for (final (x, y) in [(a, b), (b, a), (b, c), (c, b)]) {
+      expect((await _plan(x, y, mine: true)).isEmpty, isTrue, reason: 'dev${x.i}<-dev${y.i}');
+    }
+    expect(await a.state(), await c.state());
+  });
+
+  test('one sync over the real routes: playlists, one collections request, the texts, then only the settings the user picked', () async {
+    final ids = Directory(p.join(dir.path, 'ids'));
+    final idA = await DeviceIdentity.loadOrCreate(Directory(p.join(ids.path, 'a')));
+    final idB = await DeviceIdentity.loadOrCreate(Directory(p.join(ids.path, 'b')));
+    await b.at(() async {
+      final pb = await b.playlists.create('PB');
+      await b.playlists.addTracks(pb, [await b.id('b'), await b.id('c')]);
+      await b.favorites.toggle('album', 'art|alb1');
+      await b.save(_s3);
+      await b.setLyrics('b', 'lyrics of b');
+      await b.play('b', 2000);
+      await b.tag('sera', ['b']);
+    });
+    b.settings = b.settings.copyWith(theme: 'oled', accent: 'rosso');
+    final node = OfferNode(
+      OfferService(deviceId: 'b', deviceName: 'B', allowLoopback: true),
+      allowLoopback: true,
+      identity: idB,
+      secureRoutes: {
+        '/sync': buildSyncRouter(
+          export: b.sync.export,
+          exportFavorites: b.sync.favorites,
+          exportStreams: b.sync.streams,
+          exportTombstones: b.sync.tombstones,
+          exportSettings: () async => syncedSettings(b.settings),
+          exportPlays: b.sync.plays,
+          exportTags: b.sync.tags,
+          exportTexts: b.sync.texts,
+          isTrusted: (fp) => fp == idA.fingerprint,
+          isMine: (fp) => fp == idA.fingerprint,
+          onWant: (host, fp, req) async => 0,
+        ).call,
+      },
+    );
+    await node.start();
+    addTearDown(node.stop);
+
+    // What ShareHub.planPlaylistSync does, step by step.
+    _current = a.i;
+    final client = SyncClient(LanClient(identity: idA));
+    final remote = await client.playlists('127.0.0.1', node.tlsPort!, pin: idB.fingerprint);
+    final resolver = await a.sync.resolver();
+    final side = await client.collections('127.0.0.1', node.tlsPort!,
+        pin: idB.fingerprint, mine: true, keepTexts: (page) => a.sync.newTexts(page, resolver));
+    final plan = await a.sync.plan(remote, side,
+        resolver: resolver, settings: syncedSettings(a.settings), mine: true, history: true);
+    expect(plan.toAdd.single.remote.name, 'PB');
+    expect(plan.collections.favoriteAdds.single.key, 'art|alb1');
+    expect(plan.collections.saves.single.key, 'youtube:$_s3');
+    expect([for (final c in plan.collections.settings) c.key], unorderedEquals(['theme', 'accent']));
+
+    await a.sync.apply(plan, applyCollections: true, resolver: resolver);
+    // The user picks only the theme: no setting is applied by itself.
+    a.settings = applySettings(a.settings, [for (final c in plan.collections.settings) if (c.key == 'theme') c]);
+    final state = await a.state();
+    for (final w in ['PB', 'art|alb1', 'youtube:$_s3', 'lyrics of b', 'b@2000', 'sera']) {
+      expect(state, contains(w));
+    }
+    expect(a.settings.theme, 'oled');
+    expect(a.settings.accent, isNot('rosso'));
+
+    final again = await a.sync.plan(
+      await client.playlists('127.0.0.1', node.tlsPort!, pin: idB.fingerprint),
+      await client.collections('127.0.0.1', node.tlsPort!,
+          pin: idB.fingerprint, mine: true, keepTexts: (page) => a.sync.newTexts(page, resolver)),
+      resolver: resolver,
+      settings: syncedSettings(a.settings),
+      mine: true,
+      history: true,
+    );
+    expect(again.toWrite, isEmpty);
+    expect([for (final c in again.collections.settings) c.key], ['accent'], reason: 'only the setting not picked is left');
+    expect(again.collections.additions + again.collections.tables.texts.length, 0);
   });
 }

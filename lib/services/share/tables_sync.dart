@@ -14,7 +14,7 @@ const kTextsPerPage = 200;
 /// Longest list of tags of one track read from another device.
 const kMaxTagsPerTrack = 100;
 
-/// Most (track, tag) pairs in one answer of `GET /sync/tags`, on both sides.
+/// Most (track, tag) pairs in one answer of `GET /sync/collections`, on both sides.
 const kMaxTaggedPairs = 20000;
 
 /// Most characters of lyrics and curiosities kept from one sync (the rest is not read): memory is bounded.
