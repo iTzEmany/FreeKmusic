@@ -4,9 +4,11 @@ import '../../core/app_log.dart';
 import '../../core/clock.dart';
 import '../../core/playlist_order.dart';
 import '../db/app_database.dart';
+import '../db/tables.dart' show TombstoneKind;
 import 'favorite_collections_repository.dart';
 import 'hidden_playlists.dart';
 import 'light_tracks.dart';
+import 'sync_tombstone_repository.dart';
 import 'track_kinds.dart';
 
 class PlaylistSummary {
@@ -63,7 +65,8 @@ class PlaylistRepository {
         if (uuid != null) {
           await FavoriteCollectionsRepository(_db).remove(FavoriteCollectionsRepository.playlist, uuid);
         }
-        await (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
+        final n = await (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
+        if (uuid != null && n > 0) await SyncTombstoneRepository(_db).record(TombstoneKind.playlist, uuid);
       });
 
   /// Ids of the playlists that already hold every one of [trackIds].

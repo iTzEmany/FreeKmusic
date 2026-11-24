@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
 import '../db/app_database.dart';
+import '../db/tables.dart' show TombstoneKind;
+import 'sync_tombstone_repository.dart';
 import 'track_kinds.dart' show libraryRowSql;
 
 /// The canonical key of a favourite album: its `albumKey` without the `stream|` prefix, so the
@@ -23,10 +25,21 @@ class FavoriteCollectionsRepository {
   Future<void> add(String kind, String key, {int? addedAt}) async {
     final k = _canon(kind, key);
     if (k.isEmpty) return; // e.g. a bare 'stream|': no album to favourite
-    await _db.into(_db.favoriteCollections).insert(
-          FavoriteCollectionsCompanion.insert(kind: kind, key: k, addedAt: addedAt == null ? const Value.absent() : Value(addedAt)),
-          mode: InsertMode.insertOrIgnore,
-        );
+    await _db.transaction(() async {
+      await _db.into(_db.favoriteCollections).insert(
+            FavoriteCollectionsCompanion.insert(kind: kind, key: k, addedAt: addedAt == null ? const Value.absent() : Value(addedAt)),
+            mode: InsertMode.insertOrIgnore,
+          );
+      final t = _tombstoneKind(kind, k);
+      if (t != null) await SyncTombstoneRepository(_db).clear(t, k);
+    });
+  }
+
+  /// The tombstone kind of a favourite, or null when it never travels: an `unknown|` album key
+  /// holds a local folder path (D-668).
+  static String? _tombstoneKind(String kind, String key) {
+    if (kind == playlist) return TombstoneKind.favoritePlaylist;
+    return key.startsWith('unknown|') ? null : TombstoneKind.favoriteAlbum;
   }
 
   /// The album [oldKey] became [newKey] (tags edited, row demoted): its favourite follows, unless a track
@@ -40,10 +53,22 @@ class FavoriteCollectionsRepository {
       variables: [Variable(n), const Variable(album), Variable(o), Variable(o), Variable('$_streamPrefix$o')],
       updates: {_db.favoriteCollections},
     );
+    // Both albums were favourites: the ignored update left the old key behind. No tombstone, the album lives on.
+    await _db.customUpdate(
+      'DELETE FROM favorite_collections WHERE kind = ? AND key = ? '
+      'AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_key IN (?, ?) AND missing = 0 AND ignored = 0 AND ${libraryRowSql()})',
+      variables: [const Variable(album), Variable(o), Variable(o), Variable('$_streamPrefix$o')],
+      updates: {_db.favoriteCollections},
+    );
   }
 
-  Future<void> remove(String kind, String key) =>
-      (_db.delete(_db.favoriteCollections)..where((r) => r.kind.equals(kind) & r.key.equals(_canon(kind, key)))).go();
+  /// Removing a favourite leaves a tombstone in the same transaction (not for `unknown|` album keys).
+  Future<void> remove(String kind, String key) => _db.transaction(() async {
+        final k = _canon(kind, key);
+        final n = await (_db.delete(_db.favoriteCollections)..where((r) => r.kind.equals(kind) & r.key.equals(k))).go();
+        final t = _tombstoneKind(kind, k);
+        if (n > 0 && t != null) await SyncTombstoneRepository(_db).record(t, k);
+      });
 
   Future<void> toggle(String kind, String key) => _db.transaction(() async {
         if (await isFavoriteNow(kind, key)) {

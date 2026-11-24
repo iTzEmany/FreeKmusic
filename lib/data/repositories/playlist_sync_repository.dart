@@ -5,8 +5,10 @@ import '../../core/import_row.dart';
 import '../../services/backup/track_resolver.dart';
 import '../../services/share/playlist_sync.dart';
 import '../db/app_database.dart';
+import '../db/tables.dart' show TombstoneKind;
 import 'backup_queries.dart' show trackRefFor;
 import 'hidden_playlists.dart';
+import 'sync_tombstone_repository.dart';
 import 'track_kinds.dart';
 
 /// Reads the playlists in the shapes [planSync] needs, and writes a plan.
@@ -126,6 +128,7 @@ class PlaylistSyncRepository {
                 uuid: Value(r.uuid),
                 updatedAt: Value(r.updatedAt),
               ));
+          await SyncTombstoneRepository(_db).clear(TombstoneKind.playlist, r.uuid);
         } else {
           playlistId = e.local!.id;
           await (_db.update(_db.playlists)
