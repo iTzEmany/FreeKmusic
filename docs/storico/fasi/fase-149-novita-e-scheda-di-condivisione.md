@@ -4,7 +4,7 @@
 Chi aggiorna vede cosa c'è di nuovo, scritto per chi usa l'app e non come elenco di PR: una pagina «Aggiornamento disponibile» al posto del dialogo e, una volta sola, «Aggiornata alla X» al primo avvio. «Condividi» manda una scheda (immagine con QR) invece del solo testo, e anche i brani locali hanno un link (id di YouTube tenuto al download, ricerca per gli altri). Fuori: novità tradotte (solo italiano, D-711), anteprima prima di condividere (D-712).
 
 ## Riferimenti
-D-711, D-712, D-713, D-677, D-702, D-656, D-541, D-692. Mockup: [`../feature/mockup-aggiornamento-novita.html`](../feature/mockup-aggiornamento-novita.html). Architettura: `../architettura/qualita-e-rilascio.md` (aggiornamento dall'app, release), `../architettura/online.md` (condivisione), `../architettura/ui-e-design.md`.
+D-711, D-712, D-713, D-677, D-702, D-656, D-541, D-692. Mockup: [`../feature/mockup-aggiornamento-novita.html`](../../feature/mockup-aggiornamento-novita.html). Architettura: `../../architettura/qualita-e-rilascio.md` (aggiornamento dall'app, release), `../../architettura/online.md` (condivisione), `../../architettura/ui-e-design.md`.
 Codice: `UpdateDialog`, `updateSnackBar`, `updateTiles` (`lib/ui/screens/settings/update_tiles.dart`), `UpdateChecker`/`UpdateInfo.notes` (`lib/services/online/update_checker.dart`), `updateDownloadProvider` (`lib/providers/update_providers.dart`), Impostazioni › Informazioni (`lib/ui/screens/settings/settings_pages.dart`), `ExternalShareActions.share` (`lib/providers/external_share_actions.dart`), `buildShareText` (`lib/services/share/external_share_text.dart`), `ExternalShare.shareFile`, disegno fuori schermo come in `lib/services/theme/background_image.dart`, `qr_flutter` (già nelle dipendenze), `.github/workflows/release.yml` (job `publish`).
 
 ## Task
@@ -33,15 +33,22 @@ Codice: `UpdateDialog`, `updateSnackBar`, `updateTiles` (`lib/ui/screens/setting
   - Passi: 1) scheda: marchio, tipo, copertina (o mosaico delle prime 4), titolo, sottotitolo, «N brani · durata», QR (`qr_flutter`) del link della pagina che lo scanner di oggi apre; sfondo dai colori della copertina come il player; senza copertina l'anello con l'iniziale sull'accento; 2) copertine già caricate prima di disegnare (niente scheda con buchi), tempo massimo e, se scade o il disegno fallisce, il testo di oggi (log con `AppLog`); 3) `shareFile(png, text: didascalia)` con la didascalia corta (nome + link della pagina); 4) invariati: oltre 50 brani il .m3u8, Linux appunti, Windows vecchio appunti; il QR segue la regola di 149.4 (solo se il link ci sta leggibile); 5) disegno e I/O fuori dal thread UI dove possibile.
   - Comando mirato: `flutter test test/services/share/ test/providers/external_share_actions_test.dart` + i test della scheda.
   - Fatto quando: per brano, album e playlist si condivide un PNG con la didascalia corta; il QR decodificato è il link della pagina; un errore nel disegno ricade sul testo.
-- [ ] 149.6 Prova sui telefoni di test e documenti
+- [x] 149.6 Prova sui telefoni di test e documenti
   - Passi: 1) Mi A3 e Redmi: pagina delle novità (con un `release-notes` di prova via override di debug) a 360 px e in orizzontale, TalkBack con uiautomator; 2) «Condividi» di brano, album, playlist (anche una di soli file locali) fino al foglio di sistema (senza inviare); aggiornamento v24 → v25 con dati sul Redmi come per la 1.7.0; il PNG salvato si apre e il QR si legge con lo scanner dell'altro telefono; 3) documenti d'area aggiornati.
   - Fatto quando: esito scritto qui sotto.
+  - **Esito (25/11, solo Mi A3 `0d7ae9df206e`; il Redmi non era collegato)**: aggiornamento v24 → v25 con 128 brani (85 locali, 43 in streaming) e una playlist: righe di `tracks` identiche prima e dopo, `video_id` vuota, nessun crash. «Aggiornata alla 1.7.0» (con un `release-notes/1.7.0.md` di prova non committato) compare una volta sola e non al riavvio; Impostazioni › «Novità della versione» la riapre. A 360 dp nessun overflow; l'orizzontale non si raggiunge sul telefono (verticale bloccato), resta coperto dai test widget. TalkBack via uiautomator: una fermata per novità, «Correzioni (2)» e «Inizia» attivabili (le intestazioni verificate nel codice). «Controlla aggiornamenti» apre la pagina nuova (errore senza rete, «aggiornata» con la rete). «Condividi» di brano, album e playlist di soli file locali arriva al foglio di sistema: PNG 1080 × 1350 con QR, senza buchi. Il link FK2 con righe «artista + titolo» aperto nell'app ritrova 3 brani locali su 4 (anche in cinese) e salva quelli trovati, con il messaggio «N su M». Corretto dopo la prova: le due pagine aperte da Impostazioni ora vanno a tutto schermo sopra la shell. QR non decodificato (nessuno strumento sul PC): da leggere col secondo telefono.
+  - Documenti d'area aggiornati nella review di architettura della fase (`ui-e-design.md`, `online.md`, `libreria-e-dati.md`, `sync-backup-jam.md`, `qualita-e-rilascio.md`, `00-panoramica.md`).
 
 ## Tocca a te
 - [ ] Prima del tag della prossima versione: scrivere (o approvare) `release-notes/<versione>.md`, nella stessa PR del bump di versione (lo esige `test/core/app_version_test.dart`; senza il file il job `notes` fa fallire il tag).
+- [ ] Redmi (`8bbad1cd`): aggiornamento v24 → v25 con dati, pagina «Aggiornata alla X», «Condividi».
+- [ ] Inquadrare col Redmi il QR delle schede (brano, album, playlist) mostrate dal Mi A3: si apre `https://itzemany.github.io/FreeKmusic/#FK…`, nella pagina o nell'app.
+- [ ] Scaricare un brano dopo la fase e condividerlo: il link deve essere `music.youtube.com/watch?v=…` (id salvato al download).
 
 ## Note di deviazione
 - 149.2: l'evidenza ha un'icona grande in un riquadro, non un'illustrazione.
 - 149.2: il pulsante dice «Aggiorna (N MB)», non «Aggiorna · N MB» (guardia dei separatori).
 - 149.3: la pagina si decide una volta; se il file delle novità manca (build di sviluppo) non compare.
 - 149.3: il tile «Novità della versione» sta con gli aggiornamenti e sparisce senza repository delle release; note dagli asset (D-741), non da GitHub.
+- 149.4: le righe del link non trovate nell'app non restano «non trovato»: si salvano i brani trovati e il messaggio dice «N su M».
+- 149.5: QR a livello M, circa 480 px, solo fino alla versione 15 (412 caratteri), non 20: a 360 px i moduli della versione 20 erano troppo piccoli.

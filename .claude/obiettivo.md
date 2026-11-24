@@ -57,3 +57,5 @@
 - 54.8 (36 file di test mirati, 773 test) ~ 2m20 (2026-10-26)
 - `flutter test test/services/audio/ test/providers/` ~ 1m30 (2026-10-25)
 - Toccando `lib/ui`: lancia sempre anche `test/ui/architecture_test.dart` (la UI non usa repository né `databaseProvider`; CI rossa in #19)
+- `scripts/guardie.sh` si lancia direttamente, mai dentro `sorveglia.sh`: usa già il turno dei comandi pesanti e resterebbe in attesa di se stesso (fase 149, 2026-11-25)
+- Fase 149 (4 task di codice + prova sul Mi A3, una PR): ~4h; scheggia fase sul telefono ~13 min (2026-11-25)
