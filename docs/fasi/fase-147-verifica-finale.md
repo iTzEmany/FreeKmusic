@@ -57,7 +57,7 @@ D-662..D-699; rilievi e prove L1-L7 in [`../storico/refactor/grande-revisione/an
 - [ ] Provare la condivisione su WhatsApp e il sync fra due dispositivi.
 - [x] Decidere come mettere la build sul Motorola (147.1) e la versione di rilascio (D-704: release 1.7.0).
 - [ ] Versione già alzata in questa PR (`1.7.0+14`): dopo il merge crea il tag `v1.7.0`.
-- [ ] Prima del tag: deploy del Worker (`cd tools/report-worker && npx wrangler deploy`) e indirizzo in `kReportEndpoint` (`lib/core/constants.dart`), oppure accettare la 1.7.0 senza invio anonimo delle segnalazioni.
+- [x] Prima del tag: deploy del Worker (`cd tools/report-worker && npx wrangler deploy`) e indirizzo in `kReportEndpoint` (`lib/core/constants.dart`), oppure accettare la 1.7.0 senza invio anonimo delle segnalazioni. Fatto il 24/11: `https://freekmusic-report.itzemany.workers.dev/`.
 - [ ] Motorola, a mano: «Apri in FreeKmusic» toccato dalla pagina di condivisione in un browser vero, e App Link verificato con l'APK di release (`adb shell pm get-app-links`, sola lettura).
 - [ ] Motorola o Mi A3: importazione completa di una playlist da link con yt-dlp che risponde (sul Mi A3 le ricerche vanno in timeout dopo 45 s).
 - [ ] Motorola o Mi A3: condivisione di una playlist con più di 50 brani in streaming (file m3u8) e apertura del file dall'altra parte.

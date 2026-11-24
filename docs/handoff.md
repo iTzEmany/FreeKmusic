@@ -2,7 +2,7 @@
 Aggiornato: 2026-11-24 · Stato: le fasi 135-147 della grande revisione sono chiuse (la 147 nella parte documentale e nelle misure); schema DB v24, ultima decisione D-709.
 
 ## Prossima sessione
-Release 1.7.0: la versione è già alzata in questa PR (`1.7.0+14`): dopo il merge crea il tag `v1.7.0` (D-704). Prima del tag: deploy del Worker e `kReportEndpoint`, oppure accettare la 1.7.0 senza invio anonimo delle segnalazioni. Dopo il tag restano le prove su telefono della fase 147 (147.3-147.6) e la lista «Tocca a te» di quella fase.
+Release 1.7.0: la versione è già alzata in questa PR (`1.7.0+14`): dopo il merge crea il tag `v1.7.0` (D-704). Worker pubblicato e `kReportEndpoint` impostato (24/11). Dopo il tag restano le prove su telefono della fase 147 (147.3-147.6) e la lista «Tocca a te» di quella fase.
 
 ## Cosa resta
 - Rinvii di codice delle review 142-146: [`prossimi-lavori.md`](prossimi-lavori.md), sezione «Dalla grande revisione (fasi 135-147)».
