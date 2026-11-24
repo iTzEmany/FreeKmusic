@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/db/tables.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1081,6 +1082,50 @@ void main() {
       ['/a.mp3', 'A', 'MPRE1'],
     ]);
     expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), kSchemaVersion);
+    await db.close();
+  });
+
+  test('a v23 database gets an empty sync_tombstones table, every user table identical', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL, '
+            'saved INTEGER NOT NULL DEFAULT 0, album_browse_id TEXT)',
+          );
+          raw.execute("INSERT INTO tracks (id, path, title, album_key) VALUES (1, '/a.mp3', 'A', 'k')");
+          raw.execute('CREATE TABLE playlists (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, uuid TEXT)');
+          raw.execute("INSERT INTO playlists (name, uuid) VALUES ('P', 'u-1')");
+          raw.execute('CREATE TABLE favorite_collections (kind TEXT NOT NULL, key TEXT NOT NULL, added_at INTEGER NOT NULL, PRIMARY KEY (kind, key))');
+          raw.execute("INSERT INTO favorite_collections VALUES ('album', 'k', 7)");
+          raw.userVersion = 23;
+        },
+      ),
+    );
+    expect(await db.select(db.syncTombstones).get(), isEmpty);
+    Future<List<Object?>> all(String sql) async => [for (final r in await db.customSelect(sql).get()) r.data.values.toList()];
+    expect(await all('SELECT id, path, title, album_key FROM tracks'), [
+      [1, '/a.mp3', 'A', 'k'],
+    ]);
+    expect(await all('SELECT name, uuid FROM playlists'), [
+      ['P', 'u-1'],
+    ]);
+    expect(await all('SELECT kind, key, added_at FROM favorite_collections'), [
+      ['album', 'k', 7],
+    ]);
+    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), 24);
+    await db.close();
+  });
+
+  test('pruneSyncTombstones drops the old ones and keeps the recent ones', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final (key, at) in [('old', now - kTombstoneKeep.inMilliseconds - 1000), ('new', now - 1000)]) {
+      await db.into(db.syncTombstones).insert(SyncTombstonesCompanion.insert(kind: TombstoneKind.playlist, key: key, deletedAt: Value(at)));
+    }
+    expect(await db.pruneSyncTombstones(), 1);
+    expect((await db.select(db.syncTombstones).get()).single.key, 'new');
     await db.close();
   });
 }

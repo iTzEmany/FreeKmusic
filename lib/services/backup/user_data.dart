@@ -480,6 +480,29 @@ class FavoriteCollectionData {
           : null;
 }
 
+/// A deletion to carry to the other own devices (D-668): [kind] is a `TombstoneKind`, [key] its stable key.
+class TombstoneData {
+  const TombstoneData({required this.kind, required this.key, required this.deletedAt});
+
+  final String kind, key;
+  final int deletedAt;
+
+  Map<String, Object?> toJson() => {'kind': kind, 'key': key, 'deletedAt': deletedAt};
+
+  /// Null for a malformed entry, an unknown kind or an over-long key: it is dropped, the backup still reads.
+  static TombstoneData? tryParse(Object? j) {
+    if (j is! Map || !_tombstoneKinds.contains(j['kind'])) return null;
+    final key = j['key'], at = _finiteInt(j['deletedAt']);
+    if (key is! String || key.isEmpty || key.length > 512 || at == null) return null;
+    return TombstoneData(kind: j['kind'] as String, key: key, deletedAt: at);
+  }
+}
+
+const _tombstoneKinds = {'playlist', 'favoriteAlbum', 'favoritePlaylist', 'stream'};
+
+/// Most tombstones read from one backup; the rest is dropped.
+const kMaxTombstones = 100000;
+
 /// A JSON number as int; anything else (wrong type, NaN, infinity) is null.
 int? _finiteInt(Object? v) => v is num && v.isFinite ? v.toInt() : null;
 
@@ -496,6 +519,7 @@ class UserData {
     this.artistNotSame = const [],
     this.artistImages = const [],
     this.favoriteCollections = const [],
+    this.tombstones = const [],
   });
 
   final int createdAt;
@@ -523,6 +547,9 @@ class UserData {
   /// Favourite albums and playlists (absent in older backups = none).
   final List<FavoriteCollectionData> favoriteCollections;
 
+  /// Deletions to carry to own devices (absent in older backups = none).
+  final List<TombstoneData> tombstones;
+
   Map<String, Object?> toJson() => {
         'format': kUserDataFormat,
         'createdAt': createdAt,
@@ -537,6 +564,7 @@ class UserData {
         if (artistNotSame.isNotEmpty) 'artistNotSame': artistNotSame,
         if (artistImages.isNotEmpty) 'artistImages': [for (final a in artistImages) a.toJson()],
         if (favoriteCollections.isNotEmpty) 'favoriteCollections': [for (final f in favoriteCollections) f.toJson()],
+        if (tombstones.isNotEmpty) 'tombstones': [for (final t in tombstones) t.toJson()],
       };
 
   /// Unknown fields are ignored; a newer `format` is refused.
@@ -584,6 +612,9 @@ class UserData {
       ],
       favoriteCollections: [
         for (final f in (j['favoriteCollections'] as List? ?? const [])) ?FavoriteCollectionData.tryParse(f),
+      ],
+      tombstones: [
+        for (final t in (j['tombstones'] as List? ?? const []).take(kMaxTombstones)) ?TombstoneData.tryParse(t),
       ],
     );
   }

@@ -118,4 +118,23 @@ void main() {
     expect((back.coverSource, back.coverKey), (0, 'auto_k'));
     expect(TrackUserData.fromJson({'ref': {'title': 'a'}}).coverKey, isNull);
   });
+
+  test('tombstones round trip; an old backup without them reads as none; bad entries are dropped', () {
+    const t = TombstoneData(kind: 'stream', key: 'youtube:abcdefghijk', deletedAt: 9);
+    final back = UserData.fromJson(jsonDecode(jsonEncode(UserData(createdAt: 1, tombstones: [t]).toJson())) as Map<String, dynamic>);
+    expect((back.tombstones.single.kind, back.tombstones.single.key, back.tombstones.single.deletedAt), ('stream', 'youtube:abcdefghijk', 9));
+    expect(const UserData(createdAt: 1).toJson().containsKey('tombstones'), isFalse);
+    expect(UserData.fromJson({'format': 1}).tombstones, isEmpty);
+    final bad = UserData.fromJson({
+      'format': 1,
+      'tombstones': [
+        {'kind': 'nope', 'key': 'x', 'deletedAt': 1},
+        {'kind': 'playlist', 'key': '', 'deletedAt': 1},
+        {'kind': 'playlist', 'key': 'u', 'deletedAt': 'x'},
+        {'kind': 'playlist', 'key': 'u', 'deletedAt': 2},
+        5,
+      ],
+    });
+    expect(bad.tombstones.map((e) => e.deletedAt), [2]);
+  });
 }

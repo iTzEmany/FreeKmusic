@@ -9,7 +9,10 @@ import 'tables.dart';
 part 'app_database.g.dart';
 
 /// Bump with every migration step below.
-const kSchemaVersion = 23;
+const kSchemaVersion = 24;
+
+/// A tombstone older than this is dropped: longer than the time between two manual syncs of own devices.
+const kTombstoneKeep = Duration(days: 180);
 
 @DriftDatabase(
   tables: [
@@ -38,6 +41,7 @@ const kSchemaVersion = 23;
     ArtistAliases,
     ArtistNotSame,
     FavoriteCollections,
+    SyncTombstones,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -47,6 +51,11 @@ class AppDatabase extends _$AppDatabase {
       name: 'codecore',
       native: DriftNativeOptions(databaseDirectory: databaseDir),
     ));
+
+  /// Drops the tombstones older than [kTombstoneKeep] (at start-up); returns how many.
+  Future<int> pruneSyncTombstones() => (delete(syncTombstones)
+        ..where((t) => t.deletedAt.isSmallerThanValue(nowMs() - kTombstoneKeep.inMilliseconds)))
+      .go();
 
   @override
   int get schemaVersion => kSchemaVersion;
@@ -244,6 +253,7 @@ class AppDatabase extends _$AppDatabase {
         }
       }
       if (from < 23) await m.createTable(favoriteCollections);
+      if (from < 24) await m.createTable(syncTombstones);
     },
     beforeOpen: (details) async {
       await customStatement('PRAGMA foreign_keys = ON');

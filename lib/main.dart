@@ -330,6 +330,7 @@ Future<void> main() async {
   if (kPerfProbe) {
     unawaited(PerfProbe.start(db: db, covers: covers, sinceMain: sinceMain));
   }
+  unawaited(db.pruneSyncTombstones().then<void>((_) {}, onError: (Object e, StackTrace st) => AppLog.w('tombstone prune failed', e, st)));
   // Thumbnails of the covers saved before there were any: after start-up.
   unawaited(
     WidgetsBinding.instance.waitUntilFirstFrameRasterized.then((_) async {

@@ -490,6 +490,32 @@ class FavoriteCollections extends Table {
   Set<Column> get primaryKey => {kind, key};
 }
 
+/// Kinds of [SyncTombstones] rows (one place, so the repository and the merge agree).
+abstract final class TombstoneKind {
+  /// Key = `Playlists.uuid`.
+  static const playlist = 'playlist';
+
+  /// Key = the `albumKey` of the favourite album (same as [FavoriteCollections.key]).
+  static const favoriteAlbum = 'favoriteAlbum';
+
+  /// Key = the `Playlists.uuid` of the favourite playlist.
+  static const favoritePlaylist = 'favoritePlaylist';
+
+  /// A streamed track removed from the library or unfavourited; key = `<source>:<id>` (`isStreamKey`).
+  static const stream = 'stream';
+}
+
+/// What the user deleted, so that a sync between own devices can delete it there too (schema v24, D-668).
+/// Pruned after [kTombstoneKeep]; no row of any other table is touched by it.
+class SyncTombstones extends Table {
+  TextColumn get kind => text()();
+  TextColumn get key => text()();
+  IntColumn get deletedAt => integer().clientDefault(nowMs)();
+
+  @override
+  Set<Column> get primaryKey => {kind, key};
+}
+
 /// Two profiles the user said are different artists (D-414), never proposed
 /// to merge again. [a] < [b] (string order), so a pair has one row.
 class ArtistNotSame extends Table {
