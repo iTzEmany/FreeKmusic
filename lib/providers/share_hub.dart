@@ -23,7 +23,10 @@ import '../services/share/pairing.dart';
 import '../services/share/pairing_client.dart';
 import '../services/share/sync_client.dart';
 import '../services/share/sync_routes.dart';
+import '../services/share/collection_sync.dart' show SyncSide;
 import '../services/share/playlist_sync.dart';
+import '../services/share/settings_sync.dart';
+import '../services/share/tables_sync.dart' show TablesBundle;
 import '../services/share/trusted_devices.dart';
 import '../services/share/share_notifier.dart';
 import '../core/paths.dart';
@@ -687,6 +690,10 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         exportFavorites: sync.favorites,
         exportStreams: sync.streams,
         exportTombstones: (since) => sync.tombstones(since: since),
+        exportSettings: () async => syncedSettings(ref.read(settingsProvider)),
+        exportPlays: sync.plays,
+        exportTags: sync.tags,
+        exportTexts: sync.texts,
         isTrusted: (fp) => ref.read(trustedDevicesProvider).byFingerprint(fp) != null,
         isMine: (fp) => ref.read(trustedDevicesProvider).byFingerprint(fp)?.mine ?? false,
         onWant: _offerWanted,
@@ -751,8 +758,15 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       await repo.local(),
       remote,
       resolver.resolve,
-      localSide: await repo.side(),
-      remoteSide: side,
+      localSide: await repo.side(settings: syncedSettings(ref.read(settingsProvider))),
+      remoteSide: SyncSide(
+        favorites: side.favorites,
+        streams: side.streams,
+        tombstones: side.tombstones,
+        settings: side.settings,
+        // Only the news: what the plan shows is what the merge would add.
+        tables: device.mine ? await repo.newTables(side.tables, resolver) : const TablesBundle(),
+      ),
       mine: device.mine,
       hasFile: (k) => index.pathForKey(k) != null || episodes.contains(k),
     );
@@ -770,8 +784,14 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       plan,
       applyCollections: collections,
       hasFile: (k) => index.pathForKey(k) != null,
+      resolver: collections ? await repo.resolver(caseInsensitive: Platform.isWindows) : null,
     );
   }
+
+  /// Applies the settings of [plan] whose keys the user picked ([keys]): they have no date, so none is applied by itself.
+  void applySettingsSync(SyncPlan plan, Set<String> keys) => ref
+      .read(settingsProvider.notifier)
+      .update((s) => applySettings(s, [for (final c in plan.collections.settings) if (keys.contains(c.key)) c]));
 
   /// «Chiedi i brani mancanti»: the other device offers us the tracks of [plan]
   /// that it has. Returns how many it found.

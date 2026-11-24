@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../core/platform.dart';
+import '../data/play_context_kind.dart';
 import '../data/repositories/track_kinds.dart';
 import '../data/db/app_database.dart';
 import '../services/audio/codecore_audio_handler.dart';
@@ -37,6 +38,8 @@ import 'shuffle_plus_providers.dart'
         similarFillProvider;
 import 'suggestion_log_provider.dart';
 
+export '../data/play_context_kind.dart';
+
 /// Overridden in `main` once the handler has been created (and, on Android,
 /// registered with `AudioService.init`).
 final audioHandlerProvider = Provider<CodecoreAudioHandler>(
@@ -57,19 +60,6 @@ final playerErrorsProvider = Provider<Stream<PlaybackFailure>>(
 );
 
 /// Where the current queue came from, shown as «In riproduzione da».
-// .index is stored (prefs lastContextKind, DB plays.context): only append values, never reorder.
-enum PlayContextKind {
-  album,
-  artist,
-  playlist,
-  favorites,
-  library,
-  search,
-  podcast,
-  radio,
-  daylist,
-}
-
 class PlayContext {
   const PlayContext(this.kind, [this.name]);
 
@@ -83,8 +73,7 @@ class PlayContext {
 PlayContext? playContextOf(CodecoreAudioHandler h) {
   final c = h.playContext;
   if (c == null) return null;
-  final known = c.kind >= 0 && c.kind < PlayContextKind.values.length;
-  return PlayContext(known ? PlayContextKind.values[c.kind] : PlayContextKind.library, c.name);
+  return PlayContext(PlayContextKind.fromIndex(c.kind), c.name);
 }
 
 /// The handler's context, followed live (restore, a list started, Android Auto clearing it).

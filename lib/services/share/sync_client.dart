@@ -3,6 +3,8 @@ import '../backup/user_data.dart';
 import 'collection_sync.dart';
 import 'lan_client.dart';
 import 'playlist_sync.dart';
+import 'settings_sync.dart';
+import 'tables_sync.dart';
 
 enum SyncError { notTrusted, unreachable, identityChanged, failed }
 
@@ -29,20 +31,29 @@ class SyncClient {
     throw const SyncException(SyncError.failed);
   }
 
-  /// The list under [key] of a sync answer, cut to [kMaxSyncItems]: what the other device sends is not trusted.
-  Future<List<Object?>> _items(Future<SecureReply> Function() call, String key) async {
+  /// The JSON object of a sync answer: what the other device sends is not trusted.
+  Future<Map<String, dynamic>> _reply(Future<SecureReply> Function() call) async {
     try {
       final r = await call();
       if (r.status == 403) throw const SyncException(SyncError.notTrusted);
-      final list = r.json?[key];
-      if (r.status != 200 || list is! List) throw const SyncException(SyncError.failed);
-      return list.take(kMaxSyncItems).toList();
+      final body = r.json;
+      if (r.status != 200 || body == null) throw const SyncException(SyncError.failed);
+      return body;
     } on SyncException {
       rethrow;
     } on Object catch (e) {
       _fail(e);
     }
   }
+
+  /// The list under [key] of an answer, cut to [limit] (default [kMaxSyncItems]).
+  List<Object?> _list(Map<String, dynamic> body, String key, [int limit = kMaxSyncItems]) {
+    final list = body[key];
+    if (list is! List) throw const SyncException(SyncError.failed);
+    return list.take(limit).toList();
+  }
+
+  Future<List<Object?>> _items(Future<SecureReply> Function() call, String key) async => _list(await _reply(call), key);
 
   /// A malformed playlist fails the whole sync: dropping it, or a track of it, could replace a playlist here with less.
   Future<List<RemotePlaylist>> playlists(
@@ -64,9 +75,9 @@ class SyncClient {
     }
   }
 
-  /// The other device's favourites, saved and hearted streamed tracks and its deletions: asked only when [mine]
+  /// The other device's favourites, saved and hearted streamed tracks, deletions, settings, lyrics, listens and tags: asked only when [mine]
   /// (it is one of the user's own devices; it also has to think so of this one), else they are empty and
-  /// only the playlists are synced. Malformed entries, unknown kinds and impossible dates are dropped.
+  /// only the playlists are synced. Malformed entries, unknown kinds, settings out of the list and impossible dates are dropped.
   Future<SyncSide> collections(
     String host,
     int tlsPort, {
@@ -92,11 +103,36 @@ class SyncClient {
       ),
       'tombstones',
     );
+    final settings = await _reply(() => _client.secureGet(host, tlsPort, '/sync/settings', pin: pin));
+    final plays = await _items(() => _client.secureGet(host, tlsPort, '/sync/plays', pin: pin), 'plays');
+    final tags = await _reply(() => _client.secureGet(host, tlsPort, '/sync/tags', pin: pin));
     return SyncSide(
       favorites: [for (final f in favorites) ?FavoriteCollectionData.tryParse(f)],
       streams: [for (final s in streams) ?StreamEntry.tryParse(s)],
       tombstones: latestTombstones(tombstones),
+      settings: parseSyncedSettings(settings['settings']),
+      tables: TablesBundle(
+        texts: await _texts(host, tlsPort, pin),
+        plays: [for (final p in plays) ?PlayEntry.tryParse(p)],
+        tags: [for (final t in _list(tags, 'tags')) ?TagEntry.tryParse(t)],
+        tagged: [for (final t in _list(tags, 'tagged')) ?TaggedTrack.tryParse(t)],
+      ),
     );
+  }
+
+  /// The texts page by page, until the other device has no more, [kMaxSyncItems] at most; a page that does not
+  /// move forward ends the reading.
+  Future<List<TextEntry>> _texts(String host, int tlsPort, String pin) async {
+    final out = <TextEntry>[];
+    var after = 0;
+    while (out.length < kMaxSyncItems) {
+      final body = await _reply(() => _client.securePost(host, tlsPort, '/sync/texts', {'after': after}, pin: pin));
+      out.addAll([for (final t in _list(body, 'texts', kTextsPerPage)) ?TextEntry.tryParse(t)]);
+      final next = body['next'];
+      if (next is! int || next <= after) break;
+      after = next;
+    }
+    return out.take(kMaxSyncItems).toList();
   }
 
   /// Asks the other device to offer [refs] back (to [port]/[tlsPort] here).

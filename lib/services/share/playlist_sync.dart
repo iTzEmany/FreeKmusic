@@ -44,7 +44,7 @@ class RemotePlaylist {
       name: name,
       createdAt: created,
       updatedAt: sanePastDate(updated) ?? 0,
-      items: [for (final i in items.take(kMaxSyncItems)) _trackRef(i)],
+      items: [for (final i in items.take(kMaxSyncItems)) parseTrackRef(i)],
     );
   }
 
@@ -52,7 +52,7 @@ class RemotePlaylist {
       ? v
       : throw const FormatException('not a finite number');
 
-  static TrackRef _trackRef(Object? i) {
+  static TrackRef parseTrackRef(Object? i) {
     if (i is! Map<String, dynamic>) {
       throw const FormatException('malformed track');
     }
@@ -270,6 +270,8 @@ SyncPlan planSync(
       hearts: collections.hearts,
       deletes: collections.deletes,
       learned: collections.learned,
+      settings: collections.settings,
+      tables: collections.tables,
     ),
   );
 }

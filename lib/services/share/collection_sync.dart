@@ -1,6 +1,8 @@
 import '../../data/db/tables.dart' show TombstoneKind;
 import '../backup/user_data.dart';
 import '../stream/stream_key.dart' show isStreamKey;
+import 'settings_sync.dart';
+import 'tables_sync.dart';
 
 /// Most entries read from another device for one list; the rest is dropped.
 const kMaxSyncItems = 20000;
@@ -70,11 +72,21 @@ class StreamEntry {
 
 /// One device's side of the sync besides the playlists.
 class SyncSide {
-  const SyncSide({this.favorites = const [], this.streams = const [], this.tombstones = const []});
+  const SyncSide({
+    this.favorites = const [],
+    this.streams = const [],
+    this.tombstones = const [],
+    this.settings = const {},
+    this.tables = const TablesBundle(),
+  });
 
   final List<FavoriteCollectionData> favorites;
   final List<StreamEntry> streams;
   final List<TombstoneData> tombstones;
+
+  /// The settings that may travel ([syncedSettings]), and the lyrics, listens and tags ([TablesBundle]).
+  final Map<String, Object> settings;
+  final TablesBundle tables;
 }
 
 /// What the sync does besides the playlists. Adds are never deletions; [deletes] and [learned] come from
@@ -86,6 +98,8 @@ class CollectionPlan {
     this.hearts = const [],
     this.deletes = const [],
     this.learned = const [],
+    this.settings = const [],
+    this.tables = const TablesBundle(),
   });
 
   final List<FavoriteCollectionData> favoriteAdds;
@@ -99,8 +113,13 @@ class CollectionPlan {
   /// Deletions of things not here: only the tombstone is kept, so the item cannot come back from another device.
   final List<TombstoneData> learned;
 
+  /// The allowed settings that differ (the user picks which to apply: they have no date, so nothing wins by itself),
+  /// and the lyrics, listens and tags this device lacks (merged without loss). Both from an own device only.
+  final List<SettingChange> settings;
+  final TablesBundle tables;
+
   int get additions => favoriteAdds.length + saves.length + hearts.length;
-  bool get isEmpty => additions == 0 && deletes.isEmpty && learned.isEmpty;
+  bool get isEmpty => additions == 0 && deletes.isEmpty && learned.isEmpty && settings.isEmpty && tables.isEmpty;
 }
 
 typedef TombstoneId = (String kind, String key);
@@ -125,7 +144,8 @@ String? _favoriteTombstoneKind(FavoriteCollectionData f) => f.kind == 'playlist'
         ? null
         : TombstoneKind.favoriteAlbum;
 
-/// Pure: the favourites, saved and hearted streamed tracks and deletions of a sync. For each item the most
+/// Pure: the favourites, saved and hearted streamed tracks and deletions of a sync (and, from an own device, the
+/// settings that differ and the [SyncSide.tables] it sends, which the caller has already cut to what is new here). For each item the most
 /// recent of the item and the deletion wins (null date = older than all, ties keep the item: `>=` to arrive,
 /// `>` to delete). Deletions apply only when [mine] (the other device is one of the user's own): otherwise
 /// they are ignored, and only additions remain; an addition covered by a newer deletion known here is never
@@ -181,5 +201,7 @@ CollectionPlan planCollections(
     ],
     deletes: deletes,
     learned: learned,
+    settings: mine ? planSettings(local.settings, remote.settings) : const [],
+    tables: mine ? remote.tables : const TablesBundle(),
   );
 }

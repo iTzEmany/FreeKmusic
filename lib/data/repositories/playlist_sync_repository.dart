@@ -1,15 +1,21 @@
+import 'dart:math' show min;
+
 import 'package:drift/drift.dart';
 
 import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import '../../core/import_row.dart';
 import '../../services/backup/track_resolver.dart';
 import '../../services/backup/user_data.dart';
 import '../../services/share/collection_sync.dart';
 import '../../services/share/playlist_sync.dart';
+import '../../services/share/tables_sync.dart';
 import '../../services/online/youtube_service.dart' show YtResult;
 import '../../services/stream/stream_key.dart';
 import '../db/app_database.dart';
 import '../db/tables.dart' show TombstoneKind, kTombstoneKinds;
+import 'backup_merge.dart' show mergeUserData;
+import 'backup_merge_tables.dart' show mergeTablesData;
 import 'backup_queries.dart' show trackRefFor;
 import 'favorite_collections_repository.dart';
 import 'hidden_playlists.dart';
@@ -144,9 +150,128 @@ class PlaylistSyncRepository {
           if (kTombstoneKinds.contains(t.kind)) TombstoneData(kind: t.kind, key: t.key, deletedAt: t.deletedAt),
       ];
 
-  /// This device's side of a sync besides the playlists, for [planSync].
-  Future<SyncSide> side() async =>
-      SyncSide(favorites: await favorites(), streams: await streams(), tombstones: await tombstones());
+  /// Portable references of the tracks [ids] (a podcast episode has none).
+  Future<Map<int, TrackRef>> _refsOf(Set<int> ids) async {
+    final folders = {for (final f in await _db.select(_db.folders).get()) f.id: f.path};
+    final all = ids.toList(), out = <int, TrackRef>{};
+    for (var i = 0; i < all.length; i += 500) {
+      final chunk = all.sublist(i, min(i + 500, all.length));
+      for (final t in await (_db.select(_db.tracks)..where((t) => t.id.isIn(chunk) & t.kind.isNotValue(kEpisodeKind))).get()) {
+        out[t.id] = trackRefFor(t, folders);
+      }
+    }
+    return out;
+  }
+
+  /// What `GET /sync/plays` sends: the latest [kMaxSyncItems] listens (older ones stay on this device).
+  Future<List<PlayEntry>> plays() async {
+    final rows = await (_db.select(_db.plays)
+          ..orderBy([(p) => OrderingTerm.desc(p.playedAt)])
+          ..limit(kMaxSyncItems))
+        .get();
+    final refs = await _refsOf({for (final r in rows) r.trackId});
+    return [
+      for (final r in rows)
+        if (refs[r.trackId] case final ref?)
+          PlayEntry(ref: ref, playedAt: r.playedAt, msPlayed: r.msPlayed, context: r.context, contextName: r.contextName),
+    ];
+  }
+
+  /// What `GET /sync/tags` sends: the user's tags and the tags of each track.
+  Future<({List<TagEntry> tags, List<TaggedTrack> tagged})> tags() async {
+    final tags = await _db.select(_db.userTags).get();
+    final names = {for (final t in tags) t.id: t.name};
+    final byTrack = <int, List<String>>{};
+    for (final l in await _db.select(_db.trackTags).get()) {
+      if (names[l.tagId] case final n?) (byTrack[l.trackId] ??= []).add(n);
+    }
+    final refs = await _refsOf(byTrack.keys.toSet());
+    return (
+      tags: [for (final t in tags) TagEntry(name: t.name, color: t.color)],
+      tagged: [
+        for (final e in byTrack.entries)
+          if (refs[e.key] case final ref?) TaggedTrack(ref: ref, tags: e.value),
+      ],
+    );
+  }
+
+  /// What `POST /sync/texts` sends: a page of library tracks (kind 0) with lyrics or curiosities, after id [after];
+  /// `next` is the last id of a full page, null when it was the last one.
+  Future<({List<TextEntry> texts, int? next})> texts(int after) async {
+    final rows = await (_db.select(_db.tracks)
+          ..where((t) =>
+              t.id.isBiggerThanValue(after) &
+              t.kind.equals(kMusicKind) &
+              (t.lyricsPlain.isNotNull() | t.lyricsSynced.isNotNull() | t.curiosities.isNotNull()))
+          ..orderBy([(t) => OrderingTerm.asc(t.id)])
+          ..limit(kTextsPerPage))
+        .get();
+    final folders = {for (final f in await _db.select(_db.folders).get()) f.id: f.path};
+    return (
+      texts: [
+        for (final t in rows)
+          TextEntry(ref: trackRefFor(t, folders), plain: t.lyricsPlain, synced: t.lyricsSynced, curiosities: t.curiosities),
+      ],
+      next: rows.length == kTextsPerPage ? rows.last.id : null,
+    );
+  }
+
+  /// [remote] cut to what this device lacks, by the rules of the merge that writes it ([apply]): a listen not here
+  /// (same track and moment), a tag not here, a tag of a track not here yet, a text for a field that is empty here. A
+  /// track this library does not have is left out. Only so the plan shows what would change; the merge decides.
+  Future<TablesBundle> newTables(TablesBundle remote, TrackResolver resolver) async {
+    if (remote.isEmpty) return remote;
+    final tracks = TrackRepository(_db);
+    Future<int?> idOf(TrackRef r) async {
+      final key = r.streamKey;
+      return key == null ? resolver.resolve(r) : (await tracks.streamRow(key))?.id;
+    }
+
+    bool blank(String? s) => s == null || s.trim().isEmpty;
+    final texts = <TextEntry>[];
+    for (final e in remote.texts) {
+      final id = await idOf(e.ref);
+      final t = id == null ? null : await tracks.getById(id);
+      if (t != null &&
+          ((blank(t.lyricsPlain) && e.plain != null) ||
+              (blank(t.lyricsSynced) && e.synced != null) ||
+              (blank(t.curiosities) && e.curiosities != null))) {
+        texts.add(e);
+      }
+    }
+    final seen = {for (final r in await _db.select(_db.plays).get()) (r.trackId, r.playedAt)};
+    final plays = <PlayEntry>[];
+    for (final p in remote.plays) {
+      final id = await idOf(p.ref);
+      if (id != null && seen.add((id, p.playedAt))) plays.add(p);
+    }
+    final tagIds = {for (final t in await _db.select(_db.userTags).get()) t.name.toLowerCase(): t.id};
+    final linked = {for (final r in await _db.select(_db.trackTags).get()) (r.trackId, r.tagId)};
+    final tagged = <TaggedTrack>[];
+    for (final t in remote.tagged) {
+      final id = await idOf(t.ref);
+      if (id == null) continue;
+      final news = [
+        for (final name in t.tags)
+          if (!linked.contains((id, tagIds[name.toLowerCase()]))) name,
+      ];
+      if (news.isNotEmpty) tagged.add(TaggedTrack(ref: t.ref, tags: news));
+    }
+    return TablesBundle(
+      texts: texts,
+      plays: plays,
+      tags: [for (final t in remote.tags) if (!tagIds.containsKey(t.name.toLowerCase())) t],
+      tagged: tagged,
+    );
+  }
+
+  /// This device's side of a sync besides the playlists, for [planSync]; [settings] are the allowed ones (`syncedSettings`).
+  Future<SyncSide> side({Map<String, Object> settings = const {}}) async => SyncSide(
+        favorites: await favorites(),
+        streams: await streams(),
+        tombstones: await tombstones(),
+        settings: settings,
+      );
 
   /// A resolver over this device's library, the one a backup restore uses.
   Future<TrackResolver> resolver({bool caseInsensitive = false}) async {
@@ -181,12 +306,18 @@ class PlaylistSyncRepository {
   /// streamed rows. Every write re-checks its date against what is here now, as the plan may be older than the
   /// confirmation: on a tie the item stays, an item is deleted only if older than the deletion and a tombstone goes
   /// only if the arriving item is not older. A deletion removes a row or a flag, never a file; [hasFile] says a
-  /// streamed track is already a file here (no row is made for it). Returns how many playlists were written.
+  /// streamed track is already a file here (no row is made for it). The lyrics, listens and tags of the plan are
+  /// merged with the rules of a backup's merge (nothing is lost, a second run adds nothing), tracks found by [resolver]
+  /// (this library's, by default). Returns how many playlists were written. The settings of the plan are not
+  /// written here: they are not in the database.
   Future<int> apply(
     SyncPlan plan, {
     bool Function(String key)? hasFile,
     bool applyCollections = false,
-  }) {
+    TrackResolver? resolver,
+  }) async {
+    final tables = plan.collections.tables;
+    final found = applyCollections && !tables.isEmpty ? (resolver ?? await this.resolver()) : null;
     return _db.transaction(() async {
       final tomb = SyncTombstoneRepository(_db);
       var written = 0;
@@ -240,10 +371,22 @@ class PlaylistSyncRepository {
       }
       if (applyCollections) {
         await _applyCollections(plan.collections, tomb, hasFile);
+        if (found != null) {
+          await mergeTablesData(_db, tables.toBackupData(), found);
+          await mergeUserData(
+            _db,
+            UserData(createdAt: nowMs(), tracks: [
+              for (final t in tables.texts)
+                TrackUserData(ref: t.ref, lyricsPlain: t.plain, lyricsSynced: t.synced, curiosities: t.curiosities),
+            ]),
+            found,
+          );
+        }
       }
       AppLog.i(
         'sync: ${plan.toAdd.length} playlists added, ${plan.toReplace.length} replaced'
-        '${applyCollections ? ', ${plan.collections.additions} favourites/streams added, ${plan.collections.deletes.length} deleted' : ''}',
+        '${applyCollections ? ', ${plan.collections.additions} favourites/streams added, ${plan.collections.deletes.length} deleted, '
+            '${tables.texts.length} texts, ${tables.plays.length} listens, ${tables.taggedCount} tags of tracks offered' : ''}',
       );
       return written;
     });
