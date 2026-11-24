@@ -375,6 +375,39 @@ void main() {
       expect(asked, [0, 7]);
     });
 
+    test('empty pages that always name a further id do not make the reading endless: the rows read are bounded', () async {
+      var asked = 0;
+      textsOf = (after) async {
+        asked++;
+        return (texts: <TextEntry>[], next: after + 1);
+      };
+      final side = await client(idA).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true);
+      expect(side.tables.texts, isEmpty);
+      expect(asked, kMaxSyncItems ~/ kTextsPerPage);
+    });
+
+    test('each page is filtered as it arrives and the characters kept are bounded', () async {
+      textsOf = (after) async => switch (after) {
+        0 => (texts: [for (var i = 1; i <= 4; i++) text(i)], next: 10),
+        _ => (texts: [for (var i = 5; i <= 8; i++) text(i)], next: null),
+      };
+      final pages = <int>[];
+      final side = await client(idA).collections(
+        '127.0.0.1',
+        nodeB.tlsPort!,
+        pin: idB.fingerprint,
+        mine: true,
+        keepTexts: (page) async {
+          pages.add(page.length);
+          return [for (final t in page) if (t.ref.title != 't2') t];
+        },
+      );
+      expect(pages, [4, 4]);
+      expect([for (final t in side.tables.texts) t.ref.title], ['t1', 't3', 't4', 't5', 't6', 't7', 't8']);
+      final capped = await client(idA).collections('127.0.0.1', nodeB.tlsPort!, pin: idB.fingerprint, mine: true, maxTextChars: 15);
+      expect(capped.tables.texts, hasLength(3), reason: 'the reading stops at the text that reaches 15 characters (7 each)');
+    });
+
     test('hostile input is dropped: a streamed track with a text, huge texts, impossible dates, bad names', () {
       final ref = {'title': 'x', 'relPath': 'x.mp3'};
       expect(TextEntry.tryParse({'ref': {'title': 'x', 'streamKey': 'youtube:dQw4w9WgXcQ'}, 'plain': 'a'}), isNull);

@@ -177,7 +177,7 @@ void main() {
         SyncSide(favorites: favorites, streams: streams, tombstones: tombstones);
 
     SyncPlan plan(List<LocalPlaylist> local, List<RemotePlaylist> remote,
-            {SyncSide? here, SyncSide? there, bool mine = false, bool Function(String)? hasFile}) =>
+            {SyncSide? here, SyncSide? there, bool mine = true, bool Function(String)? hasFile}) =>
         planSync(local, remote, _resolve,
             localSide: here ?? side(), remoteSide: there ?? side(), mine: mine, hasFile: hasFile);
 
@@ -195,7 +195,7 @@ void main() {
 
     test('a device that is not «mine» deletes nothing: its tombstones are ignored', () {
       final p = plan([_local(u1, 'Road', 100, [1])], [],
-          there: side(tombstones: [tomb('playlist', u1, 500), tomb('favoriteAlbum', 'a|b', 500)]));
+          there: side(tombstones: [tomb('playlist', u1, 500), tomb('favoriteAlbum', 'a|b', 500)]), mine: false);
       expect(p.collections.deletes, isEmpty);
       expect(p.collections.learned, isEmpty);
       expect(p.isEmpty, isTrue);
@@ -511,14 +511,15 @@ void main() {
           ],
           tombstones: tombs.tombstones,
         ),
+        mine: false,
       );
       expect(
         p.toAdd,
         hasLength(1),
         reason: 'the tombstone of a stranger does not block the playlist',
       );
-      expect(p.collections.favoriteAdds, hasLength(1));
-      expect(p.collections.saves, hasLength(1));
+      expect(p.collections.favoriteAdds, isEmpty, reason: 'favourites and saved tracks are for «mine» devices only (D-709)');
+      expect(p.collections.saves, isEmpty);
       expect(p.collections.learned, isEmpty);
     });
 

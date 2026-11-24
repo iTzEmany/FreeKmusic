@@ -5,6 +5,7 @@ import 'package:codecore/data/play_context_kind.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/share/collection_sync.dart';
+import 'package:codecore/services/backup/user_data.dart';
 import 'package:codecore/services/share/playlist_sync.dart';
 import 'package:codecore/services/share/tables_sync.dart';
 import 'package:drift/drift.dart' show Value, driftRuntimeOptions;
@@ -350,5 +351,57 @@ void main() {
       ...first.texts.map((t) => t.ref.title),
       ...second.texts.map((t) => t.ref.title),
     }, hasLength(kTextsPerPage + 5));
+  });
+
+  test('with the history off here no listen is kept by the plan, the rest stays', () async {
+    final tables = await pc.sync.newTables(await phone.sent(), await pc.sync.resolver(), plays: false);
+    expect(tables.plays, isEmpty);
+    expect(tables.texts, isNotEmpty);
+    expect(tables.tagged, isNotEmpty);
+  });
+
+  test('the listens that arrive move the play count and the last play of their tracks, never down', () async {
+    await (pc.db.update(pc.db.tracks)..where((t) => t.title.equals('b'))).write(
+      const TracksCompanion(playCount: Value(10), lastPlayedAt: Value(9000)),
+    );
+    await pc.apply(await pc.planFrom(phone));
+    final a = await pc.track('a'), b = await pc.track('b');
+    expect((a.playCount, a.lastPlayedAt), (2, 2000), reason: 'listens 1000 and 2000');
+    expect((b.playCount, b.lastPlayedAt), (10, 9000), reason: 'what it had is larger');
+  });
+
+  test('a track listed many times in a bundle is one reference in the rows it becomes', () {
+    const ref = TrackRef(title: 'a', relPath: 'a.mp3');
+    final data = TablesBundle(
+      plays: [for (var i = 1; i <= 3; i++) PlayEntry(ref: ref, playedAt: i)],
+      tagged: const [TaggedTrack(ref: ref, tags: ['x', 'y'])],
+    ).toBackupData();
+    expect(data.refs, hasLength(1));
+    expect({...data.plays.map((p) => p['track_id']), ...data.trackTags.map((p) => p['track_id'])}, {0});
+  });
+
+  test('the pairs of tags are cut to a total, the last track keeps what is left', () {
+    final tagged = [
+      for (var i = 0; i < 3; i++)
+        TaggedTrack(ref: TrackRef(title: 't$i', relPath: 't$i.mp3'), tags: [for (var k = 0; k < 100; k++) 'g$k']),
+    ];
+    final many = [for (var i = 0; i < kMaxTaggedPairs ~/ 100 + 2; i++) tagged[i % 3]];
+    final cut = limitTagged(many);
+    expect(TablesBundle(tagged: cut).taggedCount, kMaxTaggedPairs);
+    expect(limitTagged(tagged), hasLength(3), reason: 'under the limit nothing changes');
+  });
+
+  test('a device that is not «mine» is planned no favourite, saved or hearted track, whatever the caller passes', () {
+    final plan = planCollections(
+      const SyncSide(),
+      const SyncSide(
+        favorites: [FavoriteCollectionData(kind: 'album', key: 'a|b', addedAt: 5)],
+        streams: [
+          StreamEntry(key: 'youtube:dQw4w9WgXcQ', title: 'T', saved: true, addedAt: 9, favorite: true, favoritedAt: 9),
+        ],
+      ),
+      mine: false,
+    );
+    expect(plan.additions, 0);
   });
 }

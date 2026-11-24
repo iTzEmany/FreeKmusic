@@ -81,6 +81,8 @@ class SyncClient {
   Future<SyncSide> collections(
     String host,
     int tlsPort, {
+    Future<List<TextEntry>> Function(List<TextEntry> page)? keepTexts,
+    int maxTextChars = kMaxSyncTextChars,
     required String pin,
     required bool mine,
   }) async {
@@ -112,27 +114,40 @@ class SyncClient {
       tombstones: latestTombstones(tombstones),
       settings: parseSyncedSettings(settings['settings']),
       tables: TablesBundle(
-        texts: await _texts(host, tlsPort, pin),
+        texts: await _texts(host, tlsPort, pin, keepTexts, maxTextChars),
         plays: [for (final p in plays) ?PlayEntry.tryParse(p)],
         tags: [for (final t in _list(tags, 'tags')) ?TagEntry.tryParse(t)],
-        tagged: [for (final t in _list(tags, 'tagged')) ?TaggedTrack.tryParse(t)],
+        tagged: limitTagged([for (final t in _list(tags, 'tagged')) ?TaggedTrack.tryParse(t)]),
       ),
     );
   }
 
-  /// The texts page by page, until the other device has no more, [kMaxSyncItems] at most; a page that does not
-  /// move forward ends the reading.
-  Future<List<TextEntry>> _texts(String host, int tlsPort, String pin) async {
+  /// The texts page by page, only the ones [keep] lets through (the news, so the rest is never held in memory),
+  /// until the other device has no more. Bounded: at most [kMaxSyncItems] rows read (the first ones by track id,
+  /// empty pages included), [maxChars] characters kept; a page that does not move forward ends the reading.
+  Future<List<TextEntry>> _texts(
+    String host,
+    int tlsPort,
+    String pin,
+    Future<List<TextEntry>> Function(List<TextEntry> page)? keep,
+    int maxChars,
+  ) async {
     final out = <TextEntry>[];
-    var after = 0;
-    while (out.length < kMaxSyncItems) {
+    var after = 0, chars = 0;
+    for (var pages = 0; pages < kMaxSyncItems ~/ kTextsPerPage && chars < maxChars; pages++) {
       final body = await _reply(() => _client.securePost(host, tlsPort, '/sync/texts', {'after': after}, pin: pin));
-      out.addAll([for (final t in _list(body, 'texts', kTextsPerPage)) ?TextEntry.tryParse(t)]);
+      var page = [for (final t in _list(body, 'texts', kTextsPerPage)) ?TextEntry.tryParse(t)];
+      if (keep != null) page = await keep(page);
+      for (final t in page) {
+        chars += (t.plain?.length ?? 0) + (t.synced?.length ?? 0) + (t.curiosities?.length ?? 0);
+        out.add(t);
+        if (chars >= maxChars) break;
+      }
       final next = body['next'];
       if (next is! int || next <= after) break;
       after = next;
     }
-    return out.take(kMaxSyncItems).toList();
+    return out;
   }
 
   /// Asks the other device to offer [refs] back (to [port]/[tlsPort] here).

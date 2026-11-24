@@ -187,16 +187,17 @@ CollectionPlan planCollections(
     }
   }
   return CollectionPlan(
+    // Favourites and saved tracks travel between «mine» devices only (D-709), even if a caller passes them.
     favoriteAdds: [
-      for (final f in remote.favorites)
+      for (final f in mine ? remote.favorites : const <FavoriteCollectionData>[])
         if (_favoriteTombstoneKind(f) case final k? when arrives(k, f.key, f.addedAt)) f,
     ],
     saves: [
-      for (final s in remote.streams)
+      for (final s in mine ? remote.streams : const <StreamEntry>[])
         if (s.saved && arrives(TombstoneKind.savedStream, s.key, s.addedAt) && !(hasFile?.call(s.key) ?? false)) s,
     ],
     hearts: [
-      for (final s in remote.streams)
+      for (final s in mine ? remote.streams : const <StreamEntry>[])
         if (s.favorite && arrives(TombstoneKind.favoriteStream, s.key, s.favoritedAt) && !(hasFile?.call(s.key) ?? false)) s,
     ],
     deletes: deletes,

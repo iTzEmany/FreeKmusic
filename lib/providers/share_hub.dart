@@ -691,7 +691,8 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         exportStreams: sync.streams,
         exportTombstones: (since) => sync.tombstones(since: since),
         exportSettings: () async => syncedSettings(ref.read(settingsProvider)),
-        exportPlays: sync.plays,
+        // With the history off here nothing is sent: the listens of this device are not recorded, nor shared.
+        exportPlays: () async => ref.read(settingsProvider).recordHistory ? sync.plays() : const [],
         exportTags: sync.tags,
         exportTexts: sync.texts,
         isTrusted: (fp) => ref.read(trustedDevicesProvider).byFingerprint(fp) != null,
@@ -749,8 +750,14 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     final repo = PlaylistSyncRepository(db);
     final client = SyncClient(ref.read(lanClientProvider));
     final remote = await client.playlists(peer!.host, peer.tlsPort!, pin: device.fingerprint);
-    final side = await client.collections(peer.host, peer.tlsPort!, pin: device.fingerprint, mine: device.mine);
     final resolver = await repo.resolver(caseInsensitive: Platform.isWindows);
+    final side = await client.collections(
+      peer.host,
+      peer.tlsPort!,
+      pin: device.fingerprint,
+      mine: device.mine,
+      keepTexts: (page) => repo.newTexts(page, resolver),
+    );
     final index = await ref.read(downloadIndexProvider.future);
     // An episode cannot become a streamed row, like a track already downloaded: neither is planned.
     final episodes = await repo.episodeStreamKeys();
@@ -765,7 +772,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         tombstones: side.tombstones,
         settings: side.settings,
         // Only the news: what the plan shows is what the merge would add.
-        tables: device.mine ? await repo.newTables(side.tables, resolver) : const TablesBundle(),
+        tables: device.mine ? await repo.newTables(side.tables, resolver, plays: ref.read(settingsProvider).recordHistory) : const TablesBundle(),
       ),
       mine: device.mine,
       hasFile: (k) => index.pathForKey(k) != null || episodes.contains(k),

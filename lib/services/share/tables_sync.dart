@@ -1,3 +1,5 @@
+import 'dart:convert' show jsonEncode;
+
 import '../backup/backup_db_reader.dart' show BackupDbData;
 import '../backup/user_data.dart';
 import '../stream/stream_key.dart' show isStreamKey;
@@ -11,6 +13,27 @@ const kTextsPerPage = 200;
 
 /// Longest list of tags of one track read from another device.
 const kMaxTagsPerTrack = 100;
+
+/// Most (track, tag) pairs in one answer of `GET /sync/tags`, on both sides.
+const kMaxTaggedPairs = 20000;
+
+/// Most characters of lyrics and curiosities kept from one sync (the rest is not read): memory is bounded.
+const kMaxSyncTextChars = 20000000;
+
+/// [tagged] cut so that the total of pairs is at most [kMaxTaggedPairs] (the last track may lose some tags).
+List<TaggedTrack> limitTagged(List<TaggedTrack> tagged) {
+  final out = <TaggedTrack>[];
+  var left = kMaxTaggedPairs;
+  for (final t in tagged) {
+    if (left <= 0) break;
+    out.add(t.tags.length <= left ? t : TaggedTrack(ref: t.ref, tags: t.tags.take(left).toList()));
+    left -= t.tags.length;
+  }
+  return out;
+}
+
+/// Stable key of a track reference: [TrackRef] has no equality.
+String refKey(TrackRef r) => jsonEncode(r.toJson());
 
 TrackRef? _ref(Object? j, {required bool stream}) {
   try {
@@ -177,6 +200,11 @@ class TablesBundle {
   /// tagged track but not in [tags] is made too (without a colour: one that exists here keeps its own).
   BackupDbData toBackupData() {
     final refs = <int, TrackRef>{};
+    final ids = <String, int>{}; // one backup id per distinct track
+    int refId(TrackRef r) => ids.putIfAbsent(refKey(r), () {
+      refs[refs.length] = r;
+      return refs.length - 1;
+    });
     final tagRows = <Map<String, Object?>>[];
     final tagId = <String, int>{};
     int tag(String name, int? color) =>
@@ -189,9 +217,8 @@ class TablesBundle {
     }
     final rows = <Map<String, Object?>>[];
     for (final p in plays) {
-      refs[refs.length] = p.ref;
       rows.add({
-        'track_id': refs.length - 1,
+        'track_id': refId(p.ref),
         'played_at': p.playedAt,
         'ms_played': p.msPlayed,
         'context': p.context,
@@ -200,9 +227,9 @@ class TablesBundle {
     }
     final pairs = <Map<String, Object?>>[];
     for (final t in tagged) {
-      refs[refs.length] = t.ref;
+      final id = refId(t.ref);
       for (final name in t.tags) {
-        pairs.add({'track_id': refs.length - 1, 'tag_id': tag(name, null)});
+        pairs.add({'track_id': id, 'tag_id': tag(name, null)});
       }
     }
     return BackupDbData(

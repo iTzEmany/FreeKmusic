@@ -188,10 +188,10 @@ class PlaylistSyncRepository {
     final refs = await _refsOf(byTrack.keys.toSet());
     return (
       tags: [for (final t in tags) TagEntry(name: t.name, color: t.color)],
-      tagged: [
+      tagged: limitTagged([
         for (final e in byTrack.entries)
           if (refs[e.key] case final ref?) TaggedTrack(ref: ref, tags: e.value),
-      ],
+      ]),
     );
   }
 
@@ -216,34 +216,56 @@ class PlaylistSyncRepository {
     );
   }
 
-  /// [remote] cut to what this device lacks, by the rules of the merge that writes it ([apply]): a listen not here
-  /// (same track and moment), a tag not here, a tag of a track not here yet, a text for a field that is empty here. A
-  /// track this library does not have is left out. Only so the plan shows what would change; the merge decides.
-  Future<TablesBundle> newTables(TablesBundle remote, TrackResolver resolver) async {
-    if (remote.isEmpty) return remote;
-    final tracks = TrackRepository(_db);
-    Future<int?> idOf(TrackRef r) async {
+  /// The id here of a track reference (null: not here), asked once per distinct track.
+  Future<int?> Function(TrackRef) _lookup(TrackResolver resolver) {
+    final tracks = TrackRepository(_db), seen = <String, int?>{};
+    return (r) async {
+      final k = refKey(r);
+      if (seen.containsKey(k)) return seen[k];
       final key = r.streamKey;
-      return key == null ? resolver.resolve(r) : (await tracks.streamRow(key))?.id;
-    }
+      return seen[k] = key == null ? resolver.resolve(r) : (await tracks.streamRow(key))?.id;
+    };
+  }
 
-    bool blank(String? s) => s == null || s.trim().isEmpty;
-    final texts = <TextEntry>[];
-    for (final e in remote.texts) {
-      final id = await idOf(e.ref);
-      final t = id == null ? null : await tracks.getById(id);
-      if (t != null &&
-          ((blank(t.lyricsPlain) && e.plain != null) ||
-              (blank(t.lyricsSynced) && e.synced != null) ||
-              (blank(t.curiosities) && e.curiosities != null))) {
-        texts.add(e);
+  Future<List<TextEntry>> _newTexts(List<TextEntry> remote, Future<int?> Function(TrackRef) idOf) async {
+    final ids = [for (final e in remote) await idOf(e.ref)];
+    final here = <int, Track>{};
+    final wanted = {...ids.whereType<int>()}.toList();
+    for (var i = 0; i < wanted.length; i += 500) {
+      final chunk = wanted.sublist(i, min(i + 500, wanted.length));
+      for (final t in await (_db.select(_db.tracks)..where((t) => t.id.isIn(chunk))).get()) {
+        here[t.id] = t;
       }
     }
+    bool blank(String? s) => s == null || s.trim().isEmpty;
+    return [
+      for (var i = 0; i < remote.length; i++)
+        if (here[ids[i]] case final t?)
+          if ((blank(t.lyricsPlain) && remote[i].plain != null) ||
+              (blank(t.lyricsSynced) && remote[i].synced != null) ||
+              (blank(t.curiosities) && remote[i].curiosities != null))
+            remote[i],
+    ];
+  }
+
+  /// The texts of [remote] that fill a field empty here (a text for a track this library lacks is left out): the
+  /// filter of a page of `POST /sync/texts`, so the whole list never has to be held.
+  Future<List<TextEntry>> newTexts(List<TextEntry> remote, TrackResolver resolver) =>
+      remote.isEmpty ? Future.value(remote) : _newTexts(remote, _lookup(resolver));
+
+  /// [remote] cut to what this device lacks, by the rules of the merge that writes it ([apply]): a listen not here
+  /// (same track and moment), a tag not here, a tag of a track not here yet, a text for a field that is empty here. A
+  /// track this library does not have is left out. [plays] false (the history is off here): no listen is kept. Only
+  /// so the plan shows what would change; the merge decides.
+  Future<TablesBundle> newTables(TablesBundle remote, TrackResolver resolver, {bool plays = true}) async {
+    if (remote.isEmpty) return remote;
+    final idOf = _lookup(resolver);
+    final texts = await _newTexts(remote.texts, idOf);
     final seen = {for (final r in await _db.select(_db.plays).get()) (r.trackId, r.playedAt)};
-    final plays = <PlayEntry>[];
-    for (final p in remote.plays) {
+    final newPlays = <PlayEntry>[];
+    for (final p in plays ? remote.plays : const <PlayEntry>[]) {
       final id = await idOf(p.ref);
-      if (id != null && seen.add((id, p.playedAt))) plays.add(p);
+      if (id != null && seen.add((id, p.playedAt))) newPlays.add(p);
     }
     final tagIds = {for (final t in await _db.select(_db.userTags).get()) t.name.toLowerCase(): t.id};
     final linked = {for (final r in await _db.select(_db.trackTags).get()) (r.trackId, r.tagId)};
@@ -259,10 +281,27 @@ class PlaylistSyncRepository {
     }
     return TablesBundle(
       texts: texts,
-      plays: plays,
+      plays: newPlays,
       tags: [for (final t in remote.tags) if (!tagIds.containsKey(t.name.toLowerCase())) t],
       tagged: tagged,
     );
+  }
+
+  /// A track's play count and last play follow its listens: the larger of what it had and what its listens say
+  /// (as the backup restore does for the counters it brings), for the tracks [ids].
+  Future<void> _refreshPlayStats(Iterable<int> ids) async {
+    final all = {...ids}.toList();
+    for (var i = 0; i < all.length; i += 500) {
+      final chunk = all.sublist(i, min(i + 500, all.length));
+      await _db.customUpdate(
+        'UPDATE tracks SET '
+        'play_count = MAX(play_count, (SELECT COUNT(*) FROM plays WHERE track_id = tracks.id)), '
+        'last_played_at = MAX(COALESCE(last_played_at, 0), COALESCE((SELECT MAX(played_at) FROM plays WHERE track_id = tracks.id), 0)) '
+        'WHERE id IN (${List.filled(chunk.length, '?').join(',')})',
+        variables: [for (final id in chunk) Variable.withInt(id)],
+        updates: {_db.tracks},
+      );
+    }
   }
 
   /// This device's side of a sync besides the playlists, for [planSync]; [settings] are the allowed ones (`syncedSettings`).
@@ -373,6 +412,8 @@ class PlaylistSyncRepository {
         await _applyCollections(plan.collections, tomb, hasFile);
         if (found != null) {
           await mergeTablesData(_db, tables.toBackupData(), found);
+          final idOf = _lookup(found);
+          await _refreshPlayStats([for (final p in tables.plays) ?await idOf(p.ref)]);
           await mergeUserData(
             _db,
             UserData(createdAt: nowMs(), tracks: [

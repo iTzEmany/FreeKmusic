@@ -61,7 +61,7 @@ _Spec _whole(
 /// the storage mode, the files written to (`writeTagsToFiles`, `tagsAlsoInFile`, `writeTagsAfterDownload`), the
 /// launcher icon, the layout (`libraryGrid`), places (`radioCountry`, `radioRegion`, `chartCountry`, `radioOnlyCountry`),
 /// ids of this library (`playlistSorts`) and the state of this install (`onboardingFinished`, `ytNoticeSeen`,
-/// `recentSearches`, `recordHistory`). A custom theme (`custom:…`) is not a valid `theme` value: its colours stay here.
+/// `recentSearches`, `recordHistory`), and `acoustId` (it sends audio fingerprints to an outside service: each device decides). A custom theme (`custom:…`) is not a valid `theme` value: its colours stay here.
 final Map<String, _Spec> _synced = {
   'theme': _choice((s) => s.theme, (s, v) => s.copyWith(theme: v), const [
     'notte',
@@ -78,11 +78,11 @@ final Map<String, _Spec> _synced = {
     'rosa',
     'rosso',
   ]),
-  'fontScale': _real(
+  // The three sizes the settings page offers.
+  'fontScale': _Spec(
     (s) => s.fontScale,
-    (s, v) => s.copyWith(fontScale: v),
-    0.8,
-    1.5,
+    (s, v) => s.copyWith(fontScale: (v as num).toDouble()),
+    (v) => v is num && const [0.9, 1.0, 1.15].contains(v.toDouble()),
   ),
   'compactMode': _flag(
     (s) => s.compactMode,
@@ -101,7 +101,6 @@ final Map<String, _Spec> _synced = {
   'autoEnrich': _flag((s) => s.autoEnrich, (s, v) => s.copyWith(autoEnrich: v)),
   'autoLyrics': _flag((s) => s.autoLyrics, (s, v) => s.copyWith(autoLyrics: v)),
   'deezerMeta': _flag((s) => s.deezerMeta, (s, v) => s.copyWith(deezerMeta: v)),
-  'acoustId': _flag((s) => s.acoustId, (s, v) => s.copyWith(acoustId: v)),
   'creditsDetails': _flag(
     (s) => s.creditsDetails,
     (s, v) => s.copyWith(creditsDetails: v),
@@ -202,8 +201,16 @@ Set<String> get syncedSettingKeys => _synced.keys.toSet();
 /// What `GET /sync/settings` sends: the allowed settings of [s] by key (JSON values: bool, number, string).
 Map<String, Object> syncedSettings(AppSettings s) => {
   for (final e in _synced.entries)
-    if (e.value.read(s) case final Object v) e.key: v,
+    // A custom theme stays here: it is not sent, and [planSettings] reads its absence as «keep mine».
+    if (e.value.read(s) case final Object v when !(e.key == 'theme' && _isCustom(v))) e.key: v,
 };
+
+bool _isCustom(Object theme) => theme is String && theme.startsWith('custom:');
+
+const _sure = 'importSureThreshold', _review = 'importReviewThreshold';
+
+/// The review threshold above the sure one makes no sense: the pair is dropped.
+bool _incoherent(num? sure, num? review) => sure != null && review != null && review > sure;
 
 /// What came from the other device, cut to the allowed keys with valid values: anything else is dropped.
 Map<String, Object> parseSyncedSettings(Object? json) => {
@@ -231,18 +238,33 @@ class SettingChange {
 List<SettingChange> planSettings(
   Map<String, Object> local,
   Map<String, Object> remote,
-) => [
-  for (final e in remote.entries)
-    if (_synced[e.key]?.valid(e.value) ?? false)
-      if (local[e.key] != e.value) SettingChange(e.key, local[e.key], e.value),
-];
+) {
+  final skipThresholds = _incoherent(
+    (remote[_sure] ?? local[_sure]) as num?,
+    (remote[_review] ?? local[_review]) as num?,
+  );
+  return [
+    for (final e in remote.entries)
+      if (_synced[e.key]?.valid(e.value) ?? false)
+        if (local[e.key] != e.value)
+          if (!(skipThresholds && (e.key == _sure || e.key == _review)))
+            if (!(e.key == 'theme' && !local.containsKey('theme')))
+              SettingChange(e.key, local[e.key], e.value),
+  ];
+}
 
 /// [base] with [changes] applied; a key out of the list, or a value that is not valid, is ignored.
 AppSettings applySettings(AppSettings base, Iterable<SettingChange> changes) {
   var s = base;
   for (final c in changes) {
     final spec = _synced[c.key];
+    if (c.key == 'theme' && _isCustom(base.theme)) continue;
     if (spec != null && spec.valid(c.remote)) s = spec.write(s, c.remote);
   }
-  return s;
+  return _incoherent(s.importSureThreshold, s.importReviewThreshold)
+      ? s.copyWith(
+          importSureThreshold: base.importSureThreshold,
+          importReviewThreshold: base.importReviewThreshold,
+        )
+      : s;
 }

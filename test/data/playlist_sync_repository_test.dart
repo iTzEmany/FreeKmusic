@@ -56,16 +56,17 @@ class _Device {
   Future<void> applyAll(SyncPlan plan, {bool Function(String)? hasFile}) =>
       sync.apply(plan, applyCollections: true, hasFile: hasFile);
 
-  /// What a sync from [other] does to this device; [mine]: [other] is one of the user's own devices, so its
-  /// deletions travel (a device that is not «mine» is served no tombstones).
-  Future<SyncPlan> planFrom(_Device other, {bool mine = false, bool Function(String)? hasFile}) async {
+  /// What a sync from [other] does to this device. Favourites and saved tracks travel between «mine» devices only
+  /// (D-709), so the plan is for one; [mine] true also brings its deletions (a device that is not «mine» is served
+  /// no tombstones), null (the default) is a «mine» device that has deleted nothing yet, false is one that is not.
+  Future<SyncPlan> planFrom(_Device other, {bool? mine, bool Function(String)? hasFile}) async {
     final resolver = await sync.resolver();
     final there = SyncSide(
         favorites: await other.sync.favorites(),
         streams: await other.sync.streams(),
-        tombstones: mine ? await other.sync.tombstones() : const []);
+        tombstones: mine == true ? await other.sync.tombstones() : const []);
     return planSync(await sync.local(), await other.sync.export(), resolver.resolve,
-        localSide: await sync.side(), remoteSide: there, mine: mine, hasFile: hasFile);
+        localSide: await sync.side(), remoteSide: there, mine: mine ?? true, hasFile: hasFile);
   }
 }
 

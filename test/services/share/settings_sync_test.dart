@@ -17,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 const _other = AppSettings(
   theme: 'oled',
   accent: 'rosso',
-  fontScale: 1.3,
+  fontScale: 1.15,
   compactMode: true,
   reducedMotion: true,
   spinCover: true,
@@ -101,7 +101,6 @@ void main() {
     'autoEnrich',
     'autoLyrics',
     'deezerMeta',
-    'acoustId',
     'creditsDetails',
     'romanization',
     'autoCuriosities',
@@ -125,6 +124,7 @@ void main() {
   // The keys the store writes that never travel, each one decided (a new key fails the test below until it is put here or above).
   const stays = {
     'deviceName',
+    'acoustId', // sends audio fingerprints to an outside service: each device decides
     'pauseOnZeroVolume',
     'blurredChrome',
     'enrichOnMetered',
@@ -246,7 +246,7 @@ void main() {
           after.downloadFormat,
           after.librarySortAscending,
         ),
-        ('oled', 1.3, 10, DownloadFormat.mp3Low, true),
+        ('oled', 1.15, 10, DownloadFormat.mp3Low, true),
       );
       expect(
         planSettings(syncedSettings(after), syncedSettings(_other)),
@@ -320,5 +320,43 @@ void main() {
       (s.deviceName, s.downloadLocation, s.crossfadeSeconds),
       (null, '', 6),
     );
+  });
+
+  test('the limits of each range: the edge is valid, one step past it is not', () {
+    bool ok(String k, Object v) => parseSyncedSettings({k: v}).isNotEmpty;
+    expect([ok('playbackSpeed', 0.5), ok('playbackSpeed', 2.0), ok('playbackSpeed', 0.49), ok('playbackSpeed', 2.01)], [true, true, false, false]);
+    expect([ok('crossfadeSeconds', 2), ok('crossfadeSeconds', 12), ok('crossfadeSeconds', 1), ok('crossfadeSeconds', 13)], [true, true, false, false]);
+    expect([ok('importSureThreshold', 0.0), ok('importSureThreshold', 1.0), ok('importSureThreshold', -0.01), ok('importSureThreshold', 1.01)], [true, true, false, false]);
+    // Only the three sizes the settings page offers.
+    expect([for (final v in [0.9, 1.0, 1.15, 1]) ok('fontScale', v)], [true, true, true, true]);
+    expect([for (final v in [0.8, 1.05, 1.3, 1.5]) ok('fontScale', v)], [false, false, false, false]);
+  });
+
+  test('a pair of thresholds with the review above the sure one is dropped, in the plan and in the apply', () {
+    final local = syncedSettings(const AppSettings());
+    expect(
+      planSettings(local, {'importSureThreshold': 0.5, 'importReviewThreshold': 0.9}),
+      isEmpty,
+    );
+    expect(
+      planSettings(local, {'importReviewThreshold': 0.95}),
+      isEmpty,
+      reason: 'against the sure one here (0.80)',
+    );
+    expect(
+      [for (final c in planSettings(local, {'importSureThreshold': 0.9, 'importReviewThreshold': 0.6})) c.key],
+      ['importSureThreshold', 'importReviewThreshold'],
+    );
+    final s = applySettings(const AppSettings(), const [
+      SettingChange('importSureThreshold', 0.8, 0.3),
+    ]);
+    expect((s.importSureThreshold, s.importReviewThreshold), (0.80, 0.55));
+  });
+
+  test('a custom theme stays: it is not sent, not proposed and not replaced', () {
+    const custom = AppSettings(theme: 'custom:abc');
+    expect(syncedSettings(custom).containsKey('theme'), isFalse);
+    expect(planSettings(syncedSettings(custom), {'theme': 'oled', 'accent': 'rosso'}).map((c) => c.key), ['accent']);
+    expect(applySettings(custom, const [SettingChange('theme', null, 'oled')]).theme, 'custom:abc');
   });
 }
