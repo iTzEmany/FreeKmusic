@@ -134,7 +134,7 @@ void main() {
 
     await tester.tap(find.text('Sincronizza ora'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('theme'));
+    await tester.tap(find.text('Tema'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Applica e togli 1 elemento'));
     await tester.pump();
