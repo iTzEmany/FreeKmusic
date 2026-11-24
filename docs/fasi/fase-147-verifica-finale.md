@@ -29,7 +29,7 @@ D-662..D-699; rilievi e prove L1-L7 in [`../storico/refactor/grande-revisione/an
   - Fatto quando: le tre prove hanno esito scritto nelle «Note di deviazione».
 - [ ] 147.5 Prove L7 e aggiornamento: ripristino «Sostituisci», popup di versione (D-680, D-682) (dopo il tag v1.7.0, dell'utente)
   - File: nessuno.
-  - Passi: 1) **prima**: backup completo dell'utente dall'app (Tocca a te); 2) «Sostituisci» con un backup: l'app si riavvia da sola con processo nuovo (verificare il PID prima e dopo con `adb shell pidof`, sola lettura); 3) il popup della nuova versione si apre con un tocco ovunque (con una versione più recente disponibile, da 147.1).
+  - Passi: 1) **prima**: backup completo dell'utente dall'app (Tocca a te); 2) «Sostituisci» con un backup: l'app si riavvia da sola con processo nuovo (verificare il PID prima e dopo con `adb shell pidof`, sola lettura); 3) il popup della nuova versione si apre con un tocco ovunque (con una versione più recente disponibile, da 147.1). **Nota**: la 1.6.4 installata mostra ancora il popup vecchio, quindi questo passo si prova alla release successiva alla 1.7.0 (D-704 lo promette per il tag v1.7.0: qui la correzione).
   - Comando mirato: `python3 scripts/telefono.py ZY22HKD85K tocca` / `testi`
   - Fatto quando: il PID cambia dopo «Sostituisci»; il popup apre il dialogo.
 - [ ] 147.6 Prove di streaming, download, condivisione, sync (D-665, D-695, D-697, D-677, D-668) (dopo il tag v1.7.0, dell'utente)
@@ -55,7 +55,9 @@ D-662..D-699; rilievi e prove L1-L7 in [`../storico/refactor/grande-revisione/an
 - [ ] Concedere/togliere il permesso `READ_MEDIA_AUDIO` dal telefono quando richiesto (L1/L2); farlo dall'agente non è previsto.
 - [ ] Fare un backup completo dall'app prima di «Sostituisci».
 - [ ] Provare la condivisione su WhatsApp e il sync fra due dispositivi.
-- [ ] Decidere come mettere la build sul Motorola (147.1) e la versione di rilascio.
+- [x] Decidere come mettere la build sul Motorola (147.1) e la versione di rilascio (D-704: release 1.7.0).
+- [ ] Versione già alzata in questa PR (`1.7.0+14`): dopo il merge crea il tag `v1.7.0`.
+- [ ] Prima del tag: deploy del Worker (`cd tools/report-worker && npx wrangler deploy`) e indirizzo in `kReportEndpoint` (`lib/core/constants.dart`), oppure accettare la 1.7.0 senza invio anonimo delle segnalazioni.
 - [ ] Motorola, a mano: «Apri in FreeKmusic» toccato dalla pagina di condivisione in un browser vero, e App Link verificato con l'APK di release (`adb shell pm get-app-links`, sola lettura).
 - [ ] Motorola o Mi A3: importazione completa di una playlist da link con yt-dlp che risponde (sul Mi A3 le ricerche vanno in timeout dopo 45 s).
 - [ ] Motorola o Mi A3: condivisione di una playlist con più di 50 brani in streaming (file m3u8) e apertura del file dall'altra parte.
@@ -77,15 +79,17 @@ D-662..D-699; rilievi e prove L1-L7 in [`../storico/refactor/grande-revisione/an
   - 139: ok con deviazione già nota (139.4) — `grep -rn downloadsProvider lib/ui` mostra una sola barra (`download_bar.dart`, `DownloadBar`) ma altri 4 file lo osservano solo per trovare l'`item` della riga (`online_song_row`, `online_results_sections`, `genre_screen`, `suggestions_screen`) più `activity_sheet` per `cancel`; la metrica letterale «un solo widget» non regge, quella sostanziale (una sola barra) sì.
   - 140: ok — `migration_test` (v19/v20/v23: «rows otherwise unchanged»); la v19 aggiunge `tracks.saved` lasciando invariate le righe dei brani locali.
   - 141: ok — le 8 pagine che usano `CollectionScaffold(` (playlist, album, smart, preferiti, genere, podcast, artista, tag) con `collection_header_test` e `collection_pages_more_test` («one header with Play, Casuale…»).
-  - 142: ok — `resume_episode_row_test` («the grid has $columns columns at $width dp», «a block of $blockWidth dp has $columns columns»); resta la nota sulla soglia dei 560 dp per il blocco (sopra).
+  - 142: ok — `resume_episode_row_test` («the grid has $columns columns at $width dp», «a block of $blockWidth dp has $columns columns»); resta la nota sulla soglia dei 560 dp per il blocco (in `../prossimi-lavori.md`, «Riproduzione e coda»).
   - 143: ok — una sola chiamata di invio, `issueSenderProvider...send` in `report_issue_screen.dart:80` dentro `_send`, legato al solo `onPressed` (riga 195); `ReportIssueScreen(` si apre dal Registro e da `enrich_round_screen` senza inviare; `report_issue_screen_test` verde.
   - 144: ok — `model_catalog_test` («Android lists 20 languages, the dictionary and karaoke; elsewhere only the dictionary»).
   - 145: ok — `external_share_text_test` e `external_share_test` verdi; `exceedsShareLimit` = più di `kMaxSharedTracks` (50, D-702) passa a m3u8; `share_fragment_test` round trip a 1 e 50 brani (eseguito in 145, non riletto qui).
   - 146: ok — `sync_two_devices_test` verde (convergono in due giri, il terzo non cambia nulla, nessun file né riga di libreria toccati).
 
+- **Fuori piano.** 8aa0ecaa: protocollo di sync compattato prima del primo rilascio (R3/R4), esito: test di sync verdi e protocollo unico per la 1.7.0. d4a3b7ea: accessibilità (link dell'artista a 48 dp, golden aggiornati; campo di ricerca con un'etichetta sola), esito: i due test di accessibilità verdi.
+
 **147.7 Accessibilità** (solo verifiche automatiche; Mi A3, densità 320, 48 dp = 96 px). I due test (`a11y_guidelines_test`, `accessibility_characterization_test`): 16/16 verdi. Telefono in modo aereo, quindi non raggiungibili: barra dei download (nessun download possibile) e barra alfabetica (Tutti i brani ha 7 brani, non compare).
-- Testata album: Riproduci 56 dp, Casuale 48, Condividi 48, ⋮ «Altre azioni» 48, tutti con etichetta. Manca «Scarica» (assente offline, da riprovare con rete). Problema: il link artista «Tinariwen» nella testata misura 71x23 dp (file probabile: `lib/ui/screens/library/` testata album).
-- Testata playlist: Riproduci 56, Casuale 48, Condividi 48, ⋮ 48, con etichetta. «Scarica» assente (come sopra). Da verificare: il campo di filtro (EditText, 328x48 dp) nel dump non ha né testo né descrizione.
+- Testata album: Riproduci 56 dp, Casuale 48, Condividi 48, ⋮ «Altre azioni» 48, tutti con etichetta. Manca «Scarica» (assente offline, da riprovare con rete). Problema: il link artista «Tinariwen» nella testata misura 71x23 dp: corretto in d4a3b7ea (48 dp, `album_detail_screen.dart`).
+- Testata playlist: Riproduci 56, Casuale 48, Condividi 48, ⋮ 48, con etichetta. «Scarica» assente (come sopra). Il campo di filtro (EditText, 328x48 dp) nel dump non aveva né testo né descrizione: corretto in d4a3b7ea (un'etichetta sola per TalkBack; con testo scritto il nome resta, corretto nella correzione pre-merge).
 - Griglia del Riprendi (home): riquadri 148x66 dp con etichetta «tipo, titolo, sottotitolo»; Registro/Impostazioni 48; Riproduci/Casuale 48-50. Ok.
 - Barra alfabetica: non verificata (non compare). Download bar: non verificata (offline).
 - Modelli e dizionari: righe 360x72 dp con etichetta, «Elimina English» 48x48 dp, Indietro 48. Ok (verificate solo le righe della sezione Traduzione; i pulsanti «Scarica/Elimina selezionati (0)» sono disattivati e non esposti come cliccabili).
@@ -93,4 +97,4 @@ D-662..D-699; rilievi e prove L1-L7 in [`../storico/refactor/grande-revisione/an
 - Avanzate e info (passato per strada): cursori 48x48 con etichetta. Ok.
 
 ## Rinvii di codice
-I rilievi rimandati delle review e delle schegge 142, 144, 145 e 146 sono in [`../prossimi-lavori.md`](../prossimi-lavori.md), sezione «Dalla grande revisione (fasi 143-147)»; le prove su telefono sono sopra, in «Tocca a te».
+I rilievi rimandati delle review e delle schegge 142, 144, 145 e 146 sono in [`../prossimi-lavori.md`](../prossimi-lavori.md), sezione «Dalla grande revisione (fasi 135-147)»; le prove su telefono sono sopra, in «Tocca a te».

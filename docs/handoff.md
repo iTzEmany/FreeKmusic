@@ -2,15 +2,15 @@
 Aggiornato: 2026-11-24 · Stato: le fasi 135-147 della grande revisione sono chiuse (la 147 nella parte documentale e nelle misure); schema DB v24, ultima decisione D-709.
 
 ## Prossima sessione
-Release 1.7.0: la fa l'utente con il tag `v1.7.0` (versione e tag decisi da lui, D-704). Dopo il tag restano le prove su telefono della fase 147 (147.3-147.6) e la lista «Tocca a te» di quella fase.
+Release 1.7.0: la versione è già alzata in questa PR (`1.7.0+14`): dopo il merge crea il tag `v1.7.0` (D-704). Prima del tag: deploy del Worker e `kReportEndpoint`, oppure accettare la 1.7.0 senza invio anonimo delle segnalazioni. Dopo il tag restano le prove su telefono della fase 147 (147.3-147.6) e la lista «Tocca a te» di quella fase.
 
 ## Cosa resta
-- Rinvii di codice delle review 142-146: [`prossimi-lavori.md`](prossimi-lavori.md), sezione «Dalla grande revisione (fasi 143-147)».
-- Prese in autonomia durante la 147: D-707, D-708, D-709 (vedi [`decisioni.md`](decisioni.md)).
+- Rinvii di codice delle review 142-146: [`prossimi-lavori.md`](prossimi-lavori.md), sezione «Dalla grande revisione (fasi 135-147)».
+- Prese in autonomia: D-707 (review 144), D-708 e D-709 (review 146); vedi [`decisioni.md`](decisioni.md).
 
 ## Tocca a te
-- [ ] Tag `v1.7.0` e Release dalla CI; poi l'aggiornamento dall'app sul Motorola.
-- [ ] Prove su telefono, account e pubblicazioni: elenco completo in «Tocca a te» di [`fasi/fase-147-verifica-finale.md`](fasi/fase-147-verifica-finale.md); restano aperti Cloudflare/token/etichetta `da-triage` (D-669) e Pages con `assetlinks.json` (D-569) se non già fatti.
+- [ ] Dopo il merge: tag `v1.7.0` (versione già alzata) e Release dalla CI; poi l'aggiornamento dall'app sul Motorola.
+- [ ] Prove su telefono, account e pubblicazioni: elenco completo in «Tocca a te» di [`fasi/fase-147-verifica-finale.md`](fasi/fase-147-verifica-finale.md); resta aperto il deploy del Worker Cloudflare con il token (D-669).
 
 ## Da sapere
 - Analisi e rilievi F-01..F-41, rete di test, scansioni e mockup della grande revisione sono archiviati in `docs/storico/refactor/grande-revisione/`. Decisioni D-662..D-699 vincolanti.

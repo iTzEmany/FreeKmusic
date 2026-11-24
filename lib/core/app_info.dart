@@ -1,5 +1,5 @@
 /// Keep in sync with `version:` in pubspec.yaml.
-const kAppVersion = '1.6.4';
+const kAppVersion = '1.7.0';
 
 /// `owner/name` of the GitHub repository whose releases «Controlla
 /// aggiornamenti» reads. Empty = the feature is hidden.

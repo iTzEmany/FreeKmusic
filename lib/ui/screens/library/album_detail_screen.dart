@@ -283,8 +283,6 @@ class _AlbumSubtitle extends StatelessWidget {
             ? Text(artistName, style: Theme.of(context).textTheme.bodyLarge)
             : Semantics(
                 link: true,
-                label: artistName,
-                excludeSemantics: true,
                 child: InkWell(
                 onTap: () => ShellNav.open<void>(
                   context,

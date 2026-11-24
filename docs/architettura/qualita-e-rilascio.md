@@ -51,7 +51,7 @@ Questo documento dice come si verifica una modifica e come esce una versione. Co
 
 | Dove | Cosa |
 |---|---|
-| `pubspec.yaml` | `version: 1.4.1+6` (nome e build). |
+| `pubspec.yaml` | `version: <nome>+<build>` (da alzare a ogni rilascio, nella PR che lo prepara). |
 | `lib/core/app_info.dart` | `kAppVersion` (da tenere uguale alla `version` di `pubspec.yaml`), `kReleaseRepo = 'iTzEmany/FreeKmusic'`. |
 
 ## Come funziona
