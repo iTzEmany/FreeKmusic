@@ -4374,7 +4374,7 @@
       }
     }
   },
-  "updateWithSize": "Mettre à jour · {size} Mo",
+  "updateWithSize": "Mettre à jour ({size} Mo)",
   "@updateWithSize": {
     "placeholders": {
       "size": {

@@ -12,6 +12,9 @@ void main() {
     'lib/ui/screens/jam/jam_remote_sheets.dart',
     // The picker paints the hue/saturation/brightness gradients of the colour being chosen.
     'lib/ui/widgets/color_picker.dart',
+    // The share card is an always-dark image drawn off screen (D-712): the notte tokens and a white QR ground, in any theme.
+    'lib/providers/share_card_maker.dart',
+    'lib/ui/widgets/share_card.dart',
     // The full-screen video sits on black in every theme.
     'lib/ui/screens/now_playing/karaoke_video_fullscreen.dart',
   };

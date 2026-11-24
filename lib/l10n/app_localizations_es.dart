@@ -8553,7 +8553,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String updateWithSize(int size) {
-    return 'Actualizar · $size MB';
+    return 'Actualizar ($size MB)';
   }
 
   @override

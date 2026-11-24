@@ -13300,7 +13300,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateWithSize.
   ///
   /// In it, this message translates to:
-  /// **'Aggiorna · {size} MB'**
+  /// **'Aggiorna ({size} MB)'**
   String updateWithSize(int size);
 
   /// No description provided for @updateSelfHint.

@@ -4339,7 +4339,7 @@
       }
     }
   },
-  "updateWithSize": "Atualizar · {size} MB",
+  "updateWithSize": "Atualizar ({size} MB)",
   "@updateWithSize": {
     "placeholders": {
       "size": {

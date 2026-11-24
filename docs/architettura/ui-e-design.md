@@ -62,7 +62,7 @@ La scrittura passa dagli Ops (`lib/providers/*_ops.dart`: `TrackOps`, `PlaylistO
 | Test | Regola |
 |---|---|
 | `test/ui/architecture_test.dart` | `lib/ui` non usa `databaseProvider`, `*RepositoryProvider`, `*QueriesProvider` (D-24); niente `PopupMenuButton` né `showMenu(`: i menu sono fogli. |
-| `test/ui/no_stray_colors_test.dart` | Niente `Color(0x…)` né `Colors.<nome>` fuori da `lib/ui/theme/` (eccezioni: QR in `send_tab.dart` e `jam_remote_sheets.dart`, `color_picker.dart`, `karaoke_video_fullscreen.dart` con lo sfondo nero in ogni tema). Il secondo test dice se un'eccezione non serve più. |
+| `test/ui/no_stray_colors_test.dart` | Niente `Color(0x…)` né `Colors.<nome>` fuori da `lib/ui/theme/` (eccezioni: QR in `send_tab.dart` e `jam_remote_sheets.dart`, `color_picker.dart`, `karaoke_video_fullscreen.dart` con lo sfondo nero in ogni tema, `share_card.dart` e `share_card_maker.dart`: la scheda di condivisione è sempre scura, D-712). Il secondo test dice se un'eccezione non serve più. |
 | `test/ui/no_separator_literals_test.dart` | Niente ` · `, `•`, `→`, `▾` nei letterali di `lib/` (fuori da `lib/l10n/` e dai parser di YouTube Music). |
 | `test/ui/widgets_test.dart` | Niente `showModalBottomSheet` fuori da `cc_sheet.dart` e `car_playlists_sheet.dart`. |
 | `test/l10n/arb_test.dart` | Stesse chiavi e segnaposto in tutte le lingue, niente stringhe vuote, apostrofo `’` in francese e portoghese, niente separatori, plurali con «other». |

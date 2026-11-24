@@ -8537,7 +8537,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String updateWithSize(int size) {
-    return 'Atualizar · $size MB';
+    return 'Atualizar ($size MB)';
   }
 
   @override

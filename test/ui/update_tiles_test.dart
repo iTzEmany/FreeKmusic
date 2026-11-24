@@ -75,12 +75,12 @@ void main() {
   final apk = _info.assets.first;
   const idle = UpdateDownloadState(UpdatePhase.idle);
 
-  testWidgets('newer: the button says «Aggiorna · 84 MB», which TalkBack reads too', (tester) async {
+  testWidgets('newer: the button says «Aggiorna (84 MB)», which TalkBack reads too', (tester) async {
     final h = await open(tester, idle);
     expect(find.text('È arrivata la 9.9.9'), findsOneWidget);
     expect(find.text('Copia indirizzo'), findsNothing);
-    expect(tester.getSemantics(find.widgetWithText(FilledButton, 'Aggiorna · 84 MB')).label, contains('84 MB'));
-    await tester.tap(find.text('Aggiorna · 84 MB'));
+    expect(tester.getSemantics(find.widgetWithText(FilledButton, 'Aggiorna (84 MB)')).label, contains('84 MB'));
+    await tester.tap(find.text('Aggiorna (84 MB)'));
     expect(flow.calls, ['start']);
     await h.dispose(tester);
   });

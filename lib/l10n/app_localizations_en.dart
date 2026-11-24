@@ -8499,7 +8499,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String updateWithSize(int size) {
-    return 'Update · $size MB';
+    return 'Update ($size MB)';
   }
 
   @override

@@ -8597,7 +8597,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String updateWithSize(int size) {
-    return 'Mettre à jour · $size Mo';
+    return 'Mettre à jour ($size Mo)';
   }
 
   @override
