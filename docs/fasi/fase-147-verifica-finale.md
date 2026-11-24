@@ -83,3 +83,11 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - m3u8 cancellato a fine condivisione; su desktop negli appunti il testo leggibile, non il corpo `#EXTM3U`. CSP della pagina senza `unsafe-inline` (script in `main.js`). In `IncomingBridge.kt` controllo anche del percorso e un tetto a `pendingTexts`.
 - Brano singolo da link senza rete: Cerca mostra tre messaggi di rete e resta in errore finché non si preme Riprova.
 - Da provare (Mi A3 o Motorola): importazione completa da link con yt-dlp che risponde (sul Mi A3 le ricerche vanno in timeout dopo 45 s); condivisione di una playlist con più di 50 brani in streaming (file m3u8); App Link verificato con l'APK di release (`pm get-app-links`); «Apri in FreeKmusic» toccato dalla pagina in un browser vero; condivisione su WhatsApp (utente).
+
+## Da controllare (review e scheggia della fase 146)
+- Parità al millisecondo: due modifiche della stessa playlist con lo stesso `updatedAt` su due dispositivi non convergono (1 caso su 300 nel fuzz a passo 0); serve un criterio di spareggio deterministico (es. uuid del dispositivo).
+- Un peer di una versione precedente senza le rotte nuove risponde 404 e fa fallire il sync dei preferiti: degradare a sole playlist.
+- `/sync/plays` rimanda ogni volta gli ultimi 20000 ascolti: aggiungere `since` come per i tombstone.
+- `hasFile` viene dall'indice dei download in memoria; i cuori su brani che qui sono file non viaggiano.
+- Annullare un cuore messo per sbaglio lascia un tombstone `favoriteStream` datato adesso (caso accettato).
+- Prova reale (Mi A3 e Redmi come «miei», mai il Motorola): «Sincronizza ora» con aggiunte e rimozioni, conferma, impostazioni scelte, dispositivo non «mio» che porta solo playlist.
