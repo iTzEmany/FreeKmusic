@@ -17,7 +17,7 @@ Flutter 3.47 / Dart · `flutter_riverpod` (stato) · `drift` + SQLite (DB) · `j
 `just_audio_media_kit` (audio) · `audio_service` (notifica Android) · `audio_metadata_reader`
 (tag, lettura) · `metadata_god` (`third_party/`, scrittura dei tag solo via `SafeTagWriter`) · `dio` (HTTP) ·
 yt-dlp (download e flusso, flavor `full`; su Android anche NewPipeExtractor; catalogo da InnerTube) · `shared_preferences` ·
-`mqtt_client` + `sodium` (Jam a distanza, D-251/D-252).
+`mqtt_client` + `sodium` (Jam a distanza, D-251/D-252) · `share_plus` (foglio di condivisione, D-670).
 
 ## Comandi
 ```
