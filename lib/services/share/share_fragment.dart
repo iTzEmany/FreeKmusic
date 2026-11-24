@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data' show BytesBuilder;
+import 'dart:typed_data' show BytesBuilder, ByteData, Endian, Uint8List;
 import 'dart:io';
 
 /// Max tracks in one shared link or text (D-702); above it we fall back to m3u8.
@@ -76,7 +76,9 @@ SharedFragment _decode(String fragment) {
   final dec = gzip.decoder.startChunkedConversion(_LimitSink(out));
   dec.add(bytes);
   dec.close();
-  final lines = utf8.decode(out.takeBytes()).split('\n');
+  final raw = out.takeBytes();
+  _checkGzipTrailer(bytes, raw);
+  final lines = utf8.decode(raw).split('\n');
   if (lines.length != 4 || lines[0] != 'FK1') {
     throw const ShareFragmentError('bad prefix or layout');
   }
@@ -98,6 +100,30 @@ SharedFragment _decode(String fragment) {
   ];
   _validate(ids);
   return SharedFragment(kind, title, ids);
+}
+
+/// dart:io does not check the gzip trailer: a truncated stream, trailing bytes or
+/// a zlib stream would pass. Require the last 8 bytes to be CRC32 + ISIZE of [raw].
+void _checkGzipTrailer(Uint8List gz, Uint8List raw) {
+  if (gz.length < 18 || gz[0] != 0x1f || gz[1] != 0x8b || gz[2] != 8) {
+    throw const ShareFragmentError('not gzip');
+  }
+  final t = ByteData.sublistView(gz, gz.length - 8);
+  if (t.getUint32(0, Endian.little) != _crc32(raw) ||
+      t.getUint32(4, Endian.little) != raw.length) {
+    throw const ShareFragmentError('bad gzip trailer');
+  }
+}
+
+int _crc32(Uint8List data) {
+  var c = 0xFFFFFFFF;
+  for (final b in data) {
+    c ^= b;
+    for (var k = 0; k < 8; k++) {
+      c = (c & 1) != 0 ? (c >> 1) ^ 0xEDB88320 : c >> 1;
+    }
+  }
+  return c ^ 0xFFFFFFFF;
 }
 
 void _validate(List<String> ids) {

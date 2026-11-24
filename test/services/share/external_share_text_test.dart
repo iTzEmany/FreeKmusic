@@ -41,6 +41,29 @@ void main() {
     expect(decodeShareFragment(frag).ids, ['abcdefgh0_1']);
   });
 
+  test('a v= of 12 characters is not an id', () {
+    final long = _t(1).copyWith(path: 'stream:youtube:abcdefgh0_1x');
+    expect(sharedIds([long]), isEmpty);
+  });
+
+  test('numbered list: 10 and 11 tracks, the ellipsis only above the limit', () {
+    List<Track> n(int c) => [for (var i = 1; i <= c; i++) _t(i)];
+    final ten = buildShareText(SharedKind.playlist, 'Mix', n(10)).split('\n');
+    expect(ten, contains('10. Band - Song 10'));
+    expect(ten, isNot(contains('…')));
+    final eleven = buildShareText(SharedKind.playlist, 'Mix', n(11)).split('\n');
+    expect(eleven, isNot(contains('11. Band - Song 11')));
+    expect(eleven, contains('…'));
+  });
+
+  test('album browse link only for an album; empty track list gives no page line', () {
+    final pl = buildShareText(SharedKind.playlist, 'Mix', [_t(1, album: 'Alb')]);
+    expect(pl, isNot(contains('/browse/')));
+    final noBrowse = buildShareText(SharedKind.album, 'Alb', [_t(1)]);
+    expect(noBrowse, isNot(contains('/browse/')));
+    expect(buildShareText(SharedKind.track, 'x', []), isNot(contains(kSharePageUrl)));
+  });
+
   test('only local tracks: text without any link', () {
     final text = buildShareText(SharedKind.playlist, 'Mix', [_t(1, stream: false)]);
     expect(text, isNot(contains('http')));

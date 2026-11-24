@@ -118,5 +118,50 @@
     "name": "space inside",
     "error": true,
     "fragment": "H4sI AAAAAAACA3PzNuQq4argSgksNym3DE-PSA4EAJZsQ2YTAAAA"
+  },
+  {
+    "name": "truncated gzip: last byte cut",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3D3Ech-JUAQA"
+  },
+  {
+    "name": "truncated gzip: trailer cut",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3Dw"
+  },
+  {
+    "name": "truncated gzip: 20 bytes cut",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmsg"
+  },
+  {
+    "name": "trailing bytes: 1",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3D3Ech-JUAQAAAA"
+  },
+  {
+    "name": "trailing bytes: 3",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA93NpxGAUBRFQf-q-Tk0gGGo4QwZHJLyUbcJ3LodRm-PTfdr87Ju-3FeDid6vBgIYiSKiSRmslgoYqWKjSZ2-p-3D3Ech-JUAQAAAQID"
+  },
+  {
+    "name": "zlib, not gzip",
+    "error": true,
+    "fragment": "eJzdzacRgFAURUH_qvk5NIBhqOEMGRyS8lG3Cdy6HUZvj033a_OybvtxXg4nerwYCGIkiokkZrJYKGKlio0mdvqftw9vSHgn"
+  },
+  {
+    "name": "two gzip members",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuQq4argAgDUUbOnCAAAAB-LCAAAAAAAAANLCSw3KbcMT49IDgQAFAhyXgsAAAA"
+  },
+  {
+    "name": "title of only U+0085",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuQq4TrUypUSWG5SbhmeHpEcCABxxRHaFAAAAA"
+  },
+  {
+    "name": "non-zero trailing bits in the last character",
+    "error": true,
+    "fragment": "H4sIAAAAAAAAA3PzNuQq4aqo5EoJLDcptwxPj0gOBADUVKegFAAAAB"
   }
 ]

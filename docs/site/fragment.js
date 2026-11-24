@@ -13,16 +13,21 @@ export async function decodeFragment(fragment) {
   if (typeof DecompressionStream === 'undefined') fail('DecompressionStream not supported');
   let bytes;
   try {
-    bytes = Uint8Array.from(atob(body.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0));
+    const std = body.replace(/-/g, '+').replace(/_/g, '/'), raw = atob(std);
+    // atob ignores non-zero trailing bits of the last character; the Dart side rejects them.
+    if (btoa(raw).replace(/=+$/, '') !== std) fail('base64 trailing bits');
+    bytes = Uint8Array.from(raw, (c) => c.charCodeAt(0));
   } catch (e) { fail('base64: ' + e.message); }
   const all = await gunzipLimited(bytes);
+  // The stream checks each member's CRC; ISIZE of the last one must equal the total, as in Dart (rejects extra members).
+  if (new DataView(bytes.buffer).getUint32(bytes.length - 4, true) !== all.length) fail('gzip trailer');
   let text;
   try { text = new TextDecoder('utf-8', { fatal: true }).decode(all); } catch (e) { fail('utf8'); }
   const lines = text.split('\n');
   if (lines.length !== 4 || lines[0] !== 'FK1') fail('header');
   const [, kind, title, idStr] = lines;
   if (!['t', 'a', 'p'].includes(kind)) fail('kind');
-  if (!title.trim() || [...title].length > MAX_TITLE) fail('title');
+  if (/^[\s\u0085]*$/.test(title) || [...title].length > MAX_TITLE) fail('title');
   if (!/^[A-Za-z0-9_-]*$/.test(idStr) || idStr.length % 11 !== 0 || idStr.length / 11 > MAX_IDS) fail('ids');
   const ids = idStr.match(/.{11}/g) || [];
   if (!ids.length) fail('ids');

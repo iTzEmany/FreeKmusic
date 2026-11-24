@@ -126,6 +126,123 @@ void main() {
     expect(sw.elapsed, lessThan(const Duration(seconds: 2)));
   });
 
+  Matcher failsWith(String part) => throwsA(
+    isA<ShareFragmentError>().having(
+      (e) => e.message,
+      'message',
+      contains(part),
+    ),
+  );
+
+  test('a truncated or extended gzip stream is rejected, however short the cut', () {
+    final gz = gzip.encode(utf8.encode('FK1\np\nMix\n${_ids(30).join()}'));
+    for (var cut = 1; cut <= 40; cut++) {
+      expect(
+        () => decodeShareFragment(_b64(gz.sublist(0, gz.length - cut))),
+        throwsA(isA<ShareFragmentError>()),
+        reason: 'cut $cut',
+      );
+    }
+    for (final tail in [
+      [0],
+      [1, 2, 3],
+      [0, 0, 0, 0],
+    ]) {
+      expect(
+        () => decodeShareFragment(_b64([...gz, ...tail])),
+        throwsA(isA<ShareFragmentError>()),
+        reason: 'tail $tail',
+      );
+    }
+  });
+
+  test('zlib instead of gzip, and two gzip members, are rejected', () {
+    final payload = utf8.encode('FK1\nt\nx\nabcdefghijk');
+    expect(
+      () => decodeShareFragment(_b64(zlib.encode(payload))),
+      failsWith('gzip'),
+    );
+    final two = [
+      ...gzip.encode(utf8.encode('FK1\nt\nx\n')),
+      ...gzip.encode(utf8.encode('abcdefghijk')),
+    ];
+    expect(
+      () => decodeShareFragment(_b64(two)),
+      throwsA(isA<ShareFragmentError>()),
+    );
+  });
+
+  test('anything after the base64url body is rejected', () {
+    final e = encodeShareFragment(
+      SharedFragment(SharedKind.track, 'a', _ids(1)),
+    );
+    for (final bad in ['$e!', '$e%3D', '$e?x=1', '$e x', '$e===', '##$e']) {
+      expect(
+        () => decodeShareFragment(bad),
+        throwsA(isA<ShareFragmentError>()),
+        reason: bad,
+      );
+    }
+  });
+
+  test('padding too short or too long is rejected, the exact one accepted', () {
+    var checked = 0;
+    for (final t in ['a', 'ab', 'abc', 'abcd']) {
+      final e = encodeShareFragment(
+        SharedFragment(SharedKind.track, t, _ids(1)),
+      );
+      final need = (4 - e.length % 4) % 4;
+      if (need == 0) continue;
+      checked++;
+      expect(decodeShareFragment(e + '=' * need).title, t);
+      for (final n in [need - 1, need + 1].where((n) => n > 0)) {
+        expect(
+          () => decodeShareFragment(e + '=' * n),
+          throwsA(isA<ShareFragmentError>()),
+          reason: '$t +$n',
+        );
+      }
+    }
+    expect(checked, greaterThan(0));
+  });
+
+  test('64 KB boundary: 65536 bytes reach the layout check, 65537 are too large', () {
+    expect(
+      () => decodeShareFragment(_b64(gzip.encode(List.filled(65536, 65)))),
+      failsWith('layout'),
+    );
+    expect(
+      () => decodeShareFragment(_b64(gzip.encode(List.filled(65537, 65)))),
+      failsWith('too large'),
+    );
+  });
+
+  test('layout: five lines, wrong kind code, a title of only U+0085', () {
+    for (final p in [
+      'FK1\nt\nT\nabcdefghijk\nabcdefghijk',
+      'FK1\ntt\nT\nabcdefghijk',
+      'FK1\nt \nT\nabcdefghijk',
+      'FK1\nta\nT\nabcdefghijk',
+      'FK1\nt\n\u0085\nabcdefghijk',
+    ]) {
+      expect(
+        () => decodeShareFragment(_frag(p)),
+        throwsA(isA<ShareFragmentError>()),
+        reason: p,
+      );
+    }
+  });
+
+  test('encode rejects ids that are not 11 valid characters', () {
+    for (final id in ['abcdefghij', 'abcdefghijkl', 'abcdefghij!']) {
+      expect(
+        () => encodeShareFragment(SharedFragment(SharedKind.track, 'x', [id])),
+        throwsA(isA<ShareFragmentError>()),
+        reason: id,
+      );
+    }
+  });
+
   test('shared vectors: positive decode, negative are rejected', () {
     final v = jsonDecode(
       File('test/services/share/fragment_vectors.json').readAsStringSync(),

@@ -33,6 +33,21 @@ test('rejects corrupt, truncated, oversized and non-utf8 input', async () => {
   await assert.rejects(decodeFragment(b64u(await gz(Buffer.from([0x46, 0x4b, 0x31, 0x0a, 0xff, 0xfe, 0x0a, 0x0a])))));
 });
 
+test('title limit counts code points; kind is exactly one of t, a, p', async () => {
+  for (const t of ['x'.repeat(120), '🎵'.repeat(61), '🎵'.repeat(120)]) await assert.doesNotReject(decodeFragment(await enc(`FK1\nt\n${t}\n${ID1}`)));
+  for (const t of ['🎵'.repeat(121), 'x'.repeat(121)]) await assert.rejects(decodeFragment(await enc(`FK1\nt\n${t}\n${ID1}`)));
+  for (const k of ['ta', 't ', '', 'T']) await assert.rejects(decodeFragment(await enc(`FK1\n${k}\nx\n${ID1}`)), k);
+  await assert.rejects(decodeFragment(b64u(await gz(Buffer.concat([Buffer.from('FK1\nt\nab'), Buffer.from([0xff]), Buffer.from(`\n${ID1}`)])))));
+});
+
+test('malformed base64url wrapper and 64 KB boundary', async () => {
+  const f = await enc(`FK1\nt\nx\n${ID1}`);
+  for (const bad of ['##' + f, f + '!', f + '===', f + '%3D', f + '?x=1', f + ' x']) await assert.rejects(decodeFragment(bad), bad);
+  // Neither payload is valid; only the reason tells the limit apart.
+  await assert.rejects(decodeFragment(b64u(await gz(Buffer.alloc(65536, 65)))), /header/);
+  await assert.rejects(decodeFragment(b64u(await gz(Buffer.alloc(65537, 65)))), /too big/);
+});
+
 test('errors are typed, bomb of ~200 MB is cut quickly', async () => {
   await assert.rejects(decodeFragment('!!!'), FragmentError);
   await assert.rejects(decodeFragment('AAAA'), FragmentError);
