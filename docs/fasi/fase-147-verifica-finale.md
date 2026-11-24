@@ -7,7 +7,7 @@ Si prova sul telefono dell'utente (Motorola edge 40) ciò che i test non possono
 D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md`](../refactor/grande-revisione/analisi.md); rete di test, metriche e prove su telefono in [`../refactor/grande-revisione/rete.md`](../refactor/grande-revisione/rete.md) (riga 147 e sezione «147»); mockup in `../refactor/grande-revisione/mockup/` (confronto a vista). Profilo e regole sulle prove su telefono: `.claude/obiettivo.md` (`scripts/telefono.py <serial> prepara|sblocca|avvia|testi|tocca|aspetta|foto|audio`, output corto, tetto di circa 60 chiamate per flusso). **Il Motorola ZY22HKD85K è il telefono dell'utente, non di prova**: niente disinstallazioni, niente file toccati, nessuna modifica ai permessi o al volume fatta dall'agente; il log si esporta da Impostazioni › Avanzate › Esporta log. I telefoni di test (Mi A3 `0d7ae9df206e`, Redmi `8bbad1cd`) si usano per le prove distruttive, a volume 0 e ripuliti a fine prova (D-502).
 
 ## Task
-- [ ] 147.1 Proposta all'utente: come mettere la build sul Motorola — **chiedere prima, non decidere**
+- [x] 147.1 Proposta all'utente: come mettere la build sul Motorola — **chiedere prima, non decidere**
   - File: nessuno da scrivere.
   - Passi: 1) l'app sul Motorola è la release 1.6.4 firmata con la chiave di D-569: un APK di debug avrebbe firma diversa e richiederebbe la disinstallazione, che è vietata; 2) proporre all'utente (testo nel terminale, opzioni numerate): (a) una Release (tag e versione decisi dall'utente) dalla CI e aggiornamento dall'app (prova anche la fase 132); (b) prova sui soli telefoni di test, e sul Motorola solo il log dell'uso normale; 3) registrare la scelta in `../decisioni.md`.
   - Comando mirato: `python3 scripts/check_docs_links.py`
@@ -62,6 +62,29 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 
 ## Note di deviazione
 
+- **147.2 Metriche di arrivo.** Test mirati eseguiti in un comando (258 test verdi, exit 0): `codecore_audio_handler_test`, `enrich_engine_test`, `musicbrainz_client_queue_test`, `enrichment_credits_test`, `backup_merge_test`, `migration_test`, `collection_pages_more_test`, `collection_header_test`, `resume_episode_row_test`, `report_issue_screen_test`, `model_catalog_test`, `external_share_text_test`, `external_share_test`, `sync_two_devices_test`, `architecture_test`. `flutter analyze` non rieseguito in questo task.
+  - 135: ok — `codecore_audio_handler_test`: «five unreadable tracks: three attempts, three errors…, then idle» e «stops the queue and says so once».
+  - 136: ok — `enrichment_credits_test` («MusicBrainz by ISRC at most once»), `enrich_engine_test`; dopo un 503, `musicbrainz_client_queue_test` («rests 1, 5, 15, 15 minutes after each 503»).
+  - 137: ok — `backup_merge_test` («a track the library lacks is listed as not found», `r.notFound` = lista dei non trovati).
+  - 138: ok — `grep -c "color: cc.bg" lib/ui/screens/library/all_tracks_screen.dart` = 0.
+  - 139: ok con deviazione già nota (139.4) — `grep -rn downloadsProvider lib/ui` mostra una sola barra (`download_bar.dart`, `DownloadBar`) ma altri 4 file lo osservano solo per trovare l'`item` della riga (`online_song_row`, `online_results_sections`, `genre_screen`, `suggestions_screen`) più `activity_sheet` per `cancel`; la metrica letterale «un solo widget» non regge, quella sostanziale (una sola barra) sì.
+  - 140: ok — `migration_test` (v19/v20/v23: «rows otherwise unchanged»); la v19 aggiunge `tracks.saved` lasciando invariate le righe dei brani locali.
+  - 141: ok — le 8 pagine che usano `CollectionScaffold(` (playlist, album, smart, preferiti, genere, podcast, artista, tag) con `collection_header_test` e `collection_pages_more_test` («one header with Play, Casuale…»).
+  - 142: ok — `resume_episode_row_test` («the grid has $columns columns at $width dp», «a block of $blockWidth dp has $columns columns»); resta la nota sulla soglia dei 560 dp per il blocco (sopra).
+  - 143: ok — una sola chiamata di invio, `issueSenderProvider...send` in `report_issue_screen.dart:80` dentro `_send`, legato al solo `onPressed` (riga 195); `ReportIssueScreen(` si apre dal Registro e da `enrich_round_screen` senza inviare; `report_issue_screen_test` verde.
+  - 144: ok — `model_catalog_test` («Android lists 20 languages, the dictionary and karaoke; elsewhere only the dictionary»).
+  - 145: ok — `external_share_text_test` e `external_share_test` verdi; `exceedsShareLimit` = più di `kMaxSharedTracks` (50, D-702) passa a m3u8; `share_fragment_test` round trip a 1 e 50 brani (eseguito in 145, non riletto qui).
+  - 146: ok — `sync_two_devices_test` verde (convergono in due giri, il terzo non cambia nulla, nessun file né riga di libreria toccati).
+
+**147.7 Accessibilità** (solo verifiche automatiche; Mi A3, densità 320, 48 dp = 96 px). I due test (`a11y_guidelines_test`, `accessibility_characterization_test`): 16/16 verdi. Telefono in modo aereo, quindi non raggiungibili: barra dei download (nessun download possibile) e barra alfabetica (Tutti i brani ha 7 brani, non compare).
+- Testata album: Riproduci 56 dp, Casuale 48, Condividi 48, ⋮ «Altre azioni» 48, tutti con etichetta. Manca «Scarica» (assente offline, da riprovare con rete). Problema: il link artista «Tinariwen» nella testata misura 71x23 dp (file probabile: `lib/ui/screens/library/` testata album).
+- Testata playlist: Riproduci 56, Casuale 48, Condividi 48, ⋮ 48, con etichetta. «Scarica» assente (come sopra). Da verificare: il campo di filtro (EditText, 328x48 dp) nel dump non ha né testo né descrizione.
+- Griglia del Riprendi (home): riquadri 148x66 dp con etichetta «tipo, titolo, sottotitolo»; Registro/Impostazioni 48; Riproduci/Casuale 48-50. Ok.
+- Barra alfabetica: non verificata (non compare). Download bar: non verificata (offline).
+- Modelli e dizionari: righe 360x72 dp con etichetta, «Elimina English» 48x48 dp, Indietro 48. Ok (verificate solo le righe della sezione Traduzione; i pulsanti «Scarica/Elimina selezionati (0)» sono disattivati e non esposti come cliccabili).
+- Segnala un problema: Difetto/Idea 160x48, campi e «Allega informazioni tecniche» 328x56, «Apri su GitHub» 149x48 con etichetta. Ok.
+- Avanzate e info (passato per strada): cursori 48x48 con etichetta. Ok.
+
 ## Da controllare (review e scheggia della fase 142)
 - Riquadro Radio del Riprendi: se la stazione sta già suonando il tocco la riavvia (`playStations`); Android Auto mette il contesto a null (`codecore_audio_handler.dart:525,531`), quindi radio e album avviati dall'auto compaiono come «Brano».
 - Riquadro Daylist visibile per 90 giorni anche quando la daylist non può partire (`daylist_providers.dart:374`: ritorno silenzioso): nasconderlo o avvisare.
@@ -91,8 +114,6 @@ D-662..D-699; rilievi e prove L1-L7 in [`../refactor/grande-revisione/analisi.md
 - Annullare un cuore messo per sbaglio lascia un tombstone `favoriteStream` datato adesso (caso accettato).
 - Prova reale (Mi A3 e Redmi come «miei», mai il Motorola): «Sincronizza ora» con aggiunte e rimozioni, conferma, impostazioni scelte, dispositivo non «mio» che porta solo playlist.
 - R2: l'anteprima si calcola con `apply` in una transazione annullata, oppure con un helper `olderThan` comune (oggi la precedenza è ripetuta in 7 punti).
-- R3: una sola `GET /sync/collections` (più `/texts` e `/want`) prima del primo rilascio con la 146, invece delle sei rotte separate.
-- R4: `planPlaylistSync` in `PlaylistSyncRepository.plan`, usato da hub e simulazione, con un solo `hasFile` (oggi il piano include gli episodi, `apply` no) e `recordHistory` letto una volta.
 - R9: dividere o rinominare `PlaylistSyncRepository` (`DeviceSyncRepository`) e riusare `_chunks`.
 - R10: `StreamEntry` su `StreamOffer`; le costanti di protocollo fuori da `tables.dart` (la UI importa `tables.dart`).
 - R11: `_drop` di una playlist importata deve ripulire le prefs `importDownloadToo.<id>`.
