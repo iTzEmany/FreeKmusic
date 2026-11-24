@@ -8316,4 +8316,167 @@ class AppLocalizationsEn extends AppLocalizations {
   String modelsDeleteFailed(String name) {
     return 'Could not delete: $name';
   }
+
+  @override
+  String get syncNow => 'Sync now';
+
+  @override
+  String syncRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count removed',
+      one: '1 removed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncFavAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count favorites added',
+      one: '1 favorite added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncFavRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count favorites removed',
+      one: '1 favorite removed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncSavedAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks saved',
+      one: '1 track saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncSavedRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tracks removed from saved',
+      one: '1 track removed from saved',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncHeartAdded(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hearts added',
+      one: '1 heart added',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncHeartRemoved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count hearts removed',
+      one: '1 heart removed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncTexts(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count lyrics',
+      one: '1 lyrics',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncPlays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count listens',
+      one: '1 listen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncTags(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tags',
+      one: '1 tag',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String syncIncoming(String items) {
+    return 'Incoming: $items';
+  }
+
+  @override
+  String get syncSettingsTitle => 'Different settings (choose which to apply)';
+
+  @override
+  String syncSettingValues(String local, String remote) {
+    return 'here: $local, there: $remote';
+  }
+
+  @override
+  String get syncOn => 'on';
+
+  @override
+  String get syncOff => 'off';
+
+  @override
+  String get syncRemovalNote =>
+      'Some items will be removed from this device’s library. Files are never deleted.';
+
+  @override
+  String syncApplyRemoving(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return 'Apply and remove $_temp0';
+  }
+
+  @override
+  String get syncNotMineNote =>
+      'Only playlists are coming. If you expected more, mark this device as yours on the other one too.';
+
+  @override
+  String syncDone(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Synced: $count items',
+      one: 'Synced: 1 item',
+      zero: 'Nothing to sync',
+    );
+    return '$_temp0';
+  }
 }

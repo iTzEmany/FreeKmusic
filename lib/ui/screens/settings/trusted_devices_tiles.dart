@@ -68,7 +68,7 @@ class _DeviceTile extends ConsumerWidget {
         ),
         ListTile(
           leading: const Icon(Icons.sync_rounded),
-          title: Text(l.syncDevice),
+          title: Text(device.mine ? l.syncNow : l.syncDevice),
           onTap: () => syncFlow(context, ref, device),
         ),
         ListTile(

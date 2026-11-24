@@ -13146,6 +13146,126 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Impossibile eliminare: {name}'**
   String modelsDeleteFailed(String name);
+
+  /// No description provided for @syncNow.
+  ///
+  /// In it, this message translates to:
+  /// **'Sincronizza ora'**
+  String get syncNow;
+
+  /// No description provided for @syncRemoved.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 rimossa} other{{count} rimosse}}'**
+  String syncRemoved(int count);
+
+  /// No description provided for @syncFavAdded.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 preferito aggiunto} other{{count} preferiti aggiunti}}'**
+  String syncFavAdded(int count);
+
+  /// No description provided for @syncFavRemoved.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 preferito tolto} other{{count} preferiti tolti}}'**
+  String syncFavRemoved(int count);
+
+  /// No description provided for @syncSavedAdded.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano salvato} other{{count} brani salvati}}'**
+  String syncSavedAdded(int count);
+
+  /// No description provided for @syncSavedRemoved.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 brano tolto dai salvati} other{{count} brani tolti dai salvati}}'**
+  String syncSavedRemoved(int count);
+
+  /// No description provided for @syncHeartAdded.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 cuore aggiunto} other{{count} cuori aggiunti}}'**
+  String syncHeartAdded(int count);
+
+  /// No description provided for @syncHeartRemoved.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 cuore tolto} other{{count} cuori tolti}}'**
+  String syncHeartRemoved(int count);
+
+  /// No description provided for @syncTexts.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 testo} other{{count} testi}}'**
+  String syncTexts(int count);
+
+  /// No description provided for @syncPlays.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 ascolto} other{{count} ascolti}}'**
+  String syncPlays(int count);
+
+  /// No description provided for @syncTags.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 tag} other{{count} tag}}'**
+  String syncTags(int count);
+
+  /// No description provided for @syncIncoming.
+  ///
+  /// In it, this message translates to:
+  /// **'In arrivo: {items}'**
+  String syncIncoming(String items);
+
+  /// No description provided for @syncSettingsTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Impostazioni diverse (scegli quali applicare)'**
+  String get syncSettingsTitle;
+
+  /// No description provided for @syncSettingValues.
+  ///
+  /// In it, this message translates to:
+  /// **'qui: {local}, lì: {remote}'**
+  String syncSettingValues(String local, String remote);
+
+  /// No description provided for @syncOn.
+  ///
+  /// In it, this message translates to:
+  /// **'attivo'**
+  String get syncOn;
+
+  /// No description provided for @syncOff.
+  ///
+  /// In it, this message translates to:
+  /// **'disattivo'**
+  String get syncOff;
+
+  /// No description provided for @syncRemovalNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Alcuni elementi verranno tolti dalla libreria di questo dispositivo. I file non vengono mai cancellati.'**
+  String get syncRemovalNote;
+
+  /// No description provided for @syncApplyRemoving.
+  ///
+  /// In it, this message translates to:
+  /// **'Applica e togli {count, plural, one{1 elemento} other{{count} elementi}}'**
+  String syncApplyRemoving(int count);
+
+  /// No description provided for @syncNotMineNote.
+  ///
+  /// In it, this message translates to:
+  /// **'Arrivano solo le playlist. Se ti aspettavi altro, segna questo dispositivo come tuo anche sull’altro.'**
+  String get syncNotMineNote;
+
+  /// No description provided for @syncDone.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, =0{Niente da sincronizzare} one{Sincronizzato: 1 elemento} other{Sincronizzati: {count} elementi}}'**
+  String syncDone(int count);
 }
 
 class _AppLocalizationsDelegate

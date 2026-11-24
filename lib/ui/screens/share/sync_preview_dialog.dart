@@ -1,41 +1,92 @@
 import 'package:flutter/material.dart';
 
+import '../../../data/db/tables.dart' show TombstoneKind;
 import '../../../l10n/l10n_ext.dart';
 import '../../../services/share/playlist_sync.dart';
 
 enum SyncDecision { apply, applyAndAsk }
 
-/// Shows what a sync would do and waits for the user. Null = cancelled.
-Future<SyncDecision?> showSyncPreview(BuildContext context, SyncPlan plan,
-    {bool canAsk = false}) {
-  return showDialog<SyncDecision>(
+/// What the user chose: the decision and the keys of the settings they ticked (none by default).
+typedef SyncChoice = ({SyncDecision decision, Set<String> settings});
+
+/// Shows what a sync would do and waits for the user. Null = cancelled. [mine]: the peer is one of the user's own devices.
+Future<SyncChoice?> showSyncPreview(BuildContext context, SyncPlan plan,
+    {bool canAsk = false, bool mine = false}) {
+  return showDialog<SyncChoice>(
     context: context,
-    builder: (_) => SyncPreviewDialog(plan: plan, canAsk: canAsk),
+    builder: (_) => SyncPreviewDialog(plan: plan, canAsk: canAsk, mine: mine),
   );
 }
 
-/// «3 new, 2 updated, 14 tracks missing» and the list behind it. Nothing is
-/// written before «Applica».
-class SyncPreviewDialog extends StatelessWidget {
-  const SyncPreviewDialog({super.key, required this.plan, this.canAsk = false});
+/// «3 new, 1 removed, 2 favorites removed…» and the list behind it. Nothing is written before the confirm button,
+/// which says how many items it removes.
+class SyncPreviewDialog extends StatefulWidget {
+  const SyncPreviewDialog({super.key, required this.plan, this.canAsk = false, this.mine = false});
 
   final SyncPlan plan;
 
   /// Offer «ask for the missing tracks» (the device can receive an offer).
   final bool canAsk;
 
+  final bool mine;
+
+  @override
+  State<SyncPreviewDialog> createState() => _SyncPreviewDialogState();
+}
+
+class _SyncPreviewDialogState extends State<SyncPreviewDialog> {
+  final _picked = <String>{};
+
+  SyncChoice _choice(SyncDecision d) => (decision: d, settings: {..._picked});
+
+  // shortcut: setting names are the store keys split into words, not translated; upgrade with a label per key.
+  static String _name(String key) =>
+      key.replaceAllMapped(RegExp('[A-Z]'), (m) => ' ${m[0]!.toLowerCase()}');
+
+  String _value(Object? v) {
+    final l = context.l10n;
+    return switch (v) {
+      null => '—',
+      true => l.syncOn,
+      false => l.syncOff,
+      _ => '$v',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final plan = widget.plan;
+    final c = plan.collections;
+    int gone(String kind) => c.deletes.where((t) => t.kind == kind).length;
     final missing = plan.missing.length;
-    final summary = [
+    final playlists = [
       if (plan.toAdd.isNotEmpty) l.syncAdded(plan.toAdd.length),
       if (plan.toReplace.isNotEmpty) l.syncUpdated(plan.toReplace.length),
+      if (gone(TombstoneKind.playlist) > 0) l.syncRemoved(gone(TombstoneKind.playlist)),
       if (missing > 0) l.syncMissing(missing),
     ];
+    final favGone = gone(TombstoneKind.favoriteAlbum) + gone(TombstoneKind.favoritePlaylist);
+    final t = c.tables;
+    final incoming = [
+      if (t.texts.isNotEmpty) l.syncTexts(t.texts.length),
+      if (t.plays.isNotEmpty) l.syncPlays(t.plays.length),
+      if (t.tags.isNotEmpty || t.taggedCount > 0) l.syncTags(t.tags.length + t.taggedCount),
+    ];
+    final lines = [
+      if (playlists.isNotEmpty) playlists.join(', '),
+      if (c.favoriteAdds.isNotEmpty) l.syncFavAdded(c.favoriteAdds.length),
+      if (favGone > 0) l.syncFavRemoved(favGone),
+      if (c.saves.isNotEmpty) l.syncSavedAdded(c.saves.length),
+      if (gone(TombstoneKind.savedStream) > 0) l.syncSavedRemoved(gone(TombstoneKind.savedStream)),
+      if (c.hearts.isNotEmpty) l.syncHeartAdded(c.hearts.length),
+      if (gone(TombstoneKind.favoriteStream) > 0) l.syncHeartRemoved(gone(TombstoneKind.favoriteStream)),
+      if (incoming.isNotEmpty) l.syncIncoming(incoming.join(', ')),
+    ];
     final muted = Theme.of(context).textTheme.bodySmall;
+    final removals = c.deletes.length;
     return AlertDialog(
-      title: Text(l.syncTitle),
+      title: Text(widget.mine ? l.syncNow : l.syncTitle),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -43,7 +94,12 @@ class SyncPreviewDialog extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(summary.isEmpty ? l.syncUpToDate : summary.join(', ')),
+              if (lines.isEmpty && c.settings.isEmpty && plan.toWrite.isEmpty) Text(l.syncUpToDate),
+              for (final line in lines) Text(line),
+              if (removals > 0) ...[
+                const SizedBox(height: 8),
+                Text(l.syncRemovalNote, style: muted),
+              ],
               const SizedBox(height: 8),
               for (final e in plan.toWrite) _EntryTile(entry: e),
               if (plan.toReplace.isNotEmpty) ...[
@@ -54,6 +110,24 @@ class SyncPreviewDialog extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(l.syncKept(plan.keptCount), style: muted),
               ],
+              if (widget.mine && c.isEmpty && plan.toWrite.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(l.syncNotMineNote, style: muted),
+              ],
+              if (c.settings.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(l.syncSettingsTitle, style: Theme.of(context).textTheme.titleSmall),
+                for (final s in c.settings)
+                  CheckboxListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    value: _picked.contains(s.key),
+                    onChanged: (v) => setState(() => v == true ? _picked.add(s.key) : _picked.remove(s.key)),
+                    title: Text(_name(s.key)),
+                    subtitle: Text(l.syncSettingValues(_value(s.local), _value(s.remote))),
+                  ),
+              ],
             ],
           ),
         ),
@@ -61,18 +135,17 @@ class SyncPreviewDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(plan.toWrite.isEmpty ? l.close : l.cancel),
+          child: Text(plan.isEmpty ? l.close : l.cancel),
         ),
-        if (canAsk && missing > 0)
+        if (widget.canAsk && missing > 0)
           TextButton(
-            onPressed: () => Navigator.of(context).pop(SyncDecision.applyAndAsk),
+            onPressed: () => Navigator.of(context).pop(_choice(SyncDecision.applyAndAsk)),
             child: Text(l.syncAskMissing),
           ),
-        // The collections are not shown here yet: a plan with only those has nothing to confirm.
-        if (plan.toWrite.isNotEmpty)
+        if (!plan.isEmpty)
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(SyncDecision.apply),
-            child: Text(l.apply),
+            onPressed: () => Navigator.of(context).pop(_choice(SyncDecision.apply)),
+            child: Text(removals > 0 ? l.syncApplyRemoving(removals) : l.apply),
           ),
       ],
     );
