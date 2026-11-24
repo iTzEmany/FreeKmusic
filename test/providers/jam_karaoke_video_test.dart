@@ -139,4 +139,11 @@ void main() {
     expect(ports.single.calls, contains('seek'));
     expect(ports.single.seeks.last, const Duration(seconds: 90));
   });
+
+  test('disposing during the 250 ms position wait raises no async error', () async {
+    final sub = c.listen(jamKaraokeVideoProvider, (_, s) {});
+    await push(_jam([_item(1, 'A karaoke')], 0));
+    sub.close(); // autoDispose while the generator waits
+    await Future<void>.delayed(const Duration(milliseconds: 300)); // an uncaught error fails the test
+  });
 }
