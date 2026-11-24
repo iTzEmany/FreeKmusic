@@ -121,7 +121,7 @@ void main() {
       cachedFile = null;
       tracks = StreamController.broadcast();
       ids = StreamController.broadcast();
-      tracks.stream.listen((t) => ids.add(t != null && isKaraokeVideo(t) ? karaokeVideoId(t) : null));
+      tracks.stream.listen((t) => ids.add(t == null ? null : karaokeVideoIdOfTrack(t)));
       positions = StreamController.broadcast();
       playing = StreamController.broadcast();
       make();

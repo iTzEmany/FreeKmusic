@@ -347,7 +347,7 @@ class KaraokeVideoController implements KaraokeVideoGate {
   @override
   Future<void>? beforePlay(Track t, Duration start) {
     _audioPos = start;
-    _video(isKaraokeVideo(t) ? karaokeVideoId(t) : null, retry: true);
+    _video(karaokeVideoIdOfTrack(t), retry: true);
     if (_id == null) return null;
     if (_status == KaraokeVideoStatus.ready && (start - _videoPos).abs() > _driftLimit) _tick(user: true);
     return _background ? null : _ready.future; // in the background nobody sees it: it joins the audio on return

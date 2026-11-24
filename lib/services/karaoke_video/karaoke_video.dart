@@ -25,3 +25,6 @@ bool isKaraokeVideo(Track track) =>
 /// shortcut: YouTube Music shares the `youtube:` key, so a YTM «… karaoke» counts too, as for the player (D-646).
 String? jamKaraokeVideoId(JamItem item) =>
     item.selfFetchable && item.title.toLowerCase().contains('karaoke') ? item.videoId : null;
+
+/// The video id of a karaoke track, null for any other.
+String? karaokeVideoIdOfTrack(Track t) => isKaraokeVideo(t) ? karaokeVideoId(t) : null;

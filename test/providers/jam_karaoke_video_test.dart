@@ -14,6 +14,7 @@ import 'package:media_kit_video/media_kit_video.dart' show VideoController;
 class _Port implements KaraokeVideoPort {
   final calls = <String>[];
   final opened = <String>[];
+  final seeks = <Duration>[];
   var disposed = false;
   final _pos = StreamController<Duration>.broadcast();
   @override
@@ -33,6 +34,7 @@ class _Port implements KaraokeVideoPort {
   @override
   Future<void> seek(Duration pos) async {
     calls.add('seek');
+    seeks.add(pos);
     Timer.run(() => _pos.add(pos));
   }
 
@@ -122,10 +124,19 @@ void main() {
     expect(ports.single.calls.last, 'pause');
   });
 
-  test('a non-karaoke item gives none', () async {
+  test('a Jam that moves to a non-karaoke item closes the video', () async {
     listen();
-    await push(_jam([_item(1, 'A karaoke'), _item(2, 'Plain')], 1));
+    final items = [_item(1, 'A karaoke'), _item(2, 'Plain')];
+    await push(_jam(items, 0));
+    await push(_jam(items, 1));
     expect(status(), KaraokeVideoStatus.none);
-    expect(ports, isEmpty);
+    expect(ports.single.disposed, isTrue);
+  });
+
+  test('starts where the Jam is: a guest joining mid-song', () async {
+    listen();
+    await push(_jam([_item(1, 'A karaoke')], 0).copyWith(positionMs: 90000));
+    expect(ports.single.calls, contains('seek'));
+    expect(ports.single.seeks.last, const Duration(seconds: 90));
   });
 }

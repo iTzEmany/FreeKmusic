@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/widgets.dart' show AppLifecycleListener;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../services/karaoke_video/karaoke_video_controller.dart';
-import '../services/karaoke_video/karaoke_video.dart';
 import '../services/jam/jam_models.dart' show JamState;
+import '../services/karaoke_video/karaoke_video.dart';
+import '../services/karaoke_video/karaoke_video_controller.dart';
 import 'jam_providers.dart';
 import 'karaoke_video_cache_providers.dart';
 import 'player_providers.dart';
@@ -26,7 +26,7 @@ class KaraokeVideoNotifier extends Notifier<KaraokeVideoState> {
       cached: cache.cached,
       download: cache.download,
       release: cache.release,
-      videoIds: handler.currentTrackStream.map((t) => t != null && isKaraokeVideo(t) ? karaokeVideoId(t) : null),
+      videoIds: handler.currentTrackStream.map((t) => t == null ? null : karaokeVideoIdOfTrack(t)),
       positions: handler.positionStream,
       playing: handler.playbackState.map((s) => s.playing).distinct(),
       audioPlaying: () => handler.isPlaying,
@@ -57,17 +57,22 @@ class JamKaraokeVideoNotifier extends Notifier<KaraokeVideoState> {
   KaraokeVideoState build() {
     final cache = ref.read(karaokeVideoCacheProvider);
     final ids = StreamController<String?>(), playing = StreamController<bool>();
-    final positions = Stream.periodic(const Duration(milliseconds: 250), (_) {
-      final jam = ref.read(jamProvider).jam;
-      return jam == null ? null : Duration(milliseconds: jam.positionAtTime(ref.read(jamProvider.notifier).jamNowMs()));
-    }).where((p) => p != null).cast<Duration>();
+    // The first position at once: a guest joining mid-song must not start the video at 0.
+    Stream<Duration> positions() async* {
+      while (true) {
+        final jam = ref.read(jamProvider).jam;
+        if (jam != null) yield Duration(milliseconds: jam.positionAtTime(ref.read(jamProvider.notifier).jamNowMs()));
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+      }
+    }
+
     final c = KaraokeVideoController(
       source: ref.read(karaokeVideoSourceProvider),
       cached: cache.cached,
       download: cache.download,
       release: cache.release,
       videoIds: ids.stream.distinct(),
-      positions: positions,
+      positions: positions(),
       playing: playing.stream.distinct(),
       audioPlaying: () => ref.read(jamProvider).jam?.playing ?? false,
       onState: (s) => state = s,
