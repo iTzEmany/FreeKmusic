@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/external_share_actions.dart';
 import 'package:codecore/services/share/external_share_text.dart';
 import 'package:codecore/services/share/share_fragment.dart';
 import 'package:codecore/services/share/share_m3u8.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,20 +42,24 @@ void main() {
     expect(lines[1], 'https://music.youtube.com/watch?v=abcdefgh0_1');
     expect(lines[2], startsWith('$kSharePageUrl#'));
     final f = decodeShareFragment(lines[2].substring(kSharePageUrl.length + 1));
-    expect(f.ids, ['abcdefgh0_1']);
+    expect(f.rows, [const SharedRow.id('abcdefgh0_1')]);
   });
 
-  test('album: numbered list, album link, local rows are text only and not in the fragment', () {
+  test('album: numbered list, album link; a local row without id is a search row in the fragment', () {
     final text = buildShareText(SharedKind.album, 'Alb', [_t(1, album: 'Alb'), _t(2, stream: false)], subtitle: 'Band');
     expect(text, contains('Alb - Band\n1. Band - Song 1\n2. Band - Song 2'));
     expect(text, contains('https://music.youtube.com/browse/MPREb_x'));
     final frag = text.split('#').last;
-    expect(decodeShareFragment(frag).ids, ['abcdefgh0_1']);
+    expect(decodeShareFragment(frag).rows, [const SharedRow.id('abcdefgh0_1'), const SharedRow.search('Band', 'Song 2')]);
   });
 
-  test('a v= of 12 characters is not an id', () {
+  test('a local row with the video id kept at download is an id row', () {
+    expect(shareRowOf(_t(1, stream: false).copyWith(videoId: const Value('dQw4w9WgXcQ'))), const SharedRow.id('dQw4w9WgXcQ'));
+  });
+
+  test('a v= of 12 characters is not an id: the row is a search', () {
     final long = _t(1).copyWith(path: 'stream:youtube:abcdefgh0_1x');
-    expect(sharedIds([long]), isEmpty);
+    expect(shareRowOf(long), const SharedRow.search('Band', 'Song 1'));
   });
 
   test('numbered list: 10 and 11 tracks, the ellipsis only above the limit', () {
@@ -74,16 +80,24 @@ void main() {
     expect(buildShareText(SharedKind.track, 'x', []), isNot(contains(kSharePageUrl)));
   });
 
-  test('only local tracks: text without any link', () {
+  test('only local tracks: no YouTube Music link, but the page link with search rows', () {
     final text = buildShareText(SharedKind.playlist, 'Mix', [_t(1, stream: false)]);
-    expect(text, isNot(contains('http')));
+    expect(text, isNot(contains('music.youtube.com')));
+    expect(decodeShareFragment(text.split('#').last).rows, [const SharedRow.search('Band', 'Song 1')]);
   });
 
-  test('an id that is not 11 valid characters is left out: text without the page line', () {
-    final short = _t(1).copyWith(path: 'stream:youtube:abc');
-    final text = buildShareText(SharedKind.track, 'Song 1', [short]);
-    expect(text, isNot(contains(kSharePageUrl)));
-    expect(sharedIds([short, _t(2)]), ['abcdefgh0_2']);
+  test('shareLinkFitsQr: 666 characters fit, one more does not', () {
+    expect(shareLinkFitsQr('x' * 666), isTrue);
+    expect(shareLinkFitsQr('x' * 667), isFalse);
+  });
+
+  test('exceedsShareLimit: more than 50 tracks even if local; 50 fit; a link that is too long does not', () {
+    expect(exceedsShareLimit([for (var i = 0; i < 51; i++) _t(i, stream: false)]), isTrue);
+    expect(exceedsShareLimit([for (var i = 0; i < 50; i++) _t(i)]), isFalse);
+    final r = Random(3); // random text does not compress, repetitive text does
+    String word(int n) => String.fromCharCodes([for (var j = 0; j < n; j++) 97 + r.nextInt(26)]);
+    final wordy = [for (var i = 0; i < 50; i++) _t(i, stream: false).copyWith(title: word(80), artist: Value(word(60)))];
+    expect(exceedsShareLimit(wordy), isTrue);
   });
 
   test('a file name from a title with / and .. stays inside the folder', () async {
@@ -133,10 +147,10 @@ void main() {
       expect(fake.files.single, contains('freekmusic_share'));
     });
 
-    test('51 rows but fewer than 51 streamed: text, not a file', () async {
+    test('51 rows, only 30 streamed: still a file (every track counts)', () async {
       await actions.share(SharedKind.playlist, 'Mix', [for (var i = 0; i < 51; i++) _t(i, stream: i < 30)]);
-      expect(fake.texts.length, 1);
-      expect(fake.files, isEmpty);
+      expect(fake.texts, isEmpty);
+      expect(fake.files.length, 1);
     });
 
     group('clipboard', () {

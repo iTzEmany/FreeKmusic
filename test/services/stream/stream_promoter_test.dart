@@ -27,14 +27,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
 const _r = YtResult(
-  id: 'abc',
+  id: 'abcdefghijk',
   title: 'Song',
   channel: 'Chan',
   duration: Duration(seconds: 200),
   artists: ['Artist'],
   album: 'Album',
 );
-const _key = 'youtube:abc';
+const _key = 'youtube:abcdefghijk';
 
 class _Yt implements YoutubeService {
   @override
@@ -188,6 +188,15 @@ void main() {
     expect(scanned, [dest]);
     expect(scanSkipped, isTrue, reason: 'no second row after the scan');
     expect(await db.select(db.tracks).get(), hasLength(1));
+    expect(row.videoId, 'abcdefghijk', reason: 'the video id stays on the local row (D-713)');
+  });
+
+  test('setVideoId keeps a YouTube id only: other sources and malformed ids leave the row alone', () async {
+    await tracks.setVideoId(shadowId, 'soundcloud:123');
+    await tracks.setVideoId(shadowId, 'youtube:short');
+    expect((await tracks.getById(shadowId))!.videoId, isNull);
+    await tracks.setVideoId(shadowId, 'youtube:dQw4w9WgXcQ');
+    expect((await tracks.getById(shadowId))!.videoId, 'dQw4w9WgXcQ');
   });
 
   test('the cover of the shadow row follows the new album key', () async {

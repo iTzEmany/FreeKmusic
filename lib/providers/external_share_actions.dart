@@ -34,7 +34,7 @@ class ExternalShareActions {
     _busy = true;
     String? text;
     try {
-      if (exceedsShareLimit(tracks)) {
+      if (exceedsShareLimit(tracks, kind: kind, title: title)) {
         text = shareM3u8Body(title, tracks);
         if (!_canShareFiles) return await _copy(text);
         // A folder of our own: only it is emptied before a new file is written.

@@ -271,6 +271,7 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       final id = await tracks.idForPath(path);
       final gone = id == null ? null : await tracks.mergeStreamRow(r.indexKey, id);
       if (id == null) return;
+      await tracks.setVideoId(id, r.indexKey);
       if (gone != null) ref.read(audioHandlerProvider).replaceQueueId(gone, id);
       // The entry now playing keeps streaming: point it at the library row, also when no shadow row existed.
       final online = ref.read(onlineEntriesProvider);

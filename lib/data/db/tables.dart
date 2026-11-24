@@ -73,6 +73,10 @@ class Tracks extends Table {
 
   /// When the heart was put on (ms; v24, D-708); null = never set. Lets «latest wins» apply to the heart in a sync.
   IntColumn get favoritedAt => integer().nullable()();
+
+  /// YouTube video id kept when the file came from a download (v25, D-713): lets a shared link point at the video.
+  /// Null on files that came from elsewhere and on rows downloaded before v25; not part of the sync.
+  TextColumn get videoId => text().nullable()();
 }
 
 class Folders extends Table {

@@ -5,21 +5,38 @@ import 'share_fragment.dart';
 /// Rows named in the text before the "…" (the page and the links carry the rest).
 const _maxListed = 10;
 
-/// The YouTube video id of each streamed row; a local file has none and is left out, and so is an invalid id.
-List<String> sharedIds(List<Track> tracks) => [
-  for (final t in tracks)
-    if (Uri.tryParse(streamUrlOf(t) ?? '')?.queryParameters['v'] case final id? when isVideoId(id)) id,
-];
+/// The row of [t] in the shared link (D-713): its YouTube video id (kept at download, or from a streamed
+/// row's address), else its artist + title for a search. An invalid id counts as none.
+SharedRow shareRowOf(Track t) {
+  final id = t.videoId ?? Uri.tryParse(streamUrlOf(t) ?? '')?.queryParameters['v'];
+  return id != null && isVideoId(id) ? SharedRow.id(id) : SharedRow.search(t.artist ?? '', t.title);
+}
 
-/// True when the tracks do not fit one link (D-702): share an m3u8 file instead.
-bool exceedsShareLimit(List<Track> tracks) => sharedIds(tracks).length > kMaxSharedTracks;
+String _link(SharedKind kind, String title, List<Track> tracks) =>
+    '$kSharePageUrl#${encodeShareFragment(SharedFragment(kind, title, [for (final t in tracks) shareRowOf(t)]))}';
+
+/// Longest link that is still shared as a link; above it an m3u8 file goes instead. Chosen so that
+/// 50 tracks with ids fit and a long list of titles does not turn into a link a chat app may cut.
+const _maxLinkChars = 2000;
+
+/// Longest link whose QR a phone reads reliably from the 1080 px share card printed or on a screen:
+/// 666 bytes is QR version 20 at level M (97 modules, about 6 px each at 600 px). Above it the card has no QR.
+const _maxQrLinkChars = 666;
+
+/// True when a QR of [link] stays readable (the card shows it only then, D-713).
+bool shareLinkFitsQr(String link) => link.length <= _maxQrLinkChars;
+
+/// True when the tracks do not fit one link (D-702, D-713): more than [kMaxSharedTracks] of them
+/// (local files count too) or a link above [_maxLinkChars]. Share an m3u8 file instead.
+bool exceedsShareLimit(List<Track> tracks, {SharedKind kind = SharedKind.playlist, String title = ''}) =>
+    tracks.length > kMaxSharedTracks || (tracks.isNotEmpty && _link(kind, title, tracks).length > _maxLinkChars);
 
 String _label(Track t) => (t.artist ?? '').isEmpty ? t.title : '${t.artist} - ${t.title}';
 
 /// Readable text for a track, album or playlist, within [kMaxSharedTracks] linked tracks:
-/// the names, the YouTube Music links and the page link. Local files appear as text only.
+/// the names, the YouTube Music links and the page link (a track without a video id is searched by name).
 String buildShareText(SharedKind kind, String title, List<Track> tracks, {String? subtitle}) {
-  final ids = sharedIds(tracks);
+  final ids = [for (final r in tracks.map(shareRowOf)) ?r.id];
   final lines = <String>[];
   if (kind == SharedKind.track && tracks.isNotEmpty) {
     lines.add(_label(tracks.first));
@@ -34,6 +51,6 @@ String buildShareText(SharedKind kind, String title, List<Track> tracks, {String
     final browseId = tracks.map((t) => t.albumBrowseId).nonNulls.firstOrNull;
     if (kind == SharedKind.album && browseId != null) lines.add('https://music.youtube.com/browse/$browseId');
   }
-  if (ids.isNotEmpty) lines.add('$kSharePageUrl#${encodeShareFragment(SharedFragment(kind, title, ids))}');
+  if (tracks.isNotEmpty) lines.add(_link(kind, title, tracks));
   return lines.join('\n');
 }

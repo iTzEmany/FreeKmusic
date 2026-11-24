@@ -8,9 +8,10 @@ import 'package:codecore/services/share/share_fragment.dart';
 
 String _b64(List<int> b) => base64Url.encode(b).replaceAll('=', '');
 String _frag(String payload) => _b64(gzip.encode(utf8.encode(payload)));
-List<String> _ids(int n) => [
-  for (var i = 0; i < n; i++) 'abcdefgh${(i ~/ 10) % 10}_${i % 10}',
+List<SharedRow> _ids(int n) => [
+  for (var i = 0; i < n; i++) SharedRow.id('abcdefgh${(i ~/ 10) % 10}_${i % 10}'),
 ];
+List<String> _idStrs(int n) => [for (final r in _ids(n)) r.id!];
 
 void main() {
   test('round trip for 1 and 50 tracks', () {
@@ -19,7 +20,7 @@ void main() {
       final d = decodeShareFragment(encodeShareFragment(f));
       expect(d.kind, SharedKind.playlist);
       expect(d.title, 'Mix');
-      expect(d.ids, f.ids);
+      expect(d.rows, f.rows);
     }
   });
 
@@ -82,7 +83,7 @@ void main() {
         ]),
     ];
     final e = encodeShareFragment(
-      SharedFragment(SharedKind.playlist, 'M', ids),
+      SharedFragment(SharedKind.playlist, 'M', [for (final i in ids) SharedRow.id(i)]),
     );
     expect(e.length / 50, inInclusiveRange(11, 14));
   });
@@ -96,12 +97,12 @@ void main() {
       '***not base64***',
       good.substring(0, good.length ~/ 2),
       _b64(utf8.encode('plain text, not gzip')),
-      _frag('FK2\nt\nT\nabcdefghijk'),
+      _frag('FK3\nt\nT\nabcdefghijk'),
       _frag('FK1\nx\nT\nabcdefghijk'),
       _frag('FK1\nt\nT\nabcdefghij'),
       _frag('FK1\nt\nT\nabcdefghij!'),
       _frag('FK1\nt\nT\n'),
-      _frag('FK1\nt\nT\n${_ids(51).join()}'),
+      _frag('FK1\nt\nT\n${_idStrs(51).join()}'),
       _frag('FK1\nt\nT'),
       _frag('FK1\nt\n\nabcdefghijk'),
       _frag('FK1\nt\n  \nabcdefghijk'),
@@ -135,7 +136,7 @@ void main() {
   );
 
   test('a truncated or extended gzip stream is rejected, however short the cut', () {
-    final gz = gzip.encode(utf8.encode('FK1\np\nMix\n${_ids(30).join()}'));
+    final gz = gzip.encode(utf8.encode('FK1\np\nMix\n${_idStrs(30).join()}'));
     for (var cut = 1; cut <= 40; cut++) {
       expect(
         () => decodeShareFragment(_b64(gz.sublist(0, gz.length - cut))),
@@ -236,10 +237,42 @@ void main() {
   test('encode rejects ids that are not 11 valid characters', () {
     for (final id in ['abcdefghij', 'abcdefghijkl', 'abcdefghij!']) {
       expect(
-        () => encodeShareFragment(SharedFragment(SharedKind.track, 'x', [id])),
+        () => encodeShareFragment(SharedFragment(SharedKind.track, 'x', [SharedRow.id(id)])),
         throwsA(isA<ShareFragmentError>()),
         reason: id,
       );
+    }
+  });
+
+  test('FK2: ids and search rows mix and round trip; all-id rows still use FK1', () {
+    const mixed = [SharedRow.id('dQw4w9WgXcQ'), SharedRow.search('Città', 'Canzone 日本語'), SharedRow.search('', 'Solo titolo')];
+    final f = SharedFragment(SharedKind.playlist, 'Mix', mixed);
+    expect(decodeShareFragment(encodeShareFragment(f)).rows, mixed);
+    String payload(String frag) => utf8.decode(gzip.decode(base64Url.decode(base64Url.normalize(frag))));
+    expect(payload(encodeShareFragment(f)), startsWith('FK2\n'));
+    expect(payload(encodeShareFragment(SharedFragment(SharedKind.track, 'x', _ids(1)))), startsWith('FK1\n'));
+  });
+
+  test('a search row is clipped to 60 + 80 characters and tabs or newlines become spaces', () {
+    final f = SharedFragment(SharedKind.track, 'x', [SharedRow.search('a\tb${'A' * 100}', 'T\n${'t' * 100}')]);
+    final r = decodeShareFragment(encodeShareFragment(f)).rows.single;
+    expect((r.artist!.runes.length, r.title!.runes.length), (60, 80));
+    expect(r.artist, startsWith('a b'));
+  });
+
+  test('FK2 rejects empty rows, long rows, a blank title, a bad id, too many rows', () {
+    final bad = [
+      'FK2\nt\nT\nabcdefghijk\n',
+      'FK2\nt\nT\n\nabcdefghijk',
+      'FK2\nt\nT\n~A\t${'x' * 81}',
+      'FK2\nt\nT\n~${'A' * 61}\tx',
+      'FK2\nt\nT\n~A\t ',
+      'FK2\nt\nT\n~Ax',
+      'FK2\nt\nT\nnot an id',
+      'FK2\nt\nT\n${List.filled(51, '~A\tB').join('\n')}',
+    ];
+    for (final b in bad) {
+      expect(() => decodeShareFragment(_frag(b)), throwsA(isA<ShareFragmentError>()), reason: b);
     }
   });
 
@@ -261,7 +294,10 @@ void main() {
       final d = decodeShareFragment(f);
       expect(d.kind.code, e['kind']);
       expect(d.title, e['title']);
-      expect(d.ids, e['ids']);
+      expect(d.rows, [
+        for (final r in (e['rows'] ?? e['ids']) as List)
+          r is String ? SharedRow.id(r) : SharedRow.search(r['artist'] as String, r['title'] as String),
+      ]);
     }
   });
 }

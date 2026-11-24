@@ -1115,7 +1115,28 @@ void main() {
     expect(await all('SELECT kind, key, added_at FROM favorite_collections'), [
       ['album', 'k', 7],
     ]);
-    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), 24);
+    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), kSchemaVersion);
+    await db.close();
+  });
+
+  test('a v24 database gets tracks.video_id (NULL), existing rows unchanged', () async {
+    final db = AppDatabase(
+      NativeDatabase.memory(
+        setup: (raw) {
+          raw.execute(
+            'CREATE TABLE tracks (id INTEGER PRIMARY KEY AUTOINCREMENT, path TEXT NOT NULL UNIQUE, '
+            'title TEXT NOT NULL, kind INTEGER NOT NULL DEFAULT 0, album_key TEXT NOT NULL, favorited_at INTEGER)',
+          );
+          raw.execute("INSERT INTO tracks (id, path, title, album_key, favorited_at) VALUES (1, '/a.mp3', 'A', 'k', 5)");
+          raw.userVersion = 24;
+        },
+      ),
+    );
+    final rows = await db.customSelect('SELECT id, path, title, album_key, favorited_at, video_id FROM tracks').get();
+    expect([for (final r in rows) r.data.values.toList()], [
+      [1, '/a.mp3', 'A', 'k', 5, null],
+    ]);
+    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), kSchemaVersion);
     await db.close();
   });
 
@@ -1135,7 +1156,7 @@ void main() {
     await db.into(db.syncTombstones).insert(SyncTombstonesCompanion.insert(kind: TombstoneKind.savedStream, key: 'youtube:abcdefghijk'));
     final cols = await db.customSelect("SELECT name FROM pragma_table_info('tracks')").map((r) => r.read<String>('name')).get();
     expect(cols, contains('favorited_at'));
-    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), 24);
+    expect((await db.customSelect('PRAGMA user_version').getSingle()).read<int>('user_version'), kSchemaVersion);
     await db.close();
   });
 

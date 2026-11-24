@@ -72,14 +72,14 @@ void main() {
   });
 
   group('share page link (D-702)', () {
-    final frag = encodeShareFragment(const SharedFragment(SharedKind.playlist, 'Mix', ['dQw4w9WgXcQ', 'abcdefghijk']));
+    final frag = encodeShareFragment(const SharedFragment(SharedKind.playlist, 'Mix', [SharedRow.id('dQw4w9WgXcQ'), SharedRow.id('abcdefghijk')]));
     final link = 'https://itzemany.github.io/FreeKmusic/#$frag';
 
     test('alone and inside a text it gives the title and the ids', () {
       for (final text in [link, 'Guarda questa playlist\n$link\nciao']) {
         final r = routeSharedText(text) as SharedCollection;
         expect(r.fragment.title, 'Mix');
-        expect(r.fragment.ids, ['dQw4w9WgXcQ', 'abcdefghijk']);
+        expect(r.fragment.rows, [const SharedRow.id('dQw4w9WgXcQ'), const SharedRow.id('abcdefghijk')]);
       }
     });
 
@@ -143,7 +143,7 @@ void main() {
       );
       final text = buildShareText(SharedKind.playlist, 'Mix https://youtu.be/dQw4w9WgXcQ', [t]);
       final r = routeSharedText(text) as SharedCollection;
-      expect(r.fragment.ids, ['abcdefgh0_1']);
+      expect(r.fragment.rows, [const SharedRow.id('abcdefgh0_1')]);
     });
   });
 }

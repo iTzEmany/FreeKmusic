@@ -10,7 +10,7 @@ const ID1 = 'dQw4w9WgXcQ', ID2 = 'a-b_c1234Zz';
 
 test('roundtrip, with and without padding and leading #', async () => {
   const f = await enc(`FK1\np\nÈ Mix ✓\n${ID1}${ID2}`);
-  const want = { kind: 'p', title: 'È Mix ✓', ids: [ID1, ID2] };
+  const want = { kind: 'p', title: 'È Mix ✓', rows: [ID1, ID2] };
   assert.deepEqual(await decodeFragment(f), want);
   assert.deepEqual(await decodeFragment('#' + f), want);
   assert.deepEqual(await decodeFragment(f + '='.repeat((4 - (f.length % 4)) % 4)), want);
@@ -18,11 +18,17 @@ test('roundtrip, with and without padding and leading #', async () => {
 
 test('rejects invalid payloads', async () => {
   for (const t of [
-    `FK2\nt\nx\n${ID1}`, `FK1\nx\nx\n${ID1}`, `FK1\nt\n\n${ID1}`, `FK1\nt\n  \n${ID1}`, `FK1\nt\n${'x'.repeat(121)}\n${ID1}`, `FK1\nt\nx\n${ID1.slice(0, 5)}\n${ID1.slice(5)}`, `FK1\nt\nx\n${ID1}abc`,
+    `FK3\nt\nx\n${ID1}`, `FK1\nx\nx\n${ID1}`, `FK1\nt\n\n${ID1}`, `FK1\nt\n  \n${ID1}`, `FK1\nt\n${'x'.repeat(121)}\n${ID1}`, `FK1\nt\nx\n${ID1.slice(0, 5)}\n${ID1.slice(5)}`, `FK1\nt\nx\n${ID1}abc`,
     `FK1\nt\nx\n`, `FK1\nt\nx\nabc!efghijk`, `FK1\nt\nx\n${ID1}\nextra`,
     `FK1\nt\nx\n${ID1.repeat(51)}`,
   ]) await assert.rejects(decodeFragment(await enc(t)), t);
   await assert.doesNotReject(decodeFragment(await enc(`FK1\nt\nx\n${ID1.repeat(50)}`)));
+});
+
+test('FK2: id and search rows; empty, long and malformed rows are rejected', async () => {
+  assert.deepEqual(await decodeFragment(await enc(`FK2\np\nMix\n${ID1}\n~Oasis\tWonderwall\n~\tSolo`)), { kind: 'p', title: 'Mix', rows: [ID1, { artist: 'Oasis', title: 'Wonderwall' }, { artist: '', title: 'Solo' }] });
+  for (const t of [`${ID1}\n`, `\n${ID1}`, `~A\t${'x'.repeat(81)}`, `~${'A'.repeat(61)}\tx`, '~A\t ', '~Ax', 'not an id', Array(51).fill('~A\tB').join('\n')])
+    await assert.rejects(decodeFragment(await enc(`FK2\nt\nT\n${t}`)), t);
 });
 
 test('rejects corrupt, truncated, oversized and non-utf8 input', async () => {
@@ -73,6 +79,6 @@ test('shared vectors (positive and negative)', () => {
   assert.ok(v.length > 0);
   return Promise.all(v.map(async (c) => {
     if (c.error) await assert.rejects(decodeFragment(c.fragment), c.name);
-    else assert.deepEqual(await decodeFragment(c.fragment), { kind: c.kind, title: c.title, ids: c.ids });
+    else assert.deepEqual(await decodeFragment(c.fragment), { kind: c.kind, title: c.title, rows: c.rows ?? c.ids });
   }));
 });
