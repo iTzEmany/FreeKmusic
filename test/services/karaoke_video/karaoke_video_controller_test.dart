@@ -55,6 +55,7 @@ void main() {
   group('controller', () {
     late List<String> cache;
     late StreamController<Track?> tracks;
+    late StreamController<String?> ids;
     late StreamController<Duration> positions;
     late StreamController<bool> playing;
     late int fetches;
@@ -89,7 +90,7 @@ void main() {
         },
         download: (id, s) => cache.add('download $id'),
         release: (id) => cache.add('release $id'),
-        tracks: tracks.stream,
+        videoIds: ids.stream,
         positions: positions.stream,
         playing: playing.stream,
         audioPlaying: () => audioIsPlaying,
@@ -119,6 +120,8 @@ void main() {
       cachedGate = null;
       cachedFile = null;
       tracks = StreamController.broadcast();
+      ids = StreamController.broadcast();
+      tracks.stream.listen((t) => ids.add(t != null && isKaraokeVideo(t) ? karaokeVideoId(t) : null));
       positions = StreamController.broadcast();
       playing = StreamController.broadcast();
       make();
@@ -296,7 +299,7 @@ void main() {
           cached: (id) async => null,
           download: (id, s) {},
           release: (id) {},
-          tracks: tracks.stream,
+          videoIds: ids.stream,
           positions: positions.stream,
           playing: playing.stream,
           audioPlaying: () => false,

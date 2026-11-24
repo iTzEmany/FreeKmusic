@@ -1,4 +1,5 @@
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/services/karaoke_video/karaoke_video.dart';
 import 'package:codecore/services/online/youtube_service.dart' show YtException;
 import 'package:flutter_test/flutter_test.dart';
@@ -63,5 +64,20 @@ void main() {
     for (final bad in ['http://v.example/a', '/relative/a', 'https:///a', '', null]) {
       expect(() => karaokeVideoStreamOfOutput(bad), throwsA(isA<YtException>()), reason: '$bad');
     }
+  });
+
+  group('jamKaraokeVideoId', () {
+    JamItem item(String title, {String? ref, String? videoId = 'abc'}) => JamItem(
+      id: 1, ownerDeviceId: 'd', title: title, ext: 'm4a', ref: ref, videoId: videoId,
+    );
+    test('a streamed YouTube karaoke item gives its id', () {
+      expect(jamKaraokeVideoId(item('Hello Karaoke', ref: 'yt:youtube:abc')), 'abc');
+    });
+    test('another title gives none', () {
+      expect(jamKaraokeVideoId(item('Hello', ref: 'yt:youtube:abc')), isNull);
+    });
+    test('a library item never has a video (D-636)', () {
+      expect(jamKaraokeVideoId(item('Hello Karaoke', ref: '42')), isNull);
+    });
   });
 }
