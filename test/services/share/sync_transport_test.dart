@@ -150,8 +150,7 @@ void main() {
     final took = watch.elapsedMilliseconds;
     final json = reply.json!;
     final bytes = utf8.encode(jsonEncode(json)).length;
-    // ignore: avoid_print
-    print('collections: $bytes bytes, $took ms (serve + transfer + decode)');
+    printOnFailure('collections: $bytes bytes, $took ms (serve + transfer + decode)');
     expect(reply.status, 200);
     expect((json['plays'] as List).length, 20000);
     expect((json['tagged'] as List).length, 20000);
