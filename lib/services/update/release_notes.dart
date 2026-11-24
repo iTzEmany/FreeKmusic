@@ -54,14 +54,20 @@ ReleaseNotes parseReleaseNotes(String? body) {
   for (final raw in (body ?? '').split('\n')) {
     final line = raw.trim();
     if (line.startsWith('#')) {
-      section = line.replaceFirst(RegExp(r'^#+\s*'), '').toLowerCase();
+      // «## NOVITÀ:», «##Correzioni», «Novita»: case, accent, colon and spaces do not matter.
+      section = line
+          .replaceFirst(RegExp(r'^#+\s*'), '')
+          .replaceAll(RegExp(r'[\s:]+$'), '')
+          .toLowerCase()
+          .replaceAll('à', 'a');
       continue;
     }
     if (!line.startsWith('-')) continue;
     final item = line.substring(1).trim();
+    if (!RegExp(r'[\p{L}\p{N}]', unicode: true).hasMatch(item)) continue; // «-», «---»
     if (section == 'correzioni') {
       if (item.isNotEmpty) fixes.add(item);
-    } else if (section == 'novità') {
+    } else if (section == 'novita') {
       final parts = item.split('|').map((p) => p.trim()).toList();
       final lead = parts.isNotEmpty && parts.first.toLowerCase() == 'evidenza';
       if (lead) parts.removeAt(0);

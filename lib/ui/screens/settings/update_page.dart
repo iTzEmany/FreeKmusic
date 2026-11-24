@@ -14,16 +14,20 @@ import '../../widgets/release_notes_view.dart';
 /// «Aggiornamento disponibile»: a full-screen sheet on a phone, a two-column dialog from
 /// [CcDims.wideBreakpoint]. With [info] (the start-up notice) nothing is asked again.
 Future<void> showUpdate(BuildContext context, {UpdateInfo? info}) {
-  final page = UpdatePage(info: info);
-  return MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint
+  final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
+  final page = UpdatePage(info: info, wide: wide);
+  return wide
       ? showDialog<void>(context: context, builder: (_) => page)
       : Navigator.of(context).push(MaterialPageRoute<void>(fullscreenDialog: true, builder: (_) => page));
 }
 
 class UpdatePage extends ConsumerStatefulWidget {
-  const UpdatePage({super.key, this.info});
+  const UpdatePage({super.key, this.info, required this.wide});
 
   final UpdateInfo? info;
+
+  /// Two-column dialog (true) or full-screen page, decided by [showUpdate].
+  final bool wide;
 
   @override
   ConsumerState<UpdatePage> createState() => _UpdatePageState();
@@ -52,9 +56,10 @@ class _UpdatePageState extends ConsumerState<UpdatePage> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
+    final wide = widget.wide;
     return FutureBuilder<UpdateResult>(
       future: _result,
+      initialData: widget.info == null ? null : UpdateResult(UpdateStatus.newer, widget.info),
       builder: (context, snap) {
         final r = snap.data;
         final info = r?.status == UpdateStatus.newer ? r!.info : null;
@@ -142,9 +147,40 @@ class _Head extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        ExcludeSemantics(child: _Ring(info.version)),
         Semantics(header: true, child: Text(l.updateArrived(info.version), style: t.textTheme.headlineSmall)),
         Text(l.updateFrom(kAppVersion), style: t.textTheme.bodyMedium),
       ],
+    );
+  }
+}
+
+/// The open ring of the mockup with the short version («1.7») and «nuova».
+class _Ring extends StatelessWidget {
+  const _Ring(this.version);
+
+  final String version;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context);
+    final short = version.split('.').take(2).join('.');
+    return Container(
+      width: 104,
+      height: 104,
+      margin: const EdgeInsets.symmetric(vertical: CcDims.gap16),
+      padding: const EdgeInsets.all(5),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: t.colorScheme.primary, width: 5),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(short, style: t.textTheme.headlineMedium),
+          Text(context.l10n.updateNew, style: t.textTheme.labelSmall),
+        ],
+      ),
     );
   }
 }
@@ -170,12 +206,15 @@ class _UpdateFooter extends ConsumerWidget {
     final err = Theme.of(context).colorScheme.error;
     Widget title(String t, {bool bad = false}) =>
         Text(t, style: Theme.of(context).textTheme.titleSmall?.copyWith(color: bad ? err : null));
-    Widget main(String label, VoidCallback onPressed) => FilledButton(onPressed: onPressed, child: Text(label));
+    Widget main(String label, VoidCallback? onPressed) => FilledButton(onPressed: onPressed, child: Text(label));
     final children = switch (s.phase) {
       UpdatePhase.idle => [
         Text(self ? l.updateSelfHint : l.updateBrowserHint),
         const SizedBox(height: 12),
-        main(self ? (mb > 0 ? l.updateWithSize(mb) : l.updateDo) : l.updateFromBrowser, () => n.start(info)),
+        main(
+          self ? (mb > 0 ? l.updateWithSize(mb) : l.updateDo) : l.updateFromBrowser,
+          target == null ? null : () => n.start(info),
+        ),
       ],
       UpdatePhase.confirmSize => [
         Text(l.updateMeteredAsk(mb)),
@@ -231,6 +270,11 @@ class _UpdateFooter extends ConsumerWidget {
         main(l.retry, n.retry),
       ],
     };
-    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.4),
+      child: SingleChildScrollView(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
+      ),
+    );
   }
 }

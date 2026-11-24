@@ -55,7 +55,7 @@ class ReleaseNotesView extends ConsumerWidget {
           ListTile(leading: const Icon(Icons.auto_fix_high_rounded), title: Text(l.updateFixesGeneric)),
         if (h != null) ...[head(l.updateHighlight), _NoteTile(h, big: true)],
         if (notes.news.isNotEmpty) ...[
-          head(h == null ? l.updateAlsoHere.split(' ').first : l.updateAlsoHere),
+          head(h == null ? l.updateNews : l.updateAlsoHere),
           for (final n in notes.news) _NoteTile(n),
         ],
         if (notes.fixes.isNotEmpty)
@@ -89,34 +89,31 @@ class _NoteTile extends StatelessWidget {
       color: t.colorScheme.primary,
       size: big ? 32 : 24,
     );
-    return Semantics(
-      container: true,
-      child: MergeSemantics(
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          padding: EdgeInsets.all(big ? 16 : 4),
-          decoration: big
-              ? BoxDecoration(
-                  color: t.colorScheme.primaryContainer.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(CcDims.rCard),
-                )
-              : null,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ExcludeSemantics(child: icon),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(note.title, style: big ? t.textTheme.titleLarge : t.textTheme.titleSmall),
-                    Text(note.text, style: t.textTheme.bodyMedium),
-                  ],
-                ),
+    return MergeSemantics(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: EdgeInsets.all(big ? 16 : 4),
+        decoration: big
+            ? BoxDecoration(
+                color: t.colorScheme.primaryContainer.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(CcDims.rCard),
+              )
+            : null,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ExcludeSemantics(child: icon),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(note.title, style: big ? t.textTheme.titleLarge : t.textTheme.titleSmall),
+                  Text(note.text, style: t.textTheme.bodyMedium),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

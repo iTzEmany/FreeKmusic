@@ -44,4 +44,14 @@ void main() {
       expect(releaseNoteIcons.containsKey(name), isTrue, reason: name);
     }
   });
+
+  test('variants: «## NOVITÀ:», «##Correzioni», CRLF, a bare «-», «|» in the text', () {
+    final n = parseReleaseNotes(
+      '## NOVITÀ:\r\n- evidenza | mic | A | testo | con barra\r\n-\r\n---\r\n- play | B | b\r\n##Correzioni  \r\n- uno\r\n- \r\n',
+    );
+    expect(n.highlight!.text, 'testo | con barra');
+    expect(n.news.single.title, 'B');
+    expect(n.fixes, ['uno']);
+    expect(parseReleaseNotes('## Novita\n- play | C | c').news.single.title, 'C');
+  });
 }
