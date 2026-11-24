@@ -156,12 +156,13 @@ class TrackRepository {
 
   /// Deletes the shadow rows with no plays, except the [keepKeys] ones (still
   /// in the cache). Rows with plays stay (D-81), and so do the ones in a playlist
-  /// (D-524). Returns how many went.
+  /// (D-524) and the hearted ones (their heart travels with a sync). Returns how many went.
   Future<int> deleteUnplayedStreamRows({Set<String> keepKeys = const {}}) =>
       (_db.delete(_db.tracks)..where(
             (t) =>
                 t.kind.equals(kStreamKind) &
                 t.saved.equals(false) &
+                t.isFavorite.equals(false) &
                 t.path.isNotIn([for (final k in keepKeys) streamPathOf(k)]) &
                 notExistsQuery(
                   _db.select(_db.plays)
@@ -461,27 +462,37 @@ class TrackRepository {
   /// The one door for a streamed track that arrives from outside (LAN sync, offer, backup merge): nothing
   /// is written when a file of it is already here ([hasFile], by key) or when what the user deleted here
   /// (the `savedStream` tombstone, or `favoriteStream` when not [save]) is at least as recent as the
-  /// arrival [at] (epoch ms; 0 = unknown, older than any deletion). With [save] the row is saved and, if
-  /// it was not before, dated [at]; otherwise it is only created (the caller hearts it).
+  /// arrival [at] (epoch ms; 0 = unknown, older than any deletion; a tie keeps the arrival). With [save] the row is
+  /// saved and, if it was not before, dated [date] (default [at]); otherwise it is only created (the caller hearts it).
   /// Returns the row id, or null when nothing was written.
-  Future<int?> ingestStream(YtResult r, {required int at, bool save = true, bool Function(String key)? hasFile}) =>
-      _db.transaction(() async {
-        final key = r.indexKey;
-        if (hasFile?.call(key) ?? false) return null;
-        final gone = await SyncTombstoneRepository(_db)
-            .deletedAt(save ? TombstoneKind.savedStream : TombstoneKind.favoriteStream, key);
-        if (gone != null && at <= gone) return null;
-        if (!save) {
-          final id = await ensureStreamRow(r);
-          return (await getById(id))?.kind == kStreamKind ? id : null;
-        }
-        final wasSaved = (await streamRow(key))?.saved ?? false;
-        final id = await saveStream(r);
-        if (id != null && !wasSaved && at > 0) {
-          await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(TracksCompanion(addedAt: Value(at)));
-        }
-        return id;
-      });
+  Future<int?> ingestStream(
+    YtResult r, {
+    required int at,
+    int? date,
+    bool save = true,
+    bool Function(String key)? hasFile,
+  }) => _db.transaction(() async {
+    final key = r.indexKey;
+    if (hasFile?.call(key) ?? false) return null;
+    final gone = await SyncTombstoneRepository(_db).deletedAt(
+      save ? TombstoneKind.savedStream : TombstoneKind.favoriteStream,
+      key,
+    );
+    if (gone != null && at < gone) return null;
+    if (!save) {
+      final id = await ensureStreamRow(r);
+      return (await getById(id))?.kind == kStreamKind ? id : null;
+    }
+    final wasSaved = (await streamRow(key))?.saved ?? false;
+    final id = await saveStream(r);
+    final when = date ?? at;
+    if (id != null && !wasSaved && when > 0) {
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+        TracksCompanion(addedAt: Value(when)),
+      );
+    }
+    return id;
+  });
 
   TracksCompanion _streamRow(
     String key,

@@ -519,8 +519,8 @@ const kTombstoneKinds = {
   TombstoneKind.favoriteStream,
 };
 
-/// A tombstone dated further ahead than this (a wrong clock) is not trusted.
-const kTombstoneMaxFuture = Duration(days: 1);
+/// A tombstone or item dated further ahead than this (a wrong clock) is not trusted (D-709).
+const kTombstoneMaxFuture = Duration(minutes: 10);
 
 /// What the user deleted, so that a sync between own devices can delete it there too (schema v24, D-668).
 /// Pruned after [kTombstoneKeep]; no row of any other table is touched by it.

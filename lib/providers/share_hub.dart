@@ -745,13 +745,32 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     final side = await client.collections(peer.host, peer.tlsPort!, pin: device.fingerprint, mine: device.mine);
     final resolver = await repo.resolver(caseInsensitive: Platform.isWindows);
     final index = await ref.read(downloadIndexProvider.future);
-    return planSync(await repo.local(), remote, resolver.resolve,
-        localSide: await repo.side(), remoteSide: side, mine: device.mine, hasFile: (k) => index.pathForKey(k) != null);
+    // An episode cannot become a streamed row, like a track already downloaded: neither is planned.
+    final episodes = await repo.episodeStreamKeys();
+    return planSync(
+      await repo.local(),
+      remote,
+      resolver.resolve,
+      localSide: await repo.side(),
+      remoteSide: side,
+      mine: device.mine,
+      hasFile: (k) => index.pathForKey(k) != null || episodes.contains(k),
+    );
   }
 
-  Future<void> applyPlaylistSync(SyncPlan plan) async {
+  /// Writes the playlists of [plan]; its collections only when [collections] (the user confirmed them). Returns
+  /// how many playlists were written.
+  Future<int> applyPlaylistSync(
+    SyncPlan plan, {
+    bool collections = false,
+  }) async {
     final index = await ref.read(downloadIndexProvider.future);
-    await PlaylistSyncRepository(ref.read(databaseProvider)).apply(plan, hasFile: (k) => index.pathForKey(k) != null);
+    final repo = PlaylistSyncRepository(ref.read(databaseProvider));
+    return repo.apply(
+      plan,
+      applyCollections: collections,
+      hasFile: (k) => index.pathForKey(k) != null,
+    );
   }
 
   /// «Chiedi i brani mancanti»: the other device offers us the tracks of [plan]

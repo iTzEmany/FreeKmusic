@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 import 'package:path/path.dart' as p;
 
 import '../../core/app_log.dart';
+import '../../core/clock.dart';
 import '../../core/text_utils.dart';
 import '../../services/tags/tag_reader.dart' show splitGenres;
 import '../../services/backup/track_resolver.dart';
@@ -102,20 +103,33 @@ Future<MergeReport> mergeUserData(AppDatabase db, UserData data, TrackResolver r
     final genreRepo = TrackGenreRepository(db);
     final newFavorites = <int>[]; // hearts go through setFavoriteMany: dated, and the favoriteStream tombstone goes
     for (final u in data.tracks) {
-      // A streamed track has no file to find: its shadow row is made here, and marked saved when the backup says so.
-      final id = u.ref.streamKey == null ? resolver.resolve(u.ref) : await _resolveItem(trackRepo, resolver, u.ref);
+      final key = u.ref.streamKey;
+      if (u.saved && key != null && isStreamKey(key)) {
+        // A streamed track has no file to find. The one door for streamed rows groups it with the saved tracks of its
+        // album and dates it with the backup's date (out of «recent»). A merge is a gesture of the user: it counts
+        // as now, so it brings back what was removed here. Only a deletion from a clock ahead of this one stops it,
+        // and then no row is made nor counted.
+        final done = await trackRepo.ingestStream(
+          streamResultOf(
+            key,
+            title: u.ref.title,
+            artist: u.ref.artist,
+            album: u.album,
+            durationMs: u.ref.durationMs,
+            albumId: u.albumBrowseId,
+          ),
+          at: nowMs(),
+          date: u.addedAt,
+        );
+        if (done == null) continue;
+      }
+      // A streamed track that is only hearted: its shadow row is made here.
+      final id = key == null
+          ? resolver.resolve(u.ref)
+          : await _resolveItem(trackRepo, resolver, u.ref);
       if (id == null) {
         missing(u.ref);
         continue;
-      }
-      final key = u.ref.streamKey;
-      if (u.saved && key != null) {
-        // The one door for streamed rows: it groups the row with the saved tracks of its album, dates it with the
-        // backup's date (out of «recent») and does not bring back what was deleted here after that date.
-        await trackRepo.ingestStream(
-            streamResultOf(key,
-                title: u.ref.title, artist: u.ref.artist, album: u.album, durationMs: u.ref.durationMs, albumId: u.albumBrowseId),
-            at: u.addedAt ?? 0);
       }
       final t = await (db.select(db.tracks)..where((r) => r.id.equals(id))).getSingleOrNull();
       if (t == null) continue;

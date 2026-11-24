@@ -1,4 +1,5 @@
 import 'package:codecore/services/backup/user_data.dart';
+import 'package:codecore/services/share/collection_sync.dart';
 import 'package:codecore/services/share/playlist_sync.dart';
 import 'package:codecore/ui/screens/share/sync_preview_dialog.dart';
 import 'package:flutter/material.dart';
@@ -93,9 +94,39 @@ void main() {
     expect(find.text('Chiedi i brani mancanti'), findsNothing);
     expect(find.text('Chiudi'), findsOneWidget);
 
-    final empty = planSync([], const [], _resolve);
-    await h.pump(tester, SyncPreviewDialog(plan: empty));
-    expect(find.text('Le playlist sono già allineate'), findsOneWidget);
-    await h.dispose(tester);
-  });
+      final empty = planSync([], const [], _resolve);
+      await h.pump(tester, SyncPreviewDialog(plan: empty));
+      expect(find.text('Le playlist sono già allineate'), findsOneWidget);
+      await h.dispose(tester);
+    },
+  );
+
+  testWidgets(
+    'a plan with only collections shows nothing to confirm: no «Applica», only «Chiudi»',
+    (tester) async {
+      final h = await Harness.create(tester);
+      const plan = SyncPlan(
+        [],
+        CollectionPlan(
+          favoriteAdds: [
+            FavoriteCollectionData(kind: 'album', key: 'a|b', addedAt: 1),
+          ],
+        ),
+      );
+      await h.pump(
+        tester,
+        Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showSyncPreview(context, plan),
+            child: const Text('open'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      expect(find.text('Applica'), findsNothing);
+      expect(find.text('Chiudi'), findsOneWidget);
+      await h.dispose(tester);
+    },
+  );
 }

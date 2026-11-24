@@ -1,3 +1,4 @@
+import '../../core/app_log.dart';
 import '../backup/user_data.dart';
 import 'collection_sync.dart';
 import 'lan_client.dart';
@@ -43,20 +44,54 @@ class SyncClient {
     }
   }
 
-  Future<List<RemotePlaylist>> playlists(String host, int tlsPort, {required String pin}) async => [
-        for (final p in await _items(() => _client.secureGet(host, tlsPort, '/sync/playlists', pin: pin), 'playlists'))
-          if (p is Map<String, dynamic>) RemotePlaylist.fromJson(p),
+  /// A malformed playlist fails the whole sync: dropping it, or a track of it, could replace a playlist here with less.
+  Future<List<RemotePlaylist>> playlists(
+    String host,
+    int tlsPort, {
+    required String pin,
+  }) async {
+    final raw = await _items(
+      () => _client.secureGet(host, tlsPort, '/sync/playlists', pin: pin),
+      'playlists',
+    );
+    try {
+      return [
+        for (final p in raw) RemotePlaylist.fromJson(p as Map<String, dynamic>),
       ];
+    } on Object catch (e) {
+      AppLog.w('sync: malformed playlist from the other device: $e');
+      throw const SyncException(SyncError.failed);
+    }
+  }
 
-  /// The other device's favourites, saved and hearted streamed tracks and, only when [mine] (it is one of
-  /// the user's own devices; it also has to think so of this one), its deletions after [since].
-  /// Malformed entries, unknown kinds and impossible dates are dropped.
-  Future<SyncSide> collections(String host, int tlsPort, {required String pin, required bool mine, int? since}) async {
-    final favorites = await _items(() => _client.secureGet(host, tlsPort, '/sync/favorites', pin: pin), 'favorites');
-    final streams = await _items(() => _client.secureGet(host, tlsPort, '/sync/streams', pin: pin), 'streams');
-    final tombstones = !mine
-        ? const <Object?>[]
-        : await _items(() => _client.securePost(host, tlsPort, '/sync/tombstones', {'since': ?since}, pin: pin), 'tombstones');
+  /// The other device's favourites, saved and hearted streamed tracks and its deletions: asked only when [mine]
+  /// (it is one of the user's own devices; it also has to think so of this one), else they are empty and
+  /// only the playlists are synced. Malformed entries, unknown kinds and impossible dates are dropped.
+  Future<SyncSide> collections(
+    String host,
+    int tlsPort, {
+    required String pin,
+    required bool mine,
+  }) async {
+    if (!mine) return const SyncSide();
+    final favorites = await _items(
+      () => _client.secureGet(host, tlsPort, '/sync/favorites', pin: pin),
+      'favorites',
+    );
+    final streams = await _items(
+      () => _client.secureGet(host, tlsPort, '/sync/streams', pin: pin),
+      'streams',
+    );
+    final tombstones = await _items(
+      () => _client.securePost(
+        host,
+        tlsPort,
+        '/sync/tombstones',
+        const {},
+        pin: pin,
+      ),
+      'tombstones',
+    );
     return SyncSide(
       favorites: [for (final f in favorites) ?FavoriteCollectionData.tryParse(f)],
       streams: [for (final s in streams) ?StreamEntry.tryParse(s)],

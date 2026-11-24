@@ -775,21 +775,72 @@ void main() {
     expect((await db.select(db.favoriteCollections).get()).map((r) => r.key).toSet(), {'k1', 'k2'});
   });
 
-  test('a saved stream the backup holds from before it was removed here does not come back; a newer one does', () async {
+  test('a merge is a decision of the user: a stream removed here before comes back with the backup\'s date, out of «recent»', () async {
     const key = 'youtube:abcdefghijk';
     final tr = TrackRef(title: 'S', artist: 'Art', streamKey: key);
     await SyncTombstoneRepository(db).record('savedStream', key, at: 1000);
-    Future<bool> saved() async =>
-        (await (db.select(db.tracks)..where((r) => r.title.equals('S'))).map((r) => r.saved).getSingleOrNull()) ?? false;
+    final r = await merge(
+      UserData(
+        createdAt: 1,
+        tracks: [TrackUserData(ref: tr, saved: true, addedAt: 900)],
+      ),
+    );
+    final t = await track('S');
+    expect((t.saved, t.addedAt), (true, 900));
+    expect(r.recognized, 1);
+    expect(
+      await SyncTombstoneRepository(db).deletedAt('savedStream', key),
+      isNull,
+    );
+  });
 
-    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true, addedAt: 900)]));
-    expect(await saved(), isFalse);
-    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true)]));
-    expect(await saved(), isFalse, reason: 'no date = older than any deletion');
+  test('a stream removed here from a clock ahead of this one is discarded: no shadow row is made, none is counted', () async {
+    const key = 'youtube:abcdefghijk';
+    await SyncTombstoneRepository(db).record(
+      'savedStream',
+      key,
+      at: DateTime.now().millisecondsSinceEpoch + 3600000,
+    );
+    final r = await merge(
+      UserData(
+        createdAt: 1,
+        tracks: [
+          TrackUserData(
+            ref: TrackRef(title: 'S', artist: 'Art', streamKey: key),
+            saved: true,
+            addedAt: 900,
+            favorite: true,
+          ),
+        ],
+      ),
+    );
+    expect(
+      await (db.select(db.tracks)..where((t) => t.title.equals('S'))).get(),
+      isEmpty,
+    );
+    expect((r.recognized, r.favoritesAdded), (0, 0));
+  });
 
-    await merge(UserData(createdAt: 1, tracks: [TrackUserData(ref: tr, saved: true, addedAt: 1500)]));
-    expect(await saved(), isTrue);
-    expect((await db.select(db.tracks).get()).firstWhere((t) => t.title == 'S').addedAt, 1500);
-    expect(await SyncTombstoneRepository(db).deletedAt('savedStream', key), isNull);
+  test('the heart of a backup comes back after the user removed it (a merge is a gesture of the user), dated and without tombstone', () async {
+    const key = 'youtube:abcdefghijk';
+    await SyncTombstoneRepository(db).record('favoriteStream', key, at: 1000);
+    await merge(
+      UserData(
+        createdAt: 1,
+        tracks: [
+          TrackUserData(
+            ref: TrackRef(title: 'H', artist: 'Art', streamKey: key),
+            favorite: true,
+          ),
+        ],
+      ),
+    );
+    final t = await track('H');
+    expect(t.isFavorite, isTrue);
+    expect(t.favoritedAt, isNotNull);
+    expect(
+      await SyncTombstoneRepository(db).deletedAt('favoriteStream', key),
+      isNull,
+    );
   });
 }

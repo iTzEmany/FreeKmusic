@@ -123,6 +123,21 @@ class PlaylistSyncRepository {
     ];
   }
 
+  /// Keys of the streamed tracks that are episodes here (kind 1, path `stream:<key>`): they cannot become streamed rows,
+  /// so a sync must not plan them ([planSync]'s `hasFile`).
+  Future<Set<String>> episodeStreamKeys() async => {
+    for (final path
+        in await (_db.selectOnly(_db.tracks)
+              ..addColumns([_db.tracks.path])
+              ..where(
+                _db.tracks.kind.equals(kEpisodeKind) &
+                    _db.tracks.path.like('stream:%'),
+              ))
+            .map((r) => r.read(_db.tracks.path)!)
+            .get())
+      ?keyOfStreamPath(path),
+  };
+
   /// What `POST /sync/tombstones` sends: the deletions after [since] (all when null).
   Future<List<TombstoneData>> tombstones({int? since}) async => [
         for (final t in await SyncTombstoneRepository(_db).all(since: since))
@@ -161,28 +176,37 @@ class PlaylistSyncRepository {
   /// a failure leaves everything as it was. The playlist takes the other
   /// device's `updated_at`: both sides then compare equal until someone edits.
   ///
-  /// The rest of the plan follows: deletions and tombstones, then favourites (after the playlists, so a favourite
-  /// playlist finds its uuid) and streamed rows. Every write re-checks its date against what is here now, as the
-  /// plan may be older than the confirmation: an item is deleted only if older than the deletion and a tombstone
-  /// goes only if the arriving item is more recent. A deletion removes a row or a flag, never a file; [hasFile]
-  /// says a streamed track is already a file here (no row is made for it).
-  Future<void> apply(SyncPlan plan, {bool Function(String key)? hasFile}) {
+  /// The rest of the plan (its collections) follows only when [applyCollections]: the caller says the user confirmed
+  /// it. Deletions and tombstones, then favourites (after the playlists, so a favourite playlist finds its uuid) and
+  /// streamed rows. Every write re-checks its date against what is here now, as the plan may be older than the
+  /// confirmation: on a tie the item stays, an item is deleted only if older than the deletion and a tombstone goes
+  /// only if the arriving item is not older. A deletion removes a row or a flag, never a file; [hasFile] says a
+  /// streamed track is already a file here (no row is made for it). Returns how many playlists were written.
+  Future<int> apply(
+    SyncPlan plan, {
+    bool Function(String key)? hasFile,
+    bool applyCollections = false,
+  }) {
     return _db.transaction(() async {
       final tomb = SyncTombstoneRepository(_db);
+      var written = 0;
       for (final e in plan.toWrite) {
         final r = e.remote;
         final int playlistId;
         var kept = const <int>[];
         if (e.action == SyncAction.add) {
           final gone = await tomb.deletedAt(TombstoneKind.playlist, r.uuid);
-          if (gone != null && r.updatedAt <= gone) continue;
-          playlistId = await _db.into(_db.playlists).insert(
-              PlaylistsCompanion.insert(
-                name: r.name,
-                createdAt: r.createdAt,
-                uuid: Value(r.uuid),
-                updatedAt: Value(r.updatedAt),
-              ));
+          if (gone != null && r.updatedAt < gone) continue;
+          playlistId = await _db
+              .into(_db.playlists)
+              .insert(
+                PlaylistsCompanion.insert(
+                  name: r.name,
+                  createdAt: r.createdAt,
+                  uuid: Value(r.uuid),
+                  updatedAt: Value(r.updatedAt),
+                ),
+              );
           await tomb.clear(TombstoneKind.playlist, r.uuid);
         } else {
           playlistId = e.local!.id;
@@ -203,22 +227,37 @@ class PlaylistSyncRepository {
                 ..where((t) => t.playlistId.equals(playlistId)))
               .go();
         }
-        final ids = [...e.trackIds, ...kept.where((id) => !e.trackIds.contains(id))];
+        written++;
+        final ids = [
+          ...e.trackIds,
+          ...kept.where((id) => !e.trackIds.contains(id)),
+        ];
         for (var i = 0; i < ids.length; i++) {
           await _db.into(_db.playlistTracks).insert(
               PlaylistTracksCompanion.insert(
                   playlistId: playlistId, trackId: ids[i], position: i));
         }
       }
-      await _applyCollections(plan.collections, tomb, hasFile);
-      AppLog.i('sync: ${plan.toAdd.length} playlists added, ${plan.toReplace.length} replaced, '
-          '${plan.collections.additions} favourites/streams added, ${plan.collections.deletes.length} deleted');
+      if (applyCollections) {
+        await _applyCollections(plan.collections, tomb, hasFile);
+      }
+      AppLog.i(
+        'sync: ${plan.toAdd.length} playlists added, ${plan.toReplace.length} replaced'
+        '${applyCollections ? ', ${plan.collections.additions} favourites/streams added, ${plan.collections.deletes.length} deleted' : ''}',
+      );
+      return written;
     });
   }
 
-  Future<void> _applyCollections(CollectionPlan c, SyncTombstoneRepository tomb, bool Function(String key)? hasFile) async {
-    for (final t in [...c.deletes, ...c.learned]) {
-      await _drop(t);
+  Future<void> _applyCollections(
+    CollectionPlan c,
+    SyncTombstoneRepository tomb,
+    bool Function(String key)? hasFile,
+  ) async {
+    for (final t in c.deletes) {
+      if (await _drop(t)) await tomb.record(t.kind, t.key, at: t.deletedAt);
+    }
+    for (final t in c.learned) {
       await tomb.record(t.kind, t.key, at: t.deletedAt);
     }
     final uuids = {for (final p in await _db.select(_db.playlists).get()) ?p.uuid};
@@ -226,8 +265,9 @@ class PlaylistSyncRepository {
       if (f.kind == FavoriteCollectionsRepository.playlist && !uuids.contains(f.key)) continue;
       final kind = f.kind == FavoriteCollectionsRepository.playlist ? TombstoneKind.favoritePlaylist : TombstoneKind.favoriteAlbum;
       final gone = await tomb.deletedAt(kind, f.key);
-      if (gone != null && (f.addedAt ?? 0) <= gone) continue;
-      await FavoriteCollectionsRepository(_db).add(f.kind, f.key, addedAt: f.addedAt);
+      if (gone != null && (f.addedAt ?? 0) < gone) continue;
+      await FavoriteCollectionsRepository(_db)
+          .add(f.kind, f.key, addedAt: f.addedAt);
     }
     final tracks = TrackRepository(_db);
     for (final s in c.saves) {
@@ -236,8 +276,16 @@ class PlaylistSyncRepository {
     for (final s in c.hearts) {
       final id = await tracks.ingestStream(_resultOf(s), at: s.favoritedAt ?? 0, save: false, hasFile: hasFile);
       if (id == null) continue;
-      await (_db.update(_db.tracks)..where((t) => t.id.equals(id)))
-          .write(TracksCompanion(isFavorite: const Value(true), favoritedAt: Value(s.favoritedAt)));
+      final here = (await tracks.getById(id))!;
+      if (here.isFavorite && (here.favoritedAt ?? 0) >= (s.favoritedAt ?? 0)) {
+        continue; // a heart here at least as recent stays as it is
+      }
+      await (_db.update(_db.tracks)..where((t) => t.id.equals(id))).write(
+        TracksCompanion(
+          isFavorite: const Value(true),
+          favoritedAt: Value(s.favoritedAt),
+        ),
+      );
       await tomb.clear(TombstoneKind.favoriteStream, s.key);
     }
   }
@@ -245,38 +293,70 @@ class PlaylistSyncRepository {
   YtResult _resultOf(StreamEntry s) =>
       streamResultOf(s.key, title: s.title, artist: s.artist, album: s.album, durationMs: s.durationMs, albumId: s.albumBrowseId);
 
-  /// Removes what [t] deletes, if it is older than the deletion. Rows and flags only: a playlist (not a hidden one),
-  /// a favourite, the `saved` or heart flag of a streamed row (kind 2, never a library file). The row stays.
-  Future<void> _drop(TombstoneData t) async {
+  /// Removes what [t] deletes, if it is older than the deletion (a tie keeps it). Rows and flags only: a playlist (not a
+  /// hidden one), a favourite, the `saved` or heart flag of a streamed row (kind 2, never a library file). The row stays.
+  /// True when something was removed.
+  Future<bool> _drop(TombstoneData t) async {
     final at = t.deletedAt;
     switch (t.kind) {
       case TombstoneKind.playlist:
-        final p = await (_db.select(_db.playlists)
-              ..where((p) => p.uuid.equals(t.key) & p.updatedAt.isSmallerThanValue(at) & _db.isPlaylistVisible(p)))
-            .getSingleOrNull();
-        if (p == null) return;
-        await (_db.delete(_db.favoriteCollections)
-              ..where((f) => f.kind.equals(FavoriteCollectionsRepository.playlist) & f.key.equals(t.key)))
+        final p =
+            await (_db.select(_db.playlists)..where(
+                  (p) =>
+                      p.uuid.equals(t.key) &
+                      p.updatedAt.isSmallerThanValue(at) &
+                      _db.isPlaylistVisible(p),
+                ))
+                .getSingleOrNull();
+        if (p == null) return false;
+        await (_db.delete(_db.favoriteCollections)..where(
+              (f) =>
+                  f.kind.equals(FavoriteCollectionsRepository.playlist) &
+                  f.key.equals(t.key),
+            ))
             .go();
         await (_db.delete(_db.playlists)..where((x) => x.id.equals(p.id))).go();
+        return true;
       case TombstoneKind.favoriteAlbum || TombstoneKind.favoritePlaylist:
         final kind = t.kind == TombstoneKind.favoritePlaylist
             ? FavoriteCollectionsRepository.playlist
             : FavoriteCollectionsRepository.album;
-        await (_db.delete(_db.favoriteCollections)
-              ..where((f) => f.kind.equals(kind) & f.key.equals(t.key) & f.addedAt.isSmallerThanValue(at)))
-            .go();
+        return await (_db.delete(_db.favoriteCollections)..where(
+                  (f) =>
+                      f.kind.equals(kind) &
+                      f.key.equals(t.key) &
+                      f.addedAt.isSmallerThanValue(at),
+                ))
+                .go() >
+            0;
       case TombstoneKind.savedStream:
-        await (_db.update(_db.tracks)
-              ..where((r) => r.path.equals(streamPathOf(t.key)) & r.kind.equals(kStreamKind) & r.addedAt.isSmallerThanValue(at)))
-            .write(const TracksCompanion(saved: Value(false)));
+        return await (_db.update(_db.tracks)..where(
+                  (r) =>
+                      r.path.equals(streamPathOf(t.key)) &
+                      r.kind.equals(kStreamKind) &
+                      r.saved.equals(true) &
+                      r.addedAt.isSmallerThanValue(at),
+                ))
+                .write(const TracksCompanion(saved: Value(false))) >
+            0;
       case TombstoneKind.favoriteStream:
-        await (_db.update(_db.tracks)
-              ..where((r) =>
-                  r.path.equals(streamPathOf(t.key)) &
-                  r.kind.equals(kStreamKind) &
-                  (r.favoritedAt.isNull() | r.favoritedAt.isSmallerThanValue(at))))
-            .write(const TracksCompanion(isFavorite: Value(false), favoritedAt: Value(null)));
+        return await (_db.update(_db.tracks)..where(
+                  (r) =>
+                      r.path.equals(streamPathOf(t.key)) &
+                      r.kind.equals(kStreamKind) &
+                      r.isFavorite.equals(true) &
+                      (r.favoritedAt.isNull() |
+                          r.favoritedAt.isSmallerThanValue(at)),
+                ))
+                .write(
+                  const TracksCompanion(
+                    isFavorite: Value(false),
+                    favoritedAt: Value(null),
+                  ),
+                ) >
+            0;
+      default:
+        return false;
     }
   }
 }

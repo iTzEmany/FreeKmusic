@@ -126,11 +126,11 @@ String? _favoriteTombstoneKind(FavoriteCollectionData f) => f.kind == 'playlist'
         : TombstoneKind.favoriteAlbum;
 
 /// Pure: the favourites, saved and hearted streamed tracks and deletions of a sync. For each item the most
-/// recent of the item and the deletion wins (null date = older than all, ties keep the item). Deletions
-/// apply only when [mine] (the other device is one of the user's own): otherwise they are ignored, and
-/// only additions remain; an addition covered by a newer deletion known here is never made, for any device.
-/// [playlistDates] are `uuid -> updatedAt` of the visible playlists here; [hasFile] says a streamed track
-/// is already a file here (then it is not added as a row).
+/// recent of the item and the deletion wins (null date = older than all, ties keep the item: `>=` to arrive,
+/// `>` to delete). Deletions apply only when [mine] (the other device is one of the user's own): otherwise
+/// they are ignored, and only additions remain; an addition covered by a newer deletion known here is never
+/// made, for any device. [playlistDates] are `uuid -> updatedAt` of the visible playlists here; [hasFile] says
+/// a streamed track cannot become a row here (it is already a file, or an episode): it is not added.
 CollectionPlan planCollections(
   SyncSide local,
   SyncSide remote, {
@@ -151,7 +151,8 @@ CollectionPlan planCollections(
     if (s.favorite) have[(TombstoneKind.favoriteStream, s.key)] = s.favoritedAt ?? 0;
   }
   bool arrives(String kind, String key, int? date) =>
-      !have.containsKey((kind, key)) && (date ?? 0) > (block[(kind, key)] ?? -1);
+      !have.containsKey((kind, key)) &&
+      (date ?? 0) >= (block[(kind, key)] ?? 0);
 
   final deletes = <TombstoneData>[], learned = <TombstoneData>[];
   if (mine) {

@@ -25,16 +25,53 @@ class RemotePlaylist {
         'items': [for (final i in items) i.toJson()],
       };
 
-  factory RemotePlaylist.fromJson(Map<String, dynamic> j) => RemotePlaylist(
-        uuid: j['uuid'] as String? ?? '',
-        name: j['name'] as String? ?? '',
-        createdAt: (j['createdAt'] as num?)?.toInt() ?? 0,
-        updatedAt: sanePastDate(j['updatedAt']) ?? 0, // a date from the future would win every comparison
-        items: [
-          for (final i in (j['items'] as List? ?? const []).take(kMaxSyncItems))
-            TrackRef.fromJson(i as Map<String, dynamic>),
-        ],
-      );
+  /// Anything malformed is a [FormatException] (the sync fails, nothing is guessed or cut: a playlist with
+  /// dropped tracks would replace a whole one here); a date from the future counts as the oldest, and
+  /// at most [kMaxSyncItems] tracks are read.
+  factory RemotePlaylist.fromJson(Map<String, dynamic> j) {
+    final uuid = j['uuid'], name = j['name'], items = j['items'];
+    if (uuid is! String ||
+        !isUuid(uuid) ||
+        name is! String ||
+        name.length > kMaxKeyLength ||
+        items is! List) {
+      throw const FormatException('malformed playlist');
+    }
+    final created = _finite(j['createdAt']).toInt(),
+        updated = _finite(j['updatedAt']);
+    return RemotePlaylist(
+      uuid: uuid,
+      name: name,
+      createdAt: created,
+      updatedAt: sanePastDate(updated) ?? 0,
+      items: [for (final i in items.take(kMaxSyncItems)) _trackRef(i)],
+    );
+  }
+
+  static num _finite(Object? v) => v is num && v.isFinite
+      ? v
+      : throw const FormatException('not a finite number');
+
+  static TrackRef _trackRef(Object? i) {
+    if (i is! Map<String, dynamic>) {
+      throw const FormatException('malformed track');
+    }
+    for (final k in const [
+      'title',
+      'artist',
+      'folder',
+      'relPath',
+      'sha256',
+      'streamKey',
+    ]) {
+      final v = i[k];
+      if (v != null && (v is! String || v.length > kMaxKeyLength)) {
+        throw FormatException('malformed track $k');
+      }
+    }
+    if (i['durationMs'] != null) _finite(i['durationMs']);
+    return TrackRef.fromJson(i);
+  }
 }
 
 /// A playlist of this device; [trackIds] are local ids in playlist order.
@@ -138,7 +175,7 @@ class SyncPlan {
 /// most recent change wins; nothing is ever deleted because the other device
 /// does not have a playlist, only because it has a more recent tombstone, and
 /// only when [mine] (an own device, D-668). A playlist covered by a newer tombstone
-/// known here is not added back, whoever sends it. [resolve] finds the local track of a
+/// known here is not added back, whoever sends it (on a tie the playlist stays). [resolve] finds the local track of a
 /// reference (the same matching as a backup restore) or null. [localSide] and [remoteSide]
 /// carry the rest (favourites, streamed tracks, tombstones): see [planCollections].
 SyncPlan planSync(
@@ -171,8 +208,10 @@ SyncPlan planSync(
       }
     }
     if (l == null) {
-      if (r.updatedAt <= (block[(TombstoneKind.playlist, r.uuid)] ?? -1)) {
-        entries.add(SyncEntry(action: SyncAction.keep, remote: r)); // deleted here, more recently
+      if (r.updatedAt < (block[(TombstoneKind.playlist, r.uuid)] ?? -1)) {
+        entries.add(
+          SyncEntry(action: SyncAction.keep, remote: r),
+        ); // deleted here, more recently
         continue;
       }
       entries.add(SyncEntry(
@@ -213,7 +252,26 @@ SyncPlan planSync(
       reordered: reordered,
     ));
   }
-  return SyncPlan(entries, collections);
+  // A favourite playlist is planned only if its playlist is here after this plan (so a later plan has nothing to do).
+  final present = {
+    for (final u in byUuid.keys)
+      if (!deleting.contains(u)) u,
+    for (final e in entries)
+      if (e.action == SyncAction.add) e.remote.uuid,
+  };
+  return SyncPlan(
+    entries,
+    CollectionPlan(
+      favoriteAdds: [
+        for (final f in collections.favoriteAdds)
+          if (f.kind != 'playlist' || present.contains(f.key)) f,
+      ],
+      saves: collections.saves,
+      hearts: collections.hearts,
+      deletes: collections.deletes,
+      learned: collections.learned,
+    ),
+  );
 }
 
 bool _sameSet(List<int> a, List<int> b) =>

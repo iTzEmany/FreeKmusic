@@ -26,11 +26,11 @@ const kMaxWantedTracks = 500;
 /// only to a **trusted** signer: a device that merely knows the address gets 403.
 ///
 /// * `GET /playlists` — every playlist in the portable format.
-/// * `GET /favorites` — the favourite albums and playlists (`{kind, key, addedAt}`).
-/// * `GET /streams` — the streamed tracks saved to the library or hearted (`StreamEntry`, with their dates).
-/// * `POST /tombstones` `{since?}` — the deletions (`{kind, key, deletedAt}`), only to a caller that is one of
-///   the user's own devices ([isMine]); any other trusted caller gets an empty list, so nothing is deleted there.
-///   A POST so that `since` is in the signed body.
+/// * `GET /favorites` — the favourite albums and playlists (`{kind, key, addedAt}`), only to a caller that is one
+///   of the user's own devices ([isMine]); any other trusted caller gets an empty list.
+/// * `GET /streams` — the streamed tracks saved to the library or hearted (`StreamEntry`, with their dates), mine only.
+/// * `POST /tombstones` `{since?}` — the deletions (`{kind, key, deletedAt}`), mine only; any other trusted caller
+///   gets an empty list, so nothing is deleted there. A POST so that `since` is in the signed body.
 /// * `POST /want` — «send me these tracks»: answered by an offer in the other direction.
 Router buildSyncRouter({
   required Future<List<RemotePlaylist>> Function() export,
@@ -56,13 +56,25 @@ Router buildSyncRouter({
   });
 
   router.get('/favorites', (Request r) async {
-    if (trustedCaller(r) == null) return json(403, {'error': 'not trusted'});
-    return json(200, {'favorites': [for (final f in await exportFavorites()) f.toJson()]});
+    final fp = trustedCaller(r);
+    if (fp == null) return json(403, {'error': 'not trusted'});
+    return json(200, {
+      'favorites': [
+        if (isMine(fp))
+          for (final f in await exportFavorites()) f.toJson(),
+      ],
+    });
   });
 
   router.get('/streams', (Request r) async {
-    if (trustedCaller(r) == null) return json(403, {'error': 'not trusted'});
-    return json(200, {'streams': [for (final e in await exportStreams()) e.toJson()]});
+    final fp = trustedCaller(r);
+    if (fp == null) return json(403, {'error': 'not trusted'});
+    return json(200, {
+      'streams': [
+        if (isMine(fp))
+          for (final e in await exportStreams()) e.toJson(),
+      ],
+    });
   });
 
   router.post('/tombstones', (Request r) async {

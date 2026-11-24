@@ -1,5 +1,8 @@
 import '../../core/clock.dart';
-import '../../data/db/tables.dart' show TombstoneKind, kTombstoneKinds, kTombstoneMaxFuture;
+import '../../data/db/tables.dart'
+    show TombstoneKind, kTombstoneKinds, kTombstoneMaxFuture;
+import '../../data/repositories/favorite_collections_repository.dart'
+    show favoriteAlbumKey;
 import '../online/credits.dart';
 import '../stream/stream_key.dart' show isStreamKey;
 
@@ -489,14 +492,22 @@ class FavoriteCollectionData {
   Map<String, Object?> toJson() => _nonNull({'kind': kind, 'key': key, 'addedAt': addedAt});
 
   /// Null for a malformed entry or an unknown kind: it is dropped, the backup still reads.
-  static FavoriteCollectionData? tryParse(Object? j) =>
-      j is Map &&
-          (j['kind'] == 'album' || j['kind'] == 'playlist') &&
-          j['key'] is String &&
-          (j['key'] as String).isNotEmpty &&
-          (j['key'] as String).length <= kMaxKeyLength
-          ? FavoriteCollectionData(kind: j['kind'] as String, key: j['key'] as String, addedAt: sanePastDate(j['addedAt']))
-          : null;
+  /// An album key is the canonical one ([favoriteAlbumKey]: `stream|x` is `x`), so both forms are one favourite.
+  static FavoriteCollectionData? tryParse(Object? j) {
+    if (j is! Map || (j['kind'] != 'album' && j['kind'] != 'playlist')) {
+      return null;
+    }
+    final raw = j['key'], kind = j['kind'] as String;
+    if (raw is! String || raw.length > kMaxKeyLength) return null;
+    final key = kind == 'album' ? favoriteAlbumKey(raw) : raw;
+    return key.isEmpty
+        ? null
+        : FavoriteCollectionData(
+            kind: kind,
+            key: key,
+            addedAt: sanePastDate(j['addedAt']),
+          );
+  }
 }
 
 /// A deletion to carry to the other own devices (D-668): [kind] is a `TombstoneKind`, [key] its stable key.
@@ -512,19 +523,28 @@ class TombstoneData {
   /// impossible date (<= 0 or more than [kTombstoneMaxFuture] ahead): it is dropped, the backup still reads.
   static TombstoneData? tryParse(Object? j) {
     if (j is! Map || !kTombstoneKinds.contains(j['kind'])) return null;
-    final kind = j['kind'] as String, key = j['key'], at = _finiteInt(j['deletedAt']);
-    if (key is! String || key.isEmpty || key.length > kMaxKeyLength || at == null) return null;
-    if (at <= 0 || at > nowMs() + kTombstoneMaxFuture.inMilliseconds) return null;
+    final kind = j['kind'] as String,
+        raw = j['key'],
+        at = sanePastDate(j['deletedAt']);
+    if (raw is! String || raw.length > kMaxKeyLength || at == null) return null;
+    final key = kind == TombstoneKind.favoriteAlbum
+        ? favoriteAlbumKey(raw)
+        : raw;
     final ok = switch (kind) {
-      TombstoneKind.favoriteAlbum => !key.startsWith('unknown|'), // not transferable between devices
-      TombstoneKind.savedStream || TombstoneKind.favoriteStream => isStreamKey(key),
-      _ => _uuidRe.hasMatch(key), // playlist, favoritePlaylist
+      TombstoneKind.favoriteAlbum =>
+        key.isNotEmpty &&
+            !key.startsWith('unknown|'), // not transferable between devices
+      TombstoneKind.savedStream ||
+      TombstoneKind.favoriteStream => isStreamKey(key),
+      _ => isUuid(key), // playlist, favoritePlaylist
     };
     return ok ? TombstoneData(kind: kind, key: key, deletedAt: at) : null;
   }
 }
 
 final _uuidRe = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+
+bool isUuid(String s) => _uuidRe.hasMatch(s);
 
 /// Most tombstones read from one backup; the rest is dropped.
 const kMaxTombstones = 20000;

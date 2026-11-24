@@ -61,14 +61,15 @@ class SyncPreviewDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(plan.isEmpty ? l.close : l.cancel),
+          child: Text(plan.toWrite.isEmpty ? l.close : l.cancel),
         ),
         if (canAsk && missing > 0)
           TextButton(
             onPressed: () => Navigator.of(context).pop(SyncDecision.applyAndAsk),
             child: Text(l.syncAskMissing),
           ),
-        if (!plan.isEmpty)
+        // The collections are not shown here yet: a plan with only those has nothing to confirm.
+        if (plan.toWrite.isNotEmpty)
           FilledButton(
             onPressed: () => Navigator.of(context).pop(SyncDecision.apply),
             child: Text(l.apply),

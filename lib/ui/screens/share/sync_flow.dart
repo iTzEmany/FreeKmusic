@@ -19,14 +19,14 @@ Future<void> syncFlow(BuildContext context, WidgetRef ref, TrustedDevice device)
     if (!context.mounted) return;
     final decision = await showSyncPreview(context, plan, canAsk: true);
     if (decision == null) return;
-    await hub.applyPlaylistSync(plan);
+    final written = await hub.applyPlaylistSync(plan);
     if (!context.mounted) return;
     if (decision == SyncDecision.applyAndAsk) {
       final asked = await hub.askMissingTracks(device, plan);
       if (!context.mounted) return;
       showMsg(context, l.syncAsked(asked));
     } else {
-      showMsg(context, l.syncApplied(plan.toWrite.length));
+      showMsg(context, l.syncApplied(written));
     }
   } on SyncException catch (e) {
     AppLog.w('sync failed', e);
