@@ -8591,4 +8591,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareKindTrack => 'Faixa';
+
+  @override
+  String get shareUntitled => 'Sem título';
 }

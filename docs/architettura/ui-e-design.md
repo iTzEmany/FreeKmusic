@@ -44,6 +44,7 @@ Come è fatta la UI (`lib/ui/`): la shell con le schede e il dock, i token di de
 | `EntranceScope`, `EnterOnce`, `RiseIn`, `TabFade` | `motion.dart` | Animazioni d'ingresso dalla scala dei token. |
 | `growRoute` | `grow_route.dart` | Il player che cresce dal mini player. |
 | `ShrinkingHeader`, `CollectionHeader`, `AlphaScroller`, `SelectionBar` | file omonimi | Intestazioni che scorrono, indice alfabetico, barra di selezione. |
+| `ReleaseNotesView`, `ShareCard`, `shareCardMaker` | `release_notes_view.dart`, `share_card.dart`, `share_card_maker.dart` | Le novità di una versione (evidenza, novità, «Correzioni» chiuso, link a GitHub), condivise da `UpdatePage` («Aggiornamento disponibile», foglio a tutto schermo o dialogo a due colonne da `wideBreakpoint`) e `WhatsNewPage` («Aggiornata alla X», una volta dopo l'aggiornamento); la scheda di condivisione (D-712), sempre scura. |
 | `createPlaylistFlow`, `createTagFlow` | `create_flows.dart` | L'unico «crea playlist/tag». |
 | `KaraokeVideoView`, `karaokeVideoBuilderProvider`, `KaraokeVideoFullscreen` | `widgets/karaoke_video_view.dart`, `widgets/karaoke_video_surface.dart`, `screens/now_playing/karaoke_video_fullscreen.dart` | Riquadro 16:9 del brano karaoke al posto di copertina e anello (`_PlayerCover`) e schermo intero. |
 
@@ -61,7 +62,7 @@ La scrittura passa dagli Ops (`lib/providers/*_ops.dart`: `TrackOps`, `PlaylistO
 ### Test che fanno rispettare le regole
 | Test | Regola |
 |---|---|
-| `test/ui/architecture_test.dart` | `lib/ui` non usa `databaseProvider`, `*RepositoryProvider`, `*QueriesProvider` (D-24); niente `PopupMenuButton` né `showMenu(`: i menu sono fogli. |
+| `test/ui/architecture_test.dart` | `lib/ui` non usa `databaseProvider`, `*RepositoryProvider`, `*QueriesProvider` (D-24); niente `PopupMenuButton` né `showMenu(`: i menu sono fogli; `lib/services` non importa `lib/ui` (eccezioni scritte nel test: `app_icon.dart`, `restore_service.dart`). |
 | `test/ui/no_stray_colors_test.dart` | Niente `Color(0x…)` né `Colors.<nome>` fuori da `lib/ui/theme/` (eccezioni: QR in `send_tab.dart` e `jam_remote_sheets.dart`, `color_picker.dart`, `karaoke_video_fullscreen.dart` con lo sfondo nero in ogni tema, `share_card.dart` e `share_card_maker.dart`: la scheda di condivisione è sempre scura, D-712). Il secondo test dice se un'eccezione non serve più. |
 | `test/ui/no_separator_literals_test.dart` | Niente ` · `, `•`, `→`, `▾` nei letterali di `lib/` (fuori da `lib/l10n/` e dai parser di YouTube Music). |
 | `test/ui/widgets_test.dart` | Niente `showModalBottomSheet` fuori da `cc_sheet.dart` e `car_playlists_sheet.dart`. |

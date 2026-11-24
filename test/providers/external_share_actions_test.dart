@@ -36,7 +36,7 @@ void main() {
       await actions(png).share(kind, 'Name', tracks);
       expect(fake.texts, isEmpty);
       expect(fake.files.single, allOf(contains('freekmusic_share'), endsWith('Name.png')));
-      expect(fake.fileTexts.single, buildShareCaption(kind, 'Name', tracks));
+      expect(fake.fileTexts.single, buildShareCaption(kind, 'Name', tracks, untitled: untitledShare));
     });
   }
 

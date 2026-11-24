@@ -17,9 +17,9 @@ SharedRow shareRowOf(Track t) {
 String shareLink(SharedKind kind, String title, List<Track> tracks) =>
     '$kSharePageUrl#${encodeShareFragment(SharedFragment(kind, title, [for (final t in tracks) shareRowOf(t)]))}';
 
-/// The short text sent with the share card: the name and the page link (no link without tracks).
-String buildShareCaption(SharedKind kind, String title, List<Track> tracks) {
-  final name = title.trim().isEmpty ? untitledShare : title;
+/// The short text sent with the share card: the name ([untitled] when it has none) and the page link (no link without tracks).
+String buildShareCaption(SharedKind kind, String title, List<Track> tracks, {required String untitled}) {
+  final name = title.trim().isEmpty ? untitled : title;
   return tracks.isEmpty ? name : '$name\n${shareLink(kind, title, tracks)}';
 }
 

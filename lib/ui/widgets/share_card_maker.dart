@@ -4,23 +4,26 @@ import 'dart:ui' show Color, Locale;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/app_log.dart';
-import '../l10n/app_localizations.dart';
-import '../services/share/external_share_text.dart';
-import '../services/share/share_card_renderer.dart';
-import '../services/share/share_fragment.dart' show SharedKind, untitledShare;
-import '../ui/theme/cover_tint.dart';
-import '../ui/theme/tokens.dart' show CcColors;
-import '../ui/widgets/cover_image.dart';
-import '../ui/widgets/format_utils.dart' show formatDuration;
-import '../ui/widgets/share_card.dart';
-import 'settings_providers.dart';
+import '../../core/app_log.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/share/external_share_text.dart';
+import '../../services/share/share_card_renderer.dart';
+import '../../services/share/share_fragment.dart' show SharedKind;
+import '../theme/cover_tint.dart';
+import '../theme/tokens.dart' show CcColors;
+import 'cover_image.dart';
+import 'format_utils.dart' show formatDuration;
+import 'share_card.dart';
+import '../../providers/settings_providers.dart';
+
+/// The texts of the share in the app's language.
+AppLocalizations shareL10n(Ref ref) => lookupAppLocalizations(Locale(ref.read(settingsProvider).language));
 
 /// The default [ShareCardMaker]: covers and tint from the library, texts in the app's language.
 ShareCardMaker shareCardMaker(
   Ref ref,
 ) => (kind, title, subtitle, tracks) async {
-  final l = lookupAppLocalizations(Locale(ref.read(settingsProvider).language));
+  final l = shareL10n(ref);
   final keys = {for (final t in tracks) ?t.coverKey}
       .take(kind == SharedKind.playlist ? 4 : 1)
       .toList();
@@ -41,6 +44,7 @@ ShareCardMaker shareCardMaker(
   final count = l.tracksCount(tracks.length);
   return renderShareCardPng(
     files,
+    kShareCardSize,
     (images) => ShareCard(
       kind: kind,
       brand: l.appName,
@@ -49,7 +53,7 @@ ShareCardMaker shareCardMaker(
         SharedKind.album => l.kindAlbum,
         SharedKind.playlist => l.kindPlaylist,
       },
-      title: title.trim().isEmpty ? untitledShare : title,
+      title: title.trim().isEmpty ? l.shareUntitled : title,
       subtitle: subtitle,
       meta: kind == SharedKind.track ? (time ?? '') : [count, ?time].join(', '),
       tint: tint == null ? base : heroTint(tint, base),

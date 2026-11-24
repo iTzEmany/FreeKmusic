@@ -38,9 +38,10 @@ Codice: `UpdateDialog`, `updateSnackBar`, `updateTiles` (`lib/ui/screens/setting
   - Fatto quando: esito scritto qui sotto.
 
 ## Tocca a te
-- [ ] Prima del tag della prossima versione: scrivere (o approvare) `release-notes/<versione>.md`.
+- [ ] Prima del tag della prossima versione: scrivere (o approvare) `release-notes/<versione>.md`, nella stessa PR del bump di versione (lo esige `test/core/app_version_test.dart`; senza il file il job `notes` fa fallire il tag).
 
 ## Note di deviazione
 - 149.2: l'evidenza ha un'icona grande in un riquadro, non un'illustrazione.
+- 149.2: il pulsante dice «Aggiorna (N MB)», non «Aggiorna · N MB» (guardia dei separatori).
 - 149.3: la pagina si decide una volta; se il file delle novità manca (build di sviluppo) non compare.
 - 149.3: il tile «Novità della versione» sta con gli aggiornamenti e sparisce senza repository delle release; note dagli asset (D-741), non da GitHub.

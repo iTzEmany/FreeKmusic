@@ -8580,4 +8580,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get shareKindTrack => 'Brano';
+
+  @override
+  String get shareUntitled => 'Senza titolo';
 }

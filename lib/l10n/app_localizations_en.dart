@@ -8553,4 +8553,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareKindTrack => 'Track';
+
+  @override
+  String get shareUntitled => 'Untitled';
 }

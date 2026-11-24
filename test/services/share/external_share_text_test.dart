@@ -134,7 +134,7 @@ void main() {
   });
 
   test('buildShareCaption with a whitespace-only title uses the fallback', () {
-    expect(buildShareCaption(SharedKind.playlist, '   ', [_t(1)]).split('\n').first, untitledShare);
+    expect(buildShareCaption(SharedKind.playlist, '   ', [_t(1)], untitled: untitledShare).split('\n').first, untitledShare);
   });
 
   test('m3u8: duration 0 is -1, and newlines in names cannot start a foreign line', () {

@@ -8651,4 +8651,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shareKindTrack => 'Titre';
+
+  @override
+  String get shareUntitled => 'Sans titre';
 }

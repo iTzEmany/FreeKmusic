@@ -40,14 +40,14 @@ void main() {
   });
 
   testWidgets('the real render gives a 1080 x 1350 PNG', (tester) async {
-    final png = await tester.runAsync(() => renderShareCardPng(const [], (i) => _shareCard(null, i)));
+    final png = await tester.runAsync(() => renderShareCardPng(const [], kShareCardSize, (i) => _shareCard(null, i)));
     final img = await tester.runAsync(() async => (await (await ui.instantiateImageCodec(png!)).getNextFrame()).image);
     expect((img!.width, img.height), (1080, 1350));
   });
 
   testWidgets('a card slower than the timeout throws a TimeoutException', (tester) async {
     await tester.runAsync(
-      () => expectLater(renderShareCardPng(const [], (i) => _shareCard(null, i), timeout: Duration.zero), throwsA(isA<TimeoutException>())),
+      () => expectLater(renderShareCardPng(const [], kShareCardSize, (i) => _shareCard(null, i), timeout: Duration.zero), throwsA(isA<TimeoutException>())),
     );
   });
 
@@ -78,11 +78,11 @@ Track _t(int i, {String? title, String? artist, bool stream = true}) => Track(
 
 void links() {
   test('caption: the name and the page link, nothing else', () {
-    final lines = buildShareCaption(SharedKind.playlist, 'Mix', [_t(1), _t(2)]).split('\n');
+    final lines = buildShareCaption(SharedKind.playlist, 'Mix', [_t(1), _t(2)], untitled: untitledShare).split('\n');
     expect(lines.length, 2);
     expect(lines[0], 'Mix');
     expect(lines[1], shareLink(SharedKind.playlist, 'Mix', [_t(1), _t(2)]));
-    expect(buildShareCaption(SharedKind.playlist, 'Mix', const []), 'Mix');
+    expect(buildShareCaption(SharedKind.playlist, 'Mix', const [], untitled: untitledShare), 'Mix');
   });
 
   test('QR link: the page link when it fits, none above the limit or without tracks', () {

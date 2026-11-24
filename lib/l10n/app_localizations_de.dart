@@ -8617,4 +8617,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareKindTrack => 'Titel';
+
+  @override
+  String get shareUntitled => 'Ohne Titel';
 }

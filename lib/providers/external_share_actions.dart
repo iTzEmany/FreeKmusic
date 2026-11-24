@@ -16,16 +16,19 @@ import '../services/share/share_card_renderer.dart';
 import '../services/share/share_fragment.dart';
 import '../services/share/share_m3u8.dart';
 import 'external_share_provider.dart';
-import 'share_card_maker.dart';
+import '../ui/widgets/share_card_maker.dart';
 import 'youtube_providers.dart' show downloadIndexProvider;
 
 /// «Condividi» (D-677): the system share sheet with readable text and links, or an m3u8 above the limit (D-702).
 class ExternalShareActions {
-  ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles, this.cardMaker, this.downloadedId})
+  ExternalShareActions(this._share, this._tempDir, {bool? canShareFiles, this.cardMaker, this.downloadedId, this.untitled})
     : _canShareFiles = canShareFiles ?? !Platform.isLinux;
 
-  /// Draws the share card (D-713); null, or a failure, shares the text instead.
+  /// Draws the share card (D-712); null, or a failure, shares the text instead.
   final ShareCardMaker? cardMaker;
+
+  /// The name of a share with no title, in the app's language (the caption); null: the fragment's own.
+  final String Function()? untitled;
 
   /// The video id a file was downloaded from (the download index): for files saved before the id was kept on the row.
   final Future<String?> Function(String path)? downloadedId;
@@ -57,7 +60,7 @@ class ExternalShareActions {
         text = buildShareText(kind, title, tracks, subtitle: subtitle);
         final png = _canShareFiles ? await _card(kind, title, subtitle, tracks) : null;
         if (png != null) {
-          await _share.shareFile(png.path, text: buildShareCaption(kind, title, tracks), origin: origin);
+          await _share.shareFile(png.path, text: buildShareCaption(kind, title, tracks, untitled: untitled?.call() ?? untitledShare), origin: origin);
         } else {
           await _share.shareText(text, subject: title, origin: origin);
         }
@@ -109,6 +112,7 @@ final externalShareActionsProvider = Provider<ExternalShareActions>(
     ref.watch(externalShareProvider),
     getTemporaryDirectory,
     cardMaker: shareCardMaker(ref),
+    untitled: () => shareL10n(ref).shareUntitled,
     downloadedId: (path) async => (await ref.read(downloadIndexProvider.future)).idForPath(path),
   ),
 );

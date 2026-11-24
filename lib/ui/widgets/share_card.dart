@@ -8,7 +8,7 @@ import '../theme/tokens.dart';
 
 const kShareCardSize = Size(1080, 1350);
 
-/// The picture shared for a track, album or playlist (D-713): always dark, drawn off screen at
+/// The picture shared for a track, album or playlist (D-712): always dark, drawn off screen at
 /// 1080 x 1350, so it uses the fixed `notte` colours and not the theme of the screen.
 /// [covers] are decoded already (up to 4: the playlist mosaic); [qrLink] is null when the QR is left out.
 class ShareCard extends StatelessWidget {

@@ -8,7 +8,6 @@ import 'package:path/path.dart' as p;
 
 import '../../core/text_utils.dart' show sanitizeFileName;
 import '../../data/db/app_database.dart' show Track;
-import '../../ui/widgets/share_card.dart';
 import 'share_fragment.dart' show SharedKind;
 
 /// Makes the share card PNG of a track, album or playlist; throws when it cannot (the caller shares text then).
@@ -18,14 +17,15 @@ typedef ShareCardMaker = Future<Uint8List> Function(SharedKind kind, String titl
 const kShareCardTimeout = Duration(seconds: 4);
 
 /// Decodes [covers] first (no card with holes), then draws the card built by [card] off screen
-/// at 1080 x 1350 and encodes it as PNG. Decoding and encoding run in the engine's own threads.
+/// at [size] and encodes it as PNG. Decoding and encoding run in the engine's own threads.
 Future<Uint8List> renderShareCardPng(
   List<File> covers,
-  ShareCard Function(List<ui.Image> images) card, {
+  Size size,
+  Widget Function(List<ui.Image> images) card, {
   Duration timeout = kShareCardTimeout,
-}) => _render(covers, card).timeout(timeout);
+}) => _render(covers, size, card).timeout(timeout);
 
-Future<Uint8List> _render(List<File> covers, ShareCard Function(List<ui.Image>) card) async {
+Future<Uint8List> _render(List<File> covers, Size size, Widget Function(List<ui.Image>) card) async {
   final images = <ui.Image>[];
   ui.Image? out;
   // What the finally below takes down (nothing may stay hooked to the engine or the focus system).
@@ -45,7 +45,7 @@ Future<Uint8List> _render(List<File> covers, ShareCard Function(List<ui.Image>) 
     boundary = repaint;
     final v = RenderView(
       view: ui.PlatformDispatcher.instance.views.first,
-      configuration: ViewConfiguration(logicalConstraints: BoxConstraints.tight(kShareCardSize)),
+      configuration: ViewConfiguration(logicalConstraints: BoxConstraints.tight(size)),
       child: RenderPositionedBox(child: repaint),
     );
     view = v;

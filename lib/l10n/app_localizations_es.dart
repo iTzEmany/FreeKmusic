@@ -8607,4 +8607,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareKindTrack => 'Canción';
+
+  @override
+  String get shareUntitled => 'Sin título';
 }

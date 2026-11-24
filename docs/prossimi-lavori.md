@@ -45,6 +45,15 @@ Rinvii di codice delle review e delle schegge, per area; ogni voce rimanda alla 
 - **Menu ⋮**: un `shortcut:` sul perché l'host è statico (deve stare sotto il Navigator di radice) ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
 - **m3u8 e pagina**: cancellare l'm3u8 a fine condivisione; su desktop negli appunti il testo leggibile e non `#EXTM3U`; CSP della pagina senza `unsafe-inline` (script in `main.js`); in `IncomingBridge.kt` controllo del percorso e un tetto a `pendingTexts` ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
 - **Brano singolo da link senza rete**: Cerca mostra tre messaggi di rete e resta in errore finché non si preme Riprova ([fase 145](storico/fasi/fase-145-condivisione-esterna.md)).
+- `share()` calcola il link una volta e lo passa. (fase 149, review di architettura)
+- Helper `ytMusicWatchUrl` e riuso di `youtubeMusicSearchUri`. (fase 149, review di architettura)
+- `toM3u8` con `urlOf` al posto di `shareM3u8Body`, `_clip` con `oneLine`. (fase 149, review di architettura)
+- Riempire `tracks.video_id` dall'indice dei download una volta e togliere `downloadedId`. (fase 149, review di architettura)
+- Icone delle novità in una sola fonte. (fase 149, review di architettura)
+- `showAdaptivePage` comune e URL della release da una funzione. (fase 149, review di architettura)
+- `WhatsNew` restituisce `(version, url, ReleaseNotes)`. (fase 149, review di architettura)
+- La snackbar d'aggiornamento resta persa per quel giorno se si apre la pagina novità. (fase 149, review di architettura)
+- Negli asset solo i `*.md` di versione. (fase 149, review di architettura)
 
 ### Sync, backup e Jam
 - **Parità al millisecondo**: due modifiche della stessa playlist con lo stesso `updatedAt` su due dispositivi non convergono (1 caso su 300 nel fuzz a passo 0): spareggio deterministico, per esempio l'uuid del dispositivo ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).

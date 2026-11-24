@@ -13392,6 +13392,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Brano'**
   String get shareKindTrack;
+
+  /// No description provided for @shareUntitled.
+  ///
+  /// In it, this message translates to:
+  /// **'Senza titolo'**
+  String get shareUntitled;
 }
 
 class _AppLocalizationsDelegate
