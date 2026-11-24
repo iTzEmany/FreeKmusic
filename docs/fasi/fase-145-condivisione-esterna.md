@@ -17,7 +17,7 @@ D-677, D-669, D-670, D-691 (stesso spirito per i servizi esterni), D-662, D-699.
   - Passi: 1) `encode(items)`/`decode(fragment)` puri; 2) circa 13 caratteri per brano (100 brani ≈ 1,3 KB); 3) test di andata e ritorno e con input malformato (nessuna eccezione non gestita, errore tipizzato).
   - Comando mirato: `flutter test test/services/share/share_fragment_test.dart`
   - Fatto quando: andata e ritorno per 1, 50 e 100 brani; frammento corrotto → errore gestito.
-- [ ] 145.3 Proposta all'utente: pagina statica e limite di brani (D-669) — **chiedere prima, non decidere**
+- [x] 145.3 Proposta all'utente: pagina statica e limite di brani (D-669) — **chiedere prima, non decidere**
   - File: nessuno da scrivere.
   - Passi: 1) scrivere all'utente (testo nel terminale, opzioni numerate): (a) dove vive la pagina: cartella `site/` o `docs/` di questo repo servita da GitHub Pages, oppure un repo a parte; (b) l'indirizzo (`<utente>.github.io/...`, quindi anche il dominio dell'App Link); (c) il limite di brani oltre il quale si passa al file m3u8 (la ricerca indica 50-100; lunghezza massima degli URL su WhatsApp non verificata); 2) registrare la risposta in `../decisioni.md` come D-xxx; 3) 145.4 e 145.7 aspettano la risposta.
   - Comando mirato: `python3 scripts/check_docs_links.py`
