@@ -150,9 +150,8 @@ class TrackDeleter {
     for (final row in ids) {
       final id = row.read<int>('id');
       final imports = await (db.select(db.playlistImports)..where((i) => i.playlistId.equals(id))).get();
-      await (db.delete(db.playlistImports)..where((i) => i.playlistId.equals(id))).go();
       await forgetImportDownloadToo(await SharedPreferences.getInstance(), [for (final i in imports) i.id]);
-      await PlaylistRepository(db).delete(id);
+      await PlaylistRepository(db).delete(id); // its import rows go by cascade, after the delete has seen it is hidden
     }
   }
 

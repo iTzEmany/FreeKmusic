@@ -62,11 +62,13 @@ class PlaylistRepository {
 
   Future<void> delete(int id) => _db.transaction(() async {
         final uuid = await uuidOf(id);
+        // A hidden «Scarica album» playlist never travels: no tombstone (checked before the cascade drops its import row).
+        final visible = await (_db.select(_db.playlists)..where((p) => p.id.equals(id) & _db.isPlaylistVisible(p))).getSingleOrNull() != null;
         if (uuid != null) {
           await FavoriteCollectionsRepository(_db).remove(FavoriteCollectionsRepository.playlist, uuid);
         }
         final n = await (_db.delete(_db.playlists)..where((p) => p.id.equals(id))).go();
-        if (uuid != null && n > 0) await SyncTombstoneRepository(_db).record(TombstoneKind.playlist, uuid);
+        if (visible && uuid != null && n > 0) await SyncTombstoneRepository(_db).record(TombstoneKind.playlist, uuid);
       });
 
   /// Ids of the playlists that already hold every one of [trackIds].

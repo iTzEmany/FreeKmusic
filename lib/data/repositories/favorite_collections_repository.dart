@@ -53,13 +53,7 @@ class FavoriteCollectionsRepository {
       variables: [Variable(n), const Variable(album), Variable(o), Variable(o), Variable('$_streamPrefix$o')],
       updates: {_db.favoriteCollections},
     );
-    // Both albums were favourites: the ignored update left the old key behind. No tombstone, the album lives on.
-    await _db.customUpdate(
-      'DELETE FROM favorite_collections WHERE kind = ? AND key = ? '
-      'AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_key IN (?, ?) AND missing = 0 AND ignored = 0 AND ${libraryRowSql()})',
-      variables: [const Variable(album), Variable(o), Variable(o), Variable('$_streamPrefix$o')],
-      updates: {_db.favoriteCollections},
-    );
+    // shortcut: when both albums were favourites the old row stays (orphan, filtered on read): deleting it lost the heart on undo.
   }
 
   /// Removing a favourite leaves a tombstone in the same transaction (not for `unknown|` album keys).

@@ -1,6 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
+import 'package:codecore/data/repositories/sync_tombstone_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/share/playlist_sync.dart';
@@ -86,7 +87,9 @@ void main() {
     expect(plan.toAdd, hasLength(1));
     expect(plan.missing.map((t) => t.title), ['c']);
 
+    await SyncTombstoneRepository(pc.db).record('playlist', plan.toAdd.single.remote.uuid);
     await pc.sync.apply(plan);
+    expect(await SyncTombstoneRepository(pc.db).all(), isEmpty, reason: 'an added playlist is back: its tombstone goes');
     expect(await pc.titlesOf('Road'), ['a', 'b']);
     final mine = (await pc.sync.local()).single;
     final theirs = (await phone.sync.local()).single;

@@ -155,6 +155,7 @@ class TrackEditor {
     final al = _blankToNull(album);
     final aa = _blankToNull(albumArtist);
     final repo = TrackRepository(_db);
+    final favs = FavoriteCollectionsRepository(_db);
     await _db.transaction(() async {
       // A hand-picked album cover travels with [cover]; a hand-picked track one never changes.
       final pick = cover?.coverKey;
@@ -173,8 +174,7 @@ class TrackEditor {
             coverSource: withCover ? Value(source) : const Value.absent(),
           ),
         );
-        await FavoriteCollectionsRepository(_db)
-            .followAlbumKey(t.albumKey, key);
+        await favs.followAlbumKey(t.albumKey, key);
         if (cover == null) await repo.settleMovedCover(t, key);
       }
     });

@@ -156,7 +156,7 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - **Nuovo file grande verso l'utente**: `saveFileAt`, mai `Uint8List` sul canale.
 
 ## Trappole
-- **Tombstone** (146.4): nascono solo nei repository (vedi `libreria-e-dati.md`), mai per file né per righe locali (kind 0); l'unica eccezione all'invariante «il sync non cancella» è D-668, e solo fra dispositivi «miei». `backup_merge` ricrea le playlist con il loro uuid senza toglierne il tombstone (i preferiti sì, via `add`): lo decide `planSync` (146.5) con le date.
+- **Tombstone** (146.4): nascono solo nei repository (vedi `libreria-e-dati.md`), mai per file né per righe locali (kind 0); l'unica eccezione all'invariante «il sync non cancella» è D-668, e solo fra dispositivi «miei». `backup_merge` toglie il tombstone di ciò che rimette: playlist ricreate con il loro uuid, cuori di collezione (`add`) e cuori dei brani (`setFavoriteMany`: data `favorited_at` e tombstone `favoriteStream`). Il confronto con le date resta a `planSync` (146.5). Una playlist nascosta di «Scarica album» non lascia tombstone.
 - **Le chiavi degli stream ricevute in LAN sono input non fidato** (fase 140): `StreamOffer.tryParse` le valida con `isStreamKey` prima che finiscano nell'URL di yt-dlp o nel nome di un file.
 - **`SystemNavigator.pop()` non chiude il processo** su Android (chiude solo l'Activity): un ripristino preparato non si applica finché il processo vive. Per ripartire davvero c'è `AppRestart` (fase 137).
 - **Ucciso a metà scrittura, SQLite lascia un `-journal` caldo** (il DB è in `journal_mode` DELETE): se resta accanto a un DB diverso, al prossimo avvio viene applicato a quello. Va spostato insieme al file a cui appartiene.
