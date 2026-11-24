@@ -13386,6 +13386,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'nuova'**
   String get updateNew;
+
+  /// No description provided for @shareKindTrack.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano'**
+  String get shareKindTrack;
 }
 
 class _AppLocalizationsDelegate

@@ -8,6 +8,7 @@ import 'package:codecore/services/share/external_share.dart';
 class FakeShare implements ExternalShare {
   final texts = <String>[];
   final files = <String>[];
+  final fileTexts = <String?>[];
   final origins = <Rect?>[];
   String? fileBody;
   Object? error;
@@ -24,6 +25,7 @@ class FakeShare implements ExternalShare {
   @override
   Future<void> shareFile(String path, {String? text, Rect? origin}) async {
     files.add(path);
+    fileTexts.add(text);
     fileBody = File(path).readAsStringSync();
     origins.add(origin);
     await gate?.future;

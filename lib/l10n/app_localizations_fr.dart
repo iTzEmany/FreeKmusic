@@ -8648,4 +8648,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get updateNew => 'nouvelle';
+
+  @override
+  String get shareKindTrack => 'Titre';
 }

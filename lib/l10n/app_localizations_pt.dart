@@ -8588,4 +8588,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get updateNew => 'nova';
+
+  @override
+  String get shareKindTrack => 'Faixa';
 }

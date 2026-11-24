@@ -8604,4 +8604,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get updateNew => 'nueva';
+
+  @override
+  String get shareKindTrack => 'Canción';
 }

@@ -8614,4 +8614,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get updateNew => 'neu';
+
+  @override
+  String get shareKindTrack => 'Titel';
 }

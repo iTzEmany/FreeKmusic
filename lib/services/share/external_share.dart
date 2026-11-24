@@ -34,7 +34,7 @@ class SharePlusExternalShare implements ExternalShare {
   @override
   Future<void> shareFile(String path, {String? text, Rect? origin}) => _share(
     ShareParams(
-      files: [XFile(path, mimeType: 'audio/x-mpegurl')],
+      files: [XFile(path, mimeType: path.endsWith('.png') ? 'image/png' : 'audio/x-mpegurl')],
       text: text,
       sharePositionOrigin: origin,
     ),

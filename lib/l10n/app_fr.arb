@@ -4409,5 +4409,6 @@
   "whatsNewStart": "Commencer",
   "whatsNewTile": "Nouveautés de la version",
   "updateNews": "Nouveautés",
-  "updateNew": "nouvelle"
+  "updateNew": "nouvelle",
+  "shareKindTrack": "Titre"
 }

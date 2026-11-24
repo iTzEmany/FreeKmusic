@@ -8550,4 +8550,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get updateNew => 'new';
+
+  @override
+  String get shareKindTrack => 'Track';
 }

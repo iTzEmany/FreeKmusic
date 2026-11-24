@@ -8577,4 +8577,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get updateNew => 'nuova';
+
+  @override
+  String get shareKindTrack => 'Brano';
 }
