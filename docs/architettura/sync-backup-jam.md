@@ -18,7 +18,7 @@ Tutto ciò che parla con altri dispositivi o esce dal dispositivo: condivisione 
 | `pairing.dart` | `PairingServer`, `PairRequest`, `PairState` | Lato che mostra il PIN. Tre passi: `/pair/request`, `/pair/confirm`, `/pair/status`. |
 | `pairing_client.dart` | `PairingClient`, `PairedPeer` | Lato che digita il PIN. |
 | `request_signing.dart` | `signRequest` e `verifyRequest`, `kCertHeader`, `kTimeHeader`, `kSigHeader` | Firma di ogni richiesta fidata (`timestamp, metodo, percorso, SHA-256(corpo)`). |
-| `trusted_devices.dart` | `TrustedDevices`, `TrustedDevice`, `formatFingerprint` | Elenco immutabile dei fidati, confronto di impronte normalizzate. |
+| `trusted_devices.dart` | `TrustedDevices`, `TrustedDevice`, `formatFingerprint` | Elenco immutabile dei fidati, confronto di impronte normalizzate. `TrustedDevice.mine`: relazione «dispositivo mio» (D-668), scelta dall'utente nelle Impostazioni, falsa per i dati salvati prima; `myDevicesProvider` li elenca. Le cancellazioni (tombstone) viaggiano solo verso e da questi. |
 | `sync_routes.dart` | `buildSyncRouter`, `TrackRequest` | Rotte `/sync/playlists` e `/sync/want`, solo HTTPS e solo per un firmatario fidato. |
 | `sync_client.dart` | `SyncClient`, `SyncError` | Lato che avvia il sync. Sempre HTTPS, firmato, impronta fissata. |
 | `playlist_sync.dart` | `planSync`, `SyncPlan`, `SyncAction` | Piano puro: decide per `uuid` cosa aggiungere o sostituire. |

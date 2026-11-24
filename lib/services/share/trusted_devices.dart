@@ -11,6 +11,7 @@ class TrustedDevice {
     required this.fingerprint,
     required this.pairedAt,
     this.autoAccept = false,
+    this.mine = false,
   });
 
   /// The other device's `deviceId`.
@@ -26,13 +27,17 @@ class TrustedDevice {
   /// Receive from it without asking (off unless the user turns it on).
   final bool autoAccept;
 
-  TrustedDevice copyWith({String? name, String? fingerprint, bool? autoAccept}) =>
+  /// One of the user's own devices (D-668): deletions travel only between these.
+  final bool mine;
+
+  TrustedDevice copyWith({String? name, String? fingerprint, bool? autoAccept, bool? mine}) =>
       TrustedDevice(
         id: id,
         name: name ?? this.name,
         fingerprint: fingerprint ?? this.fingerprint,
         pairedAt: pairedAt,
         autoAccept: autoAccept ?? this.autoAccept,
+        mine: mine ?? this.mine,
       );
 
   Map<String, Object?> toJson() => {
@@ -41,6 +46,7 @@ class TrustedDevice {
         'fingerprint': fingerprint,
         'pairedAt': pairedAt,
         'autoAccept': autoAccept,
+        'mine': mine,
       };
 
   static TrustedDevice? fromJson(Object? j) {
@@ -53,6 +59,7 @@ class TrustedDevice {
       fingerprint: fp,
       pairedAt: (j['pairedAt'] as num?)?.toInt() ?? 0,
       autoAccept: j['autoAccept'] == true,
+      mine: j['mine'] == true,
     );
   }
 }
@@ -93,7 +100,7 @@ class TrustedDevices {
     return TrustedDevices([
       for (final d in _byId.values)
         if (d.id != device.id) d,
-      old == null ? device : device.copyWith(autoAccept: old.autoAccept),
+      old == null ? device : device.copyWith(autoAccept: old.autoAccept, mine: old.mine),
     ]);
   }
 
@@ -102,6 +109,10 @@ class TrustedDevices {
 
   TrustedDevices setAutoAccept(String id, bool value) => TrustedDevices([
         for (final d in _byId.values) d.id == id ? d.copyWith(autoAccept: value) : d,
+      ]);
+
+  TrustedDevices setMine(String id, bool value) => TrustedDevices([
+        for (final d in _byId.values) d.id == id ? d.copyWith(mine: value) : d,
       ]);
 
   /// True only for a known device presenting the fingerprint saved for it. The

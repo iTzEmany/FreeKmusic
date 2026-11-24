@@ -5806,6 +5806,18 @@ abstract class AppLocalizations {
   /// **'Ricevi i brani da questo dispositivo senza chiedere.'**
   String get trustedAutoAcceptHint;
 
+  /// No description provided for @trustedMine.
+  ///
+  /// In it, this message translates to:
+  /// **'Mio dispositivo'**
+  String get trustedMine;
+
+  /// No description provided for @trustedMineHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Le cancellazioni di playlist, preferiti e brani salvati viaggiano solo fra i dispositivi miei. I file sul disco non si cancellano mai.'**
+  String get trustedMineHint;
+
   /// No description provided for @trustedRevoke.
   ///
   /// In it, this message translates to:

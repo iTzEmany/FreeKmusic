@@ -3713,6 +3713,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Receive tracks from this device without asking.';
 
   @override
+  String get trustedMine => 'My device';
+
+  @override
+  String get trustedMineHint =>
+      'Deletions of playlists, favorites and saved tracks travel only between my devices. Files on disk are never deleted.';
+
+  @override
   String get trustedRevoke => 'Revoke';
 
   @override

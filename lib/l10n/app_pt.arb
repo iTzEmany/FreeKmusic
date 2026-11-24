@@ -2175,6 +2175,8 @@
   },
   "trustedAutoAccept": "Aceitar automaticamente",
   "trustedAutoAcceptHint": "Receber faixas deste dispositivo sem perguntar.",
+  "trustedMine": "Meu dispositivo",
+  "trustedMineHint": "As exclusões de playlists, favoritos e faixas guardadas só viajam entre os meus dispositivos. Os ficheiros no disco nunca são apagados.",
   "trustedRevoke": "Revogar",
   "trustedRevokeTitle": "Revogar «{name}»?",
   "@trustedRevokeTitle": {

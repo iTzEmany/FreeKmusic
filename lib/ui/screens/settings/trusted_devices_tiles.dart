@@ -60,6 +60,12 @@ class _DeviceTile extends ConsumerWidget {
           onChanged: (v) =>
               ref.read(trustedDevicesProvider.notifier).setAutoAccept(device.id, v),
         ),
+        SwitchListTile(
+          title: Text(l.trustedMine),
+          subtitle: Text(l.trustedMineHint),
+          value: device.mine,
+          onChanged: (v) => ref.read(trustedDevicesProvider.notifier).setMine(device.id, v),
+        ),
         ListTile(
           leading: const Icon(Icons.sync_rounded),
           title: Text(l.syncDevice),

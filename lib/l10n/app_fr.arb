@@ -2175,6 +2175,8 @@
   },
   "trustedAutoAccept": "Accepter automatiquement",
   "trustedAutoAcceptHint": "Recevoir les titres de cet appareil sans demander.",
+  "trustedMine": "Mon appareil",
+  "trustedMineHint": "Les suppressions de playlists, de favoris et de titres enregistrés ne circulent qu’entre mes appareils. Les fichiers sur le disque ne sont jamais supprimés.",
   "trustedRevoke": "Révoquer",
   "trustedRevokeTitle": "Révoquer « {name} » ?",
   "@trustedRevokeTitle": {

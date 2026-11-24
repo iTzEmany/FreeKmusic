@@ -2017,6 +2017,8 @@
   },
   "trustedAutoAccept": "Aceptar automáticamente",
   "trustedAutoAcceptHint": "Recibe canciones de este dispositivo sin preguntar.",
+  "trustedMine": "Mi dispositivo",
+  "trustedMineHint": "Las eliminaciones de listas, favoritos y canciones guardadas viajan solo entre mis dispositivos. Los archivos del disco nunca se borran.",
   "trustedRevoke": "Revocar",
   "trustedRevokeTitle": "¿Revocar «{name}»?",
   "@trustedRevokeTitle": {

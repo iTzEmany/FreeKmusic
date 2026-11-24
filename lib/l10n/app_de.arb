@@ -2017,6 +2017,8 @@
   },
   "trustedAutoAccept": "Automatisch annehmen",
   "trustedAutoAcceptHint": "Titel von diesem Gerät ohne Nachfrage empfangen.",
+  "trustedMine": "Mein Gerät",
+  "trustedMineHint": "Löschungen von Playlists, Favoriten und gespeicherten Titeln werden nur zwischen meinen Geräten übertragen. Dateien auf dem Speicher werden nie gelöscht.",
   "trustedRevoke": "Widerrufen",
   "trustedRevokeTitle": "„{name}“ widerrufen?",
   "@trustedRevokeTitle": {

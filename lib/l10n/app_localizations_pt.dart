@@ -3723,6 +3723,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Receber faixas deste dispositivo sem perguntar.';
 
   @override
+  String get trustedMine => 'Meu dispositivo';
+
+  @override
+  String get trustedMineHint =>
+      'As exclusões de playlists, favoritos e faixas guardadas só viajam entre os meus dispositivos. Os ficheiros no disco nunca são apagados.';
+
+  @override
   String get trustedRevoke => 'Revogar';
 
   @override

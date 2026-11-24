@@ -2017,6 +2017,8 @@
   },
   "trustedAutoAccept": "Accept automatically",
   "trustedAutoAcceptHint": "Receive tracks from this device without asking.",
+  "trustedMine": "My device",
+  "trustedMineHint": "Deletions of playlists, favorites and saved tracks travel only between my devices. Files on disk are never deleted.",
   "trustedRevoke": "Revoke",
   "trustedRevokeTitle": "Revoke “{name}”?",
   "@trustedRevokeTitle": {

@@ -166,10 +166,17 @@ class TrustedDevicesNotifier extends Notifier<TrustedDevices> {
   void revoke(String id) => _set(state.revoke(id));
 
   void setAutoAccept(String id, bool value) => _set(state.setAutoAccept(id, value));
+
+  void setMine(String id, bool value) => _set(state.setMine(id, value));
 }
 
 final trustedDevicesProvider =
     NotifierProvider<TrustedDevicesNotifier, TrustedDevices>(TrustedDevicesNotifier.new);
+
+/// The paired devices the user marked as their own (D-668).
+final myDevicesProvider = Provider<List<TrustedDevice>>(
+  (ref) => [for (final d in ref.watch(trustedDevicesProvider).all) if (d.mine) d],
+);
 
 /// This device's identity (made on first use); null if it could not be made.
 final ownIdentityProvider = FutureProvider<DeviceIdentity?>((ref) async {

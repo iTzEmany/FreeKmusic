@@ -2378,6 +2378,8 @@
   },
   "trustedAutoAccept": "Accetta automaticamente",
   "trustedAutoAcceptHint": "Ricevi i brani da questo dispositivo senza chiedere.",
+  "trustedMine": "Mio dispositivo",
+  "trustedMineHint": "Le cancellazioni di playlist, preferiti e brani salvati viaggiano solo fra i dispositivi miei. I file sul disco non si cancellano mai.",
   "trustedRevoke": "Revoca",
   "trustedRevokeTitle": "Revocare «{name}»?",
   "@trustedRevokeTitle": {

@@ -43,6 +43,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(TrustedDevices.decode(h.store.readTrustedDevicesRaw()).byId('pc')!.autoAccept, isTrue);
 
+    await tester.tap(find.text('Mio dispositivo'));
+    await tester.pumpAndSettle();
+    expect(TrustedDevices.decode(h.store.readTrustedDevicesRaw()).byId('pc')!.mine, isTrue);
+
     await tester.ensureVisible(find.text('Revoca'));
     await tester.tap(find.text('Revoca'));
     await tester.pumpAndSettle();

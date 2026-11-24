@@ -4,6 +4,7 @@ import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/services/online/youtube_service.dart'
     show AudioQuality, DownloadFormat;
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -445,13 +446,17 @@ void streamCacheSettingTests() {
     },
   );
 
-  test('karaokeOn is written at once, not after the 400 ms debounce', () async {
+  test('an update followed by the app leaving the foreground is written at once', () async {
+    TestWidgetsFlutterBinding.ensureInitialized();
     SharedPreferences.setMockInitialValues({});
     final store = await SettingsStore.open();
     final c = ProviderContainer(overrides: [settingsStoreProvider.overrideWithValue(store)]);
     addTearDown(c.dispose);
-    c.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeOn: true));
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(karaokeOn: true, streamCacheMb: 2048));
+    TestWidgetsFlutterBinding.ensureInitialized().handleAppLifecycleStateChanged(AppLifecycleState.paused);
     await Future<void>.delayed(Duration.zero);
-    expect((await SettingsStore.open()).readSettings().karaokeOn, isTrue);
+    final saved = (await SettingsStore.open()).readSettings();
+    expect(saved.karaokeOn, isTrue);
+    expect(saved.streamCacheMb, 2048);
   });
 }

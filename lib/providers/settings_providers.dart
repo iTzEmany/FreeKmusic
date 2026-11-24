@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart' show AppLifecycleListener, AppLifecycleState;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_log.dart';
@@ -15,7 +16,19 @@ class SettingsNotifier extends Notifier<AppSettings> {
 
   @override
   AppSettings build() {
-    ref.onDispose(() => _debounce?.cancel());
+    // A pending write would be lost if the app is closed: flush it when it leaves the foreground (D-664).
+    final life = AppLifecycleListener(
+      onStateChange: (s) {
+        if ((s == AppLifecycleState.paused || s == AppLifecycleState.detached) && _debounce?.isActive == true) {
+          _debounce!.cancel();
+          _save();
+        }
+      },
+    );
+    ref.onDispose(() {
+      life.dispose();
+      _debounce?.cancel();
+    });
     return ref.read(settingsStoreProvider).readSettings();
   }
 
@@ -31,19 +44,17 @@ class SettingsNotifier extends Notifier<AppSettings> {
         AppLog.w('save settings failed', e, st);
       });
     }
-    void save() {
-      ref.read(settingsStoreProvider).writeSettings(state).catchError((
-        Object e,
-        StackTrace st,
-      ) {
-        AppLog.w('save settings failed', e, st);
-      });
-    }
-
     _debounce?.cancel();
-    // karaokeOn is saved at once: a debounced write is lost when the app is closed (D-664).
-    if (before.karaokeOn != state.karaokeOn) return save();
-    _debounce = Timer(const Duration(milliseconds: 400), save);
+    _debounce = Timer(const Duration(milliseconds: 400), _save);
+  }
+
+  void _save() {
+    ref.read(settingsStoreProvider).writeSettings(state).catchError((
+      Object e,
+      StackTrace st,
+    ) {
+      AppLog.w('save settings failed', e, st);
+    });
   }
 }
 

@@ -3755,6 +3755,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Recevoir les titres de cet appareil sans demander.';
 
   @override
+  String get trustedMine => 'Mon appareil';
+
+  @override
+  String get trustedMineHint =>
+      'Les suppressions de playlists, de favoris et de titres enregistrés ne circulent qu’entre mes appareils. Les fichiers sur le disque ne sont jamais supprimés.';
+
+  @override
   String get trustedRevoke => 'Révoquer';
 
   @override

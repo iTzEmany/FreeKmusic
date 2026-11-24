@@ -3716,6 +3716,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ricevi i brani da questo dispositivo senza chiedere.';
 
   @override
+  String get trustedMine => 'Mio dispositivo';
+
+  @override
+  String get trustedMineHint =>
+      'Le cancellazioni di playlist, preferiti e brani salvati viaggiano solo fra i dispositivi miei. I file sul disco non si cancellano mai.';
+
+  @override
   String get trustedRevoke => 'Revoca';
 
   @override

@@ -3728,6 +3728,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Recibe canciones de este dispositivo sin preguntar.';
 
   @override
+  String get trustedMine => 'Mi dispositivo';
+
+  @override
+  String get trustedMineHint =>
+      'Las eliminaciones de listas, favoritos y canciones guardadas viajan solo entre mis dispositivos. Los archivos del disco nunca se borran.';
+
+  @override
   String get trustedRevoke => 'Revocar';
 
   @override

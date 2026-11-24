@@ -3732,6 +3732,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Titel von diesem Gerät ohne Nachfrage empfangen.';
 
   @override
+  String get trustedMine => 'Mein Gerät';
+
+  @override
+  String get trustedMineHint =>
+      'Löschungen von Playlists, Favoriten und gespeicherten Titeln werden nur zwischen meinen Geräten übertragen. Dateien auf dem Speicher werden nie gelöscht.';
+
+  @override
   String get trustedRevoke => 'Widerrufen';
 
   @override
