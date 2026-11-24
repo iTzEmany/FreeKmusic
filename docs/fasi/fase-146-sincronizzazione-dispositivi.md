@@ -47,7 +47,7 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
   - Passi: 1) scenario: modifiche e cancellazioni su entrambi i lati, ordine diverso, ripetizione del sync (idempotenza); 2) verifica: stessi insiemi, 0 file cancellati, nessun tombstone verso un non-mio.
   - Comando mirato: `flutter test test/services/share/sync_two_devices_test.dart`
   - Fatto quando: la simulazione converge in 2 giri e il terzo non cambia nulla.
-- [ ] 146.9 Proposta all'utente: sync automatico e fuori casa (MQTT) — **chiedere prima, non decidere**
+- [x] 146.9 Proposta all'utente: sync automatico e fuori casa (MQTT) — **chiedere prima, non decidere**
   - File: nessuno da scrivere. Documenti letti: `analisi.md` (F-41: «poi MQTT fuori casa»), `lib/services/jam/remote/` (MQTT cifrato della Jam), `scansione-dati.md` punto 3.
   - Passi: 1) scrivere all'utente (testo nel terminale, opzioni numerate): (a) fermarsi al sync manuale in LAN (consigliato: la fase è già grande e l'area è a rischio); (b) sync automatico in LAN quando i dispositivi si vedono; (c) anche fuori casa via MQTT cifrato (nuova area a rischio: protocollo e crittografia della Jam a distanza, review Opus); 2) registrare la risposta in `../decisioni.md` come D-xxx; 3) se (b) o (c): aggiungere i task qui o in una fase 148 senza decidere da soli.
   - Comando mirato: `python3 scripts/check_docs_links.py`
@@ -62,7 +62,7 @@ D-668 (eccezione all'invariante «mai cancellare righe dell'utente in automatico
   - Fatto quando: nessun caso speciale per campo in `SettingsNotifier.update`; il test della chiusura passa.
 
 ## Tocca a te
-- [ ] Decidere la proposta di 146.9.
+- [x] Decidere la proposta di 146.9 (D-703: solo manuale in LAN).
 - [ ] Per la prova reale (147) servono due dispositivi dell'utente accesi sulla stessa rete e associati come «miei»; i telefoni di test (Mi A3, Redmi) servono per le prove, non toccare i file del Motorola.
 
 ## Da riprendere (review fase 140)
