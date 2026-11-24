@@ -1,0 +1,440 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Aggiornamento, novità e condivisione, mockup FreeKmusic</title><style>
+:root{--bg:#07050C;--s1:#120E1C;--s2:#1D1630;--s3:#2A2140;--ac:#35D0BC;--acs:#A6EAE1;--on:#12081F;--tx:#F4F0FA;--mu:#A79DB8;--fa:#887F99;--er:#FF6B81;--ok:#5FD07A;
+--font:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+*{box-sizing:border-box;margin:0}
+html{background:#030206}
+body{font:400 13px/1.35 var(--font);color:var(--tx);background:#030206;padding:24px 20px 80px}
+a{color:var(--acs)}
+.page{max-width:1400px;margin:0 auto}
+.page>h1{font:800 26px/1.15 var(--font);letter-spacing:.01em;margin-bottom:6px}
+.page>.intro{color:var(--mu);font-size:14px;max-width:80ch;margin-bottom:8px}
+.back{display:inline-block;margin:0 0 14px;color:var(--acs);font-size:13px}
+h2.sec{font:700 18px var(--font);margin:36px 0 4px;padding-top:20px;border-top:1px solid var(--s2)}
+h3.sub{font:700 14px var(--font);color:var(--mu);margin:22px 0 0;letter-spacing:.04em;text-transform:uppercase}
+h2.sec small{color:var(--mu);font-weight:400;font-size:13px;margin-left:8px}
+.pair{display:flex;gap:28px;flex-wrap:wrap;align-items:flex-start;margin-top:14px}
+.pair.stack{flex-direction:column}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.tag{align-self:flex-start;font:700 12px var(--font);letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--s2);color:var(--mu)}
+.tag.dopo{background:var(--ac);color:var(--on)}
+.xs{overflow-x:auto;max-width:100%;padding-bottom:6px}
+.notes{margin:14px 0 0;padding:14px 16px;border-radius:12px;background:var(--s1);color:var(--mu);max-width:110ch}
+.notes b{color:var(--tx)} .notes ul{padding-left:18px;margin-top:4px} .notes li{margin:3px 0}
+code{font-family:ui-monospace,"Cascadia Mono",Menlo,monospace;font-size:12px;color:var(--acs)}
+/* ---- frames */
+.phone{width:360px;background:var(--bg);border:1px solid var(--s3);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.phone .scr{flex:1;padding-bottom:8px}
+.desk{width:1280px;background:var(--bg);border:1px solid var(--s3);border-radius:12px;overflow:hidden;display:grid;grid-template-columns:240px 1fr;grid-template-rows:1fr 80px;position:relative}
+.desk .main{padding:8px 24px 24px;min-width:0;position:relative}
+.bgimg{background:radial-gradient(120% 60% at 20% 0%,#0f4a49 0,#0a1f26 45%,var(--bg) 85%)}
+.side{background:var(--s1);padding:16px 12px;display:flex;flex-direction:column;gap:2px}
+.side .brand{font:800 18px var(--font);padding:8px 12px 16px;color:var(--acs)}
+.side a{display:flex;align-items:center;gap:14px;height:44px;padding:0 12px;border-radius:12px;color:var(--mu);text-decoration:none;font-weight:600;font-size:14px}
+.side a.on{background:var(--s2);color:var(--tx)} .side a.on svg{color:var(--ac)}
+.side hr{border:0;border-top:1px solid var(--s2);margin:10px 8px}
+.pbar{grid-column:1/3;background:var(--s1);border-top:1px solid var(--s2);display:flex;align-items:center;gap:16px;padding:0 20px}
+.pbar .t{width:260px;min-width:0}.pbar .t b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pbar .ctl{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.pbar .ctl div{display:flex;align-items:center;gap:6px}
+.seek{height:4px;border-radius:2px;background:var(--s3);width:100%;max-width:520px;position:relative}
+.seek i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--ac)}
+.pbar .vol{width:180px;display:flex;align-items:center;gap:8px;color:var(--mu)}
+.dock{margin:0 12px 16px;border-radius:28px;background:var(--s2);overflow:hidden}
+.mini{display:flex;align-items:center;gap:12px;height:64px;padding:0 8px 0 10px}
+.mini .tx{flex:1;min-width:0}.mini b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini .bar{height:2px}
+.tabs{display:flex;height:56px;border-top:1px solid var(--s3)}
+.tabs a{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11px;font-weight:600;color:var(--mu);text-decoration:none;min-height:48px;position:relative}
+.tabs a.on{color:var(--tx)} .tabs a.on svg{color:var(--ac)}
+.tabs a.on::after{content:"";position:absolute;top:6px;left:calc(50% + 8px);width:6px;height:6px;border-radius:50%;background:var(--ac)}
+/* ---- primitives */
+.i{flex:none;display:block}
+.cv{display:inline-flex;flex:none;align-items:center;justify-content:center;overflow:hidden}
+.cv.ico{background:var(--s3);color:var(--acs)}
+.mos{display:grid;grid-template-columns:1fr 1fr;flex:none;overflow:hidden;gap:1px;background:var(--bg)}
+.mos i{display:block}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:999px;border:0;font:700 14px var(--font);color:var(--tx);background:var(--s2);cursor:pointer;text-decoration:none}
+.btn.fill{background:var(--ac);color:var(--on)}
+.btn.out{background:transparent;box-shadow:inset 0 0 0 1px var(--fa)}
+.btn.dng{background:transparent;color:var(--er);box-shadow:inset 0 0 0 1px var(--er)}
+.btn.txt{background:transparent;color:var(--acs);padding:0 12px}
+.btn.blk{display:flex;width:100%}
+.btn[disabled]{opacity:.5}
+.ibtn{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;border:0;background:transparent;color:var(--tx);cursor:pointer;flex:none}
+.ibtn.s2{background:var(--s2)} .ibtn.mu{color:var(--mu)}
+.ibtn.pl{width:56px;height:56px;background:var(--ac);color:var(--on)}
+.ibtn.sm{width:40px;height:40px}
+.hd{display:flex;align-items:center;min-height:56px;padding:0 4px;gap:4px}
+.hd h3{font:700 18px var(--font);flex:1}
+.sh{display:flex;align-items:center;padding:20px 16px 8px}
+.sh h3{font:700 18px var(--font);flex:1}
+.sh .all{color:var(--acs);font:700 14px var(--font);padding:12px 8px;margin:-12px -8px -12px 0}
+.blk-s{margin:0 16px;background:var(--s1);border-radius:12px;overflow:hidden}
+.blk-s>.sh{padding:14px 16px 6px}
+.hrow{display:flex;align-items:center;gap:12px;padding:8px 12px;min-height:60px}
+.hrow .tx{flex:1;min-width:0}
+.hrow b,.trk b{display:block;font:600 15px var(--font);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hrow span.m,.trk span.m{display:block;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ring{padding:2px;border-radius:9px;background:conic-gradient(var(--ac) calc(var(--p)*1%),var(--s3) 0);display:inline-flex}
+.ring>span{display:block;padding:2px;border-radius:7px;background:var(--s1)}
+.mu{color:var(--mu)} .fa{color:var(--fa)} .acs{color:var(--acs)} .er{color:var(--er)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:var(--s3);color:var(--tx);font:600 12px var(--font)}
+.chip.er{background:rgba(255,107,129,.16);color:var(--er)} .chip.ok{background:rgba(53,208,188,.16);color:var(--acs)}
+.field{display:block;background:var(--s2);border-radius:12px;padding:8px 16px;min-height:56px;border-bottom:2px solid var(--fa)}
+.field label{display:block;font-size:12px;color:var(--mu)} .field .v{font-size:15px}
+.sw{width:52px;height:32px;border-radius:16px;background:var(--s3);position:relative;flex:none;box-shadow:inset 0 0 0 2px var(--fa)}
+.sw::after{content:"";position:absolute;top:8px;left:8px;width:16px;height:16px;border-radius:50%;background:var(--fa)}
+.sw.on{background:var(--ac);box-shadow:none}.sw.on::after{left:28px;width:24px;height:24px;top:4px;background:var(--on)}
+.cb{width:22px;height:22px;border-radius:4px;box-shadow:inset 0 0 0 2px var(--fa);flex:none;display:inline-flex;align-items:center;justify-content:center}
+.cb.on{background:var(--ac);box-shadow:none;color:var(--on)}
+.pb{height:4px;border-radius:2px;background:var(--s3);overflow:hidden}.pb i{display:block;height:100%;background:var(--ac)}
+.spin{width:20px;height:20px;border-radius:50%;border:3px solid var(--s3);border-top-color:var(--ac);display:inline-block}
+.sheet{background:var(--s1);border-radius:16px 16px 0 0;padding:8px 0 16px;box-shadow:0 -1px 0 var(--s3)}
+.sheet .grab{width:32px;height:4px;border-radius:2px;background:var(--s3);margin:4px auto 8px}
+.scrim{background:rgba(0,0,0,.55)}
+.act{display:flex;align-items:center;gap:16px;min-height:48px;padding:0 20px;font:600 15px var(--font)}
+.act.dng{color:var(--er)}
+.grp{padding:10px 20px 2px;color:var(--mu);font:700 12px var(--font);letter-spacing:.04em;text-transform:uppercase}
+.pressed{position:relative}
+.pressed::after{content:"";position:absolute;inset:0;background:rgba(166,234,225,.18);pointer-events:none;border-radius:inherit}
+.cap{font-size:12px;color:var(--mu);margin-top:6px}
+@media (max-width:760px){body{padding:16px 12px 60px}}
+
+.appbar{display:flex;align-items:center;height:56px;padding:0 4px}.appbar h3{font:700 18px var(--font);flex:1}
+.set{padding:0 16px}.set .gt{font:700 14px var(--font);color:var(--acs);padding:20px 4px 8px}
+.set .g{background:var(--s1);border-radius:12px;overflow:hidden}
+.lt{display:flex;align-items:center;gap:16px;min-height:64px;padding:8px 8px 8px 16px}
+.lt .tx{flex:1;min-width:0}.lt b{display:block;font:600 15px var(--font)}.lt span.m{display:block;color:var(--mu)}
+.note{display:flex;gap:12px;align-items:flex-start;background:var(--s2);border-radius:12px;padding:12px 16px;margin:8px 16px 0;color:var(--tx)}
+.note svg{color:var(--acs);margin-top:1px}.note span{color:var(--mu)}
+.mrow{position:relative;display:flex;align-items:center;min-height:56px;padding-right:12px;gap:0}
+.mrow .tap{width:56px;height:56px;display:flex;align-items:center;justify-content:center;flex:none}
+.mrow .tx{flex:1;min-width:0}.mrow b{display:block;font:600 15px var(--font)}.mrow .m{color:var(--mu);font-size:12px}
+.mrow .st{flex:none;font:600 12px var(--font);padding:4px 10px;border-radius:999px;display:inline-flex;gap:4px;align-items:center}
+.st.ok{background:rgba(53,208,188,.16);color:var(--acs)}.st.todo{background:var(--s3);color:var(--mu)}.st.dl{color:var(--acs);background:transparent;padding:0}
+.mrow .bar{position:absolute;left:56px;right:12px;bottom:5px;height:4px}
+.mrow+.mrow{box-shadow:inset 0 1px 0 var(--s2)}
+.sel{display:flex;gap:4px;padding:4px 8px 4px;flex-wrap:wrap}
+.cols2{display:grid;grid-template-columns:1fr 1fr}.cols2 .mrow{box-shadow:none}.cols2 .mrow:nth-child(n+3){box-shadow:inset 0 1px 0 var(--s2)}
+.sub2{padding:0 16px 10px 56px;color:var(--mu);font-size:12px;display:flex;flex-direction:column;gap:2px}
+.actbar{margin:16px 12px 0;background:var(--s2);border-radius:16px;padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.actbar .tot{display:flex;align-items:center;gap:12px}.actbar .tot b{font:700 15px var(--font)}.actbar .tot span{color:var(--mu);font-size:12px}
+.actbar .bt{display:flex;flex-direction:column;gap:8px}
+.desk .actbar{margin:20px 0 0;flex-direction:row;align-items:center}.desk .actbar .bt{flex-direction:row;margin-left:auto}.desk .actbar .tot{flex:1}
+.desk .set{padding:0}
+.cw{max-width:760px;margin:0 auto;width:100%}
+/* ---- aggiornamento */
+svg.i{width:24px;height:24px;fill:currentColor}
+.dim{position:relative}.dim::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.dlg{position:absolute;left:24px;right:24px;top:90px;z-index:2;background:var(--s2);border-radius:28px;padding:24px 24px 12px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.dlg h4{font:400 22px var(--font);margin-bottom:14px}
+.dlg .raw{font-size:13px;color:var(--tx);max-height:300px;overflow:hidden;white-space:pre-wrap;word-break:break-word;-webkit-mask:linear-gradient(#000 80%,transparent)}
+.dlg .acts{display:flex;justify-content:flex-end;gap:4px;margin-top:10px}
+.upd{display:flex;flex-direction:column;height:760px;background:var(--bg)}
+.upd .body{flex:1;overflow:hidden;position:relative}
+.hero{position:relative;padding:8px 16px 22px;text-align:center;background:radial-gradient(90% 70% at 50% 0%,#0f4a49 0,#0a1f26 50%,var(--bg) 100%)}
+.hero .top{display:flex;justify-content:space-between;align-items:center;margin:0 -8px}
+.big-ring{width:132px;height:132px;margin:4px auto 14px;border-radius:50%;padding:6px;background:conic-gradient(from 210deg,var(--ac),#8FE3D6,#5B7CFA,#B26CF5,var(--ac));box-shadow:0 0 48px rgba(53,208,188,.35)}
+.big-ring>div{width:100%;height:100%;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.big-ring b{font:800 40px/1 var(--font);letter-spacing:-.02em}
+.big-ring small{color:var(--mu);font:600 11px var(--font);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.hero h2{font:800 22px/1.2 var(--font)}
+.hero p{color:var(--mu);margin-top:6px;font-size:14px}
+.hero .meta{display:flex;justify-content:center;gap:6px;margin-top:10px;flex-wrap:wrap}
+.lbl{padding:18px 20px 8px;font:700 12px var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--acs)}
+.feat{margin:0 16px;border-radius:20px;padding:16px;background:linear-gradient(135deg,#183f45 0,#1D1630 70%);box-shadow:inset 0 0 0 1px rgba(166,234,225,.18);display:flex;flex-direction:column;gap:10px}
+.feat .vid{height:120px;border-radius:12px;background:radial-gradient(60% 80% at 30% 40%,#5B7CFA55,transparent),radial-gradient(60% 80% at 75% 60%,#B26CF555,transparent),#0b0a14;position:relative;display:flex;align-items:flex-end;padding:10px;gap:6px}
+.feat .vid .ly{font:800 15px var(--font);color:#fff;text-shadow:0 2px 8px #000}.feat .vid .ly i{font-style:normal;color:var(--ac)}
+.feat .vid .dev{position:absolute;top:10px;right:10px;display:flex;gap:4px}
+.feat .vid .dev span{width:18px;height:30px;border-radius:4px;box-shadow:inset 0 0 0 2px var(--acs);opacity:.8}
+.feat h4{font:800 17px var(--font)}.feat p{color:var(--mu);font-size:13px}
+.feat .go{align-self:flex-start;margin:-4px 0 -6px -12px}
+.nv{display:flex;gap:14px;align-items:flex-start;padding:12px 20px}
+.nv .ic{width:40px;height:40px;border-radius:12px;background:var(--s2);color:var(--acs);display:flex;align-items:center;justify-content:center;flex:none}
+.nv b{display:block;font:700 15px var(--font)}.nv span{display:block;color:var(--mu);font-size:13px;margin-top:2px}
+.fix{margin:6px 16px 0;background:var(--s1);border-radius:12px;display:flex;align-items:center;gap:12px;min-height:56px;padding:0 8px 0 16px}
+.fix .tx{flex:1}.fix b{display:block;font:600 15px var(--font)}.fix span{color:var(--mu);font-size:12px}
+.fixl{margin:0 16px;background:var(--s1);border-radius:0 0 12px 12px;padding:0 16px 12px 16px;margin-top:-6px}
+.fixl li{color:var(--mu);font-size:13px;margin:6px 0 0 18px}
+.gh{display:flex;align-items:center;gap:8px;justify-content:center;color:var(--acs);font:700 13px var(--font);padding:16px 0 8px}
+.foot{background:var(--s1);border-radius:24px 24px 0 0;padding:14px 16px 12px;box-shadow:0 -12px 24px rgba(7,5,12,.9);display:flex;flex-direction:column;gap:6px}
+.foot .hint{color:var(--mu);font-size:12px;text-align:center}
+.foot .row{display:flex;align-items:center;gap:10px}
+.foot .row b{font:700 14px var(--font);flex:1}.foot .row span{color:var(--mu);font-size:12px}
+.fade{position:absolute;left:0;right:0;bottom:0;height:40px;background:linear-gradient(transparent,var(--bg))}
+.desk.upd-d{display:block;height:760px;position:relative}
+.desk.upd-d .app{position:absolute;inset:0;display:grid;grid-template-columns:240px 1fr;grid-template-rows:1fr 80px}
+.ddlg{position:absolute;z-index:2;left:50%;top:50%;transform:translate(-50%,-50%);width:880px;height:600px;border-radius:28px;overflow:hidden;background:var(--bg);display:grid;grid-template-columns:320px 1fr;box-shadow:0 24px 64px rgba(0,0,0,.6),inset 0 0 0 1px var(--s3)}
+.ddlg .l{background:radial-gradient(120% 70% at 50% 0%,#0f4a49 0,#0a1f26 50%,var(--s1) 100%);padding:24px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+.ddlg .l .sp{flex:1}
+.ddlg .r{overflow:hidden;position:relative;padding:8px 8px 0}
+.ddlg .grid{display:grid;grid-template-columns:1fr 1fr;gap:0 8px}
+.spec{border-collapse:collapse;margin-top:8px;font-size:13px;max-width:110ch}
+.spec td{padding:6px 10px;border-top:1px solid var(--s2);vertical-align:top;color:var(--mu)}.spec td:first-child{color:var(--tx);white-space:nowrap;font-weight:600}
+</style></head><body><div class="page"><a class="back" href="#">Mockup, FreeKmusic</a>
+<h1>Aggiornamento, novità e condivisione</h1>
+<p class="intro">Oggi «Controlla aggiornamenti» apre un dialogo con le note grezze della Release di GitHub: l'elenco dei titoli delle PR, con autore e link. Proposta: una pagina «Aggiornamento disponibile» con le novità scritte per chi usa l'app, e la stessa lista una volta sola al primo avvio dopo l'aggiornamento. Stile attuale (D-692): Late Night, accento Verde acqua, l'anello come motivo.</p>
+
+<h2 class="sec">Telefono<small>360 px</small></h2>
+<div class="xs"><div class="pair">
+
+<div class="col"><span class="tag">Prima (oggi)</span>
+<div class="phone"><div class="scr dim" style="flex:none;height:760px">
+<div class="appbar"><button class="ibtn"><svg class="i" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg></button><h3>Informazioni</h3></div>
+<div class="set"><div class="gt">Aggiornamenti</div><div class="g">
+<div class="lt"><svg class="i" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg><div class="tx"><b>Controlla aggiornamenti</b><span class="m">Cerca una versione nuova su GitHub</span></div></div>
+<div class="lt"><div class="tx"><b>Controlla all'avvio</b><span class="m">Al massimo una volta al giorno</span></div><span class="sw on"></span></div></div></div>
+</div>
+<div class="dlg"><h4>Controlla aggiornamenti</h4>
+<div class="raw">Disponibile la versione 1.7.0
+
+## What's Changed
+* docs(134): rilascio 1.6.4, fasi 133-134 in archivio by @iTzEmany in https://github.com/iTzEmany/FreeKmusic/pull/208
+* docs: piano del refactor grande-revisione by @iTzEmany in https://github.com/iTzEmany/FreeKmusic/pull/209
+* fix(135): riproduzione affidabile — permesso revocato, errori senza raffica, karaoke alla riapertura by @iTzEmany in https://github.com/…
+* feat(136): arricchimento unico e leggero — coda e pausa MusicBrainz, stream sul motore unico, strumentali (v21) by @iTzEmany in …</div>
+<div class="pb" style="margin-top:10px"><i style="width:0"></i></div>
+<div class="acts"><span class="btn txt">Aggiorna</span><span class="btn txt">Chiudi</span></div></div>
+</div>
+<p class="cap" style="max-width:360px">Testo di sviluppo (prefissi feat/fix, numeri di fase, «v21», autore, link), in inglese anche con l'app in italiano, nessuna gerarchia. Il pulsante «Aggiorna» è un pulsante di testo come «Chiudi».</p>
+</div>
+
+<div class="col"><span class="tag dopo">Dopo · disponibile</span>
+<div class="phone"><div class="upd">
+<div class="body">
+<div class="hero">
+<div class="top"><button class="ibtn" aria-label="Chiudi"><svg class="i" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button><span class="chip">dalla 1.6.4</span></div>
+<div class="big-ring"><div><b>1.7</b><small>nuova</small></div></div>
+<h2>È arrivata la 1.7.0</h2>
+<p>La versione più grande dall'inizio: streaming per primo, una Home nuova e il karaoke nella Jam.</p>
+</div>
+<div class="lbl">In evidenza</div>
+<div class="feat">
+<div class="vid"><div class="ly">Is this the <i>real life</i>…</div><div class="dev"><span></span><span></span><span></span></div></div>
+<h4>Video karaoke nella Jam</h4>
+<p>Metti un video karaoke e compare su tutti i telefoni della Jam, allineato a chi la ospita.</p>
+</div>
+<div class="lbl">Anche in questa versione</div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><div><b>Ascolta subito, scarica se vuoi</b><span>I brani online partono in streaming. «Scarica» li salva nella cartella dell'app.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div><div><b>Una Home nuova</b><span>«Riprendi» a griglia, le Nuove uscite dei tuoi artisti, la daylist col suo contesto.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></div><div><b>I tuoi dispositivi allineati</b><span>Anche ciò che cancelli su uno sparisce dagli altri.</span></div></div>
+<div class="fade"></div>
+</div>
+<div class="foot">
+<span class="btn fill blk"><svg class="i" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>Aggiorna · 42 MB</span>
+<span class="hint">L'app si chiude, si aggiorna e si riapre. I tuoi dati restano.</span>
+</div>
+</div></div>
+<p class="cap" style="max-width:360px">Pagina a tutto schermo (foglio che sale dal basso), non un dialogo. Una novità «in evidenza» con l'illustrazione, le altre come righe con icona. Il pulsante resta fermo in basso mentre si scorre.</p>
+</div>
+
+<div class="col"><span class="tag dopo">Dopo · scorrendo, poi il download</span>
+<div class="phone"><div class="upd">
+<div class="body" style="padding-top:8px">
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div><div><b>Album e playlist preferiti</b><span>Il cuore anche sulle raccolte, e una testata a icone più pulita.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg></div><div><b>Condividi un brano</b><span>Con il foglio di sistema: chi lo riceve lo apre nell'app o sul sito.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg></div><div><b>Modelli e dizionari in un posto</b><span>Traduzioni, dizionario cinese e karaoke: scarichi ed elimini da una pagina.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5s-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/></svg></div><div><b>Segnala un problema con un tocco</b><span>Dal Registro, già compilato e anonimo.</span></div></div>
+<div class="fix"><div class="tx"><b>Correzioni</b><span>9 problemi risolti</span></div><button class="ibtn" aria-label="Mostra le correzioni" style="transform:rotate(180deg)"><svg class="i" viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg></button></div>
+<ul class="fixl"><li>La musica riparte se togli e ridai il permesso</li><li>Backup e ripristino riavviano davvero l'app</li><li>Il karaoke riprende quando riapri il brano</li><li>…</li></ul>
+<div class="gh"><svg class="i" viewBox="0 0 24 24" style="width:18px;height:18px"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>Tutte le modifiche su GitHub</div>
+</div>
+<div class="foot">
+<div class="row"><b>Download…</b><span>18 di 42 MB</span></div>
+<div class="pb"><i style="width:43%"></i></div>
+<div class="row" style="margin-top:2px"><span style="flex:1">Puoi continuare ad ascoltare.</span><span class="btn txt" style="min-height:40px">Annulla</span></div>
+</div>
+</div></div>
+<p class="cap" style="max-width:360px">Le correzioni stanno in un gruppo chiuso con il conteggio. Durante il download il pulsante diventa la barra (stessa altezza, niente salti); a fine download parte l'installer come oggi.</p>
+</div>
+
+<div class="col"><span class="tag dopo">Dopo · primo avvio aggiornato</span>
+<div class="phone"><div class="upd">
+<div class="body">
+<div class="hero" style="padding-top:28px">
+<div class="big-ring" style="width:104px;height:104px"><div><svg class="i" viewBox="0 0 24 24" style="width:40px;height:40px;color:var(--ac)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div></div>
+<h2>Aggiornata alla 1.7.0</h2>
+<p>Tutto a posto: libreria, playlist e impostazioni sono dove le avevi lasciate.</p>
+</div>
+<div class="lbl">Cosa c'è di nuovo</div>
+<div class="feat">
+<h4>Video karaoke nella Jam</h4>
+<p>Metti un video karaoke e compare su tutti i telefoni della Jam.</p>
+<span class="btn txt go">Apri la Jam</span>
+</div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><div><b>Ascolta subito, scarica se vuoi</b><span>I brani online partono in streaming.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div><div><b>Una Home nuova</b><span>«Riprendi» a griglia e le Nuove uscite.</span></div></div>
+<div class="fade"></div>
+</div>
+<div class="foot">
+<span class="btn fill blk">Inizia</span>
+<span class="btn txt" style="align-self:center;min-height:40px">Tutte le novità</span>
+</div>
+</div></div>
+<p class="cap" style="max-width:360px">Una volta sola, al primo avvio dopo un aggiornamento (mai alla prima installazione né dopo un ripristino). Poi la si ritrova in Impostazioni › Informazioni › «Novità della 1.7.0».</p>
+</div>
+
+</div></div>
+
+<h2 class="sec">Computer<small>1280 px</small></h2>
+<div class="xs"><div class="pair">
+<div class="col"><span class="tag dopo">Dopo · disponibile</span>
+<div class="desk upd-d">
+<div class="app dim"><div class="side"><div class="brand">FreeKmusic</div><a>Home</a><a>Cerca</a><a>Libreria</a><hr><a class="on">Impostazioni</a></div><div class="main bgimg"></div><div class="pbar"></div></div>
+<div class="ddlg">
+<div class="l">
+<div style="align-self:flex-start;margin:-12px 0 0 -12px"><button class="ibtn" aria-label="Chiudi"><svg class="i" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg></button></div>
+<div class="big-ring"><div><b>1.7</b><small>nuova</small></div></div>
+<h2 style="font:800 22px var(--font)">È arrivata la 1.7.0</h2>
+<p class="mu" style="font-size:14px">Streaming per primo, una Home nuova e il karaoke nella Jam.</p>
+<div class="meta" style="display:flex;gap:6px;margin-top:6px"><span class="chip">dalla 1.6.4</span><span class="chip">AppImage · 96 MB</span></div>
+<div class="sp"></div>
+<span class="btn fill blk">Aggiorna</span>
+<span class="cap" style="text-align:center">Sostituisce il file AppImage e riavvia l'app. I tuoi dati restano.</span>
+</div>
+<div class="r">
+<div class="lbl">In evidenza</div>
+<div class="feat" style="flex-direction:row;gap:16px;align-items:center"><div class="vid" style="width:220px;flex:none"><div class="ly">Is this the <i>real life</i>…</div></div><div><h4>Video karaoke nella Jam</h4><p>Metti un video karaoke e compare su tutti i dispositivi della Jam, allineato a chi la ospita.</p></div></div>
+<div class="lbl">Anche in questa versione</div>
+<div class="grid">
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div><div><b>Ascolta subito, scarica se vuoi</b><span>I brani online partono in streaming.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg></div><div><b>Una Home nuova</b><span>«Riprendi» a griglia e le Nuove uscite.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg></div><div><b>I tuoi dispositivi allineati</b><span>Le cancellazioni passano fra i tuoi dispositivi.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></div><div><b>Album e playlist preferiti</b><span>Il cuore anche sulle raccolte.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg></div><div><b>Condividi un brano</b><span>Con il foglio di sistema.</span></div></div>
+<div class="nv"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0014.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg></div><div><b>Modelli e dizionari</b><span>Scarichi ed elimini da una pagina.</span></div></div>
+</div>
+<div class="fix" style="margin-top:8px"><div class="tx"><b>Correzioni</b><span>9 problemi risolti</span></div><button class="ibtn"><svg class="i" viewBox="0 0 24 24"><path d="M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"/></svg></button></div>
+<div class="fade"></div>
+</div>
+</div>
+</div>
+<p class="cap">Dialogo largo a due colonne: a sinistra versione e pulsante (sempre visibili), a destra le novità che scorrono.</p>
+</div>
+</div></div>
+
+<h2 class="sec">Da dove vengono le novità</h2>
+<div class="notes"><b>Proposta:</b> le note della Release restano generate da GitHub (utili a me), ma in cima ci va un blocco scritto a mano per chi usa l'app; l'app mostra solo quello. Esempio nel corpo della Release:
+<pre style="margin-top:8px;white-space:pre-wrap"><code>## Novità
+- evidenza | mic | Video karaoke nella Jam | Metti un video karaoke e compare su tutti i telefoni della Jam.
+- play | Ascolta subito, scarica se vuoi | I brani online partono in streaming.
+- home | Una Home nuova | «Riprendi» a griglia, le Nuove uscite dei tuoi artisti.
+## Correzioni
+- La musica riparte se togli e ridai il permesso
+## What's Changed   ← quello di GitHub, l'app lo ignora</code></pre></div>
+<table class="spec">
+<tr><td>Senza il blocco</td><td>Niente elenco grezzo: solo versione, «Correzioni e miglioramenti» e il link a GitHub.</td></tr>
+<tr><td>Primo avvio aggiornato</td><td>Il testo si salva al download (serve senza rete); la pagina compare se la versione salvata è più vecchia di quella in uso, una volta sola.</td></tr>
+<tr><td>Più versioni saltate</td><td>Da 1.6.2 a 1.7.0: si mostrano le novità della versione nuova e «Tutte le novità» porta a GitHub.</td></tr>
+<tr><td>Accessibilità</td><td>Titolo e sezioni come intestazioni; ogni novità è una sola fermata di TalkBack; il pulsante in basso si raggiunge per ultimo e annuncia il peso.</td></tr>
+<tr><td>Da decidere</td><td>1) Lingua: blocco solo in italiano, oppure uno per lingua dell'app (it/en/de/es/fr/pt) con l'inglese come riserva. 2) La pagina al primo avvio: sì, o solo in Impostazioni. 3) Il pulsante «Apri la Jam» (porta alla funzione): sì o no.</td></tr>
+</table>
+<style>
+.chat{width:360px;height:640px;border:1px solid var(--s3);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;background:#0b141a}
+.chat .ct{display:flex;align-items:center;gap:10px;height:56px;padding:0 12px;background:#1f2c34;color:#e9edef;font:600 15px var(--font)}
+.chat .ct i{width:34px;height:34px;border-radius:50%;background:#53636c;display:block}
+.chat .msgs{flex:1;padding:12px;display:flex;flex-direction:column;justify-content:flex-end;gap:6px}
+.bub{align-self:flex-end;max-width:86%;background:#005c4b;color:#e9edef;border-radius:10px 2px 10px 10px;padding:6px 8px 4px;font:400 13.5px/1.35 var(--font);white-space:pre-wrap;word-break:break-word}
+.bub a{color:#53bdeb;text-decoration:none}
+.bub .tm{display:block;text-align:right;font-size:10.5px;color:#9fc3bb;margin-top:2px}
+.bub.img{padding:3px 3px 4px;width:248px}.bub.img .cap2{padding:4px 5px 0}
+.bub .lp{background:#025144;border-radius:6px;padding:6px 8px;margin-bottom:4px;font-size:12px;color:#c5d6d2}.bub .lp b{display:block;color:#e9edef}
+.chat .in{height:52px;margin:0 8px 8px;border-radius:26px;background:#1f2c34}
+.card{width:270px;aspect-ratio:4/5;border-radius:18px;overflow:hidden;position:relative;display:flex;flex-direction:column;padding:16px 16px 14px;color:#fff;font-family:var(--font);flex:none}
+.card .bn{display:flex;align-items:center;gap:7px;font:800 12px var(--font);letter-spacing:.02em}
+.card .bn .lg{width:16px;height:16px;border-radius:50%;background:conic-gradient(var(--ac) 0 70%,rgba(255,255,255,.25) 0);-webkit-mask:radial-gradient(circle,transparent 4px,#000 4.5px);mask:radial-gradient(circle,transparent 4px,#000 4.5px)}
+.card .bn .k{margin-left:auto;font:700 10px var(--font);letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;background:rgba(255,255,255,.16)}
+.card .art{width:62%;aspect-ratio:1;margin:14px auto 12px;border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.5);position:relative}
+.card .art.rg{border-radius:50%;padding:7px;background:conic-gradient(var(--ac) 0 64%,rgba(255,255,255,.18) 0)}
+.card .art.rg>div{width:100%;height:100%;border-radius:50%}
+.card .art.mo{display:grid;grid-template-columns:1fr 1fr;gap:2px;overflow:hidden}
+.card h5{font:800 19px/1.15 var(--font);text-align:center;text-wrap:balance}
+.card .by{font:500 13px var(--font);text-align:center;opacity:.8;margin-top:3px}
+.card .ft{margin-top:auto;display:flex;align-items:flex-end;gap:10px}
+.card .ft .tx{flex:1;font-size:10.5px;line-height:1.35;opacity:.85}.card .ft .tx b{display:block;font-size:12px;opacity:1}
+.card .qr{width:58px;height:58px;border-radius:6px;flex:none}
+.c-op{background:radial-gradient(90% 60% at 50% 30%,#7a3a8c 0,#2b1240 55%,#10061a 100%)}
+.a-op{background:radial-gradient(60% 60% at 35% 35%,#f4d27a,#c7882f 40%,#5b2a6e 75%,#24103a)}
+.c-bo{background:radial-gradient(90% 60% at 50% 30%,#1d5a73 0,#0d2633 55%,#050d12 100%)}
+.a-bo{background:radial-gradient(70% 70% at 60% 40%,#7fd3ea,#2a7ea3 45%,#0d2a3a)}
+.c-pl{background:radial-gradient(90% 60% at 50% 30%,#18554c 0,#0c2423 55%,#05100f 100%)}
+.m1{background:linear-gradient(135deg,#f4a261,#e76f51)}.m2{background:linear-gradient(135deg,#2a9d8f,#264653)}.m3{background:linear-gradient(135deg,#b5179e,#480ca8)}.m4{background:linear-gradient(135deg,#ffd166,#06d6a0)}
+.thumb{width:240px}.thumb .card{width:240px;border-radius:7px}
+</style>
+<h2 class="sec">Condivisione<small>la scheda insieme al testo</small></h2>
+<p class="intro" style="margin-top:8px">Oggi «Condividi» manda solo testo: nome, fino a 10 righe «Artista - Titolo», il link di YouTube Music e quello della pagina. Nelle chat l'anteprima è quella di YouTube Music, spesso generica, e la nostra pagina non può averne una sua (la lista sta dopo il «#», che non arriva al server). Proposta: l'app disegna una scheda (immagine 1080 × 1350) e la manda insieme al testo, che diventa la didascalia.</p>
+<div class="xs"><div class="pair">
+
+<div class="col"><span class="tag">Prima (oggi) · album in una chat</span>
+<div class="chat"><div class="ct"><i></i>Giulia</div><div class="msgs">
+<div class="bub"><div class="lp"><b>YouTube Music</b>music.youtube.com</div>A Night at the Opera - Queen
+1. Queen - Death on Two Legs
+2. Queen - Lazing on a Sunday Afternoon
+3. Queen - I'm in Love with My Car
+4. Queen - You're My Best Friend
+5. Queen - '39
+6. Queen - Sweet Lady
+7. Queen - Seaside Rendezvous
+8. Queen - The Prophet's Song
+9. Queen - Love of My Life
+10. Queen - Good Company
+…
+<a>https://music.youtube.com/browse/MPREb_…</a>
+<a>https://itzemany.github.io/FreeKmusic/#a1.eJyrVkp…</a><span class="tm">18:42</span></div>
+</div><div class="in"></div></div>
+<p class="cap" style="max-width:360px">Un muro di testo; l'anteprima in alto è quella di YouTube Music, non dell'album.</p>
+</div>
+
+<div class="col"><span class="tag dopo">Dopo · scheda e didascalia</span>
+<div class="chat"><div class="ct"><i></i>Giulia</div><div class="msgs">
+<div class="bub img"><div class="thumb"><div class="card c-op">
+<div class="bn"><span class="lg"></span>FreeKmusic<span class="k">Album</span></div>
+<div class="art a-op"></div>
+<h5>A Night at the Opera</h5><div class="by">Queen · 1975</div>
+<div class="ft"><div class="tx"><b>12 brani · 43 min</b>Inquadra il codice con FreeKmusic per aprirlo</div><svg viewBox="-2 -2 29 29" class="qr" aria-hidden="true"><rect x="-2" y="-2" width="29" height="29" fill="#fff"/><rect x="8" y="0" width="1" height="1"/><rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="16" y="0" width="1" height="1"/><rect x="8" y="1" width="1" height="1"/><rect x="9" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="13" y="1" width="1" height="1"/><rect x="14" y="1" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="2" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="16" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="15" y="6" width="1" height="1"/><rect x="10" y="7" width="1" height="1"/><rect x="13" y="7" width="1" height="1"/><rect x="15" y="7" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="24" y="8" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="24" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="7" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="10" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="16" y="10" width="1" height="1"/><rect x="17" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/><rect x="24" y="10" width="1" height="1"/><rect x="0" y="11" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="4" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="10" y="11" width="1" height="1"/><rect x="15" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="21" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="4" y="12" width="1" height="1"/><rect x="6" y="12" width="1" height="1"/><rect x="7" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="18" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="3" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="11" y="13" width="1" height="1"/><rect x="14" y="13" width="1" height="1"/><rect x="15" y="13" width="1" height="1"/><rect x="18" y="13" width="1" height="1"/><rect x="19" y="13" width="1" height="1"/><rect x="20" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="14" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="19" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="22" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/><rect x="1" y="15" width="1" height="1"/><rect x="6" y="15" width="1" height="1"/><rect x="7" y="15" width="1" height="1"/><rect x="8" y="15" width="1" height="1"/><rect x="9" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="19" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="22" y="15" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="8" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/><rect x="23" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="11" y="17" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="17" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="23" y="17" width="1" height="1"/><rect x="24" y="17" width="1" height="1"/><rect x="9" y="18" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="9" y="19" width="1" height="1"/><rect x="11" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="16" y="19" width="1" height="1"/><rect x="17" y="19" width="1" height="1"/><rect x="21" y="19" width="1" height="1"/><rect x="22" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="23" y="20" width="1" height="1"/><rect x="24" y="20" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="9" y="21" width="1" height="1"/><rect x="10" y="21" width="1" height="1"/><rect x="11" y="21" width="1" height="1"/><rect x="12" y="21" width="1" height="1"/><rect x="14" y="21" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/><rect x="17" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="19" y="21" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="8" y="23" width="1" height="1"/><rect x="9" y="23" width="1" height="1"/><rect x="11" y="23" width="1" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="13" y="23" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/><rect x="18" y="23" width="1" height="1"/><rect x="19" y="23" width="1" height="1"/><rect x="20" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="24" y="24" width="1" height="1"/><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/><rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#fff"/><rect x="20" y="2" width="3" height="3"/><rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#fff"/><rect x="2" y="20" width="3" height="3"/></svg></div>
+</div></div><div class="cap2">A Night at the Opera - Queen
+<a>https://itzemany.github.io/FreeKmusic/#a1.eJyrVkp…</a></div><span class="tm">18:42</span></div>
+</div><div class="in"></div></div>
+<p class="cap" style="max-width:360px">La scheda dice già cosa è; la didascalia si accorcia a nome e link della pagina (che apre l'app o il sito e porta anche i link di YouTube Music).</p>
+</div>
+
+</div></div>
+
+<h3 class="sub">La scheda, tre tipi</h3>
+<div class="xs"><div class="pair">
+<div class="col"><span class="tag dopo">Brano</span>
+<div class="card c-bo">
+<div class="bn"><span class="lg"></span>FreeKmusic<span class="k">Brano</span></div>
+<div class="art rg"><div class="a-bo"></div></div>
+<h5>Bohemian Rhapsody</h5><div class="by">Queen · A Night at the Opera</div>
+<div class="ft"><div class="tx"><b>5:55</b>Inquadra il codice con FreeKmusic per aprirlo</div><svg viewBox="-2 -2 29 29" class="qr" aria-hidden="true"><rect x="-2" y="-2" width="29" height="29" fill="#fff"/><rect x="8" y="0" width="1" height="1"/><rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="16" y="0" width="1" height="1"/><rect x="8" y="1" width="1" height="1"/><rect x="9" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="13" y="1" width="1" height="1"/><rect x="14" y="1" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="2" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="16" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="15" y="6" width="1" height="1"/><rect x="10" y="7" width="1" height="1"/><rect x="13" y="7" width="1" height="1"/><rect x="15" y="7" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="24" y="8" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="24" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="7" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="10" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="16" y="10" width="1" height="1"/><rect x="17" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/><rect x="24" y="10" width="1" height="1"/><rect x="0" y="11" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="4" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="10" y="11" width="1" height="1"/><rect x="15" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="21" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="4" y="12" width="1" height="1"/><rect x="6" y="12" width="1" height="1"/><rect x="7" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="18" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="3" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="11" y="13" width="1" height="1"/><rect x="14" y="13" width="1" height="1"/><rect x="15" y="13" width="1" height="1"/><rect x="18" y="13" width="1" height="1"/><rect x="19" y="13" width="1" height="1"/><rect x="20" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="14" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="19" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="22" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/><rect x="1" y="15" width="1" height="1"/><rect x="6" y="15" width="1" height="1"/><rect x="7" y="15" width="1" height="1"/><rect x="8" y="15" width="1" height="1"/><rect x="9" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="19" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="22" y="15" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="8" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/><rect x="23" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="11" y="17" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="17" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="23" y="17" width="1" height="1"/><rect x="24" y="17" width="1" height="1"/><rect x="9" y="18" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="9" y="19" width="1" height="1"/><rect x="11" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="16" y="19" width="1" height="1"/><rect x="17" y="19" width="1" height="1"/><rect x="21" y="19" width="1" height="1"/><rect x="22" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="23" y="20" width="1" height="1"/><rect x="24" y="20" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="9" y="21" width="1" height="1"/><rect x="10" y="21" width="1" height="1"/><rect x="11" y="21" width="1" height="1"/><rect x="12" y="21" width="1" height="1"/><rect x="14" y="21" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/><rect x="17" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="19" y="21" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="8" y="23" width="1" height="1"/><rect x="9" y="23" width="1" height="1"/><rect x="11" y="23" width="1" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="13" y="23" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/><rect x="18" y="23" width="1" height="1"/><rect x="19" y="23" width="1" height="1"/><rect x="20" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="24" y="24" width="1" height="1"/><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/><rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#fff"/><rect x="20" y="2" width="3" height="3"/><rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#fff"/><rect x="2" y="20" width="3" height="3"/></svg></div>
+</div>
+<p class="cap" style="max-width:270px">La copertina dentro l'anello, come nel player.</p></div>
+<div class="col"><span class="tag dopo">Album</span>
+<div class="card c-op">
+<div class="bn"><span class="lg"></span>FreeKmusic<span class="k">Album</span></div>
+<div class="art a-op"></div>
+<h5>A Night at the Opera</h5><div class="by">Queen · 1975</div>
+<div class="ft"><div class="tx"><b>12 brani · 43 min</b>Inquadra il codice con FreeKmusic per aprirlo</div><svg viewBox="-2 -2 29 29" class="qr" aria-hidden="true"><rect x="-2" y="-2" width="29" height="29" fill="#fff"/><rect x="8" y="0" width="1" height="1"/><rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="16" y="0" width="1" height="1"/><rect x="8" y="1" width="1" height="1"/><rect x="9" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="13" y="1" width="1" height="1"/><rect x="14" y="1" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="2" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="16" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="15" y="6" width="1" height="1"/><rect x="10" y="7" width="1" height="1"/><rect x="13" y="7" width="1" height="1"/><rect x="15" y="7" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="24" y="8" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="24" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="7" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="10" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="16" y="10" width="1" height="1"/><rect x="17" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/><rect x="24" y="10" width="1" height="1"/><rect x="0" y="11" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="4" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="10" y="11" width="1" height="1"/><rect x="15" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="21" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="4" y="12" width="1" height="1"/><rect x="6" y="12" width="1" height="1"/><rect x="7" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="18" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="3" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="11" y="13" width="1" height="1"/><rect x="14" y="13" width="1" height="1"/><rect x="15" y="13" width="1" height="1"/><rect x="18" y="13" width="1" height="1"/><rect x="19" y="13" width="1" height="1"/><rect x="20" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="14" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="19" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="22" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/><rect x="1" y="15" width="1" height="1"/><rect x="6" y="15" width="1" height="1"/><rect x="7" y="15" width="1" height="1"/><rect x="8" y="15" width="1" height="1"/><rect x="9" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="19" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="22" y="15" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="8" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/><rect x="23" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="11" y="17" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="17" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="23" y="17" width="1" height="1"/><rect x="24" y="17" width="1" height="1"/><rect x="9" y="18" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="9" y="19" width="1" height="1"/><rect x="11" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="16" y="19" width="1" height="1"/><rect x="17" y="19" width="1" height="1"/><rect x="21" y="19" width="1" height="1"/><rect x="22" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="23" y="20" width="1" height="1"/><rect x="24" y="20" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="9" y="21" width="1" height="1"/><rect x="10" y="21" width="1" height="1"/><rect x="11" y="21" width="1" height="1"/><rect x="12" y="21" width="1" height="1"/><rect x="14" y="21" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/><rect x="17" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="19" y="21" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="8" y="23" width="1" height="1"/><rect x="9" y="23" width="1" height="1"/><rect x="11" y="23" width="1" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="13" y="23" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/><rect x="18" y="23" width="1" height="1"/><rect x="19" y="23" width="1" height="1"/><rect x="20" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="24" y="24" width="1" height="1"/><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/><rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#fff"/><rect x="20" y="2" width="3" height="3"/><rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#fff"/><rect x="2" y="20" width="3" height="3"/></svg></div>
+</div>
+<p class="cap" style="max-width:270px">Lo sfondo prende i colori della copertina, come lo sfondo del player.</p></div>
+<div class="col"><span class="tag dopo">Playlist</span>
+<div class="card c-pl">
+<div class="bn"><span class="lg"></span>FreeKmusic<span class="k">Playlist</span></div>
+<div class="art mo"><i class="m1"></i><i class="m2"></i><i class="m3"></i><i class="m4"></i></div>
+<h5>Estate in macchina</h5><div class="by">di Emanuele</div>
+<div class="ft"><div class="tx"><b>34 brani · 2 h 6 min</b>Inquadra il codice con FreeKmusic per aprirlo</div><svg viewBox="-2 -2 29 29" class="qr" aria-hidden="true"><rect x="-2" y="-2" width="29" height="29" fill="#fff"/><rect x="8" y="0" width="1" height="1"/><rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="1" height="1"/><rect x="13" y="0" width="1" height="1"/><rect x="14" y="0" width="1" height="1"/><rect x="16" y="0" width="1" height="1"/><rect x="8" y="1" width="1" height="1"/><rect x="9" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/><rect x="11" y="1" width="1" height="1"/><rect x="13" y="1" width="1" height="1"/><rect x="14" y="1" width="1" height="1"/><rect x="9" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/><rect x="13" y="2" width="1" height="1"/><rect x="14" y="2" width="1" height="1"/><rect x="15" y="2" width="1" height="1"/><rect x="16" y="2" width="1" height="1"/><rect x="9" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/><rect x="14" y="3" width="1" height="1"/><rect x="15" y="3" width="1" height="1"/><rect x="16" y="3" width="1" height="1"/><rect x="9" y="4" width="1" height="1"/><rect x="10" y="4" width="1" height="1"/><rect x="12" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/><rect x="16" y="4" width="1" height="1"/><rect x="12" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/><rect x="15" y="5" width="1" height="1"/><rect x="8" y="6" width="1" height="1"/><rect x="10" y="6" width="1" height="1"/><rect x="15" y="6" width="1" height="1"/><rect x="10" y="7" width="1" height="1"/><rect x="13" y="7" width="1" height="1"/><rect x="15" y="7" width="1" height="1"/><rect x="3" y="8" width="1" height="1"/><rect x="4" y="8" width="1" height="1"/><rect x="6" y="8" width="1" height="1"/><rect x="7" y="8" width="1" height="1"/><rect x="8" y="8" width="1" height="1"/><rect x="9" y="8" width="1" height="1"/><rect x="10" y="8" width="1" height="1"/><rect x="12" y="8" width="1" height="1"/><rect x="13" y="8" width="1" height="1"/><rect x="14" y="8" width="1" height="1"/><rect x="16" y="8" width="1" height="1"/><rect x="17" y="8" width="1" height="1"/><rect x="22" y="8" width="1" height="1"/><rect x="23" y="8" width="1" height="1"/><rect x="24" y="8" width="1" height="1"/><rect x="2" y="9" width="1" height="1"/><rect x="3" y="9" width="1" height="1"/><rect x="4" y="9" width="1" height="1"/><rect x="5" y="9" width="1" height="1"/><rect x="8" y="9" width="1" height="1"/><rect x="9" y="9" width="1" height="1"/><rect x="10" y="9" width="1" height="1"/><rect x="11" y="9" width="1" height="1"/><rect x="18" y="9" width="1" height="1"/><rect x="23" y="9" width="1" height="1"/><rect x="24" y="9" width="1" height="1"/><rect x="0" y="10" width="1" height="1"/><rect x="2" y="10" width="1" height="1"/><rect x="3" y="10" width="1" height="1"/><rect x="4" y="10" width="1" height="1"/><rect x="5" y="10" width="1" height="1"/><rect x="6" y="10" width="1" height="1"/><rect x="7" y="10" width="1" height="1"/><rect x="8" y="10" width="1" height="1"/><rect x="9" y="10" width="1" height="1"/><rect x="10" y="10" width="1" height="1"/><rect x="11" y="10" width="1" height="1"/><rect x="12" y="10" width="1" height="1"/><rect x="15" y="10" width="1" height="1"/><rect x="16" y="10" width="1" height="1"/><rect x="17" y="10" width="1" height="1"/><rect x="18" y="10" width="1" height="1"/><rect x="19" y="10" width="1" height="1"/><rect x="22" y="10" width="1" height="1"/><rect x="24" y="10" width="1" height="1"/><rect x="0" y="11" width="1" height="1"/><rect x="1" y="11" width="1" height="1"/><rect x="2" y="11" width="1" height="1"/><rect x="4" y="11" width="1" height="1"/><rect x="5" y="11" width="1" height="1"/><rect x="8" y="11" width="1" height="1"/><rect x="10" y="11" width="1" height="1"/><rect x="15" y="11" width="1" height="1"/><rect x="16" y="11" width="1" height="1"/><rect x="17" y="11" width="1" height="1"/><rect x="21" y="11" width="1" height="1"/><rect x="22" y="11" width="1" height="1"/><rect x="4" y="12" width="1" height="1"/><rect x="6" y="12" width="1" height="1"/><rect x="7" y="12" width="1" height="1"/><rect x="8" y="12" width="1" height="1"/><rect x="9" y="12" width="1" height="1"/><rect x="10" y="12" width="1" height="1"/><rect x="13" y="12" width="1" height="1"/><rect x="17" y="12" width="1" height="1"/><rect x="18" y="12" width="1" height="1"/><rect x="19" y="12" width="1" height="1"/><rect x="20" y="12" width="1" height="1"/><rect x="21" y="12" width="1" height="1"/><rect x="0" y="13" width="1" height="1"/><rect x="3" y="13" width="1" height="1"/><rect x="8" y="13" width="1" height="1"/><rect x="9" y="13" width="1" height="1"/><rect x="11" y="13" width="1" height="1"/><rect x="14" y="13" width="1" height="1"/><rect x="15" y="13" width="1" height="1"/><rect x="18" y="13" width="1" height="1"/><rect x="19" y="13" width="1" height="1"/><rect x="20" y="13" width="1" height="1"/><rect x="23" y="13" width="1" height="1"/><rect x="2" y="14" width="1" height="1"/><rect x="4" y="14" width="1" height="1"/><rect x="5" y="14" width="1" height="1"/><rect x="10" y="14" width="1" height="1"/><rect x="13" y="14" width="1" height="1"/><rect x="14" y="14" width="1" height="1"/><rect x="15" y="14" width="1" height="1"/><rect x="16" y="14" width="1" height="1"/><rect x="18" y="14" width="1" height="1"/><rect x="19" y="14" width="1" height="1"/><rect x="20" y="14" width="1" height="1"/><rect x="22" y="14" width="1" height="1"/><rect x="23" y="14" width="1" height="1"/><rect x="1" y="15" width="1" height="1"/><rect x="6" y="15" width="1" height="1"/><rect x="7" y="15" width="1" height="1"/><rect x="8" y="15" width="1" height="1"/><rect x="9" y="15" width="1" height="1"/><rect x="11" y="15" width="1" height="1"/><rect x="12" y="15" width="1" height="1"/><rect x="15" y="15" width="1" height="1"/><rect x="19" y="15" width="1" height="1"/><rect x="21" y="15" width="1" height="1"/><rect x="22" y="15" width="1" height="1"/><rect x="3" y="16" width="1" height="1"/><rect x="8" y="16" width="1" height="1"/><rect x="10" y="16" width="1" height="1"/><rect x="15" y="16" width="1" height="1"/><rect x="19" y="16" width="1" height="1"/><rect x="20" y="16" width="1" height="1"/><rect x="21" y="16" width="1" height="1"/><rect x="22" y="16" width="1" height="1"/><rect x="23" y="16" width="1" height="1"/><rect x="24" y="16" width="1" height="1"/><rect x="11" y="17" width="1" height="1"/><rect x="14" y="17" width="1" height="1"/><rect x="17" y="17" width="1" height="1"/><rect x="19" y="17" width="1" height="1"/><rect x="23" y="17" width="1" height="1"/><rect x="24" y="17" width="1" height="1"/><rect x="9" y="18" width="1" height="1"/><rect x="10" y="18" width="1" height="1"/><rect x="11" y="18" width="1" height="1"/><rect x="13" y="18" width="1" height="1"/><rect x="15" y="18" width="1" height="1"/><rect x="16" y="18" width="1" height="1"/><rect x="17" y="18" width="1" height="1"/><rect x="20" y="18" width="1" height="1"/><rect x="24" y="18" width="1" height="1"/><rect x="8" y="19" width="1" height="1"/><rect x="9" y="19" width="1" height="1"/><rect x="11" y="19" width="1" height="1"/><rect x="12" y="19" width="1" height="1"/><rect x="13" y="19" width="1" height="1"/><rect x="16" y="19" width="1" height="1"/><rect x="17" y="19" width="1" height="1"/><rect x="21" y="19" width="1" height="1"/><rect x="22" y="19" width="1" height="1"/><rect x="24" y="19" width="1" height="1"/><rect x="8" y="20" width="1" height="1"/><rect x="12" y="20" width="1" height="1"/><rect x="14" y="20" width="1" height="1"/><rect x="16" y="20" width="1" height="1"/><rect x="17" y="20" width="1" height="1"/><rect x="20" y="20" width="1" height="1"/><rect x="21" y="20" width="1" height="1"/><rect x="23" y="20" width="1" height="1"/><rect x="24" y="20" width="1" height="1"/><rect x="8" y="21" width="1" height="1"/><rect x="9" y="21" width="1" height="1"/><rect x="10" y="21" width="1" height="1"/><rect x="11" y="21" width="1" height="1"/><rect x="12" y="21" width="1" height="1"/><rect x="14" y="21" width="1" height="1"/><rect x="16" y="21" width="1" height="1"/><rect x="17" y="21" width="1" height="1"/><rect x="18" y="21" width="1" height="1"/><rect x="19" y="21" width="1" height="1"/><rect x="20" y="21" width="1" height="1"/><rect x="23" y="21" width="1" height="1"/><rect x="24" y="21" width="1" height="1"/><rect x="9" y="22" width="1" height="1"/><rect x="11" y="22" width="1" height="1"/><rect x="14" y="22" width="1" height="1"/><rect x="18" y="22" width="1" height="1"/><rect x="22" y="22" width="1" height="1"/><rect x="23" y="22" width="1" height="1"/><rect x="24" y="22" width="1" height="1"/><rect x="8" y="23" width="1" height="1"/><rect x="9" y="23" width="1" height="1"/><rect x="11" y="23" width="1" height="1"/><rect x="12" y="23" width="1" height="1"/><rect x="13" y="23" width="1" height="1"/><rect x="17" y="23" width="1" height="1"/><rect x="18" y="23" width="1" height="1"/><rect x="19" y="23" width="1" height="1"/><rect x="20" y="23" width="1" height="1"/><rect x="21" y="23" width="1" height="1"/><rect x="22" y="23" width="1" height="1"/><rect x="23" y="23" width="1" height="1"/><rect x="10" y="24" width="1" height="1"/><rect x="12" y="24" width="1" height="1"/><rect x="13" y="24" width="1" height="1"/><rect x="14" y="24" width="1" height="1"/><rect x="15" y="24" width="1" height="1"/><rect x="16" y="24" width="1" height="1"/><rect x="18" y="24" width="1" height="1"/><rect x="20" y="24" width="1" height="1"/><rect x="21" y="24" width="1" height="1"/><rect x="22" y="24" width="1" height="1"/><rect x="23" y="24" width="1" height="1"/><rect x="24" y="24" width="1" height="1"/><rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/><rect x="18" y="0" width="7" height="7"/><rect x="19" y="1" width="5" height="5" fill="#fff"/><rect x="20" y="2" width="3" height="3"/><rect x="0" y="18" width="7" height="7"/><rect x="1" y="19" width="5" height="5" fill="#fff"/><rect x="2" y="20" width="3" height="3"/></svg></div>
+</div>
+<p class="cap" style="max-width:270px">Il mosaico delle prime quattro copertine, come nella Libreria.</p></div>
+</div></div>
+
+<table class="spec">
+<tr><td>Come si fa</td><td>Un widget disegnato fuori schermo e salvato in PNG (come lo sfondo sfocato di oggi), nella cartella temporanea della condivisione; poi il foglio di sistema con file + testo (<code>share_plus</code> lo fa già). Il QR con <code>qr_flutter</code>, già nelle dipendenze: lo legge lo scanner di «Ricevi» che c'è già.</td></tr>
+<tr><td>Senza copertina</td><td>Brano locale o copertina non scaricata: al posto della copertina l'anello con l'iniziale, sfondo dell'accento.</td></tr>
+<tr><td>Oltre 50 brani</td><td>Come oggi: il file .m3u8, niente scheda (il QR non ci starebbe).</td></tr>
+<tr><td>Linux</td><td>Come oggi: nessun foglio di sistema, il testo va negli appunti.</td></tr>
+<tr><td>Brani solo locali</td><td>Niente link né QR (non c'è niente da aprire): la scheda resta, con «Ascoltato su FreeKmusic».</td></tr>
+<tr><td>Da decidere</td><td>4) Il QR sulla scheda: sì, o solo il nome dell'app. 5) La didascalia: corta (nome + link della pagina) o il testo di oggi con le 10 righe. 6) Un passo in più con l'anteprima e «Solo testo», o la scheda va sempre senza chiedere.</td></tr>
+</table>
+
+</div></body></html>
