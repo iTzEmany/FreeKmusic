@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/app_info.dart' show kAppVersion;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/update_providers.dart';
 import '../../../services/online/update_checker.dart';
@@ -25,9 +24,7 @@ List<Widget> updateTiles(BuildContext context, WidgetRef ref) {
       leading: const Icon(Icons.new_releases_outlined),
       title: Text(l.whatsNewTile),
       onTap: () async {
-        final info =
-            await ref.read(whatsNewProvider).notes() ??
-            UpdateInfo(version: kAppVersion, url: 'https://github.com/${ref.read(releaseRepoProvider)}/releases');
+        final info = await ref.read(whatsNewProvider).notes();
         if (context.mounted) await showWhatsNew(context, info);
       },
     ),

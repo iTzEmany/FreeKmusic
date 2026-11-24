@@ -82,7 +82,8 @@ class CodecoreApp extends ConsumerWidget {
     // A new version, at most once a day and only if the user asked for it.
     ref.listen(updateOnStartProvider, (_, next) {
       final info = next.value;
-      if (info == null) return;
+      // Not on top of «Aggiornata alla X»: that start has the page only.
+      if (info == null || ref.read(whatsNewOnStartProvider).value != null) return;
       final c = _navigatorKey.currentState?.overlay?.context;
       if (c == null) {
         AppLog.w('no navigator to show the update notice on');

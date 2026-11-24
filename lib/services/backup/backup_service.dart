@@ -21,7 +21,6 @@ import '../../data/settings/settings_store.dart'
         genreRereadAfterKey,
         genreRereadDoneKey,
         lastSeenVersionKey,
-        newVersionNotesKey,
         recogPassAfterKey,
         recogPassDoneKey,
         storageModeD665Key;
@@ -44,7 +43,6 @@ const kDeviceBoundKeys = {
   genreRereadDoneKey,
   storageModeD665Key,
   lastSeenVersionKey,
-  newVersionNotesKey,
   // State of this device's own sessions: a copy would be wrong (or skip a prompt) elsewhere.
   'jamBlePermAsked',
   'lastUpdateCheckDay',

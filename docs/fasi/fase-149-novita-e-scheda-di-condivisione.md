@@ -42,3 +42,5 @@ Codice: `UpdateDialog`, `updateSnackBar`, `updateTiles` (`lib/ui/screens/setting
 
 ## Note di deviazione
 - 149.2: l'evidenza ha un'icona grande in un riquadro, non un'illustrazione.
+- 149.3: la pagina si decide una volta; se il file delle novità manca (build di sviluppo) non compare.
+- 149.3: il tile «Novità della versione» sta con gli aggiornamenti e sparisce senza repository delle release; note dagli asset (D-741), non da GitHub.

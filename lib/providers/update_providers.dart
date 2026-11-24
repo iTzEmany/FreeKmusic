@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/app_info.dart';
@@ -12,7 +13,7 @@ import '../services/update/desktop_update.dart';
 import '../services/update/update_installer.dart';
 import '../services/update/whats_new.dart';
 import '../services/update/update_target.dart';
-import 'database_providers.dart' show databaseProvider;
+import 'database_providers.dart' show trackRepositoryProvider;
 import 'issue_providers.dart' show linkOpenerProvider;
 import 'online_providers.dart';
 import 'settings_providers.dart';
@@ -25,36 +26,19 @@ final releaseRepoProvider = Provider<String>((ref) => kReleaseRepo);
 final updateCheckerProvider = Provider<UpdateChecker?>((ref) {
   final repo = ref.watch(releaseRepoProvider);
   if (repo.isEmpty) return null;
-  final store = ref.read(settingsStoreProvider);
-  return UpdateChecker(
-    ref.watch(webClientProvider),
-    repo: repo,
-    current: kAppVersion,
-    onNewer: (i) => saveNewVersionNotes(store, i).catchError((Object e, StackTrace st) {
-      AppLog.w('could not save the release notes', e, st);
-    }),
-  );
+  return UpdateChecker(ref.watch(webClientProvider), repo: repo, current: kAppVersion);
 });
 
 /// «Aggiornata alla X»: when to show it and with which notes.
 final whatsNewProvider = Provider<WhatsNew>((ref) {
   final repo = ref.watch(releaseRepoProvider);
-  final web = ref.watch(webClientProvider);
-  final db = ref.read(databaseProvider);
+  final tracks = ref.read(trackRepositoryProvider);
   return WhatsNew(
     ref.read(settingsStoreProvider),
     current: kAppVersion,
-    hasData: () async => (await (db.select(db.tracks)..limit(1)).get()).isNotEmpty,
-    fetch: (version) async {
-      if (repo.isEmpty) return null;
-      final j = await web.getJson('https://api.github.com/repos/$repo/releases/tags/v$version', strict: true);
-      if (j is! Map || j['body'] is! String) return null;
-      return UpdateInfo(
-        version: version,
-        url: j['html_url'] is String ? j['html_url'] as String : 'https://github.com/$repo/releases',
-        notes: (j['body'] as String).trim(),
-      );
-    },
+    url: 'https://github.com/$repo/releases/tag/v$kAppVersion',
+    hasData: tracks.hasAny,
+    load: (version) => rootBundle.loadString('release-notes/$version.md'),
   );
 });
 

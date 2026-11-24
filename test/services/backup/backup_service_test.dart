@@ -1,4 +1,4 @@
-import 'package:codecore/data/settings/settings_store.dart' show lastSeenVersionKey, newVersionNotesKey;
+import 'package:codecore/data/settings/settings_store.dart' show lastSeenVersionKey;
 import 'dart:convert';
 import 'dart:io';
 
@@ -245,8 +245,8 @@ void main() {
     },
   );
 
-  test('the last seen version and the saved release notes never travel in a backup', () async {
-    SharedPreferences.setMockInitialValues({lastSeenVersionKey: '1.6.0', newVersionNotesKey: '{}', 'theme': 'oled'});
+  test('the last seen version never travel in a backup', () async {
+    SharedPreferences.setMockInitialValues({lastSeenVersionKey: '1.6.0', 'theme': 'oled'});
     final json = settingsToJson(await SharedPreferences.getInstance());
     expect(json.keys, ['theme']);
   });

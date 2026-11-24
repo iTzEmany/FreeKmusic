@@ -135,6 +135,7 @@ flutter:
   assets:
     - assets/fonts/OFL-Figtree.txt
     - assets/fonts/OFL-Unbounded.txt
+    - release-notes/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -282,6 +282,8 @@ Future<bool> applyPendingRestore({
     }
     stagedDb.renameSync(dbFile.path);
     dbReplaced = true;
+    // A restore is not an update: no «Aggiornata alla X» page for it.
+    await prefs.setString(lastSeenVersionKey, kAppVersion);
     // The restored rows may be older: the recognition pass must run again.
     await prefs.remove(recogPassAfterKey);
     await prefs.remove(recogPassDoneKey);
@@ -303,8 +305,6 @@ Future<bool> applyPendingRestore({
         jsonDecode(settings.readAsStringSync()) as Map<String, dynamic>,
       );
     }
-    // A restore is not an update: no «Aggiornata alla X» page for it.
-    await prefs.setString(lastSeenVersionKey, kAppVersion);
     // «Non mi piace» choices replace the current ones; a backup without the
     // file (older than fase 101) leaves them as they are, like downloads.json.
     final dislikes = File(p.join(staging.path, _stagedDislikes));

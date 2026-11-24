@@ -1508,6 +1508,9 @@ class TrackRepository {
     return {for (final r in rows) r.read(_db.tracks.id)!};
   }
 
+  /// Any track row at all (library or streamed).
+  Future<bool> hasAny() async => (await (_db.select(_db.tracks)..limit(1)).get()).isNotEmpty;
+
   /// How many music tracks there are (podcast episodes are not counted).
   Future<int> countAll() async {
     final c = _db.tracks.id.count();
