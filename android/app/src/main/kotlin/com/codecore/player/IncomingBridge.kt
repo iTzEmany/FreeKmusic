@@ -64,6 +64,13 @@ object IncomingBridge {
             Intent.ACTION_SEND -> stream?.takeIf { isZipOrCsv(ctx, it, intent.type) }
             else -> null
         }
+        // An https App Link is text for Dart; toString() keeps the #fragment (the shared list).
+        if (intent.action == Intent.ACTION_VIEW && uri?.scheme == "https") {
+            intent.action = null
+            pendingTexts.add(uri.toString())
+            channel?.invokeMethod("incomingText", null)
+            return
+        }
         if (uri == null) {
             if (intent.action != Intent.ACTION_SEND || stream != null) return
             val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() }

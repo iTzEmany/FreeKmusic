@@ -53,6 +53,7 @@ import 'side_panel.dart';
 import '../widgets/motion.dart';
 import '../widgets/playback_reason_text.dart';
 import '../widgets/show_msg.dart';
+import 'shared_collection_import.dart';
 import 'shazam_share.dart';
 
 /// Ctrl+F searches the Library when there is no online Search or it is the
@@ -368,8 +369,14 @@ class AppShell extends ConsumerWidget {
       final query = switch (shared) {
         SharedLink(:final url) => url,
         PlainShare(text: final t) => t,
-        ShazamShare() => '',
+        ShazamShare() || SharedCollection() || InvalidShareLink() => '',
       };
+      if (shared is SharedCollection || shared is InvalidShareLink) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) handleSharedPage(context, ref, shared);
+        });
+        return;
+      }
       if (shared is ShazamShare) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (context.mounted) handleShazamShare(context, ref, shared);

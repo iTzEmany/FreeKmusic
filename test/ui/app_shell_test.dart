@@ -189,6 +189,22 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('an invalid share-page link tells so instead of searching (145.7)',
+      (t) async {
+    _phone(t);
+    final h = await Harness.create(t, tracks: 2);
+    final shared = StreamController<String>();
+    addTearDown(shared.close);
+    await h.pump(t, const AppShell(), extraOverrides: [
+      incomingTextProvider.overrideWith((ref) => shared.stream),
+    ]);
+    shared.add('https://itzemany.github.io/FreeKmusic/#xx!!');
+    await _settle(t);
+    expect(find.text('Non riesco a caricare i dati.'), findsOneWidget);
+    expect(_container(t).read(searchControllerProvider).text, isEmpty);
+    await h.dispose(t);
+  });
+
   testWidgets('the dock blurs only when the setting is on', (t) async {
     _phone(t);
     final h = await Harness.create(t, tracks: 2);

@@ -1,3 +1,4 @@
+import '../share/share_fragment.dart';
 import 'external_links.dart';
 import 'youtube_urls.dart';
 
@@ -19,10 +20,33 @@ class ShazamShare extends SharedText {
   final String? shazamUrl;
 }
 
+/// A link of the share page (D-702) whose fragment holds a list of tracks.
+class SharedCollection extends SharedText {
+  const SharedCollection(this.fragment);
+  final SharedFragment fragment;
+}
+
+/// A link of the share page whose fragment cannot be read: «link non valido».
+class InvalidShareLink extends SharedText {
+  const InvalidShareLink();
+}
+
 /// Anything else: goes to Cerca as typed.
 class PlainShare extends SharedText {
   const PlainShare(this.text);
   final String text;
+}
+
+final _sharePage = RegExp(r'^https://itzemany\.github\.io/FreeKmusic/?(?:index\.html)?#(.*)$');
+
+SharedText? _parseSharePage(String token) {
+  final m = _sharePage.firstMatch(token);
+  if (m == null) return null;
+  try {
+    return SharedCollection(decodeShareFragment(m[1]!));
+  } on ShareFragmentError {
+    return const InvalidShareLink();
+  }
 }
 
 bool _isKnownLink(String s) =>
@@ -55,6 +79,8 @@ SharedText routeSharedText(String text, {String? subject}) {
   final shazam = _parseShazam(body);
   if (shazam != null) return shazam;
   for (final token in body.split(RegExp(r'\s+'))) {
+    final page = _parseSharePage(token);
+    if (page != null) return page;
     if (_isKnownLink(token)) return SharedLink(token);
   }
   return PlainShare(body);
