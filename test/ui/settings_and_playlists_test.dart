@@ -1,3 +1,4 @@
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/data/settings/settings_store.dart' show StorageMode;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
@@ -31,7 +32,11 @@ void main() {
   testWidgets('the blurred dock switch is off, labelled, at least 48 dp tall, and the tap saves it', (tester) async {
     tester.view.physicalSize = const Size(500, 3400);
     tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
+    debugIsDesktopOverride = false;
+    addTearDown(() {
+      tester.view.reset();
+      debugIsDesktopOverride = null;
+    });
     final h = await Harness.create(tester);
     await h.pump(tester, const Scaffold(body: SettingsScreen(initial: SettingsPage.appearance)));
     final row = find.byKey(const ValueKey('blurred-chrome'));

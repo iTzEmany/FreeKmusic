@@ -1,3 +1,4 @@
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/ui/screens/now_playing/credits_card.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart'
     show NpCard, StreamCardsWait, creditsRefreshHeight;
@@ -34,6 +35,8 @@ Future<Harness> _open(
 void main() {
   for (final on in [true, false]) {
     testWidgets('BlurredChrome with blurredChrome $on', (t) async {
+      debugIsDesktopOverride = false;
+      addTearDown(() => debugIsDesktopOverride = null);
       final h = await _open(
         t,
         (_) async =>
@@ -44,6 +47,19 @@ void main() {
       await h.dispose(t);
     });
   }
+
+  testWidgets('desktop ignores a saved blurredChrome without changing it', (t) async {
+    debugIsDesktopOverride = true;
+    addTearDown(() => debugIsDesktopOverride = null);
+    final h = await _open(
+      t,
+      (_) async => const BlurredChrome(radius: 8, child: SizedBox(height: 20)),
+      blurred: true,
+    );
+    expect(find.byType(BackdropFilter), findsNothing);
+    expect(h.store.readSettings().blurredChrome, isTrue);
+    await h.dispose(t);
+  });
 
   group('surface alpha in CustomTheme', () {
     const base = CustomTheme(id: 't', name: 'T');

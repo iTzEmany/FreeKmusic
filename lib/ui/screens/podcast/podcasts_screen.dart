@@ -17,6 +17,7 @@ import '../../widgets/cover_image.dart';
 import '../../widgets/error_state.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/page_frame.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/skeleton.dart';
 import 'podcast_detail_screen.dart';
@@ -264,44 +265,40 @@ class _PodcastsScreenState extends ConsumerState<PodcastsScreen> {
             ),
         ],
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: ListView(
-            padding: EdgeInsets.zero.withDock(context),
-            children: [
-              if (!searchingNow && podcasts.isNotEmpty) ...[
-                SectionHeader(l.podcastYours),
-                SizedBox(
-                  height: 176,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: CcDims.margin,
-                    ),
-                    itemCount: podcasts.length,
-                    itemBuilder: (_, i) => _YourPodcast(podcasts[i]),
+      body: PageFrame(
+        child: ListView(
+          padding: EdgeInsets.zero.withDock(context),
+          children: [
+            if (!searchingNow && podcasts.isNotEmpty) ...[
+              SectionHeader(l.podcastYours),
+              SizedBox(
+                height: 176,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: CcDims.margin,
                   ),
+                  itemCount: podcasts.length,
+                  itemBuilder: (_, i) => _YourPodcast(podcasts[i]),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    CcDims.margin,
-                    CcDims.gap8,
-                    CcDims.margin,
-                    0,
-                  ),
-                  child: Text(
-                    l.podcastsNotice,
-                    style: Theme.of(context).textTheme.bodySmall
-                        ?.copyWith(color: cc.textMuted),
-                  ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.margin,
+                  CcDims.gap8,
+                  CcDims.margin,
+                  0,
                 ),
-              ],
-              ...searchingNow ? _results(l, subs) : _discover(l, subs),
-              const SizedBox(height: CcDims.gap24),
+                child: Text(
+                  l.podcastsNotice,
+                  style: Theme.of(context).textTheme.bodySmall
+                      ?.copyWith(color: cc.textMuted),
+                ),
+              ),
             ],
-          ),
+            ...searchingNow ? _results(l, subs) : _discover(l, subs),
+            const SizedBox(height: CcDims.gap24),
+          ],
         ),
       ),
     );

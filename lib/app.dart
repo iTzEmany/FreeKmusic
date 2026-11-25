@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'core/platform.dart' show isDesktop;
 import 'l10n/app_localizations.dart';
 import 'providers/database_providers.dart' show folderRepositoryProvider;
 import 'providers/equalizer_providers.dart';
@@ -181,7 +182,7 @@ class CodecoreApp extends ConsumerWidget {
               s.reducedMotion || MediaQuery.disableAnimationsOf(context),
           textScaler: AppTextScaler(
             MediaQuery.textScalerOf(context),
-            s.fontScale,
+            isDesktop ? 1.0 : s.fontScale, // phone-only setting (D-720)
           ).clamp(maxScaleFactor: 2.0),
         ),
         child: AppBackground(

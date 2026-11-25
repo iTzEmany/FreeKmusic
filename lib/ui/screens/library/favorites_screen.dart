@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/track_table.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
@@ -82,8 +83,14 @@ class _FavoritesScreenState extends ConsumerState<FavoritesScreen> {
       listKey: key,
       visibleIds: [for (final t in list) t.id],
     );
-    final rows =
-EntranceScope(
+    final rows = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint
+        ? TrackTable(
+            tracks: list,
+            compact: compact,
+            selection: selection,
+            onPlay: (_, i) => ctrl.playFromList(list, i, context: playCtx),
+          )
+        : EntranceScope(
               child: SliverList.builder(
                 itemCount: list.length,
                 itemBuilder: (_, i) => SizedBox(

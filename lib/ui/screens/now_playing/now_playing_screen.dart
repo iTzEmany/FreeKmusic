@@ -4,6 +4,7 @@ import '../../../core/platform.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 
 import '../car/car_mode_screen.dart';
 
@@ -45,6 +46,8 @@ import '../../widgets/action_catalog.dart';
 
 const _playerRouteName = 'now-playing';
 const _wideBreakpoint = 900.0;
+// Desktop window: big cover, lyrics and queue full height, linear bar only (F-111).
+const _desktopBreakpoint = 840.0;
 const _closeDistance = 120.0;
 const _closeVelocity = 700.0;
 const _cardsPlaceholderHeight = 480.0;
@@ -256,11 +259,13 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         ref.watch(currentTrackProvider).value;
     final cc = context.cc;
     final online = track != null && track.trackKind == TrackKind.online;
-    final wide = MediaQuery.sizeOf(context).width >= _wideBreakpoint;
+    final width = MediaQuery.sizeOf(context).width;
+    final bigDesktop = (widget.desktop ?? isDesktop) && width >= _desktopBreakpoint;
+    final wide = bigDesktop || width >= _wideBreakpoint;
     final reduce = MediaQuery.disableAnimationsOf(context);
     // Option «tinta della copertina» (D-54): one flat colour, else `bg`.
     final tinted = ref.watch(themeBackgroundProvider).coverBackdrop;
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: tinted
           ? resolvedHeroTint(context, ref, track?.coverKey)
           : cc.bg,
@@ -279,6 +284,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                     final player = _Player(
                       track: track,
                       desktop: widget.desktop ?? isDesktop,
+                      linearBar: bigDesktop,
                       onDragUpdate: (d) {
                         _dragging = true;
                         _dy.value = (_dy.value + d.delta.dy).clamp(0.0, 600.0);
@@ -289,10 +295,15 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                       // Player and cards form one group, centred, so no hole opens between them.
                       return Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 1012),
+                          constraints: BoxConstraints(
+                            maxWidth: bigDesktop ? 1480 : 1012,
+                          ),
                           child: Row(
                             children: [
-                              Flexible(child: player),
+                              if (bigDesktop)
+                                Expanded(flex: 5, child: player)
+                              else
+                                Flexible(child: player),
                               const SizedBox(width: 32),
                               // The player pads its own side by CcDims.margin: mirror it.
                               Padding(
@@ -300,7 +311,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   right: CcDims.margin,
                                 ),
                                 child: SizedBox(
-                                  width: 420,
+                                  width: bigDesktop && width >= 1100 ? 520 : 400,
                                   child: ListView(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: CcDims.gap16,
@@ -337,6 +348,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         ),
       ),
     );
+    if (!(widget.desktop ?? isDesktop)) return scaffold;
+    // Desktop: Esc closes the full-screen player, like the arrow.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop(),
+      },
+      child: Focus(autofocus: true, child: scaffold),
+    );
   }
 }
 
@@ -366,12 +385,15 @@ class _Player extends ConsumerWidget {
   const _Player({
     required this.track,
     required this.desktop,
+    required this.linearBar,
     required this.onDragUpdate,
     required this.onDragEnd,
   });
 
   final Track track;
   final bool desktop;
+  /// Desktop window: no ring; the linear bar is the one slider.
+  final bool linearBar;
   final GestureDragUpdateCallback onDragUpdate;
   final GestureDragEndCallback onDragEnd;
 
@@ -393,6 +415,7 @@ class _Player extends ConsumerWidget {
           _PlayerCover(
             track: track,
             radio: radio,
+            linearBar: linearBar,
             onDragUpdate: onDragUpdate,
             onDragEnd: onDragEnd,
           ),
@@ -408,7 +431,7 @@ class _Player extends ConsumerWidget {
           if (radio != null)
             NpLiveRow(station: radio)
           else
-            NpSeekRow(track: track),
+            NpSeekRow(track: track, accessible: linearBar),
           const SizedBox(height: 8),
           NpControls(live: radio != null),
           NpBottomRow(karaoke: radio == null),
@@ -523,12 +546,14 @@ class _PlayerCover extends ConsumerWidget {
   const _PlayerCover({
     required this.track,
     required this.radio,
+    required this.linearBar,
     required this.onDragUpdate,
     required this.onDragEnd,
   });
 
   final Track track;
   final RadioStation? radio;
+  final bool linearBar;
   final GestureDragUpdateCallback onDragUpdate;
   final GestureDragEndCallback onDragEnd;
 
@@ -563,12 +588,23 @@ class _PlayerCover extends ConsumerWidget {
         },
         child: LayoutBuilder(
           builder: (_, c) {
-            final s = (c.biggest.shortestSide).clamp(80.0, 460.0);
+            final s = (c.biggest.shortestSide).clamp(80.0, linearBar ? 640.0 : 460.0);
             const stroke = 12.0;
             final inner = RingProgress.innerSize(s, stroke: stroke);
             if (video) {
               return Center(
                 child: KaraokeVideoView(track: track, width: c.maxWidth),
+              );
+            }
+            if (linearBar) {
+              return Center(
+                child: TrackArt(
+                  track: track,
+                  size: s,
+                  radius: CcDims.rSheet,
+                  semanticLabel: track.album ?? track.title,
+                  heroTag: coverHeroTagFor(MediaQuery.sizeOf(context).width),
+                ),
               );
             }
             return Center(

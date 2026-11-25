@@ -168,7 +168,7 @@ class _TrackInfo extends ConsumerWidget {
             children: [
               MarqueeText(texts?.title ?? track.title, style: theme.bodyLarge),
               if (radio == null)
-                ArtistLinks(track, style: theme.bodyMedium, minHeight: 0)
+                ArtistLinks(track, style: theme.bodyMedium, minHeight: 36)
               else
                 Text(
                   texts!.subtitle,
@@ -307,7 +307,7 @@ class _Center extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          height: 44,
+          height: 40,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -443,6 +443,8 @@ class _Right extends ConsumerWidget {
     final vol = ref.watch(volumeProvider);
     final volCtl = ref.read(volumeProvider.notifier);
     Color on(SidePanel p) => panel == p ? cc.accent : cc.textMuted;
+    // Karaoke and sleep timer stay reachable from the player on a narrow window.
+    final roomy = MediaQuery.sizeOf(context).width >= 900;
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -451,8 +453,7 @@ class _Right extends ConsumerWidget {
           icon: Icon(Icons.lyrics_outlined, color: on(SidePanel.lyrics)),
           onPressed: () => panelCtl.toggle(SidePanel.lyrics),
         ),
-        const KaraokeButton(),
-        const SleepChip(),
+        if (roomy) ...const [KaraokeButton(), SleepChip()],
         IconButton(
           tooltip: CatalogAction.queuePanel.label(l),
           icon: Icon(CatalogAction.queuePanel.icon, color: on(SidePanel.queue)),

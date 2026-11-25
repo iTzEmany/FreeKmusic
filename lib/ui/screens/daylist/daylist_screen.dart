@@ -26,6 +26,7 @@ import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart' show LiveTrackRow, SwipeToQueue, trackRowWide;
 import '../../widgets/track_row_selection.dart';
 import '../../widgets/track_table.dart';
+import '../../widgets/page_frame.dart';
 import '../../../providers/settings_providers.dart' show settingsProvider;
 import '../settings/settings_screen.dart';
 import 'daylist_labels.dart';
@@ -79,7 +80,7 @@ class DaylistScreen extends ConsumerWidget {
         ],
         ),
       ),
-      body: d == null || d.result.tooFew
+      body: PageFrame(child: d == null || d.result.tooFew
           ? Center(
               child: Text(
                 l.daylistEmpty,
@@ -181,7 +182,7 @@ class DaylistScreen extends ConsumerWidget {
                       : _OwnRow(item.track!, () => actions.play(startIndex: i)),
               ],
             );
-            }),
+            })),
       ),
     );
   }

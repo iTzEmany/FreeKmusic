@@ -8662,4 +8662,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get densityLarge => 'grande';
+
+  @override
+  String get settingsPageShortcuts => 'Atalhos';
+
+  @override
+  String get shortcutsEmpty => 'Os atalhos de teclado aparecerão aqui.';
 }

@@ -13482,6 +13482,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'grande'**
   String get densityLarge;
+
+  /// No description provided for @settingsPageShortcuts.
+  ///
+  /// In it, this message translates to:
+  /// **'Scorciatoie'**
+  String get settingsPageShortcuts;
+
+  /// No description provided for @shortcutsEmpty.
+  ///
+  /// In it, this message translates to:
+  /// **'Le scorciatoie da tastiera compariranno qui.'**
+  String get shortcutsEmpty;
 }
 
 class _AppLocalizationsDelegate

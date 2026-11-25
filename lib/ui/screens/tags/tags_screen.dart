@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/create_flows.dart';
+import '../../widgets/page_frame.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
@@ -11,6 +12,7 @@ import '../../../providers/tag_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
+import '../library/all_tracks_screen.dart';
 import '../../widgets/collection_header.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
@@ -41,14 +43,13 @@ class TagsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
+      body: PageFrame(
           child: tags.isEmpty
               ? EmptyState(
                   icon: Icons.label_outline_rounded,
                   message: l.tagsEmpty,
+                  actionLabel: l.openAllTracks,
+                  onAction: () => ShellNav.open<void>(context, const AllTracksScreen()),
                 )
               : ListView(
                   padding: EdgeInsets.zero.withDock(context),
@@ -70,7 +71,6 @@ class TagsScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
-        ),
       ),
     );
   }

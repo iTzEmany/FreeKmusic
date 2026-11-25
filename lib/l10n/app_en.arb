@@ -4249,5 +4249,7 @@
   "viewDensity": "Grid density",
   "densitySmall": "small",
   "densityMedium": "medium",
-  "densityLarge": "large"
+  "densityLarge": "large",
+  "settingsPageShortcuts": "Shortcuts",
+  "shortcutsEmpty": "Keyboard shortcuts will appear here."
 }

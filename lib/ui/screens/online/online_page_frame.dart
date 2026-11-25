@@ -6,6 +6,7 @@ import '../../../providers/selection_providers.dart';
 import '../../../services/online/youtube_service.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
+import '../../widgets/page_frame.dart';
 import 'online_selection_scope.dart';
 import 'online_song_row.dart';
 
@@ -48,11 +49,7 @@ class OnlinePageFrame extends ConsumerWidget {
         SliverAppBar(
           pinned: true,
           surfaceTintColor: Colors.transparent,
-          title: Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
           actions: [
             ...actions,
             const ActivityButton(),
@@ -63,19 +60,15 @@ class OnlinePageFrame extends ConsumerWidget {
         SliverToBoxAdapter(child: SizedBox(height: 24 + context.dockInset)),
       ],
     );
-    final body = Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 960),
-        child: onRefresh == null
-            ? scroll
-            // The spinner starts under the pinned bar, not behind the status bar.
-            : RefreshIndicator(
-                onRefresh: onRefresh!,
-                edgeOffset: MediaQuery.paddingOf(context).top + kToolbarHeight,
-                child: scroll,
-              ),
-      ),
+    final body = PageFrame(
+      child: onRefresh == null
+          ? scroll
+          // The spinner starts under the pinned bar, not behind the status bar.
+          : RefreshIndicator(
+              onRefresh: onRefresh!,
+              edgeOffset: MediaQuery.paddingOf(context).top + kToolbarHeight,
+              child: scroll,
+            ),
     );
     return Scaffold(
       body: Column(

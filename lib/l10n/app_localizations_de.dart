@@ -8688,4 +8688,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get densityLarge => 'groß';
+
+  @override
+  String get settingsPageShortcuts => 'Tastenkürzel';
+
+  @override
+  String get shortcutsEmpty => 'Hier erscheinen die Tastenkürzel.';
 }

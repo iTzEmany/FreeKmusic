@@ -8722,4 +8722,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get densityLarge => 'grande';
+
+  @override
+  String get settingsPageShortcuts => 'Raccourcis';
+
+  @override
+  String get shortcutsEmpty => 'Les raccourcis clavier apparaîtront ici.';
 }

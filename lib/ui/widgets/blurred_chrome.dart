@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/platform.dart' show isDesktop;
 import '../../providers/settings_providers.dart';
 import '../theme/tokens.dart';
 
@@ -17,7 +18,8 @@ class BlurredChrome extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final blurred = ref.watch(settingsProvider.select((s) => s.blurredChrome));
+    final blurred =
+        !isDesktop && ref.watch(settingsProvider.select((s) => s.blurredChrome));
     final shape = BorderRadius.circular(radius);
     // Material (not a coloured Container) so the ink of the taps shows.
     final surface = Material(

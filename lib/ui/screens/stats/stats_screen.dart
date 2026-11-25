@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/page_frame.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -89,9 +90,7 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
     final stale = cur == null && stats.isLoading ? _shown : null;
     return Scaffold(
       appBar: CcAppBar(title: l.statsTitle),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
+      body: PageFrame(
           child: Column(
             children: [
               Padding(
@@ -177,7 +176,6 @@ class _StatsScreenState extends ConsumerState<StatsScreen> {
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -278,9 +276,22 @@ class _Body extends StatelessWidget {
               DateFormat.MMMd(locale).format(stats.firstAt!),
             ),
           ),
-        _Ranking(l.statsTopTracks, stats.topTracks, cover: true),
-        _Ranking(l.statsTopArtists, stats.topArtists),
-        _Ranking(l.statsTopAlbums, stats.topAlbums, cover: true),
+        // Desktop: the three charts side by side (mockup desktop-ascolto, note 13).
+        ...(() {
+          final rankings = [
+            _Ranking(l.statsTopTracks, stats.topTracks, cover: true),
+            _Ranking(l.statsTopArtists, stats.topArtists),
+            _Ranking(l.statsTopAlbums, stats.topAlbums, cover: true),
+          ];
+          return MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint
+              ? [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [for (final r in rankings) Expanded(child: r)],
+                  ),
+                ]
+              : rankings;
+        })(),
         const SizedBox(height: 24),
       ],
     );

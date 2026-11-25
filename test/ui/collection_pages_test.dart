@@ -1,3 +1,4 @@
+import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
@@ -423,7 +424,12 @@ void main() {
     await _settle(tester);
     expect(find.text('Preferiti'), findsWidgets);
     expect(find.text('Nessun preferito, per ora'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Apri tutti i brani'), findsOneWidget);
     expect(find.byTooltip('Riproduci'), findsNothing);
+    await tester.tap(find.widgetWithText(FilledButton, 'Apri tutti i brani'));
+    await _settle(tester);
+    expect(find.byType(AllTracksScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
@@ -541,7 +547,7 @@ void main() {
     await _settle(tester);
     final repo = FavoriteCollectionsRepository(h.db);
     expect(await tester.runAsync(() => repo.isFavoriteNow('album', 'artist|album 0')), isTrue);
-    expect(find.byTooltip('Togli dai preferiti'), findsOneWidget);
+    expect(find.byTooltip('Rimuovi dai preferiti'), findsOneWidget);
     await h.dispose(tester);
   });
 

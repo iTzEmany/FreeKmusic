@@ -8,6 +8,7 @@ import '../../widgets/motion.dart';
 import 'settings_pages.dart';
 import 'settings_summaries.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/page_frame.dart';
 import '../stats/stats_screen.dart';
 
 export 'settings_pages.dart' show SettingsPage, SettingsPageView, SettingsGroup, settingsPageTitle;
@@ -41,7 +42,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              for (final p in SettingsPage.values)
+              for (final p in visibleSettingsPages)
                 ListTile(
                   selected: wide && !_stats && p == _page,
                   selectedTileColor: cc.surface2,
@@ -54,12 +55,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       fontWeight: wide && !_stats && p == _page ? FontWeight.w700 : null,
                     ),
                   ),
-                  subtitle: Text(
-                    settingsSummary(context, ref, p),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: text.bodySmall?.copyWith(color: cc.textMuted),
-                  ),
+                  subtitle: switch (settingsSummary(context, ref, p)) {
+                    '' => null,
+                    final summary => Text(
+                      summary,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodySmall?.copyWith(color: cc.textMuted),
+                    ),
+                  },
                   trailing: wide ? null : const Icon(Icons.chevron_right_rounded),
                   onTap: () => wide
                       ? setState(() {
@@ -105,7 +109,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     if (wide) {
-      return Row(
+      return PageFrame(child: Row(
         children: [
           SizedBox(width: 280, child: _index(true)),
           Expanded(
@@ -119,7 +123,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ],
-      );
+      ));
     }
     final initial = widget.initial;
     return initial != null ? SettingsPageView(initial) : _index(false);

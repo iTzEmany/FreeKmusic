@@ -27,6 +27,7 @@ import '../../widgets/shrinking_header.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/async_body.dart';
 import '../../widgets/cc_search_field.dart';
+import '../../widgets/page_frame.dart';
 import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
 
 String _sortLabel(BuildContext context, SortOption o) {
@@ -213,7 +214,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
           tracks: shown,
           normal: const CcAppBar(),
         ),
-        body: Column(
+        body: PageFrame(child: Column(
           children: [
             const ScanStatus(),
             _AllTracksHeader(
@@ -232,7 +233,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
             ),
             Expanded(child: _scrollView(query, tracks, shown, compact, ctrl, ctx)),
           ],
-        ),
+        )),
       ),
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/page_frame.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -113,7 +114,7 @@ class PodcastPreviewScreen extends ConsumerWidget {
     final followedId = PodcastSubscriptions(podcasts).idOf(listing);
     return Scaffold(
       appBar: CcAppBar(title: l.podcastsTitle),
-      body: preview.when(
+      body: PageFrame(child: preview.when(
         loading: () => const Skeleton.bigRow(rows: 5),
         error: (e, _) {
           AppLog.w('podcast preview failed', e);
@@ -150,7 +151,7 @@ class PodcastPreviewScreen extends ConsumerWidget {
                   ),
           );
         },
-      ),
+      )),
     );
   }
 }

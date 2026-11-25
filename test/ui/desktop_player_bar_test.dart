@@ -16,8 +16,8 @@ Future<void> _settle(WidgetTester t) async {
 
 void main() {
   /// The bar over a queue of [tracks] songs, the first one playing.
-  Future<Harness> openBar(WidgetTester t, {int tracks = 3, bool stream = false}) async {
-    t.view.physicalSize = const Size(1280, 800);
+  Future<Harness> openBar(WidgetTester t, {int tracks = 3, bool stream = false, double width = 1280}) async {
+    t.view.physicalSize = Size(width, 800);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     final h = await Harness.create(t, tracks: tracks);
@@ -83,6 +83,16 @@ void main() {
   testWidgets('timer and queue sit in the bar next to lyrics and devices', (t) async {
     final h = await openBar(t);
     expect(find.byKey(const Key('np-sleep-chip')), findsOneWidget);
+    for (final tip in ['Testo', 'Coda', 'Dispositivi']) {
+      expect(find.byTooltip(tip), findsOneWidget, reason: tip);
+    }
+    await h.dispose(t);
+  });
+
+  testWidgets('at 800 px the bar does not overflow and keeps lyrics, queue and devices', (t) async {
+    final h = await openBar(t, width: 800);
+    expect(t.takeException(), isNull);
+    expect(find.byKey(const Key('np-sleep-chip')), findsNothing);
     for (final tip in ['Testo', 'Coda', 'Dispositivi']) {
       expect(find.byTooltip(tip), findsOneWidget, reason: tip);
     }

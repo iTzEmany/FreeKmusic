@@ -1,3 +1,4 @@
+import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
@@ -57,6 +58,12 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('followed-artists-link')));
     await _settle(tester);
     expect(find.byType(FollowedArtistsScreen), findsOneWidget);
+    expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+    expect(find.textContaining('Non segui ancora nessun artista'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Cerca'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Cerca'));
+    await _settle(tester);
+    expect(find.byType(SearchScreen), findsOneWidget);
     await close(tester);
   });
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'settings_providers.dart';
+
 enum NavTab { home, search, library, memory }
 
 /// Remembers the pages the user closed with «back» (Alt+Left, the mouse's back
@@ -87,29 +89,23 @@ final tabNavigatorKeysProvider =
 /// Right-hand panel of the desktop layout.
 enum SidePanel { none, queue, lyrics, info }
 
+/// Closed by default; the choice is remembered on this device (D-739).
 class SidePanelNotifier extends Notifier<SidePanel> {
   @override
-  SidePanel build() => SidePanel.none;
+  SidePanel build() {
+    final name = ref.read(settingsStoreProvider).readSidePanel();
+    return SidePanel.values.asNameMap()[name] ?? SidePanel.none;
+  }
 
-  /// Once the user has opened or closed a panel by hand, none opens by itself.
-  bool chosen = false;
+  void _set(SidePanel p) {
+    state = p;
+    ref.read(settingsStoreProvider).writeSidePanel(p.name);
+  }
 
   /// Tapping the open panel's button again closes it.
-  void toggle(SidePanel p) {
-    chosen = true;
-    state = state == p ? SidePanel.none : p;
-  }
+  void toggle(SidePanel p) => _set(state == p ? SidePanel.none : p);
 
-  void close() {
-    chosen = true;
-    state = SidePanel.none;
-  }
-
-  /// The wide layout opens the queue by itself, unless the user decided.
-  void autoOpen() {
-    if (chosen || state != SidePanel.none) return;
-    state = SidePanel.queue;
-  }
+  void close() => _set(SidePanel.none);
 }
 
 final sidePanelProvider = NotifierProvider<SidePanelNotifier, SidePanel>(

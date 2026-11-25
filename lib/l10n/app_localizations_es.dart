@@ -8678,4 +8678,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get densityLarge => 'grande';
+
+  @override
+  String get settingsPageShortcuts => 'Atajos';
+
+  @override
+  String get shortcutsEmpty => 'Los atajos de teclado aparecerán aquí.';
 }

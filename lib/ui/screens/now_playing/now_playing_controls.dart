@@ -37,8 +37,11 @@ class NpSeekRow extends ConsumerStatefulWidget {
     this.position,
     this.duration,
     this.onSeek,
+    this.accessible = false,
   });
 
+  /// True when no ring is shown: the bar then speaks to a screen reader.
+  final bool accessible;
   final Track? track;
   final ValueListenable<Duration>? position;
   final Duration? duration;
@@ -99,6 +102,7 @@ class _NpSeekRowState extends ConsumerState<NpSeekRow> {
               // The ring is the one slider for a screen reader (±5 s).
               Expanded(
                 child: ExcludeSemantics(
+                  excluding: !widget.accessible,
                   // Accent bar and soft knob, as in the mockup.
                   child: SliderTheme(
                     data: SliderTheme.of(context).copyWith(

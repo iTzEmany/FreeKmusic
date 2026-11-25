@@ -8624,4 +8624,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get densityLarge => 'large';
+
+  @override
+  String get settingsPageShortcuts => 'Shortcuts';
+
+  @override
+  String get shortcutsEmpty => 'Keyboard shortcuts will appear here.';
 }

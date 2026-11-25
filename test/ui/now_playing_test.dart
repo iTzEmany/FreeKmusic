@@ -22,6 +22,7 @@ import 'package:codecore/ui/widgets/marquee_text.dart';
 import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
 import 'package:codecore/ui/screens/car/car_mode_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -111,6 +112,19 @@ void main() {
     ]);
     return h;
   }
+
+  testWidgets('desktop at 900 px: player and cards fit without overflow', (tester) async {
+    tester.view.physicalSize = const Size(900, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 1);
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(tester, const NowPlayingScreen(desktop: true));
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
 
   testWidgets('karaoke: no microphone where there is no separation engine', (tester) async {
     final h = await openKaraokePlayer(tester, voice: false);
@@ -489,6 +503,21 @@ void main() {
     return h;
   }
 
+  testWidgets('desktop window: linear bar with times and no ring (F-111); the phone keeps the ring', (tester) async {
+    final h = await openPlayer(tester, desktop: true);
+    expect(find.byType(RingProgress), findsOneWidget, reason: '400 px wide: still the phone layout');
+    await h.dispose(tester);
+    tester.view.physicalSize = const Size(1440, 900);
+    final w = await Harness.create(tester, tracks: 2);
+    final rows = await tester.runAsync(() => w.db.select(w.db.tracks).get());
+    await tester.runAsync(() => w.handler.playQueue([rows!.first.id], 0));
+    await w.pump(tester, const NowPlayingScreen(desktop: true));
+    expect(find.byType(RingProgress), findsNothing);
+    expect(find.byType(SeekBar), findsOneWidget);
+    expect(find.byType(SeekTime), findsWidgets);
+    await w.dispose(tester);
+  });
+
   testWidgets('symmetry: the top-bar title sits at the screen centre', (
     tester,
   ) async {
@@ -697,6 +726,36 @@ void main() {
     await _settle(tester);
     expect(await favorite(), isFalse);
     expect(find.byTooltip('Preferito'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('desktop: Esc closes the full-screen player', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 1);
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(
+      tester,
+      Scaffold(
+        body: Builder(
+          builder: (c) => TextButton(
+            onPressed: () => Navigator.of(c).push(
+              MaterialPageRoute<void>(builder: (_) => const NowPlayingScreen(desktop: true)),
+            ),
+            child: const Text('open'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await _settle(tester);
+    expect(find.byType(NowPlayingScreen), findsOneWidget);
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(NowPlayingScreen), findsNothing);
     await h.dispose(tester);
   });
 }

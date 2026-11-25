@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../core/platform.dart' show isDesktop;
 import '../../l10n/l10n_ext.dart';
 import '../../providers/settings_providers.dart';
 import '../theme/tokens.dart';
@@ -25,13 +26,15 @@ class SpeedButton extends ConsumerWidget {
     final cc = context.cc;
     final speed = ref.watch(settingsProvider.select((s) => s.playbackSpeed));
     final changed = speed != 1.0;
+    // Desktop floor 36 px (D-720); the phone keeps the chip's own size.
+    final target = minTarget > 0 ? minTarget : (isDesktop ? 36.0 : 0.0);
     return Tooltip(
       message: context.l10n.playbackSpeed,
       child: InkWell(
         borderRadius: BorderRadius.circular(CcDims.rSheet),
         onTap: () => SpeedSheet.show(context),
         child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: minTarget, minHeight: minTarget),
+          constraints: BoxConstraints(minWidth: target, minHeight: target),
           child: Center(
             widthFactor: 1,
             heightFactor: 1,

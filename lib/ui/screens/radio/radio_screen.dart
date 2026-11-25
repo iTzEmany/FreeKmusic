@@ -14,6 +14,7 @@ import 'radio_region_sheet.dart';
 import 'radio_sections.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cc_search_field.dart';
+import '../../widgets/page_frame.dart';
 
 /// Library → Radio: a search box, «Le mie radio», «Vicino a te» (country and
 /// region chosen by hand), the genres and the most listened of the country.
@@ -107,52 +108,47 @@ class _RadioScreenState extends ConsumerState<RadioScreen> {
           ),
         ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    CcDims.margin,
-                    CcDims.gap8,
-                    CcDims.margin,
-                    0,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CcSearchField(
-                        key: const ValueKey('radio-search'),
-                        controller: _controller,
-                        focusNode: _focus,
-                        hint: l.radioSearchHint,
-                        debounce: CcTiming.radioDebounce,
-                        onQuery: (v) => setState(() => _query = v),
-                      ),
-                      if (searching || _genre != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: CcDims.gap8),
-                          child: FilterChip(
-                            key: const ValueKey('radio-only-country'),
-                            label: Text(l.radioOnlyCountry(countryName)),
-                            selected: onlyCountry,
-                            onSelected: (v) => ref
-                                .read(settingsProvider.notifier)
-                                .update((s) => s.copyWith(radioOnlyCountry: v)),
-                          ),
+      body: PageFrame(
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  CcDims.margin,
+                  CcDims.gap8,
+                  CcDims.margin,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CcSearchField(
+                      key: const ValueKey('radio-search'),
+                      controller: _controller,
+                      focusNode: _focus,
+                      hint: l.radioSearchHint,
+                      debounce: CcTiming.radioDebounce,
+                      onQuery: (v) => setState(() => _query = v),
+                    ),
+                    if (searching || _genre != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: CcDims.gap8),
+                        child: FilterChip(
+                          key: const ValueKey('radio-only-country'),
+                          label: Text(l.radioOnlyCountry(countryName)),
+                          selected: onlyCountry,
+                          onSelected: (v) => ref
+                              .read(settingsProvider.notifier)
+                              .update((s) => s.copyWith(radioOnlyCountry: v)),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
-              ...body,
-              SliverToBoxAdapter(
-          child: SizedBox(height: 24 + context.dockInset),
-        ),
-            ],
-          ),
+            ),
+            ...body,
+            SliverToBoxAdapter(child: SizedBox(height: 24 + context.dockInset)),
+          ],
         ),
       ),
     );

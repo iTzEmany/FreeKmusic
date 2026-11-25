@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'page_frame.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/db/app_database.dart' show Track;
@@ -174,7 +175,7 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
               itemCount: widget.scrollerCount ?? 0,
               topInset: () =>
                   MediaQuery.paddingOf(context).top + kToolbarHeight,
-              child: scroll,
+              child: PageFrame(child: scroll),
             ),
           ),
           if (widget.selectionBar != null)
@@ -292,7 +293,7 @@ class _FavoriteButtonState extends ConsumerState<_FavoriteButton> {
       child: IconButton(
         key: const ValueKey('collection-favorite'),
         onPressed: widget.enabled ? _tap : null,
-        tooltip: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
+        tooltip: fav ? l.removeFromFavorites : l.bulkAddToFavorites,
         icon: Icon(fav ? Icons.favorite_rounded : Icons.favorite_border_rounded),
       ),
     );
@@ -340,7 +341,8 @@ class CollectionHeader extends StatelessWidget {
             child: cover!(coverSize),
           );
     final actionRow = Wrap(
-      spacing: 8,
+      // 4 dp on the phone: Play, Casuale, Scarica, cuore, Condividi and ⋮ fit one row at 360 dp.
+      spacing: wide ? 8 : 4,
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: actions,

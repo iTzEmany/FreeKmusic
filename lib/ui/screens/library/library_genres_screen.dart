@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/page_frame.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
@@ -21,12 +22,12 @@ class LibraryGenresScreen extends ConsumerWidget {
     if (genres.isEmpty) {
       return Scaffold(
         appBar: CcAppBar(title: l.genresTitle),
-        body: EmptyState(icon: Icons.music_note_rounded, message: l.noResults),
+        body: PageFrame(child: EmptyState(icon: Icons.music_note_rounded, message: l.noResults)),
       );
     }
     return Scaffold(
       appBar: CcAppBar(title: l.genresTitle),
-      body: CustomScrollView(
+      body: PageFrame(child: CustomScrollView(
         slivers: [
           GenreGrid(
             columns: 3,
@@ -44,7 +45,7 @@ class LibraryGenresScreen extends ConsumerWidget {
           ),
           SliverToBoxAdapter(child: SizedBox(height: 24 + context.dockInset)),
         ],
-      ),
+      )),
     );
   }
 }

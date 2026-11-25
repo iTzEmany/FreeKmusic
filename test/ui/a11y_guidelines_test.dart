@@ -5,6 +5,7 @@ import 'package:codecore/ui/screens/home/home_screen.dart' show clockProvider;
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
+import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
@@ -47,17 +48,6 @@ const _known = <(String, String), Map<String, int>>{
   ('now playing', 'androidTapTarget'): {
     'Velocità di riproduzione': 1,
   },
-  // 150.5: the desktop player bar's dense controls (and the artist link) are
-  // under 48 px by design (D-14); phase 152 / 157 close them with the bar rework.
-  ('desktop shell (home, sidebar, player bar)', 'androidTapTarget'): {
-    'Artist': 1,
-    'Casuale: spenta': 1,
-    'Brano precedente': 1,
-    'Pausa': 1,
-    'Brano successivo': 1,
-    'Ripeti': 1,
-    'Velocità di riproduzione': 1,
-  },
 };
 
 void main() {
@@ -72,17 +62,26 @@ void main() {
     'labeledTapTarget': labeledTapTargetGuideline,
     'textContrast': textContrastGuideline,
   };
+  // 157.6: on the desktop the floor is 36 px (D-720; the phone keeps 48 dp),
+  // reported under the same key so the exception map stays one.
+  final desktopGuidelines = <String, AccessibilityGuideline>{
+    ...guidelines,
+    'androidTapTarget': const MinimumTapTargetGuideline(size: Size(36, 36), link: 'D-720'),
+  };
   // 150.5: the desktop shell (home, library) at 1280 px, before the refactor.
   final desktopScreens = <String, Widget>{
     'desktop shell (home, sidebar, player bar)': const AppShell(),
     'desktop library': const Scaffold(body: LibraryScreen()),
+    'desktop search': const Scaffold(body: SearchScreen()),
+    'desktop settings': const Scaffold(body: SettingsScreen()),
+    'desktop now playing': const NowPlayingScreen(),
   };
   final all = [
     for (final s in screens.entries) (s.key, s.value, false),
     for (final s in desktopScreens.entries) (s.key, s.value, true),
   ];
   for (final (name, screen, desktop) in all) {
-    for (final g in guidelines.entries) {
+    for (final g in (desktop ? desktopGuidelines : guidelines).entries) {
       testWidgets('$name: ${g.key}', (tester) async {
         // Phone: 48 dp targets; desktop: the dense ones, as the app shows them.
         debugIsDesktopOverride = desktop;

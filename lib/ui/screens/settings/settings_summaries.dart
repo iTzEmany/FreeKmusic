@@ -68,5 +68,7 @@ String settingsSummary(BuildContext context, WidgetRef ref, SettingsPage p) {
       return l.summaryBackup;
     case SettingsPage.advanced:
       return l.appVersion(kAppVersion);
+    case SettingsPage.shortcuts:
+      return '';
   }
 }

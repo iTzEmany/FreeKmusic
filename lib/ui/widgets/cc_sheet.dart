@@ -9,6 +9,10 @@ import '../../core/platform.dart';
 import '../../l10n/l10n_ext.dart';
 import '../theme/tokens.dart';
 
+/// Whether [showCcSheet] opens a content-high dialog here (wide desktop) instead of a bottom sheet.
+bool ccSheetIsDialog(BuildContext context) =>
+    isDesktop && MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
+
 /// Every bottom sheet opens through here: 250 ms, none with «Riduci animazioni».
 Future<T?> showCcSheet<T>({
   required BuildContext context,
@@ -21,7 +25,7 @@ Future<T?> showCcSheet<T>({
   final d = ccDuration(context, CcMotion.sheet);
   // Wide desktop windows get a centred dialog as tall as its content (F-103): same
   // signature and result, no handle. Phones and narrow windows keep the bottom sheet.
-  if (isDesktop && MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint) {
+  if (ccSheetIsDialog(context)) {
     return showDialog<T>(
       context: context,
       useRootNavigator: true,

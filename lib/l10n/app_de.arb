@@ -4249,5 +4249,7 @@
   "viewDensity": "Rasterdichte",
   "densitySmall": "klein",
   "densityMedium": "mittel",
-  "densityLarge": "groß"
+  "densityLarge": "groß",
+  "settingsPageShortcuts": "Tastenkürzel",
+  "shortcutsEmpty": "Hier erscheinen die Tastenkürzel."
 }

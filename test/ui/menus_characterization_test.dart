@@ -52,6 +52,7 @@ import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:codecore/ui/widgets/track_row_selection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/gestures.dart';
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -268,6 +269,28 @@ const _selectionMenu = [
 ];
 
 void main() {
+  testWidgets('desktop «+»: the «Nuova playlist» dialog is as tall as its content', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    debugIsDesktopOverride = true;
+    addTearDown(() {
+      tester.view.reset();
+      debugIsDesktopOverride = null;
+    });
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      const Scaffold(body: SizedBox(width: 280, child: DesktopSidebar(collapsed: false))),
+    );
+    await _settle(tester);
+    await tester.tap(find.byTooltip('Nuova playlist'));
+    await _settle(tester);
+    expect(find.byType(Dialog), findsOneWidget);
+    final box = find.descendant(of: find.byType(Dialog), matching: find.byType(Material)).first;
+    expect(tester.getSize(box).height, lessThan(400));
+    await h.dispose(tester);
+  });
+
   testWidgets(
     'desktop sidebar «+» opens the sheet with smart and csv; «Crea» makes the playlist',
     (tester) async {
