@@ -80,10 +80,7 @@ class AppShell extends ConsumerWidget {
     WidgetRef ref, {
     required bool preview,
   }) {
-    void back() => ref
-        .read(tabNavigatorKeysProvider)[ref.read(navIndexProvider)]
-        .currentState
-        ?.maybePop();
+    void back() => ref.read(forwardStacksProvider)[ref.read(navIndexProvider)].back();
     final ctrl = ref.read(playerControllerProvider);
     final vol = ref.read(volumeProvider.notifier);
 
@@ -287,7 +284,7 @@ class AppShell extends ConsumerWidget {
             // Mouse side buttons: back (as Alt+Left) and forward.
             final i = ref.read(navIndexProvider);
             if (e.buttons == kBackMouseButton) {
-              ref.read(tabNavigatorKeysProvider)[i].currentState?.maybePop();
+              ref.read(forwardStacksProvider)[i].back();
             } else if (e.buttons == kForwardMouseButton) {
               ref.read(forwardStacksProvider)[i].forward();
             }

@@ -3,23 +3,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum NavTab { home, search, library, memory }
 
-/// Remembers the pages a tab popped so the mouse's «forward» button can
-/// reopen them (the page is rebuilt, its state is not kept). A new push of
-/// any other page forgets them.
+/// Remembers the pages the user closed with «back» (Alt+Left, the mouse's back
+/// button) so «forward» can reopen them (the page is rebuilt, its state is not
+/// kept). Pops by the app itself (a deleted item's page) are not recorded. A
+/// new push of any other page forgets them.
 class ForwardStack extends NavigatorObserver {
   final _popped = <WidgetBuilder>[];
   bool _forwarding = false;
+  bool _byUser = false;
 
   void clear() => _popped.clear();
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (route is MaterialPageRoute) _popped.add(route.builder);
+    if (_byUser && route is MaterialPageRoute) _popped.add(route.builder);
   }
 
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     if (!_forwarding) _popped.clear();
+  }
+
+  /// A pop asked by the user: the page may refuse (its own PopScope).
+  Future<void> back() async {
+    _byUser = true;
+    try {
+      await navigator?.maybePop();
+    } finally {
+      _byUser = false;
+    }
   }
 
   void forward() {
