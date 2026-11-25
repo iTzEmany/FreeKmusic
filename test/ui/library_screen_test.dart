@@ -1050,7 +1050,7 @@ void main() {
   ) async {
     final h = await open(t, width: 1600);
     final r = t.getRect(find.byType(SegmentedBlocks<LibraryKind?>));
-    final menu = t.getRect(find.byTooltip('Altre azioni'));
+    final menu = t.getRect(find.byTooltip('Altre azioni').first);
     expect(r.right, greaterThanOrEqualTo(menu.right - 2 * CcDims.margin));
     await h.dispose(t);
   });

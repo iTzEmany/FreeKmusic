@@ -52,7 +52,7 @@ void main() {
   ))!;
 
   Future<void> menu(WidgetTester tester, String item) async {
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text(item));
     await tester.pump();
@@ -167,7 +167,7 @@ void main() {
 
   testWidgets('no sync switch for a plain text', (tester) async {
     final h = await open(tester, plain: 'Hello');
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Testo sincronizzato'), findsNothing);
     expect(find.text('Elimina testo'), findsOneWidget);
@@ -252,7 +252,7 @@ void main() {
       const Scaffold(body: SidePanelView(panel: SidePanel.lyrics)),
     );
     await tester.pump(const Duration(milliseconds: 200));
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Modifica testo'), findsOneWidget);
     await h.dispose(tester);

@@ -857,9 +857,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get repeat => 'Répéter';
 
   @override
-  String get moreOptions => 'Plus d’options';
-
-  @override
   String get back => 'Retour';
 
   @override

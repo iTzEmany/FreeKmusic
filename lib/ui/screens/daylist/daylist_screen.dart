@@ -23,6 +23,7 @@ import '../online/online_song_row.dart' show queueOnline;
 import '../../widgets/track_row.dart' show SwipeToQueue;
 import '../settings/settings_screen.dart';
 import 'daylist_labels.dart';
+import '../../widgets/action_catalog.dart';
 
 /// The daylist of the current slot: title, genres, Play and Shuffle, when it
 /// changes next, and the songs (suggested ones marked as elsewhere).
@@ -340,10 +341,10 @@ Widget _row(
           ),
         ),
         IconButton(
-          tooltip: context.l10n.moreOptions,
+          tooltip: CatalogAction.more.label(context.l10n),
           visualDensity: ccIconDensity,
           onPressed: onMore,
-          icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
+          icon: Icon(CatalogAction.more.icon, color: cc.textMuted),
         ),
         const SizedBox(width: CcDims.gap8),
       ],

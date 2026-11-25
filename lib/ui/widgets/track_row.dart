@@ -295,7 +295,7 @@ class _TrackRowState extends State<TrackRow> {
   Widget _moreButton(BuildContext context, {required bool visible}) {
     if (!visible) return const SizedBox(width: 48, height: 48);
     return IconButton(
-      tooltip: context.l10n.moreOptions,
+      tooltip: CatalogAction.more.label(context.l10n),
       onPressed: widget.onMore,
       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
       icon: Icon(CatalogAction.more.icon, color: context.cc.textMuted),
@@ -776,7 +776,7 @@ class _SwipeToQueueState extends State<SwipeToQueue> {
             onHorizontalDragCancel: () => _end(w, cancelled: true),
             child: Semantics(
               customSemanticsActions: {
-                CustomSemanticsAction(label: context.l10n.addToQueue):
+                CustomSemanticsAction(label: CatalogAction.queue.label(context.l10n)):
                     widget.onQueue,
               },
               child: Stack(

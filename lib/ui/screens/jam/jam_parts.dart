@@ -162,7 +162,7 @@ class JamQueueRow extends ConsumerWidget {
             CcAction(icon: Icons.near_me_outlined, label: l.jamJumpHere, onTap: onJump),
             if (item.selfFetchable && !inLibrary())
               CcAction(
-                icon: Icons.download_rounded,
+                icon: CatalogAction.download.icon,
                 label: l.ytDownloadOnDevice,
                 onTap: () => downloadOnline(
                   context,
@@ -173,7 +173,7 @@ class JamQueueRow extends ConsumerWidget {
             if (canSave)
               CcAction(
                 icon: CatalogAction.library.icon,
-                label: l.addToLibrary,
+                label: CatalogAction.library.label(l),
                 onTap: () async {
                   final ok = await ref.read(jamSaverProvider).save(item);
                   if (context.mounted) showMsg(context, ok ? l.libraryAddedMany(1) : l.libraryAddFailed);
@@ -275,7 +275,7 @@ class JamQueueRow extends ConsumerWidget {
               tooltip: l.moreActions,
               visualDensity: VisualDensity.standard,
               constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
+              icon: Icon(CatalogAction.more.icon, color: cc.textMuted),
               onPressed: () => _openMenu(context, ref, artists),
             ),
             if (showHandle)

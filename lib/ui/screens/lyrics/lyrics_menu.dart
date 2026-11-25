@@ -18,6 +18,7 @@ import 'lyrics_editor.dart';
 import 'lyrics_romanization_editor.dart';
 import '../../../services/lyrics/lyrics_shown.dart'
     show lyricsAsShown, lyricsPlainText;
+import '../../widgets/action_catalog.dart';
 
 /// Menu of the lyrics (page and desktop side panel): write or edit, the
 /// per-track sync switch (only with a synced text, D-472) and delete (D-471).
@@ -47,7 +48,7 @@ class LyricsMenuButton extends ConsumerWidget {
     );
     return IconButton(
       tooltip: l.moreActions,
-      icon: const Icon(Icons.more_vert_rounded),
+      icon: Icon(CatalogAction.more.icon),
       onPressed: () => showCcActionSheet<void>(
         context: context,
         groups: [

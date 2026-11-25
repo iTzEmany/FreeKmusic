@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 import 'cover_image.dart';
+import 'action_catalog.dart';
 
 /// Which cover keys a playlist mosaic shows: a custom cover wins, otherwise
 /// the first four distinct ones.
@@ -56,7 +57,7 @@ class PlaylistCover extends StatelessWidget {
       child = ColoredBox(
         color: cc.surface3,
         child: Icon(
-          Icons.queue_music_rounded,
+          CatalogAction.playlist.icon,
           size: size * 0.5,
           color: cc.textMuted,
         ),

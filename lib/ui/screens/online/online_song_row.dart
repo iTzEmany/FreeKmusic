@@ -294,7 +294,7 @@ class OnlineSongRow extends StatelessWidget {
                 ),
                 if (onMore != null && !selecting)
                   IconButton(
-                    tooltip: l.moreOptions,
+                    tooltip: CatalogAction.more.label(l),
                     icon: Icon(CatalogAction.more.icon),
                     onPressed: onMore,
                   )
@@ -349,7 +349,7 @@ class _DownloadState extends ConsumerWidget {
       );
     } else {
       trailing = IconButton(
-        tooltip: l.addToLibrary,
+        tooltip: CatalogAction.library.label(l),
         icon: Icon(CatalogAction.library.icon),
         onPressed: onDownload,
       );

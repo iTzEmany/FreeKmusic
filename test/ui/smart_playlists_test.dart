@@ -147,7 +147,7 @@ void main() {
       addTearDown(tester.view.reset);
       await h.pump(tester, SmartPlaylistScreen(id: id));
       await _settle(tester);
-      await tester.tap(find.byTooltip('Altre azioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await _settle(tester);
       await tester.tap(find.text('Converti in playlist normale'));
       await _settle(tester);
@@ -171,7 +171,7 @@ void main() {
           child: const Text('open')))));
       await tester.tap(find.text('open'));
       await _settle(tester);
-      await tester.tap(find.byTooltip('Altre azioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await _settle(tester);
       await tester.tap(find.text('Elimina'));
       await _settle(tester);
@@ -179,7 +179,7 @@ void main() {
       await tester.tap(find.text('Annulla'));
       await _settle(tester);
       expect(await tester.runAsync(() => repo.get(id)), isNotNull);
-      await tester.tap(find.byTooltip('Altre azioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await _settle(tester);
       await tester.tap(find.text('Elimina'));
       await _settle(tester);

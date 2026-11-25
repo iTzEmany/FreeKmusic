@@ -130,7 +130,7 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
                 final box = ctx.findRenderObject();
                 widget.onShare!(box is RenderBox ? box.localToGlobal(Offset.zero) & box.size : null);
               },
-              tooltip: context.l10n.shareAction,
+              tooltip: CatalogAction.share.label(context.l10n),
               icon: Icon(CatalogAction.share.icon),
             ),
           ),

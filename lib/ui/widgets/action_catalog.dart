@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/app_localizations.dart';
 
-/// The one table action → icon → text (F-01..F-05, F-12). Every menu, bar and header takes its
-/// icon and label from here, so a given action looks and reads the same everywhere.
+/// The one table action → icon → text (F-01..F-05, F-12): menus, bars and headers take icon and label from here.
 /// The queue and the library never share an icon; Export (save a file) is not Share; ⋮ is [more].
 enum CatalogAction {
   queue(Icons.add_to_queue_rounded),

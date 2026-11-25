@@ -95,7 +95,7 @@ void main() {
   }
 
   Future<void> openMenu(WidgetTester tester) async {
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
   }
 

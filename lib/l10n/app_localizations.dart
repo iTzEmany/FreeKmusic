@@ -1510,12 +1510,6 @@ abstract class AppLocalizations {
   /// **'Ripeti'**
   String get repeat;
 
-  /// No description provided for @moreOptions.
-  ///
-  /// In it, this message translates to:
-  /// **'Altre opzioni'**
-  String get moreOptions;
-
   /// No description provided for @back.
   ///
   /// In it, this message translates to:

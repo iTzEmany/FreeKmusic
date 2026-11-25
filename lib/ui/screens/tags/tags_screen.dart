@@ -20,6 +20,7 @@ import 'tags_sheet.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../theme/tokens.dart';
 import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../widgets/action_catalog.dart';
 
 /// The user's tags with how many tracks each one has; a tap opens its tracks.
 class TagsScreen extends ConsumerWidget {
@@ -58,8 +59,8 @@ class TagsScreen extends ConsumerWidget {
                         title: Text(s.tag.name),
                         subtitle: Text(l.tracksCount(s.trackCount)),
                         trailing: IconButton(
-                          tooltip: l.moreOptions,
-                          icon: const Icon(Icons.more_vert_rounded),
+                          tooltip: CatalogAction.more.label(l),
+                          icon: Icon(CatalogAction.more.icon),
                           onPressed: () => editTag(context, ref, s),
                         ),
                         onTap: () => ShellNav.open<void>(

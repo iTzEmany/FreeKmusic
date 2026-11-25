@@ -40,6 +40,7 @@ import '../library/album_detail_screen.dart' show collectionMeta;
 import 'add_tracks_screen.dart';
 import 'export_dialog.dart';
 import 'playlist_order.dart';
+import '../../widgets/action_catalog.dart';
 
 class PlaylistDetailScreen extends ConsumerStatefulWidget {
   const PlaylistDetailScreen({super.key, required this.playlist});
@@ -238,8 +239,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         if (tracks.any((t) => t.kind != kStreamKind))
           CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _PlaylistAction.sendToDevice),
         CcAction(
-          icon: Icons.ios_share_rounded,
-          label: l.exportPlaylist,
+          icon: CatalogAction.export.icon,
+          label: CatalogAction.export.label(l),
           value: _PlaylistAction.export,
         ),
         CcAction(
@@ -321,7 +322,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     if (tracks.isEmpty) {
       list = SliverToBoxAdapter(
         child: EmptyState(
-          icon: Icons.queue_music_rounded,
+          icon: CatalogAction.playlist.icon,
           message: l.noTracksInPlaylist,
           actionLabel: l.addSongs,
           onAction: () =>
@@ -411,7 +412,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         shuffleKey: shuffleKey,
         menu: IconButton(
           tooltip: l.moreActions,
-          icon: const Icon(Icons.more_vert_rounded),
+          icon: Icon(CatalogAction.more.icon),
           onPressed: () async {
             final v = await showCcActionSheet<_PlaylistAction>(
               context: context,

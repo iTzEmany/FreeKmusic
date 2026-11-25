@@ -252,8 +252,8 @@ class _AlbumMissingState extends ConsumerState<_AlbumMissing> {
       ids: [for (var i = 0; i < songs.length; i++) i],
       actions: (picked) => [
         IconButton(
-          tooltip: ref.read(settingsProvider).storageMode == StorageMode.stream ? l.addToLibrary : l.ytDownload,
-          icon: Icon(CatalogAction.download.icon),
+          tooltip: ref.read(settingsProvider).storageMode == StorageMode.stream ? CatalogAction.library.label(l) : l.ytDownload,
+          icon: Icon((ref.read(settingsProvider).storageMode == StorageMode.stream ? CatalogAction.library : CatalogAction.download).icon),
           onPressed: () {
             startOnlineDownloads(context, ref, [
               for (final i in picked.orderedIds)
@@ -336,8 +336,8 @@ class _AlbumMenu extends ConsumerWidget {
           title: album.title ?? l.unknownAlbum,
           groups: [
             [
-              CcAction(icon: CatalogAction.queue.icon, label: l.addToQueue, value: _AlbumAction.queue),
-              CcAction(icon: CatalogAction.playlist.icon, label: l.addToPlaylist, value: _AlbumAction.playlist),
+              CcAction(icon: CatalogAction.queue.icon, label: CatalogAction.queue.label(l), value: _AlbumAction.queue),
+              CcAction(icon: CatalogAction.playlist.icon, label: CatalogAction.playlist.label(l), value: _AlbumAction.playlist),
               CcAction(
                 icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,

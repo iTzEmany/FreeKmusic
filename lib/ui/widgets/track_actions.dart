@@ -127,7 +127,7 @@ List<TrackActionGroup> onlineTrackActions(
       if (!entryInLibrary(ref, track.id))
         TrackAction(
           CatalogAction.library.icon,
-          l.addToLibrary,
+          CatalogAction.library.label(l),
           () => downloadOnline(
             outer,
             inLibrary: entryInLibrary(ref, track.id),
@@ -145,7 +145,7 @@ List<TrackActionGroup> onlineTrackActions(
             start: () => ref.read(libraryAdderProvider).download(entry.result),
           ),
         ),
-      TrackAction(CatalogAction.playlist.icon, l.addToPlaylist, () async {
+      TrackAction(CatalogAction.playlist.icon, CatalogAction.playlist.label(l), () async {
         final picked = await pickPlaylist(outer, ref);
         if (picked == null) return;
         final now = await actions.addToPlaylist(track.id, picked.id);
@@ -213,7 +213,7 @@ List<TrackActionGroup> onlineTrackActions(
 
 TrackAction _shareAction(BuildContext outer, WidgetRef ref, Track track, Rect? anchor) => TrackAction(
   CatalogAction.share.icon,
-  outer.l10n.shareAction,
+  CatalogAction.share.label(outer.l10n),
   () => shareTracks(outer, ref, SharedKind.track, track.title, [track], subtitle: track.artist, origin: anchor),
   onStreamRow: true,
   onOnlineEntry: true,
@@ -325,7 +325,7 @@ List<TrackActionGroup> trackActions(
           },
           onStreamRow: true,
         ),
-      TrackAction(CatalogAction.queue.icon, l.addToQueue, () async {
+      TrackAction(CatalogAction.queue.icon, CatalogAction.queue.label(l), () async {
         final added = await ctrl.addToQueue(track.id);
         if (outer.mounted) showQueued(outer, added);
       }, onStreamRow: true),
@@ -335,7 +335,7 @@ List<TrackActionGroup> trackActions(
       if (unsavedShadow && streaming)
         TrackAction(
           CatalogAction.library.icon,
-          l.addToLibrary,
+          CatalogAction.library.label(l),
           () => downloadOnline(
             outer,
             inLibrary: false,
@@ -385,7 +385,7 @@ List<TrackActionGroup> trackActions(
       ),
       TrackAction(
         CatalogAction.playlist.icon,
-        l.addToPlaylist,
+        CatalogAction.playlist.label(l),
         () async => showAddToPlaylistSheet(outer, ref, [track]),
       ),
       TrackAction(
@@ -817,12 +817,12 @@ List<TrackAction> onlineResultActions(
   final ctrl = ref.read(playerControllerProvider);
   bool inLibrary() => ref.read(libraryAdderProvider).alreadyThere(r.id, r.source);
   return [
-    TrackAction(CatalogAction.queue.icon, l.addToQueue, () async {
+    TrackAction(CatalogAction.queue.icon, CatalogAction.queue.label(l), () async {
       final full = ctrl.jamQueueFull;
       await ctrl.enqueueOnline(r);
       if (outer.mounted) showQueued(outer, full ? jamFullResult : null);
     }),
-    TrackAction(CatalogAction.playlist.icon, l.addToPlaylist, () async {
+    TrackAction(CatalogAction.playlist.icon, CatalogAction.playlist.label(l), () async {
       final picked = await pickPlaylist(outer, ref);
       if (picked == null || !outer.mounted) return;
       final now = await ref
@@ -841,7 +841,7 @@ List<TrackAction> onlineResultActions(
     }),
     TrackAction(
       CatalogAction.library.icon,
-      l.addToLibrary,
+      CatalogAction.library.label(l),
       () => downloadOnline(outer, inLibrary: inLibrary(), start: () => ref.read(libraryAdderProvider).add(r)),
     ),
     // In device mode the first item already downloads.

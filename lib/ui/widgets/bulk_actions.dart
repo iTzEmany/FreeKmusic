@@ -133,7 +133,7 @@ List<TrackActionGroup> bulkActions(
         await ctrl.playFromList(playable, 0);
         done();
       }),
-      TrackAction(CatalogAction.queue.icon, l.addToQueue, () async {
+      TrackAction(CatalogAction.queue.icon, CatalogAction.queue.label(l), () async {
         var added = 0, full = false;
         for (final t in playable) {
           final r = await ctrl.addToQueue(t.id);
@@ -147,7 +147,7 @@ List<TrackActionGroup> bulkActions(
         done();
       }),
       if (ref.read(jamProvider).active)
-        TrackAction(CatalogAction.queue.icon, l.jamAddToJam, () async {
+        TrackAction(Icons.group_outlined, l.jamAddToJam, () async {
           final remote = ref.read(jamProvider).remote;
           final r = await ref.read(jamProvider.notifier).addTracks(playable);
           if (outer.mounted) {
@@ -167,7 +167,7 @@ List<TrackActionGroup> bulkActions(
         allFavorite ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
         favorites,
       ),
-      TrackAction(CatalogAction.playlist.icon, l.addToPlaylist, () async {
+      TrackAction(CatalogAction.playlist.icon, CatalogAction.playlist.label(l), () async {
         if (await showAddToPlaylistSheet(outer, ref, tracks)) done();
       }),
       TrackAction(Icons.label_outline_rounded, l.tagAddToSelection, () async {

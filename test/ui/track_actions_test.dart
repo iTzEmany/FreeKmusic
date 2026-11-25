@@ -61,7 +61,7 @@ Future<void> _openMenu(WidgetTester tester, String title) => tester.tap(
   find
       .descendant(
         of: find.widgetWithText(TrackRow, title).first,
-        matching: find.byTooltip('Altre opzioni'),
+        matching: find.byTooltip('Altre azioni'),
       )
       .first,
 );

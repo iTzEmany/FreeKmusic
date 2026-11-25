@@ -852,9 +852,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get repeat => 'Ripeti';
 
   @override
-  String get moreOptions => 'Altre opzioni';
-
-  @override
   String get back => 'Indietro';
 
   @override

@@ -854,9 +854,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get repeat => 'Wiederholen';
 
   @override
-  String get moreOptions => 'Weitere Optionen';
-
-  @override
   String get back => 'Zurück';
 
   @override

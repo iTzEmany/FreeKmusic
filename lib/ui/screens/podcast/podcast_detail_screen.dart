@@ -24,6 +24,7 @@ import 'podcast_preview_screen.dart' show unfollowPodcast;
 import 'podcast_texts.dart';
 import '../../widgets/show_msg.dart';
 import '../../../core/app_log.dart';
+import '../../widgets/action_catalog.dart';
 
 /// One podcast: its header, and its episodes (newest first) with what each one
 /// is doing. Opening it refreshes the feed only if it is older than 6 hours.
@@ -161,7 +162,7 @@ class _PodcastDetailScreenState extends ConsumerState<PodcastDetailScreen> {
           IconButton(
             key: const ValueKey('podcast-menu'),
             tooltip: l.moreActions,
-            icon: const Icon(Icons.more_vert_rounded),
+            icon: Icon(CatalogAction.more.icon),
             onPressed: () async {
               final v = await showCcActionSheet<_PodcastAction>(
                 context: context,
@@ -406,7 +407,7 @@ class _EpisodeTile extends ConsumerWidget {
             IconButton(
               key: ValueKey('menu-${e.id}'),
               tooltip: l.moreActions,
-              icon: const Icon(Icons.more_vert_rounded),
+              icon: Icon(CatalogAction.more.icon),
               onPressed: () async {
                 final v = await showCcActionSheet<_EpisodeAction>(
                   context: context,

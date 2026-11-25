@@ -116,10 +116,10 @@ class OnlineAlbumScreen extends ConsumerWidget {
     final items = <(String, IconData, String, VoidCallback)>[
       ('album-menu-download', CatalogAction.download.icon, l.ytmDownloadAlbum,
           () => _downloadAlbum(context, ref, album)),
-      ('album-menu-queue', CatalogAction.queue.icon, l.addToQueue, () => queueOnlineList(context, ref, songs)),
-      ('album-menu-playlist', CatalogAction.playlist.icon, l.addToPlaylist,
+      ('album-menu-queue', CatalogAction.queue.icon, CatalogAction.queue.label(l), () => queueOnlineList(context, ref, songs)),
+      ('album-menu-playlist', CatalogAction.playlist.icon, CatalogAction.playlist.label(l),
           () => _addToPlaylist(context, ref, songs)),
-      ('album-menu-share', CatalogAction.share.icon, l.shareAction, () => _share(context)),
+      ('album-menu-share', CatalogAction.share.icon, CatalogAction.share.label(l), () => _share(context)),
     ];
     return showCcActionSheet<String>(
       context: context,
@@ -289,7 +289,7 @@ class _AlbumHeader extends StatelessWidget {
             ),
             IconButton(
               key: const ValueKey('album-more'),
-              tooltip: l.ytmMore,
+              tooltip: CatalogAction.more.label(l),
               onPressed: onMore,
               icon: Icon(CatalogAction.more.icon),
             ),

@@ -17,6 +17,7 @@ import '../../widgets/format_utils.dart';
 import '../../widgets/tag_write_ui.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/action_catalog.dart';
 
 /// Settings → Tag backups: the original of every file whose tags were
 /// rewritten, with «Restore original» and «Delete backup».
@@ -105,7 +106,7 @@ class TagBackupsScreen extends ConsumerWidget {
                       isThreeLine: true,
                       trailing: IconButton(
                         tooltip: l.moreActions,
-                        icon: const Icon(Icons.more_vert_rounded),
+                        icon: Icon(CatalogAction.more.icon),
                         onPressed: () async {
                           final v = await showCcActionSheet<_BackupAction>(
                             context: context,

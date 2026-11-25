@@ -855,9 +855,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get repeat => 'Repetir';
 
   @override
-  String get moreOptions => 'Mais opções';
-
-  @override
   String get back => 'Voltar';
 
   @override

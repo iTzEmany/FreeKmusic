@@ -66,7 +66,7 @@ void main() {
 
   testWidgets('«Unisci con…» folds another album in: one key, the main cover, and undo', (tester) async {
     await open(tester);
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await _settle(tester);
     await tester.tap(find.text('Unisci con…'));
     await _settle(tester);
@@ -96,7 +96,7 @@ void main() {
 
   testWidgets('the merge needs a title and an artist, and the list can be searched', (tester) async {
     await open(tester);
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await _settle(tester);
     await tester.tap(find.text('Unisci con…'));
     await _settle(tester);

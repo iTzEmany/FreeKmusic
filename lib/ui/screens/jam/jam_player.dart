@@ -25,6 +25,7 @@ import 'jam_header.dart';
 import 'jam_outputs_sheet.dart';
 import 'jam_parts.dart';
 import 'jam_queue_sheet.dart';
+import '../../widgets/action_catalog.dart';
 
 const _wideBreakpoint = 900.0;
 
@@ -135,7 +136,7 @@ class _JamPlayerViewState extends ConsumerState<JamPlayerView> {
           header,
           Expanded(
             child: EmptyState(
-              icon: Icons.queue_music_rounded,
+              icon: CatalogAction.queuePanel.icon,
               message: context.l10n.jamEmpty,
             ),
           ),

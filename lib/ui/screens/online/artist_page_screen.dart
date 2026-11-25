@@ -36,6 +36,7 @@ import 'online_song_row.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/show_msg.dart';
+import '../../widgets/action_catalog.dart';
 
 /// The page of an artist on YouTube Music: the songs of the library first,
 /// then top songs, releases, similar artists and the biography. [artist] is
@@ -250,7 +251,7 @@ class ArtistPageScreen extends ConsumerWidget {
         IconButton(
           key: const ValueKey('artist-menu'),
           tooltip: l.moreActions,
-          icon: const Icon(Icons.more_vert),
+          icon: Icon(CatalogAction.more.icon),
           onPressed: () => showCcActionSheet<bool>(
             context: context,
             title: head.name,

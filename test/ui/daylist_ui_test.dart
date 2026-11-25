@@ -204,7 +204,7 @@ void main() {
         find.bySemanticsLabel(RegExp(r'^Online\nSuggerito, Band$')),
         findsOneWidget,
       );
-      await tester.tap(find.byTooltip('Altre opzioni').first);
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('dislike-artist')), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('dislike-track')));

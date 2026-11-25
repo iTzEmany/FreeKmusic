@@ -10,6 +10,7 @@ import 'ring_progress.dart' show NowPlayingDot;
 import 'track_actions.dart';
 import 'radio_now.dart';
 import 'track_art.dart';
+import 'action_catalog.dart';
 
 /// «Suggerito»: the small cloud and the word, shown wherever a streamed
 /// entry is listed.
@@ -139,10 +140,10 @@ class OnlineQueueRow extends ConsumerWidget {
               ),
             ),
             IconButton(
-              tooltip: l.moreOptions,
+              tooltip: CatalogAction.more.label(l),
               visualDensity: ccIconDensity,
               onPressed: () => showTrackActions(context, track),
-              icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
+              icon: Icon(CatalogAction.more.icon, color: cc.textMuted),
             ),
             if (i != null)
               Semantics(

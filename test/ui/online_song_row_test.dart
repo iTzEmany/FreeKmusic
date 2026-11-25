@@ -161,7 +161,7 @@ void main() {
     );
     container.read(selectionProvider('k').notifier).toggle(0);
     await tester.pump();
-    expect(find.byTooltip('Altre opzioni'), findsNothing);
+    expect(find.byTooltip('Altre azioni'), findsNothing);
     expect(find.byType(SwipeToQueue), findsNothing);
     await tester.tap(find.text('Online song'));
     await tester.pump();
@@ -238,7 +238,7 @@ void main() {
   ) async {
     final h = await pumpRow(tester);
     downloads.instant = true;
-    await tester.tap(find.byTooltip('Altre opzioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Aggiungi alla libreria'));
     await tester.pump();
@@ -252,7 +252,7 @@ void main() {
   ) async {
     final h = await pumpRow(tester, mode: StorageMode.stream);
     Future<void> open() async {
-      await tester.tap(find.byTooltip('Altre opzioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await tester.pumpAndSettle();
     }
 
@@ -287,7 +287,7 @@ void main() {
       mode: StorageMode.stream,
       extra: [downloadIndexProvider.overrideWith((ref) async => index)],
     );
-    await tester.tap(find.byTooltip('Altre opzioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Aggiungi alla libreria'));
     await tester.pump();
@@ -306,7 +306,7 @@ void main() {
       ),
     );
     Future<void> open() async {
-      await tester.tap(find.byTooltip('Altre opzioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await tester.pumpAndSettle();
     }
 

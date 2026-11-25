@@ -90,7 +90,7 @@ class SuggestedInfo extends ConsumerWidget {
                 entry?.result.indexKey,
                 _Tile(
                   icon: CatalogAction.library.icon,
-                  label: l.addToLibrary,
+                  label: CatalogAction.library.label(l),
                   onPressed: () async {
                     final now = await actions.downloadEntry(track.id);
                     if (now != null && context.mounted) {
@@ -106,7 +106,7 @@ class SuggestedInfo extends ConsumerWidget {
                 null,
                 _Tile(
                   icon: CatalogAction.playlist.icon,
-                  label: l.addToPlaylist,
+                  label: CatalogAction.playlist.label(l),
                   onPressed: () async {
                     final picked = await pickPlaylist(context, ref);
                     if (picked == null || !context.mounted) return;

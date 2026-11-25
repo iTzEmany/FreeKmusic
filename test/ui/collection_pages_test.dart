@@ -230,7 +230,7 @@ void main() {
     expect(find.text('Song 0'), findsOneWidget);
     expect(find.byTooltip('Riproduci'), findsOneWidget);
     expect(find.byIcon(Icons.shuffle_rounded), findsOneWidget);
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(find.text('Modifica ordine'));
@@ -316,7 +316,7 @@ void main() {
 
     testWidgets('reordering is off while searching', (tester) async {
       final (h, _) = await open(tester);
-      await tester.tap(find.byTooltip('Altre azioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await tester.pump(const Duration(milliseconds: 300));
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Modifica ordine'), findsNothing);
@@ -362,7 +362,7 @@ void main() {
         (tester) async {
       final (h, _) = await open(tester, search: false);
       Future<void> menu() async {
-        await tester.tap(find.byTooltip('Altre azioni'));
+        await tester.tap(find.byTooltip('Altre azioni').first);
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 300));
       }
@@ -440,7 +440,7 @@ void main() {
     await h.pump(tester, PlaylistDetailScreen(playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
     await _settle(tester);
     expect(find.byTooltip('Condividi'), findsOneWidget);
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Invia a un dispositivo'), findsOneWidget);
     await h.dispose(tester);
@@ -461,7 +461,7 @@ void main() {
     });
     await h.pump(tester, PlaylistDetailScreen(playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
     await _settle(tester);
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Invia a un dispositivo'), findsNothing);
     await h.dispose(tester);
@@ -531,14 +531,14 @@ void main() {
     await _settle(tester);
     expect(find.byIcon(Icons.download_rounded), findsNothing, reason: 'files only: nothing to download');
     expect(find.byTooltip('Condividi'), findsOneWidget);
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Invia a un dispositivo'), findsOneWidget);
     await tester.tap(find.text('Aggiungi ai preferiti'));
     await _settle(tester);
     final repo = FavoriteCollectionsRepository(h.db);
     expect(await tester.runAsync(() => repo.isFavoriteNow('album', 'artist|album 0')), isTrue);
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Togli dai preferiti'), findsOneWidget);
     await h.dispose(tester);

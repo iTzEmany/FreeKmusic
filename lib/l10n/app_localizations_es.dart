@@ -854,9 +854,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get repeat => 'Repetir';
 
   @override
-  String get moreOptions => 'Más opciones';
-
-  @override
   String get back => 'Atrás';
 
   @override

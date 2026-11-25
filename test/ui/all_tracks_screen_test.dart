@@ -233,7 +233,7 @@ void main() {
     await tester.tap(
       find.descendant(
         of: find.widgetWithText(TrackRow, 'Song 1').first,
-        matching: find.byTooltip('Altre opzioni'),
+        matching: find.byTooltip('Altre azioni'),
       ),
     );
     await _settle(tester);
