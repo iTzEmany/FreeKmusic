@@ -66,9 +66,10 @@ void main() {
     await h2.pump(t, const Scaffold(body: SettingsScreen()), extraOverrides: [trayAvailableProvider.overrideWithValue(true)]);
     await t.tap(find.text('Avanzate e info'));
     await t.pumpAndSettle();
+    final before = h2.store.readSettings().closeToTray; // on by default on Windows
     await t.tap(tile);
     await t.pumpAndSettle();
-    expect(h2.store.readSettings().closeToTray, isTrue);
+    expect(h2.store.readSettings().closeToTray, !before);
     await h2.dispose(t);
   });
 

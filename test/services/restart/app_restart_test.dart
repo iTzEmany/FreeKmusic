@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:codecore/services/restart/app_restart.dart';
@@ -54,7 +56,7 @@ void main() {
     expect(started, ['/tmp/a.AppImage']);
     expect(exits, [0]);
     expect(events, ['start', 'exit']);
-  });
+  }, skip: Platform.isLinux ? false : 'AppImage and Flatpak exist only on Linux');
 
   test('desktop: falls back to the resolved executable', () async {
     expect(await make({'APPIMAGE': ''}).restart(), isTrue);
@@ -83,7 +85,7 @@ void main() {
     expect(await make({'FLATPAK_ID': 'x'}).restart(), isFalse);
     expect(started, isEmpty);
     expect(exits, isEmpty);
-  });
+  }, skip: Platform.isLinux ? false : 'AppImage and Flatpak exist only on Linux');
 
   test('starter throws: false and no exit', () async {
     expect(await make({}, throws: true).restart(), isFalse);
