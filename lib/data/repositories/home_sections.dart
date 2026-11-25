@@ -41,7 +41,7 @@ List<AlbumSummary> recentlyAddedAlbums(
   return out.take(limit).toList();
 }
 
-/// The areas of «Riprendi»: at most one item each (D-671).
+/// The kinds of item of «Riprendi» (D-725).
 enum ResumeArea { track, podcast, album, playlist, radio, daylist }
 
 /// One tile of «Riprendi». Which field is set depends on [area]: [track]
@@ -75,33 +75,34 @@ ResumeArea? resumeAreaOf(PlayContextKind kind) => switch (kind) {
   _ => ResumeArea.track,
 };
 
-/// The latest of each area, the most recent first. [plays] are the latest
-/// play per context kind (its area is [resumeAreaOf]; radio plays are left out); an album or playlist play (with its context [name]) finds its
-/// entry in [entries], and without one the area falls back to the entry played
-/// last (a track of it, in any context). The playing queue wins its own area
-/// ([queueKind]) when that is track, podcast or daylist.
-List<ResumeItem> lastPerArea({
+/// The latest distinct things played, the most recent first, at most [limit] (D-725). Distinct means
+/// one item per track, album, playlist or station; the daylist is one item, left out when [daylist]
+/// is false (its card is on Home). [plays] are the latest play per context kind (radio plays are
+/// left out: [radios] give the station); an album or playlist play (with its context [name]) finds
+/// its entry in [entries]. The playing queue wins its own track, podcast or daylist item.
+List<ResumeItem> recentResumeItems({
   Track? current,
   List<Track> queue = const [],
   PlayContextKind? queueKind,
-  List<({PlayContextKind kind, Track track, int at, String? name})> plays = const [],
+  List<({PlayContextKind kind, Track track, int at, String? name})> plays =
+      const [],
   List<Track> resumable = const [],
   List<LibraryEntry> entries = const [],
   List<SavedRadio> radios = const [],
+  bool daylist = true,
+  int limit = 8,
 }) {
   ResumeArea ofTrack(Track t) =>
       t.kind == kEpisodeKind ? ResumeArea.podcast : ResumeArea.track;
   final index = current == null
       ? -1
       : queue.indexWhere((t) => t.id == current.id);
-  final best = <ResumeArea, ResumeItem>{};
-  void offer(ResumeItem i) {
-    final b = best[i.area];
-    if (b == null || i.at > b.at) best[i.area] = i;
+  final best = <String, ResumeItem>{};
+  void offer(ResumeItem i, String id) {
+    final b = best[id];
+    if (b == null || i.at > b.at) best[id] = i;
   }
 
-  // Album, playlist and radio tiles need their entry/station: they come from [entries]/[radios].
-  final fromPlays = <ResumeArea>{};
   final queueArea = queueKind == PlayContextKind.radio
       ? ResumeArea.radio
       : queueKind == null
@@ -121,6 +122,7 @@ List<ResumeItem> lastPerArea({
         queueIndex: index,
         queueLength: queue.length,
       ),
+      playingArea == ResumeArea.daylist ? 'd' : 't${current.id}',
     );
   }
   LibraryEntry? entryOf(ResumeArea area, Track t, String? name) {
@@ -137,46 +139,47 @@ List<ResumeItem> lastPerArea({
   for (final play in plays) {
     final area = resumeAreaOf(play.kind);
     if (area == null) continue;
-    final p = (area: area, track: play.track, at: play.at, name: play.name);
-    if (p.area == ResumeArea.album || p.area == ResumeArea.playlist) {
-      final e = entryOf(p.area, p.track, p.name);
-      if (e == null) continue;
-      fromPlays.add(p.area);
-      offer(ResumeItem(p.area, p.at, entry: e));
+    if (area == ResumeArea.album || area == ResumeArea.playlist) {
+      final e = entryOf(area, play.track, play.name);
+      if (e != null) {
+        offer(ResumeItem(area, play.at, entry: e), '${e.kind.name}${e.id}');
+      }
       continue;
     }
-    if (index >= 0 && p.track.id == current!.id) continue;
-    offer(
-      ResumeItem(
-        p.area,
-        p.at,
-        track: p.area == ResumeArea.track || p.area == ResumeArea.podcast
-            ? p.track
-            : null,
-      ),
-    );
+    if (area == ResumeArea.daylist) {
+      if (index < 0 || play.track.id != current!.id) {
+        offer(ResumeItem(area, play.at), 'd');
+      }
+      continue;
+    }
+    if (index >= 0 && play.track.id == current!.id) continue;
+    offer(ResumeItem(area, play.at, track: play.track), 't${play.track.id}');
   }
   for (final t in resumable) {
     if (index >= 0 && t.id == current!.id) continue;
-    offer(ResumeItem(ofTrack(t), t.lastPlayedAt ?? 0, track: t));
+    offer(ResumeItem(ofTrack(t), t.lastPlayedAt ?? 0, track: t), 't${t.id}');
   }
   for (final e in entries) {
     final at = e.lastPlayedAt;
     if (at == null) continue;
-    switch (e.kind) {
-      case LibraryKind.album when !fromPlays.contains(ResumeArea.album):
-        offer(ResumeItem(ResumeArea.album, at, entry: e));
-      case LibraryKind.playlist when !fromPlays.contains(ResumeArea.playlist):
-        offer(ResumeItem(ResumeArea.playlist, at, entry: e));
-      case LibraryKind.album || LibraryKind.playlist:
-        break;
-      case LibraryKind.artist:
-        break;
+    final area = switch (e.kind) {
+      LibraryKind.album => ResumeArea.album,
+      LibraryKind.playlist => ResumeArea.playlist,
+      LibraryKind.artist => null,
+    };
+    if (area != null) {
+      offer(ResumeItem(area, at, entry: e), '${e.kind.name}${e.id}');
     }
   }
   for (final r in radios) {
     final at = r.lastPlayedAt;
-    if (at != null) offer(ResumeItem(ResumeArea.radio, at, radio: r));
+    if (at != null) {
+      offer(ResumeItem(ResumeArea.radio, at, radio: r), 'r${r.stationId}');
+    }
   }
-  return best.values.toList()..sort((a, b) => b.at.compareTo(a.at));
+  final out = [
+    for (final i in best.values)
+      if (daylist || i.area != ResumeArea.daylist) i,
+  ]..sort((a, b) => b.at.compareTo(a.at));
+  return out.take(limit).toList();
 }

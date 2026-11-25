@@ -1,7 +1,9 @@
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
+import 'package:codecore/ui/screens/home/home_row.dart' show HomeBlock;
 import 'package:codecore/ui/screens/home/home_screen.dart';
+import 'package:codecore/ui/widgets/net_thumbnail.dart';
 import 'package:codecore/ui/screens/releases/new_releases_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -52,6 +54,21 @@ void main() {
   testWidgets('«Riprendi» offers the new releases and the row opens their page', (tester) async {
     await open(tester, seed: () => seedNewRelease(h.db, _lucio, 'MPREb_1', 'Volevo'));
     expect(find.byKey(const ValueKey('resume-releases')), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('resume-releases')), matching: find.byType(TextButton)));
+    await _settle(tester);
+    expect(find.byType(NewReleasesScreen), findsOneWidget);
+    await close(tester);
+  });
+
+  testWidgets('«Nuove uscite» previews the releases as covers and «Tutti» opens the full page', (tester) async {
+    await open(tester, seed: () async {
+      for (var i = 1; i <= 3; i++) {
+        await seedNewRelease(h.db, YtmArtistRef(id: 'UC$i', name: 'Artista $i'), 'MPREb_$i', 'Disco $i');
+      }
+    });
+    final block = find.ancestor(of: find.byKey(const ValueKey('resume-releases')), matching: find.byType(HomeBlock));
+    expect(find.descendant(of: block, matching: find.byType(NetThumbnail)), findsNWidgets(3));
+    expect(find.descendant(of: block, matching: find.text('Disco 2')), findsOneWidget);
     await tester.tap(find.descendant(of: find.byKey(const ValueKey('resume-releases')), matching: find.byType(TextButton)));
     await _settle(tester);
     expect(find.byType(NewReleasesScreen), findsOneWidget);

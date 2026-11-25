@@ -4188,6 +4188,25 @@
   "updateNew": "neu",
   "shareKindTrack": "Titel",
   "shareUntitled": "Ohne Titel",
+  "libraryHistorySub": "Zuletzt gehört",
+  "genresCount": "{count, plural, one{1 Genre} other{{count} Genres}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openOutsideLibrary": "{count, plural, one{Die Datei liegt außerhalb der Bibliotheksordner} other{{count} Dateien liegen außerhalb der Bibliotheksordner}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Zur Bibliothek hinzufügen",
+  "openPortalFile": "Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen",
   "flatpakDataTitle": "Daten einer anderen Version?",
   "flatpakDataBody": "Diese Flatpak-App nutzt einen eigenen, leeren Datenordner. Wenn du vorher AppImage oder deb benutzt hast, liegt deine Bibliothek in {oldDir}. Schließe die App, füge diesen Befehl in einem Terminal (außerhalb von Flatpak) ein und öffne die App danach neu: Daten und Einstellungen landen in {newDir}. Die App kopiert nichts von selbst.",
   "@flatpakDataBody": {
@@ -4201,15 +4220,5 @@
     }
   },
   "flatpakDataCopy": "Befehl kopieren",
-  "updateFlatpakHint": "Ich lade die Datei herunter; schließe dann die App und füge den Befehl in einem Terminal ein.",
-  "openOutsideLibrary": "{count, plural, one{Die Datei liegt außerhalb der Bibliotheksordner} other{{count} Dateien liegen außerhalb der Bibliotheksordner}}",
-  "@openOutsideLibrary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "openAddToLibrary": "Zur Bibliothek hinzufügen",
-  "openPortalFile": "Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen"
+  "updateFlatpakHint": "Ich lade die Datei herunter; schließe dann die App und füge den Befehl in einem Terminal ein."
 }

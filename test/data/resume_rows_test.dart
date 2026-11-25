@@ -34,27 +34,56 @@ LibraryEntry entry(
 ]) => LibraryEntry(kind: k, id: id, title: id, count: 1, lastPlayedAt: played);
 
 SavedRadio radio(int? played) => SavedRadio(
-  stationId: 's', name: 'R', streamUrl: 'u', homepage: '', faviconUrl: '', countryCode: '',
-  state: '', tags: '', codec: '', bitrate: 0, hls: false, position: 0, addedAt: 1,
-  lastPlayedAt: played, unreachable: false,
+  stationId: 's',
+  name: 'R',
+  streamUrl: 'u',
+  homepage: '',
+  faviconUrl: '',
+  countryCode: '',
+  state: '',
+  tags: '',
+  codec: '',
+  bitrate: 0,
+  hls: false,
+  position: 0,
+  addedAt: 1,
+  lastPlayedAt: played,
+  unreachable: false,
 );
 
 void main() {
   test('a stored index is decoded in one place: null or unknown reads as the library', () {
-    expect(PlayContextKind.fromIndex(PlayContextKind.radio.index), PlayContextKind.radio);
-    expect(PlayContextKind.fromIndex(PlayContextKind.values.length - 1), PlayContextKind.daylist);
+    expect(
+      PlayContextKind.fromIndex(PlayContextKind.radio.index),
+      PlayContextKind.radio,
+    );
+    expect(
+      PlayContextKind.fromIndex(PlayContextKind.values.length - 1),
+      PlayContextKind.daylist,
+    );
     for (final raw in [null, -1, PlayContextKind.values.length, 9999]) {
-      expect(PlayContextKind.fromIndex(raw), PlayContextKind.library, reason: '$raw');
+      expect(
+        PlayContextKind.fromIndex(raw),
+        PlayContextKind.library,
+        reason: '$raw',
+      );
     }
   });
 
-  test('a radio listen makes no tile of its own: the stations give the radio tile', () {
-    final items = lastPerArea(plays: [(kind: PlayContextKind.radio, track: track(1), at: 50, name: 'R')]);
-    expect(items, isEmpty);
-  });
+  test(
+    'a radio listen makes no tile of its own: the stations give the radio tile',
+    () {
+      final items = recentResumeItems(
+        plays: [
+          (kind: PlayContextKind.radio, track: track(1), at: 50, name: 'R'),
+        ],
+      );
+      expect(items, isEmpty);
+    },
+  );
 
-  test('one item per area, the latest of each, most recent first', () {
-    final items = lastPerArea(
+  test('distinct things of every kind, the most recent first', () {
+    final items = recentResumeItems(
       plays: [
         (kind: PlayContextKind.library, track: track(1), at: 50, name: null),
         (kind: PlayContextKind.daylist, track: track(2), at: 40, name: null),
@@ -68,47 +97,90 @@ void main() {
         entry('b', 20),
         entry('p', 5, LibraryKind.playlist),
       ],
+      radios: [radio(45)],
     );
     expect(items.map((i) => i.area), [
       ResumeArea.podcast,
       ResumeArea.track,
+      ResumeArea.radio,
       ResumeArea.daylist,
       ResumeArea.album,
+      ResumeArea.album,
+      ResumeArea.track,
       ResumeArea.playlist,
     ]);
-    expect(items.firstWhere((i) => i.area == ResumeArea.track).track!.id, 1);
-    expect(items.firstWhere((i) => i.area == ResumeArea.album).entry!.id, 'a');
+    expect(items.map((i) => i.at), [60, 50, 45, 40, 30, 20, 10, 5]);
   });
 
+  test('the same thing played twice is one item, and at most 8 are kept', () {
+    final once = recentResumeItems(
+      plays: [
+        (kind: PlayContextKind.library, track: track(1), at: 50, name: null),
+      ],
+      resumable: [track(1, lastPlayedAt: 70)],
+    );
+    expect(once.single.at, 70);
+    final many = recentResumeItems(
+      entries: [for (var i = 0; i < 12; i++) entry('a$i', i + 1)],
+    );
+    expect(many, hasLength(8));
+    expect(many.first.entry!.id, 'a11');
+  });
+
+  test(
+    'without the daylist card the daylist is an item, with it it is not',
+    () {
+      final plays = [
+        (kind: PlayContextKind.daylist, track: track(2), at: 40, name: null),
+      ];
+      expect(recentResumeItems(plays: plays).single.area, ResumeArea.daylist);
+      expect(recentResumeItems(plays: plays, daylist: false), isEmpty);
+    },
+  );
+
   test('the playing queue wins its area and carries its place', () {
-    final items = lastPerArea(
+    final items = recentResumeItems(
       current: track(1),
       queue: [track(0), track(1), track(2)],
-      plays: [(kind: PlayContextKind.library, track: track(9), at: 99, name: null)],
+      plays: [
+        (kind: PlayContextKind.library, track: track(9), at: 99, name: null),
+      ],
       resumable: [track(1, lastPlayedAt: 3)],
     );
-    expect(items, hasLength(1));
-    expect((items.single.queueIndex, items.single.queueLength), (1, 3));
-    expect(items.single.track!.id, 1);
+    expect(items, hasLength(2));
+    expect((items.first.queueIndex, items.first.queueLength), (1, 3));
+    expect(items.first.track!.id, 1);
+    expect(items.last.track!.id, 9);
   });
 
   test('nothing played: no items', () {
-    expect(lastPerArea(), isEmpty);
+    expect(recentResumeItems(), isEmpty);
   });
 
-  for (final queueKind in [PlayContextKind.album, PlayContextKind.playlist, PlayContextKind.radio]) {
-    test('a queue playing $queueKind does not make an item without its entry', () {
-      final items = lastPerArea(
-        current: track(1),
-        queue: [track(1)],
-        queueKind: queueKind,
-      );
-      expect(items, isEmpty, reason: 'album, playlist and radio tiles need their entry or station');
-    });
+  for (final queueKind in [
+    PlayContextKind.album,
+    PlayContextKind.playlist,
+    PlayContextKind.radio,
+  ]) {
+    test(
+      'a queue playing $queueKind does not make an item without its entry',
+      () {
+        final items = recentResumeItems(
+          current: track(1),
+          queue: [track(1)],
+          queueKind: queueKind,
+        );
+        expect(
+          items,
+          isEmpty,
+          reason: 'album, playlist and radio tiles need their entry or station',
+        );
+      },
+    );
   }
 
   test('an album in the queue takes its tile from the entries', () {
-    final items = lastPerArea(
+    final items = recentResumeItems(
       current: track(1),
       queue: [track(1)],
       queueKind: PlayContextKind.album,
@@ -120,7 +192,7 @@ void main() {
   });
 
   test('a daylist in the queue carries its place', () {
-    final items = lastPerArea(
+    final items = recentResumeItems(
       current: track(1),
       queue: [track(1), track(2)],
       queueKind: PlayContextKind.daylist,
@@ -130,9 +202,14 @@ void main() {
   });
 
   test('entries without a last play are skipped, artists never show', () {
-    final items = lastPerArea(
+    final items = recentResumeItems(
       entries: [
-        const LibraryEntry(kind: LibraryKind.album, id: 'none', title: 'none', count: 1),
+        const LibraryEntry(
+          kind: LibraryKind.album,
+          id: 'none',
+          title: 'none',
+          count: 1,
+        ),
         entry('ok', 5),
         entry('artist', 99, LibraryKind.artist),
       ],
@@ -141,13 +218,20 @@ void main() {
   });
 
   test('a radio played shows, the latest of the plays wins', () {
-    final items = lastPerArea(radios: [radio(5)]);
+    final items = recentResumeItems(radios: [radio(5)]);
     expect(items.single.radio!.name, 'R');
   });
 
   test('a podcast play gives the track tile, a radio never played (no last play) is absent', () {
-    final items = lastPerArea(
-      plays: [(kind: PlayContextKind.podcast, track: track(3, kind: 1), at: 7, name: null)],
+    final items = recentResumeItems(
+      plays: [
+        (
+          kind: PlayContextKind.podcast,
+          track: track(3, kind: 1),
+          at: 7,
+          name: null,
+        ),
+      ],
       radios: [radio(null)],
     );
     expect(items.single.area, ResumeArea.podcast);
@@ -155,37 +239,55 @@ void main() {
   });
 
   LibraryEntry album(String key, String title, int played) => LibraryEntry(
-    kind: LibraryKind.album, id: key, title: title, count: 1, lastPlayedAt: played);
+    kind: LibraryKind.album,
+    id: key,
+    title: title,
+    count: 1,
+    lastPlayedAt: played,
+  );
   Track inAlbum(int id, String key) => track(id).copyWith(albumKey: key);
 
-  test('an album played as an album shows; a daylist that plays its tracks does not move the tiles', () {
-    final items = lastPerArea(
+  test('an album played as an album shows once, with the entry of its key', () {
+    final items = recentResumeItems(
       plays: [
-        (kind: PlayContextKind.album, track: inAlbum(1, 'x'), at: 10, name: 'X'),
-        (kind: PlayContextKind.daylist, track: inAlbum(2, 'y'), at: 90, name: null),
+        (
+          kind: PlayContextKind.album,
+          track: inAlbum(1, 'x'),
+          at: 10,
+          name: 'X',
+        ),
       ],
-      // The daylist track bumped album y (MAX of the tracks' last play).
-      entries: [album('x', 'X', 10), album('y', 'Y', 90)],
+      entries: [album('x', 'X', 12), album('y', 'Y', 9)],
     );
-    expect(items.firstWhere((i) => i.area == ResumeArea.album).entry!.id, 'x');
+    expect(items.map((i) => i.entry!.id), ['x', 'y']);
+    expect(items.first.at, 12);
   });
 
   test('a playlist play finds its playlist by name; without a play the entries decide', () {
-    final withPlay = lastPerArea(
-      plays: [(kind: PlayContextKind.playlist, track: track(1), at: 10, name: 'A')],
-      entries: [entry('A', 10, LibraryKind.playlist), entry('B', 90, LibraryKind.playlist)],
+    final withPlay = recentResumeItems(
+      plays: [
+        (kind: PlayContextKind.playlist, track: track(1), at: 10, name: 'A'),
+      ],
+      entries: [
+        entry('A', 10, LibraryKind.playlist),
+        entry('B', 90, LibraryKind.playlist),
+      ],
     );
-    expect(withPlay.single.entry!.id, 'A');
-    final without = lastPerArea(entries: [entry('B', 90, LibraryKind.playlist)]);
+    expect(withPlay.map((i) => i.entry!.id), ['B', 'A']);
+    final without = recentResumeItems(
+      entries: [entry('B', 90, LibraryKind.playlist)],
+    );
     expect(without.single.entry!.id, 'B');
   });
 
   test('the song that plays is not offered again by the daylist or the resumable ones', () {
-    final items = lastPerArea(
+    final items = recentResumeItems(
       current: track(1),
       queue: [track(1)],
       queueKind: PlayContextKind.daylist,
-      plays: [(kind: PlayContextKind.library, track: track(1), at: 99, name: null)],
+      plays: [
+        (kind: PlayContextKind.library, track: track(1), at: 99, name: null),
+      ],
       resumable: [track(1, lastPlayedAt: 98)],
     );
     expect(items.map((i) => i.area), [ResumeArea.daylist]);

@@ -756,6 +756,8 @@ void main() {
       expect(all.top, fav.top);
       expect(all.left, greaterThan(fav.right));
       expect(find.byIcon(Icons.favorite_rounded), findsNothing);
+      // The count comes as a subtitle with its unit, like on the Home.
+      expect(find.text('4 brani'), findsWidgets);
       // 8 blocks here (Generi included): the last pairs up, none spans both columns.
       expect(last.left, greaterThan(fav.right));
       await h.dispose(t);

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../widgets/create_flows.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
@@ -7,7 +6,6 @@ import '../../../providers/database_providers.dart';
 import '../../widgets/alpha_scroller.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/cover_image.dart';
-import '../import/import_flow.dart';
 import 'playlist_detail_screen.dart';
 import '../../widgets/async_body.dart';
 import '../../theme/tokens.dart';
@@ -21,25 +19,6 @@ class PlaylistsScreen extends ConsumerWidget {
     final lists = ref.watch(playlistsProvider);
     return Scaffold(
       backgroundColor: Colors.transparent,
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.extended(
-            heroTag: 'csv-import',
-            onPressed: () => startCsvImport(context, ref),
-            icon: const Icon(Icons.upload_file_rounded),
-            label: Text(l.csvImportMenu),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton.extended(
-            heroTag: 'new-playlist',
-            onPressed: () => createPlaylistFlow(context, ref),
-            icon: const Icon(Icons.add),
-            label: Text(l.newPlaylist),
-          ),
-        ],
-      ),
       body: AsyncBody(
         value: lists,
         onRetry: () => ref.invalidate(playlistsProvider),
@@ -61,7 +40,7 @@ class PlaylistsScreen extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    subtitle: Text(l.tracksCount(p.trackCount)),
+                    subtitle: Text(l.playlistCountLabel(p.trackCount)),
                     onTap: () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
                         builder: (_) =>

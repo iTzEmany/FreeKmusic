@@ -3,6 +3,7 @@ import '../../../providers/track_ops.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../data/repositories/release_repository.dart' show RecentRelease;
 import '../../../data/repositories/track_repository.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
@@ -14,12 +15,14 @@ import '../../../core/constants.dart';
 import '../releases/new_releases_screen.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
-import '../../widgets/cc_tile.dart';
+import '../../widgets/net_thumbnail.dart';
+import '../online/artist_page_sections.dart' show thumbAt;
 import '../../widgets/play_buttons.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/shuffle_button.dart';
 import '../library/all_tracks_screen.dart';
 import '../library/favorites_screen.dart';
+import '../library/library_shortcuts.dart';
 import '../playlists/playlists_screen.dart';
 import '../radio/radio_screen.dart';
 import 'cover_fan.dart';
@@ -90,7 +93,8 @@ class ShuffleHero extends ConsumerWidget {
   }
 }
 
-/// Favourites, Playlist and Radio: three boxes, each with one spoken label.
+/// Favourites, Playlist and Radio: the same tiles as the Library shortcuts
+/// ([LibraryShortcuts]), with the count and its unit in the subtitle.
 class ShortcutsRow extends ConsumerWidget {
   const ShortcutsRow({super.key});
 
@@ -98,96 +102,31 @@ class ShortcutsRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     int count<T>(AsyncValue<List<T>> v) => v.value?.length ?? 0;
-    Widget tile(IconData icon, String label, String sub, Widget page) =>
-        Expanded(
-          child: _Shortcut(
-            icon: icon,
-            label: label,
-            sub: sub,
-            onTap: () => ShellNav.open<void>(context, page),
-          ),
-        );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        CcDims.margin,
-        CcDims.gap8,
-        CcDims.margin,
-        0,
-      ),
-      child: Row(
-        spacing: CcDims.gap8,
-        children: [
-          tile(
-            Icons.favorite_border,
-            l.navFavorites,
-            l.tracksCount(ref.watch(favoriteCountProvider).value ?? 0),
-            const FavoritesScreen(),
-          ),
-          tile(
-            Icons.queue_music,
-            l.navPlaylists,
-            l.playlistsCount(count(ref.watch(playlistsProvider))),
+    void open(Widget page) => ShellNav.open<void>(context, page);
+    final radios = count(ref.watch(savedRadiosProvider));
+    return LibraryShortcuts(
+      items: [
+        LibraryShortcut(
+          label: l.navFavorites,
+          meta: l.tracksCount(ref.watch(favoriteCountProvider).value ?? 0),
+          onTap: () => open(const FavoritesScreen()),
+        ),
+        LibraryShortcut(
+          label: l.navPlaylists,
+          meta: l.playlistsCount(count(ref.watch(playlistsProvider))),
+          onTap: () => open(
             Scaffold(
               appBar: CcAppBar(title: l.navPlaylists),
               body: const PlaylistsScreen(),
             ),
           ),
-          tile(Icons.radio, l.radioTitle, switch (count(
-            ref.watch(savedRadiosProvider),
-          )) {
-            0 => l.homeRadioLive,
-            final n => l.radioLibrarySubtitle(n),
-          }, const RadioScreen()),
-        ],
-      ),
-    );
-  }
-}
-
-class _Shortcut extends StatelessWidget {
-  const _Shortcut({
-    required this.icon,
-    required this.label,
-    required this.sub,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label, sub;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context).textTheme;
-    final cc = context.cc;
-    return CcTile(
-      semanticsLabel: '$label, $sub',
-      minHeight: 88,
-      onTap: onTap,
-      child: Container(
-        alignment: Alignment.centerLeft,
-        padding: const EdgeInsets.all(CcDims.gap12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: cc.accentSoft),
-            const SizedBox(height: CcDims.gap4),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.bodyLarge,
-            ),
-            Text(
-              sub,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.bodyMedium,
-            ),
-          ],
         ),
-      ),
+        LibraryShortcut(
+          label: l.radioTitle,
+          meta: radios == 0 ? l.homeRadioLive : l.radioLibrarySubtitle(radios),
+          onTap: () => open(const RadioScreen()),
+        ),
+      ],
     );
   }
 }
@@ -228,6 +167,9 @@ class NewReleasesBlock extends ConsumerWidget {
         : 0;
     if (n <= 0) return const SizedBox.shrink();
     final l = context.l10n;
+    final recent =
+        ref.watch(recentReleasesProvider(30)).value ?? const <RecentRelease>[];
+    if (recent.isEmpty) return const SizedBox.shrink(); // 30-day window or loading
     return HomeBlock(
       header: SectionHeader(
         l.newReleasesTitle,
@@ -236,7 +178,80 @@ class NewReleasesBlock extends ConsumerWidget {
         actionLabel: l.showAll,
         onAction: () => ShellNav.open<void>(context, const NewReleasesScreen()),
       ),
-      children: const [],
+      children: [
+        SizedBox(
+          height: _shelfHeight,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(
+              CcDims.gap12,
+              0,
+              CcDims.gap12,
+              CcDims.gap12,
+            ),
+            itemCount: recent.length.clamp(0, _shelfMax),
+            separatorBuilder: (_, _) => const SizedBox(width: CcDims.gap12),
+            itemBuilder: (_, i) => _ReleaseTile(recent[i]),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+const _shelfMax = 8;
+const _shelfCover = 96.0;
+const _shelfHeight = _shelfCover + 56;
+
+class _ReleaseTile extends StatelessWidget {
+  const _ReleaseTile(this.release);
+
+  final RecentRelease release;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context).textTheme;
+    final r = release.release;
+    return Semantics(
+      button: true,
+      label: '${r.title}, ${release.artistName}',
+      excludeSemantics: true,
+      onTap: () => ShellNav.open<void>(context, const NewReleasesScreen()),
+      // A cover opens the full list, like «Tutti» (no page per release here).
+      child: InkWell(
+        key: ValueKey('shelf-release-${r.browseId}'),
+        onTap: () => ShellNav.open<void>(context, const NewReleasesScreen()),
+        child: SizedBox(
+          width: _shelfCover,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(CcDims.rList),
+                child: NetThumbnail(
+                  url: thumbAt(context, r.thumbUrl, _shelfCover),
+                  width: _shelfCover,
+                  height: _shelfCover,
+                  icon: Icons.album_rounded,
+                ),
+              ),
+              const SizedBox(height: CcDims.gap4),
+              Text(
+                r.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.bodyMedium,
+              ),
+              Text(
+                release.artistName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.bodySmall,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

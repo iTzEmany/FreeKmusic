@@ -4917,6 +4917,25 @@
   "updateNew": "nuova",
   "shareKindTrack": "Brano",
   "shareUntitled": "Senza titolo",
+  "libraryHistorySub": "Ultimi ascolti",
+  "genresCount": "{count, plural, one{1 genere} other{{count} generi}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openOutsideLibrary": "{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Aggiungi alla libreria",
+  "openPortalFile": "Il file è fuori dalle cartelle che l'app può leggere: aggiungi la sua cartella dalla Libreria",
   "flatpakDataTitle": "Dati di una versione precedente?",
   "flatpakDataBody": "Questa app Flatpak usa una cartella dati sua, vuota. Se prima usavi AppImage o deb, la tua libreria è in {oldDir}. Per portarla qui chiudi l'app, incolla in un terminale (fuori dal Flatpak) questo comando e poi riapri l'app: i dati e le impostazioni finiranno in {newDir}. L'app non copia nulla da sola.",
   "@flatpakDataBody": {
@@ -4930,15 +4949,5 @@
     }
   },
   "flatpakDataCopy": "Copia comando",
-  "updateFlatpakHint": "Scarico il file; poi chiudi l'app e incolla il comando in un terminale.",
-  "openOutsideLibrary": "{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}",
-  "@openOutsideLibrary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "openAddToLibrary": "Aggiungi alla libreria",
-  "openPortalFile": "Il file è fuori dalle cartelle che l'app può leggere: aggiungi la sua cartella dalla Libreria"
+  "updateFlatpakHint": "Scarico il file; poi chiudi l'app e incolla il comando in un terminale."
 }

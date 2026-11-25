@@ -117,16 +117,11 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('playlists empty state and creation', (tester) async {
+  testWidgets('playlists empty state has no creation buttons (the «+» lives in the Library)', (tester) async {
     final h = await Harness.create(tester);
     await h.pump(tester, const PlaylistsScreen());
     expect(find.text('Nessuna playlist. Creane una.'), findsOneWidget);
-    await tester.tap(find.text('Nuova playlist'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField), 'Rock');
-    await tester.tap(find.text('Crea'));
-    await tester.pumpAndSettle();
-    expect(find.text('Rock'), findsOneWidget);
+    expect(find.byType(FloatingActionButton), findsNothing);
     await h.dispose(tester);
   });
 

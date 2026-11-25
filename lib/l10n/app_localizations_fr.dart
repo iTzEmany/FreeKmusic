@@ -8647,19 +8647,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get shareUntitled => 'Sans titre';
 
   @override
-  String get flatpakDataTitle => 'Données d’une autre version ?';
+  String get libraryHistorySub => 'Écoutés récemment';
 
   @override
-  String flatpakDataBody(String oldDir, String newDir) {
-    return 'Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans $oldDir. Pour l’amener ici, fermez l’app, collez cette commande dans un terminal (hors Flatpak), puis rouvrez l’app : données et réglages iront dans $newDir. L’app ne copie rien toute seule.';
+  String genresCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count genres',
+      one: '1 genre',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get flatpakDataCopy => 'Copier la commande';
-
-  @override
-  String get updateFlatpakHint =>
-      'Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal.';
 
   @override
   String openOutsideLibrary(int count) {
@@ -8678,4 +8677,19 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get openPortalFile =>
       'Le fichier est hors des dossiers que l’app peut lire : ajoutez son dossier depuis la Bibliothèque';
+
+  @override
+  String get flatpakDataTitle => 'Données d’une autre version ?';
+
+  @override
+  String flatpakDataBody(String oldDir, String newDir) {
+    return 'Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans $oldDir. Pour l’amener ici, fermez l’app, collez cette commande dans un terminal (hors Flatpak), puis rouvrez l’app : données et réglages iront dans $newDir. L’app ne copie rien toute seule.';
+  }
+
+  @override
+  String get flatpakDataCopy => 'Copier la commande';
+
+  @override
+  String get updateFlatpakHint =>
+      'Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal.';
 }

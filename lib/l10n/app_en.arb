@@ -4188,6 +4188,25 @@
   "updateNew": "new",
   "shareKindTrack": "Track",
   "shareUntitled": "Untitled",
+  "libraryHistorySub": "Recently played",
+  "genresCount": "{count, plural, one{1 genre} other{{count} genres}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openOutsideLibrary": "{count, plural, one{The file is outside the library folders} other{{count} files are outside the library folders}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Add to library",
+  "openPortalFile": "The file is outside the folders the app can read: add its folder from the Library",
   "flatpakDataTitle": "Data from another version?",
   "flatpakDataBody": "This Flatpak app uses its own, empty data folder. If you used the AppImage or deb before, your library is in {oldDir}. To bring it here, close the app, paste this command in a terminal (outside the Flatpak) and then reopen the app: data and settings will end up in {newDir}. The app copies nothing by itself.",
   "@flatpakDataBody": {
@@ -4201,15 +4220,5 @@
     }
   },
   "flatpakDataCopy": "Copy command",
-  "updateFlatpakHint": "I download the file; then close the app and paste the command in a terminal.",
-  "openOutsideLibrary": "{count, plural, one{The file is outside the library folders} other{{count} files are outside the library folders}}",
-  "@openOutsideLibrary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "openAddToLibrary": "Add to library",
-  "openPortalFile": "The file is outside the folders the app can read: add its folder from the Library"
+  "updateFlatpakHint": "I download the file; then close the app and paste the command in a terminal."
 }

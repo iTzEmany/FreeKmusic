@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,18 +13,18 @@ import '../../../providers/player_providers.dart';
 import '../../../providers/resume_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/cover_image.dart';
 import '../../widgets/format_utils.dart';
+import '../../widgets/playlist_cover.dart';
+import '../../widgets/radio_art.dart';
 import '../../widgets/section_header.dart';
 import '../library/album_detail_screen.dart';
 import '../now_playing/now_playing_screen.dart' show playContextName;
 import '../playlists/playlist_detail_screen.dart';
 import 'home_row.dart';
 
-/// Width of the block from which the grid has 3 columns instead of 2.
-const _threeColumnsWidth = 560.0;
-
-/// «Riprendi»: a grid with the latest item of each area (2 columns, 3 when the
-/// block is at least [_threeColumnsWidth] wide). Hidden when empty.
+/// «Riprendi»: the latest thing played big in the middle, the others on an open arc
+/// around it (D-725, F-21). Hidden when empty; with few items the arc has fewer slots.
 class ResumeList extends ConsumerWidget {
   const ResumeList({super.key});
 
@@ -33,11 +35,11 @@ class ResumeList extends ConsumerWidget {
     if (items.isEmpty) return const SizedBox.shrink();
     final source = ref.watch(playContextProvider);
     final ctrl = ref.read(playerControllerProvider);
-    // What the queue plays now: a tap pauses/resumes it, never restarts it. The grid
-    // does not watch the play state (it would rebuild at every play/pause).
+    // What the queue plays now: a tap pauses/resumes it, never restarts it. The ring does
+    // not watch the play state (it would rebuild at every play/pause).
     final nowTap = ctrl.togglePlayPause;
 
-    Widget tile(ResumeItem r) {
+    _Slot slot(ResumeItem r, String key) {
       final t = r.track, e = r.entry;
       final (icon, areaLabel) = switch (r.area) {
         ResumeArea.track => (Icons.music_note_rounded, l.resumeAreaTrack),
@@ -65,13 +67,42 @@ class ResumeList extends ConsumerWidget {
         ResumeArea.playlist => l.tracksCount(e!.count),
         ResumeArea.radio || ResumeArea.daylist => areaLabel,
       };
-      return _ResumeTile(
-        key: ValueKey('resume-${r.area.name}'),
-        icon: icon,
+      return _Slot(
+        key: key,
+        radio: r.area == ResumeArea.radio,
         areaLabel: areaLabel,
         title: title,
         subtitle: subtitle,
-        now: r.queueIndex != null,
+        cover: (size, radius) => switch (r.area) {
+          ResumeArea.track || ResumeArea.podcast => CoverImage(
+            coverKey: t!.coverKey,
+            size: size,
+            radius: radius,
+          ),
+          ResumeArea.album => CoverImage(
+            coverKey: e!.coverKey,
+            size: size,
+            radius: radius,
+          ),
+          ResumeArea.playlist => PlaylistCover(
+            size: size,
+            radius: radius,
+            coverKeys: playlistCoverKeys(
+              e!.playlist?.playlist.coverKey,
+              e.coverKeys,
+            ),
+          ),
+          ResumeArea.radio => RadioArt(
+            station: r.radio!.toStation(),
+            size: size,
+            circle: true,
+          ),
+          ResumeArea.daylist => _IconCover(
+            icon: icon,
+            size: size,
+            radius: radius,
+          ),
+        },
         progress: t == null
             ? null
             : _fraction(t.resumePositionMs, t.durationMs),
@@ -102,6 +133,17 @@ class ResumeList extends ConsumerWidget {
       );
     }
 
+    final seen = <ResumeArea, int>{};
+    final slots = [
+      for (final r in items)
+        slot(
+          r,
+          'resume-${r.area.name}${seen.update(r.area, (n) => n + 1, ifAbsent: () => 0) == 0 ? '' : '-${seen[r.area]}'}',
+        ),
+    ];
+    final core = slots.first;
+    final ring = slots.skip(1).toList();
+    final text = Theme.of(context).textTheme;
     return HomeBlock(
       header: SectionHeader(l.homeResume),
       children: [
@@ -112,24 +154,95 @@ class ResumeList extends ConsumerWidget {
             CcDims.gap12,
             CcDims.gap12,
           ),
-          child: LayoutBuilder(
-            builder: (context, box) {
-              // The columns follow the block, not the window (a side panel narrows it).
-              final columns = box.maxWidth >= _threeColumnsWidth ? 3 : 2;
-              final w = (box.maxWidth - (columns - 1) * CcDims.gap8) / columns;
-              return Wrap(
-                spacing: CcDims.gap8,
-                runSpacing: CcDims.gap8,
-                children: [
-                  for (final r in items) SizedBox(width: w, child: tile(r)),
-                ],
-              );
-            },
+          child: Center(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(
+                width: _ringW,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      width: _ringW,
+                      height: ring.isEmpty ? _coreSize + 12 : _ringH,
+                      child: Stack(
+                        children: [
+                          for (var i = 0; i < ring.length; i++)
+                            _ringItem(ring[i], i, ring.length),
+                          Positioned(
+                            left: (_ringW - _coreSize) / 2,
+                            top: ring.isEmpty ? 6 : _cy - _coreSize / 2,
+                            child: _core(context, core, l.homeResume),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // The middle cover already speaks for it: the button is for the eyes.
+                    ExcludeSemantics(
+                      child: FilledButton.icon(
+                        onPressed: core.onTap,
+                        icon: const Icon(Icons.play_circle_outline_rounded),
+                        label: Text(l.homeResume),
+                      ),
+                    ),
+                    const SizedBox(height: CcDims.gap8),
+                    Text(
+                      core.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodyLarge,
+                    ),
+                    Text(
+                      core.subtitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
+
+  /// The others sit on the open arc, from the lower left over the top to the lower right.
+  Widget _ringItem(_Slot s, int i, int n) {
+    final step = n == 1 ? 0.0 : math.min(52.0, 260.0 / (n - 1));
+    final a = (i - (n - 1) / 2) * step * math.pi / 180;
+    return Positioned(
+      left: _ringW / 2 + _r * math.sin(a) - _itemSize / 2,
+      top: _cy - _r * math.cos(a) - _itemSize / 2,
+      child: _SlotButton(
+        slot: s,
+        size: _itemSize,
+        radius: s.radio ? _itemSize / 2 : CcDims.rList,
+      ),
+    );
+  }
+
+  Widget _core(BuildContext context, _Slot s, String lead) => Stack(
+    alignment: Alignment.center,
+    children: [
+      if (s.progress != null && s.progress! > 0)
+        SizedBox(
+          width: _coreSize + 8,
+          height: _coreSize + 8,
+          child: CircularProgressIndicator(
+            value: s.progress,
+            strokeWidth: 3,
+            backgroundColor: context.cc.surface3,
+          ),
+        ),
+      _SlotButton(
+        slot: s,
+        size: _coreSize,
+        radius: s.radio ? _coreSize / 2 : CcDims.rCard,
+        lead: lead,
+      ),
+    ],
+  );
 
   /// A blank title (empty tag or name) reads as the fallback too, not only null.
   String _orElse(String? title, String fallback) =>
@@ -170,93 +283,88 @@ class ResumeList extends ConsumerWidget {
       : (position / duration).clamp(0.0, 1.0);
 }
 
-/// A tile of the grid: [CcColors.surface2], radius 12, the area's icon, two
-/// lines; at least 48 dp tall. [now] marks what the queue plays.
-class _ResumeTile extends StatelessWidget {
-  const _ResumeTile({
-    super.key,
-    required this.icon,
+const _ringW = 328.0, _ringH = 250.0, _cy = 140.0, _r = 108.0;
+const _coreSize = 96.0, _itemSize = 56.0;
+
+/// What one item of the ring needs: its texts, cover and tap.
+class _Slot {
+  const _Slot({
+    required this.key,
     required this.areaLabel,
     required this.title,
     required this.subtitle,
+    required this.cover,
     required this.onTap,
-    this.now = false,
     this.progress,
+    this.radio = false,
+  });
+
+  final bool radio;
+  final String key, areaLabel, title, subtitle;
+  final Widget Function(double size, double radius) cover;
+  final VoidCallback? onTap;
+  final double? progress;
+}
+
+/// A cover that taps: at least 48 dp, read by screen readers as «lead, area, title, detail».
+class _SlotButton extends StatelessWidget {
+  const _SlotButton({
+    required this.slot,
+    required this.size,
+    required this.radius,
+    this.lead,
+  });
+
+  final _Slot slot;
+  final double size, radius;
+  final String? lead;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      key: ValueKey(slot.key),
+      container: true,
+      button: slot.onTap != null,
+      label:
+          '${lead == null ? '' : '$lead, '}${slot.areaLabel}, ${slot.title}, ${slot.subtitle}',
+      excludeSemantics: true,
+      onTap: slot.onTap,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(radius),
+            onTap: slot.onTap,
+            child: slot.cover(size, radius),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The daylist has no cover of its own: its icon on a plain tile.
+class _IconCover extends StatelessWidget {
+  const _IconCover({
+    required this.icon,
+    required this.size,
+    required this.radius,
   });
 
   final IconData icon;
-  final String areaLabel, title, subtitle;
-  final bool now;
-  final double? progress;
-  final VoidCallback? onTap;
+  final double size, radius;
 
   @override
   Widget build(BuildContext context) {
     final cc = context.cc;
-    final theme = Theme.of(context).textTheme;
-    return Semantics(
-      container: true,
-      button: onTap != null,
-      label: '$areaLabel, $title, $subtitle',
-      excludeSemantics: true,
-      onTap: onTap,
-      child: Material(
+    return DecoratedBox(
+      decoration: BoxDecoration(
         color: cc.surface2,
-        borderRadius: BorderRadius.circular(CcDims.rCard),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 64),
-            child: Stack(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(CcDims.gap12),
-                  child: Row(
-                    children: [
-                      Icon(icon, color: cc.accentSoft),
-                      const SizedBox(width: CcDims.gap12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.bodyLarge?.copyWith(
-                                color: now ? cc.accentSoft : null,
-                              ),
-                            ),
-                            Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (progress != null && progress! > 0)
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 3,
-                      backgroundColor: cc.surface3,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
+        borderRadius: BorderRadius.circular(radius),
       ),
+      child: Icon(icon, color: cc.accentSoft, size: size / 2),
     );
   }
 }

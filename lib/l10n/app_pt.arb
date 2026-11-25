@@ -4374,6 +4374,25 @@
   "updateNew": "nova",
   "shareKindTrack": "Faixa",
   "shareUntitled": "Sem título",
+  "libraryHistorySub": "Ouvidos recentemente",
+  "genresCount": "{count, plural, one{1 género} other{{count} géneros}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openOutsideLibrary": "{count, plural, one{O ficheiro está fora das pastas da biblioteca} other{{count} ficheiros estão fora das pastas da biblioteca}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Adicionar à biblioteca",
+  "openPortalFile": "O ficheiro está fora das pastas que a app pode ler: adicione a sua pasta a partir da Biblioteca",
   "flatpakDataTitle": "Dados de outra versão?",
   "flatpakDataBody": "Este app Flatpak usa a sua própria pasta de dados, vazia. Se antes usava AppImage ou deb, a sua biblioteca está em {oldDir}. Para a trazer, feche o app, cole este comando num terminal (fora do Flatpak) e depois reabra o app: dados e definições irão para {newDir}. O app não copia nada sozinho.",
   "@flatpakDataBody": {
@@ -4387,15 +4406,5 @@
     }
   },
   "flatpakDataCopy": "Copiar comando",
-  "updateFlatpakHint": "Descarrego o ficheiro; depois feche o app e cole o comando num terminal.",
-  "openOutsideLibrary": "{count, plural, one{O ficheiro está fora das pastas da biblioteca} other{{count} ficheiros estão fora das pastas da biblioteca}}",
-  "@openOutsideLibrary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "openAddToLibrary": "Adicionar à biblioteca",
-  "openPortalFile": "O ficheiro está fora das pastas que a app pode ler: adicione a sua pasta a partir da Biblioteca"
+  "updateFlatpakHint": "Descarrego o ficheiro; depois feche o app e cole o comando num terminal."
 }

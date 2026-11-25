@@ -167,15 +167,10 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('Playlists: both FABs sit above the dock', (t) async {
+  testWidgets('Playlists: the last row clears the dock', (t) async {
     final h = await _open(t, playing: false);
     await _push(t, const PlaylistsScreen());
-    final dockTop = t.getTopLeft(find.byType(ShellDock)).dy;
-    for (final fab in find.byType(FloatingActionButton).evaluate()) {
-      final r = t.getRect(find.byElementPredicate((e) => e == fab));
-      expect(r.bottom, lessThanOrEqualTo(dockTop));
-    }
-    expect(find.byType(FloatingActionButton), findsNWidgets(2));
+    await _expectLastAboveDock(t);
     await h.dispose(t);
   });
 }
