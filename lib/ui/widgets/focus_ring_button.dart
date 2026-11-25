@@ -50,6 +50,20 @@ class FocusRing extends StatefulWidget {
 class _FocusRingState extends State<FocusRing> {
   bool _focused = false;
 
+  void _onMode(FocusHighlightMode _) => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addHighlightModeListener(_onMode);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeHighlightModeListener(_onMode);
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) => Focus(
     canRequestFocus: false,

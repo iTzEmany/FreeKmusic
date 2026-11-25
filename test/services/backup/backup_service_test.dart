@@ -249,6 +249,10 @@ void main() {
     },
   );
 
+  test('the side panel choice is device bound', () {
+    expect(kDeviceBoundKeys, contains('sidePanel'));
+  });
+
   test('the last seen version never travel in a backup', () async {
     SharedPreferences.setMockInitialValues({lastSeenVersionKey: '1.6.0', 'theme': 'oled'});
     final json = settingsToJson(await SharedPreferences.getInstance());

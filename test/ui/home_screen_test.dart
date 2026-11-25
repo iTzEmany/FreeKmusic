@@ -419,7 +419,7 @@ void main() {
     await _settle(tester);
     expect(
       tester.getSize(find.byType(ListView).first).width,
-      PageFrame.maxWidth,
+      PageFrame.maxWidth - 32, // from 1168 px the frame adds 16 px a side
     );
     expect(find.byType(ShelfScroller), findsWidgets, reason: 'shelves, not the fan');
     expect(find.byKey(const ValueKey('fan-cover-0')), findsNothing);

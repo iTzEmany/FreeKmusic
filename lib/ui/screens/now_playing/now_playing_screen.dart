@@ -310,7 +310,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                                   right: CcDims.margin,
                                 ),
                                 child: SizedBox(
-                                  width: bigDesktop ? 520 : 420,
+                                  width: bigDesktop && width >= 1100 ? 520 : 400,
                                   child: ListView(
                                     padding: const EdgeInsets.symmetric(
                                       vertical: CcDims.gap16,

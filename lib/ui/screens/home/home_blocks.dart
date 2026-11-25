@@ -18,6 +18,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../online/artist_page_sections.dart' show thumbAt;
 import '../../widgets/cover_image.dart';
+import '../../widgets/focus_ring_button.dart';
 import '../../widgets/play_buttons.dart';
 import '../../widgets/shelf_scroller.dart';
 import '../../widgets/section_header.dart';
@@ -299,35 +300,43 @@ class _AlbumShelf extends StatelessWidget {
           separatorBuilder: (_, _) => const SizedBox(width: CcDims.gap12),
           itemBuilder: (_, i) {
             final a = albums[i];
-            return InkWell(
-              onTap: () =>
-                  ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
-              child: SizedBox(
-                width: _shelfCover,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CoverImage(
-                      coverKey: a.coverKey,
-                      size: _shelfCover,
-                      radius: CcDims.rList,
+            return Semantics(
+              label:
+                  '${a.title ?? l.unknownAlbum}, ${a.variousArtists ? l.variousArtists : (a.artist ?? l.unknownArtist)}',
+              excludeSemantics: true,
+              button: true,
+              child: FocusRing(
+                child: InkWell(
+                  onTap: () =>
+                      ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
+                  child: SizedBox(
+                    width: _shelfCover,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CoverImage(
+                          coverKey: a.coverKey,
+                          size: _shelfCover,
+                          radius: CcDims.rList,
+                        ),
+                        const SizedBox(height: CcDims.gap4),
+                        Text(
+                          a.title ?? l.unknownAlbum,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.bodyMedium,
+                        ),
+                        Text(
+                          a.variousArtists
+                              ? l.variousArtists
+                              : (a.artist ?? l.unknownArtist),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.bodySmall,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: CcDims.gap4),
-                    Text(
-                      a.title ?? l.unknownAlbum,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.bodyMedium,
-                    ),
-                    Text(
-                      a.variousArtists
-                          ? l.variousArtists
-                          : (a.artist ?? l.unknownArtist),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.bodySmall,
-                    ),
-                  ],
+                  ),
                 ),
               ),
             );

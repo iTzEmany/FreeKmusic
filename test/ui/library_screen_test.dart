@@ -815,11 +815,11 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('desktop: the shortcuts fit in the 1136 px frame on at most two rows', (t) async {
+  testWidgets('desktop: the shortcuts fit in the 1136 px frame on two rows', (t) async {
     final h = await open(t, width: 1600);
     final fav = block(t, 'Preferiti');
     final last = block(t, 'Scaricati senza playlist');
-    expect(last.bottom - fav.top, lessThanOrEqualTo(2 * fav.height + 16));
+    expect(last.bottom - fav.top, closeTo(2 * fav.height + 8, 0.5), reason: 'exactly two rows of 8 px gap');
     expect(last.right, lessThanOrEqualTo(fav.left + PageFrame.maxWidth));
     await h.dispose(t);
   });

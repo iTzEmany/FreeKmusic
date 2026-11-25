@@ -112,6 +112,19 @@ void main() {
     return h;
   }
 
+  testWidgets('desktop at 900 px: player and cards fit without overflow', (tester) async {
+    tester.view.physicalSize = const Size(900, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 1);
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(tester, const NowPlayingScreen(desktop: true));
+    await _settle(tester);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('karaoke: no microphone where there is no separation engine', (tester) async {
     final h = await openKaraokePlayer(tester, voice: false);
     expect(find.byTooltip('Karaoke'), findsNothing);
