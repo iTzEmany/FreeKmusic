@@ -211,14 +211,14 @@ void externalTests() {
     await h.dispose(tester);
   });
 
-  testWidgets('the menu of an external page has «Salva in Libreria» and «Aggiorna»; saving makes a playlist',
+  testWidgets('the menu of an external page has «Aggiungi alla libreria» and «Aggiorna»; saving makes a playlist',
       (tester) async {
     await showExt(tester, _ext());
     await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
     await tester.tap(find.byKey(const ValueKey('playlist-more')));
     await settle(tester);
     expect(find.text('Aggiorna'), findsOneWidget);
-    await tester.tap(find.text('Salva in Libreria'));
+    await tester.tap(find.text('Aggiungi alla libreria'));
     await settle(tester);
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pump();
@@ -290,7 +290,7 @@ void main() {
     final h = await show(tester, _Yt(_listing()));
     await tester.tap(find.byKey(const ValueKey('playlist-more')));
     await tester.pumpAndSettle();
-    expect(find.text('Salva in Libreria'), findsOneWidget);
+    expect(find.text('Aggiungi alla libreria'), findsOneWidget);
     expect(find.text('Aggiorna'), findsNothing);
     await h.dispose(tester);
   });

@@ -92,7 +92,8 @@ void main() {
     await h.pump(tester, SmartPlaylistScreen(id: id));
     await _settle(tester);
     _expectHeader(tester);
-    expect(find.byTooltip('Altre azioni'), findsOneWidget);
+    // track rows share the same «Altre azioni» tooltip since 152.4, so look in the header only
+    expect(find.descendant(of: find.byType(CollectionHeader), matching: find.byTooltip('Altre azioni')), findsOneWidget);
     await h.dispose(tester);
   });
 }
