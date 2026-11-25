@@ -45,6 +45,7 @@ import 'package:codecore/ui/screens/library/library_toolbar.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/now_playing/queue_sheet.dart';
 import 'package:codecore/ui/screens/now_playing/suggestions_screen.dart';
+import 'package:codecore/ui/widgets/context_menu.dart';
 import 'package:codecore/ui/widgets/selection_bar.dart';
 import 'package:codecore/ui/widgets/track_actions.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
@@ -76,7 +77,9 @@ void _phone(WidgetTester tester) {
 /// The entries shown now, in order (PopupMenu or action sheet).
 List<String> _shown(WidgetTester tester) => shownMenuEntries(
   tester,
-  named: (v) => v is TrackAction ? v.label : menuEntryName(v, null),
+  named: (v) => v is TrackAction || v is MenuAction
+      ? (v as dynamic).label as String
+      : menuEntryName(v, null),
 );
 
 /// Opens the menu behind [button] and returns its entries, in order.
