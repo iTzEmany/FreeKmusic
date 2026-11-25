@@ -109,11 +109,25 @@ class OnlineAlbumScreen extends ConsumerWidget {
 
   /// The heart (D-724): off the library, a tap saves the album and favourites it; later taps only toggle the
   /// favourite, the saved album stays.
-  Future<void> _toggleFavorite(WidgetRef ref, List<YtResult> songs) async {
-    var key = await ref.read(savedOnlineAlbumKeyProvider(songs.first.indexKey).future);
-    key ??= await saveOnlineAlbum(ref, songs);
-    if (key == null) return;
-    await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, key);
+  /// True when the favourite changed; the heart shows no snackbar otherwise.
+  Future<bool> _toggleFavorite(BuildContext context, WidgetRef ref, List<YtResult> songs) async {
+    final toggle = ref.read(toggleFavoriteCollectionProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
+    try {
+      var key = await ref.read(savedOnlineAlbumKeyProvider(songs.first.indexKey).future);
+      key ??= await saveOnlineAlbum(ref, songs);
+      if (key == null) {
+        showMsgOn(messenger, l.extSaveNothing);
+        return false;
+      }
+      await toggle(favoriteAlbumKind, key);
+      return true;
+    } on Object catch (e, st) {
+      AppLog.w('online album: heart failed', e, st);
+      showMsgOn(messenger, l.loadFailed);
+      return false;
+    }
   }
 
   Future<void> _share(BuildContext context) async {
@@ -130,8 +144,14 @@ class OnlineAlbumScreen extends ConsumerWidget {
       ('album-menu-playlist', CatalogAction.playlist.icon, CatalogAction.playlist.label(l),
           () => _addToPlaylist(context, ref, songs)),
       ('album-menu-save', CatalogAction.library.icon, CatalogAction.library.label(l), () async {
-        final key = await saveOnlineAlbum(ref, songs);
-        if (context.mounted) showMsg(context, key == null ? l.extSaveNothing : l.extSavedAs(album.title));
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          final key = await saveOnlineAlbum(ref, songs);
+          showMsgOn(messenger, key == null ? l.extSaveNothing : l.extSavedAs(album.title));
+        } on Object catch (e, st) {
+          AppLog.w('online album: not saved', e, st);
+          showMsgOn(messenger, l.loadFailed);
+        }
       }),
     ];
     return showCcActionSheet<String>(
@@ -198,7 +218,7 @@ class OnlineAlbumScreen extends ConsumerWidget {
         shuffleKey: _listKey,
         shufflePlus: false,
         favorite: fav,
-        onFavorite: songs.isEmpty ? null : () => _toggleFavorite(ref, songs),
+        onFavorite: songs.isEmpty ? null : () => _toggleFavorite(context, ref, songs),
         onShare: a == null ? null : (_) => _share(context),
         menu: a == null
             ? null

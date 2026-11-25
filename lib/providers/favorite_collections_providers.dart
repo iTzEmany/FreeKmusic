@@ -4,11 +4,12 @@ import '../data/repositories/favorite_collections_repository.dart';
 import '../data/repositories/hidden_playlists.dart' show AppDatabasePlaylists;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/stream/stream_key.dart' show streamPathOf;
-import 'library_add_providers.dart' show libraryAdderProvider;
+import 'library_add_providers.dart' show libraryAdderProvider, savedStreamKeysProvider;
 import '../data/repositories/library_queries.dart';
 import '../data/repositories/playlist_repository.dart';
 import 'database_providers.dart';
 import 'library_providers.dart';
+import 'settings_providers.dart' show settingsStoreProvider;
 
 const _stream = 'stream|';
 
@@ -67,6 +68,7 @@ final toggleFavoriteCollectionProvider = Provider<Future<void> Function(String k
 
 /// The library album key of a saved online album (found through its first song's key), or null while it is not saved.
 final savedOnlineAlbumKeyProvider = FutureProvider.autoDispose.family<String?, String>((ref, indexKey) async {
+  ref.watch(savedStreamKeysProvider); // a song saved from any row refreshes the heart
   final row = await ref.read(trackRepositoryProvider).byPath(streamPathOf(indexKey));
   return row != null && row.saved ? row.albumKey : null;
 });
@@ -74,16 +76,20 @@ final savedOnlineAlbumKeyProvider = FutureProvider.autoDispose.family<String?, S
 /// «Salva in libreria» of an online album: the songs become saved stream rows (D-524). Returns the album key they
 /// group under, or null when nothing was saved (e.g. every song is already a file).
 Future<String?> saveOnlineAlbum(WidgetRef ref, List<YtResult> songs) async {
-  final adder = ref.read(libraryAdderProvider);
+  final adder = ref.read(libraryAdderProvider), tracks = ref.read(trackRepositoryProvider); // before any await
   String? key;
   for (final r in songs) {
     final id = await adder.saveStreamNow(r);
-    if (id != null && key == null) key = (await ref.read(trackRepositoryProvider).getById(id))?.albumKey;
+    if (id != null && key == null) key = (await tracks.getById(id))?.albumKey;
   }
-  if (songs.isNotEmpty) ref.invalidate(savedOnlineAlbumKeyProvider(songs.first.indexKey));
   return key;
 }
 
-/// The uuid of the visible library playlist called [name] (just saved from an online page), or null.
-Future<String?> playlistUuidByName(WidgetRef ref, String name) async =>
-    (await ref.read(databaseProvider).visiblePlaylists()).where((p) => p.name == name).firstOrNull?.uuid;
+/// The library playlist an online page was saved as, remembered per `sourceUrl` on this device (outside the backup),
+/// or null when none was saved or it is gone.
+Future<String?> savedPlaylistOfPage(WidgetRef ref, String sourceUrl) async {
+  final uuid = ref.read(settingsStoreProvider).readSavedOnlinePlaylist(sourceUrl);
+  if (uuid == null) return null;
+  final alive = (await ref.read(databaseProvider).visiblePlaylists()).any((p) => p.uuid == uuid);
+  return alive ? uuid : null;
+}

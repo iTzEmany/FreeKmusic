@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../core/app_log.dart';
 import '../../../providers/favorite_collections_providers.dart';
+import '../../../providers/settings_providers.dart' show settingsStoreProvider;
 import '../../../providers/online_collection_providers.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/ui_providers.dart' show searchPrefillProvider;
@@ -50,9 +52,15 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
   /// Rows a Play of this page already sent to the queue; null until Play.
   Set<int>? _queued;
 
-  /// The uuid of the library playlist this page was saved as (D-524) once the heart or «Salva in Libreria» ran.
-  /// shortcut: forgotten when the page closes, so a heart tapped on a later visit saves another copy.
+  /// The uuid of the library playlist this page was saved as (D-524): remembered per page address, so a later
+  /// visit finds it (the heart is full, no second copy). Read once the page is known, see [_loading].
   String? _savedUuid;
+  Future<void>? _loading;
+
+  Future<void> _loadSaved(String sourceUrl) async {
+    final uuid = await savedPlaylistOfPage(ref, sourceUrl);
+    if (mounted && uuid != null) setState(() => _savedUuid = uuid);
+  }
 
   bool get _external => widget.source is! YoutubeListingRef;
 
@@ -106,18 +114,33 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
   /// «Salva in Libreria»: returns the playlist's uuid, or null when no row is ready (nothing is saved).
   Future<String?> _save(ExternalCollection c, List<TrackMatch> matches) async {
     final l = context.l10n;
-    final name = await saveToLibrary(ref, c.title, matches, fallback: l.newPlaylist);
-    if (!mounted) return null;
-    showMsg(context, name == null ? l.extSaveNothing : l.extSavedAs(name));
-    if (name == null) return null;
-    return _savedUuid = await playlistUuidByName(ref, name);
+    final messenger = ScaffoldMessenger.of(context);
+    final remember = ref.read(settingsStoreProvider); // before any await
+    try {
+      final saved = await saveToLibrary(ref, c.title, matches, fallback: l.newPlaylist);
+      showMsgOn(messenger, saved == null ? l.extSaveNothing : l.extSavedAs(saved.name));
+      final uuid = saved?.uuid;
+      if (uuid == null) return null;
+      await remember.writeSavedOnlinePlaylist(c.sourceUrl, uuid);
+      if (mounted) setState(() => _savedUuid = uuid);
+      return uuid;
+    } on Object catch (e, st) {
+      AppLog.w('online page: playlist not saved', e, st);
+      showMsgOn(messenger, l.loadFailed);
+      return null;
+    }
   }
 
   /// The heart (D-724): off the library, a tap saves the playlist and favourites it; later taps only toggle the
   /// favourite, the saved copy stays.
-  Future<void> _toggleFavorite(ExternalCollection c, List<TrackMatch> matches) async {
+  /// True when the favourite changed.
+  Future<bool> _toggleFavorite(ExternalCollection c, List<TrackMatch> matches) async {
+    final toggle = ref.read(toggleFavoriteCollectionProvider); // before any await
+    await _loading;
     final uuid = _savedUuid ?? await _save(c, matches);
-    if (uuid != null) await ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, uuid);
+    if (uuid == null) return false;
+    await toggle(favoritePlaylistKind, uuid);
+    return true;
   }
 
   Future<void> _copyLink(ExternalCollection c) async {
@@ -175,6 +198,7 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
     final fav = _savedUuid != null &&
         (ref.watch(isFavoriteCollectionProvider((kind: favoritePlaylistKind, key: _savedUuid!))).value ?? false);
     final canPlay = _external ? anyReady : songs.isNotEmpty;
+    _loading ??= _loadSaved(c.sourceUrl);
     return CollectionHeader(
       cover: (s) => NetThumbnail(
         url: thumbAt(context, c.coverUrl, s),
@@ -199,6 +223,8 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
         shufflePlus: false,
         favorite: fav,
         onFavorite: () => _toggleFavorite(c, matches),
+        // Rows still being matched would be left out of the copy.
+        favoriteEnabled: !matches.any((m) => m is TrackPending),
         // A chart has no link of its own to share.
         onShare: widget.source is ChartRef ? null : (_) => _copyLink(c),
         menu: IconButton(

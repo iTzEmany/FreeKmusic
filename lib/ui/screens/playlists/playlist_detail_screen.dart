@@ -401,7 +401,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         favorite: fav,
         onFavorite: widget.playlist.uuid == null
             ? null
-            : () => ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, widget.playlist.uuid!),
+            : () async {
+                await ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, widget.playlist.uuid!);
+                return true;
+              },
         scrollerCount: tracks.length,
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         shuffleKey: shuffleKey,

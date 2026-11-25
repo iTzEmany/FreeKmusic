@@ -179,7 +179,10 @@ EntranceScope(
             : (r) => shareTracks(context, ref, SharedKind.album, name, list, subtitle: album.artist, origin: r),
         scrollerCount: list.length,
         favorite: ref.watch(isFavoriteCollectionProvider((kind: favoriteAlbumKind, key: album.albumKey))).value ?? false,
-        onFavorite: () => ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey),
+        onFavorite: () async {
+          await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey);
+          return true;
+        },
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [
           SliverAsyncBody(

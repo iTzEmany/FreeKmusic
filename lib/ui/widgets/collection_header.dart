@@ -1,14 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/db/app_database.dart' show Track;
 import '../../data/repositories/track_kinds.dart' show kStreamKind;
 
+import '../../core/app_log.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../providers/settings_providers.dart' show settingsProvider;
 import '../theme/tokens.dart';
 import 'alpha_scroller.dart';
-import 'confirm.dart' show showUndoSnack;
+import 'show_msg.dart' show showMsgOn;
 import 'keep_offline_action.dart';
 import 'play_buttons.dart';
 import 'shuffle_button.dart';
@@ -65,10 +68,10 @@ class CollectionScaffold extends ConsumerStatefulWidget {
   /// «Condividi»: gets the icon's rectangle (it anchors the share sheet on iPad and desktop); null hides it.
   final ValueChanged<Rect?>? onShare;
 
-  /// The heart next to «Condividi»: [favorite] is its state, [onFavorite] toggles it (the same call undoes it);
+  /// The heart next to «Condividi»: [favorite] is its state, [onFavorite] toggles it and says whether it did (the same call undoes it);
   /// null hides the heart (a playlist without uuid, D-726).
   final bool favorite;
-  final Future<void> Function()? onFavorite;
+  final Future<bool> Function()? onFavorite;
 
   /// How many rows the page lists: past [alphaScrollerMinItems] a by-position
   /// scroll bar is laid over the page; null: none.
@@ -188,7 +191,8 @@ List<Widget> collectionActions(
   bool shufflePlus = true,
   List<Track>? downloadTracks,
   bool favorite = false,
-  Future<void> Function()? onFavorite,
+  Future<bool> Function()? onFavorite,
+  bool favoriteEnabled = true,
   ValueChanged<Rect?>? onShare,
   Widget? menu,
 }) {
@@ -207,23 +211,7 @@ List<Widget> collectionActions(
         ),
       ),
     if (onFavorite != null)
-      SizedBox.square(
-        dimension: 48,
-        child: IconButton(
-          key: const ValueKey('collection-favorite'),
-          onPressed: () async {
-            await onFavorite();
-            if (!context.mounted || !ref.read(settingsProvider).showUndoSnackbar) return;
-            showUndoSnack(
-              context,
-              favorite ? l.removedFromFavorites : l.addedToFavorites,
-              () => onFavorite(),
-            );
-          },
-          tooltip: favorite ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
-          icon: Icon(favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded),
-        ),
-      ),
+      _FavoriteButton(favorite: favorite, enabled: favoriteEnabled, onFavorite: onFavorite),
     if (onShare != null)
       SizedBox.square(
         dimension: 48,
@@ -240,6 +228,70 @@ List<Widget> collectionActions(
       ),
     if (menu != null) ConstrainedBox(constraints: const BoxConstraints(minWidth: 48, minHeight: 48), child: menu),
   ];
+}
+
+/// The heart of a collection: one toggle at a time (a second tap while it runs is ignored), a snackbar with
+/// «Annulla» only when the favourite really changed.
+class _FavoriteButton extends ConsumerStatefulWidget {
+  const _FavoriteButton({required this.favorite, required this.enabled, required this.onFavorite});
+
+  final bool favorite, enabled;
+  final Future<bool> Function()? onFavorite;
+
+  @override
+  ConsumerState<_FavoriteButton> createState() => _FavoriteButtonState();
+}
+
+class _FavoriteButtonState extends ConsumerState<_FavoriteButton> {
+  bool _busy = false;
+
+  Future<void> _tap() async {
+    if (_busy) return;
+    _busy = true;
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final showUndo = ref.read(settingsProvider).showUndoSnackbar;
+    final was = widget.favorite;
+    final toggle = widget.onFavorite!;
+    try {
+      final done = await toggle();
+      if (!done || !showUndo) return;
+      showMsgOn(
+        messenger,
+        was ? l.removedFromFavorites : l.addedToFavorites,
+        action: SnackBarAction(label: l.undo, onPressed: () => unawaited(_undo(toggle, messenger, l.loadFailed))),
+      );
+    } on Object catch (e, st) {
+      AppLog.w('collection heart: toggle failed', e, st);
+      showMsgOn(messenger, l.loadFailed);
+    } finally {
+      _busy = false;
+    }
+  }
+
+  Future<void> _undo(Future<bool> Function() toggle, ScaffoldMessengerState messenger, String failed) async {
+    try {
+      await toggle();
+    } on Object catch (e, st) {
+      AppLog.w('collection heart: undo failed', e, st);
+      showMsgOn(messenger, failed);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final fav = widget.favorite;
+    return SizedBox.square(
+      dimension: 48,
+      child: IconButton(
+        key: const ValueKey('collection-favorite'),
+        onPressed: widget.enabled ? _tap : null,
+        tooltip: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
+        icon: Icon(fav ? Icons.favorite_rounded : Icons.favorite_border_rounded),
+      ),
+    );
+  }
 }
 
 /// Cover at the left of name and meta (above them when the text is large),
