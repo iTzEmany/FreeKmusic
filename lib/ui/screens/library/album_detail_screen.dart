@@ -178,6 +178,11 @@ EntranceScope(
             ? null
             : (r) => shareTracks(context, ref, SharedKind.album, name, list, subtitle: album.artist, origin: r),
         scrollerCount: list.length,
+        favorite: ref.watch(isFavoriteCollectionProvider((kind: favoriteAlbumKind, key: album.albumKey))).value ?? false,
+        onFavorite: () async {
+          await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey);
+          return true;
+        },
         menu: _AlbumMenu(album: album, tracks: list),
         slivers: [
           SliverAsyncBody(
@@ -326,7 +331,6 @@ class _AlbumMenu extends ConsumerWidget {
     final l = context.l10n;
     final list = tracks;
     final ctrl = ref.read(playerControllerProvider);
-    final fav = ref.watch(isFavoriteCollectionProvider((kind: favoriteAlbumKind, key: album.albumKey))).value ?? false;
     return IconButton(
       tooltip: l.moreActions,
       icon: Icon(CatalogAction.more.icon),
@@ -338,11 +342,6 @@ class _AlbumMenu extends ConsumerWidget {
             [
               CcAction(icon: CatalogAction.queue.icon, label: CatalogAction.queue.label(l), value: _AlbumAction.queue),
               CcAction(icon: CatalogAction.playlist.icon, label: CatalogAction.playlist.label(l), value: _AlbumAction.playlist),
-              CcAction(
-                icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
-                value: _AlbumAction.favorite,
-              ),
               CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _AlbumAction.sendToDevice),
               CcAction(icon: Icons.auto_fix_high_rounded, label: l.enrichAlbum, value: _AlbumAction.enrich),
               CcAction(icon: Icons.image_outlined, label: l.coverChange, value: _AlbumAction.cover),
@@ -367,8 +366,6 @@ class _AlbumMenu extends ConsumerWidget {
             if (context.mounted) showQueued(context, (added: added, full: full), wanted: list.length);
           case _AlbumAction.playlist:
             showAddToPlaylistSheet(context, ref, list);
-          case _AlbumAction.favorite:
-            await ref.read(toggleFavoriteCollectionProvider)(favoriteAlbumKind, album.albumKey);
           case _AlbumAction.sendToDevice:
             DevicesSheet.show(context, trackIds: [for (final t in list) t.id]);
           case _AlbumAction.enrich:
@@ -407,4 +404,4 @@ class _AlbumMenu extends ConsumerWidget {
   }
 }
 
-enum _AlbumAction { queue, playlist, favorite, sendToDevice, enrich, cover, restoreCover, merge }
+enum _AlbumAction { queue, playlist, sendToDevice, enrich, cover, restoreCover, merge }

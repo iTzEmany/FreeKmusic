@@ -192,6 +192,52 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('the heart toggles through onFavorite and «Annulla» restores; hidden without onFavorite (D-726)', (tester) async {
+      var fav = false;
+      var calls = 0;
+      var nothing = false;
+      final h = await Harness.create(tester, tracks: 0);
+      Future<void> show({required bool withHeart}) => h.pump(
+            tester,
+            StatefulBuilder(
+              builder: (_, set) => CollectionScaffold(
+                title: 'T',
+                name: 'Nome',
+                slivers: const [],
+                favorite: fav,
+                onFavorite: withHeart
+                    ? () async {
+                        calls++;
+                        if (nothing) return false;
+                        set(() => fav = !fav);
+                        return true;
+                      }
+                    : null,
+              ),
+            ),
+          );
+      await show(withHeart: false);
+      expect(find.byKey(const ValueKey('collection-favorite')), findsNothing);
+      await h.dispose(tester);
+      await show(withHeart: true);
+      await tester.tap(find.byKey(const ValueKey('collection-favorite')));
+      await tester.pump();
+      expect(fav, isTrue);
+      expect(find.text('Aggiunto ai preferiti'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.text('Annulla'));
+      await tester.pump();
+      expect((fav, calls), (false, 2));
+      await tester.pump(const Duration(milliseconds: 500));
+      nothing = true; // nothing to save: no «Aggiunto ai preferiti»
+      ScaffoldMessenger.of(tester.element(find.byType(Scaffold).first)).clearSnackBars();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(find.byKey(const ValueKey('collection-favorite')));
+      await tester.pump();
+      expect(find.text('Aggiunto ai preferiti'), findsNothing);
+      await h.dispose(tester);
+    });
+
     testWidgets('the download icon shows only when a stream is among the tracks', (tester) async {
       var h = await pumpScaffold(tester);
       expect(find.byIcon(Icons.download_rounded), findsNothing);

@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
+import '../../../core/app_log.dart';
+import '../../../providers/favorite_collections_providers.dart';
+import '../../../providers/settings_providers.dart' show settingsStoreProvider;
 import '../../../providers/online_collection_providers.dart';
 import '../../../providers/player_providers.dart';
 import '../../../providers/ui_providers.dart' show searchPrefillProvider;
@@ -17,10 +20,10 @@ import '../../theme/tokens.dart';
 import '../search/chart_genre_labels.dart';
 import '../../widgets/track_row.dart' show TrackRow;
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/collection_header.dart' show CollectionHeader, collectionActions;
 import '../../widgets/empty_state.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/show_msg.dart';
-import '../../widgets/shuffle_button.dart' show ShufflePill;
 import '../import/import_flow.dart' show startCsvImport;
 import '../now_playing/now_playing_screen.dart' show playFromSearchNotice, playMixedAndOpen;
 import '../youtube/playlist_source_sheet.dart';
@@ -48,6 +51,16 @@ class OnlinePlaylistScreen extends ConsumerStatefulWidget {
 class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
   /// Rows a Play of this page already sent to the queue; null until Play.
   Set<int>? _queued;
+
+  /// The uuid of the library playlist this page was saved as (D-524): remembered per page address, so a later
+  /// visit finds it (the heart is full, no second copy). Read once the page is known, see [_loading].
+  String? _savedUuid;
+  Future<void>? _loading;
+
+  Future<void> _loadSaved(String sourceUrl) async {
+    final uuid = await savedPlaylistOfPage(ref, sourceUrl);
+    if (mounted && uuid != null) setState(() => _savedUuid = uuid);
+  }
 
   bool get _external => widget.source is! YoutubeListingRef;
 
@@ -98,6 +111,43 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
     ShellNav.showSearch(context, ref);
   }
 
+  /// «Salva in Libreria»: returns the playlist's uuid, or null when no row is ready (nothing is saved).
+  Future<String?> _save(ExternalCollection c, List<TrackMatch> matches) async {
+    final l = context.l10n;
+    final messenger = ScaffoldMessenger.of(context);
+    final remember = ref.read(settingsStoreProvider); // before any await
+    try {
+      final saved = await saveToLibrary(ref, c.title, matches, fallback: l.newPlaylist);
+      showMsgOn(messenger, saved == null ? l.extSaveNothing : l.extSavedAs(saved.name));
+      final uuid = saved?.uuid;
+      if (uuid == null) return null;
+      await remember.writeSavedOnlinePlaylist(c.sourceUrl, uuid);
+      if (mounted) setState(() => _savedUuid = uuid);
+      return uuid;
+    } on Object catch (e, st) {
+      AppLog.w('online page: playlist not saved', e, st);
+      showMsgOn(messenger, l.loadFailed);
+      return null;
+    }
+  }
+
+  /// The heart (D-724): off the library, a tap saves the playlist and favourites it; later taps only toggle the
+  /// favourite, the saved copy stays.
+  /// True when the favourite changed.
+  Future<bool> _toggleFavorite(ExternalCollection c, List<TrackMatch> matches) async {
+    final toggle = ref.read(toggleFavoriteCollectionProvider); // before any await
+    await _loading;
+    final uuid = _savedUuid ?? await _save(c, matches);
+    if (uuid == null) return false;
+    await toggle(favoritePlaylistKind, uuid);
+    return true;
+  }
+
+  Future<void> _copyLink(ExternalCollection c) async {
+    await Clipboard.setData(ClipboardData(text: c.sourceUrl));
+    if (mounted) showMsg(context, context.l10n.copied);
+  }
+
   Future<void> _openMenu(ExternalCollection c, List<YtResult> songs, List<TrackMatch> matches) {
     final l = context.l10n;
     return showCcActionSheet<String>(
@@ -118,19 +168,13 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
               icon: Icons.link_rounded,
               label: l.copyLink,
               value: 'playlist-menu-copy',
-              onTap: () async {
-                await Clipboard.setData(ClipboardData(text: c.sourceUrl));
-                if (mounted) showMsg(context, l.copied);
-              },
+              onTap: () => _copyLink(c),
             ),
           CcAction<String>(
             icon: CatalogAction.library.icon,
             label: CatalogAction.library.label(l),
             value: 'playlist-menu-save',
-            onTap: () async {
-              final name = await saveToLibrary(ref, c.title, matches, fallback: l.newPlaylist);
-              if (mounted) showMsg(context, name == null ? l.extSaveNothing : l.extSavedAs(name));
-            },
+            onTap: () => _save(c, matches),
           ),
           if (_external)
             CcAction<String>(
@@ -144,6 +188,52 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
             ),
         ],
       ],
+    );
+  }
+
+  Widget _header(ExternalCollection c, List<TrackMatch> matches, List<YtResult> songs, bool anyReady,
+      String listKey, String? sourceLine, VoidCallback playExternal) {
+    final l = context.l10n;
+    final owner = c.owner;
+    final fav = _savedUuid != null &&
+        (ref.watch(isFavoriteCollectionProvider((kind: favoritePlaylistKind, key: _savedUuid!))).value ?? false);
+    final canPlay = _external ? anyReady : songs.isNotEmpty;
+    _loading ??= _loadSaved(c.sourceUrl);
+    return CollectionHeader(
+      cover: (s) => NetThumbnail(
+        url: thumbAt(context, c.coverUrl, s),
+        width: s,
+        height: s,
+        radius: CcDims.rGrid,
+        icon: Icons.queue_music_rounded,
+      ),
+      name: c.title,
+      subtitle: owner == null || owner.isEmpty ? null : Text(owner, maxLines: 1, overflow: TextOverflow.ellipsis),
+      meta: [?sourceLine, l.tracksCount(c.tracks.length)].join('\n'),
+      actions: collectionActions(
+        context,
+        ref,
+        onPlay: !canPlay
+            ? null
+            : _external
+                ? playExternal
+                : () => playOrQueueOnline(context, ref, songs, listKey: listKey),
+        shuffleIds: const [],
+        shuffleKey: listKey,
+        shufflePlus: false,
+        favorite: fav,
+        onFavorite: () => _toggleFavorite(c, matches),
+        // Rows still being matched would be left out of the copy.
+        favoriteEnabled: !matches.any((m) => m is TrackPending),
+        // A chart has no link of its own to share.
+        onShare: widget.source is ChartRef ? null : (_) => _copyLink(c),
+        menu: IconButton(
+          key: const ValueKey('playlist-more'),
+          tooltip: CatalogAction.more.label(l),
+          onPressed: () => _openMenu(c, songs, matches),
+          icon: Icon(CatalogAction.more.icon),
+        ),
+      ),
     );
   }
 
@@ -191,17 +281,8 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
       slivers: [
         if (c != null)
           SliverToBoxAdapter(
-            child: _Header(
-              collection: c,
-              sourceLine: chartInfo == null ? null : _chartLine(context, chartInfo),
-              listKey: listKey,
-              onPlay: !(_external ? anyReady : songs.isNotEmpty)
-                  ? null
-                  : _external
-                      ? () => _playExternal(data!, songs, listKey)
-                      : () => playOrQueueOnline(context, ref, songs, listKey: listKey),
-              onMore: () => _openMenu(c, songs, data?.matches ?? const []),
-            ),
+            child: _header(c, data?.matches ?? const [], songs, anyReady, listKey,
+                chartInfo == null ? null : _chartLine(context, chartInfo), () => _playExternal(data!, songs, listKey)),
           ),
         if (data != null && data.matches.isEmpty)
           SliverToBoxAdapter(
@@ -274,101 +355,4 @@ String _chartLine(BuildContext context, ChartInfo info) {
       ? l.chartSourceApple(
           countryNameIn(info.country, Localizations.localeOf(context).languageCode, info.country), when)
       : l.chartSourceDeezer(when);
-}
-
-class _Header extends StatelessWidget {
-  const _Header({
-    required this.collection,
-    required this.sourceLine,
-    required this.listKey,
-    required this.onPlay,
-    required this.onMore,
-  });
-
-  final ExternalCollection collection;
-  final String? sourceLine;
-  final Object listKey;
-  final VoidCallback? onPlay;
-  final VoidCallback onMore;
-
-  static const _cover = 144.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final cc = context.cc;
-    final theme = Theme.of(context).textTheme;
-    final owner = collection.owner;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              NetThumbnail(
-                url: thumbAt(context, collection.coverUrl, _cover),
-                width: _cover,
-                height: _cover,
-                radius: CcDims.rGrid,
-                icon: CatalogAction.playlist.icon,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Semantics(
-                      header: true,
-                      child: Text(collection.title,
-                          maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.titleLarge),
-                    ),
-                    if (owner != null && owner.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: CcDims.gap4),
-                        child: Text(owner,
-                            maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.bodyLarge),
-                      ),
-                    if (sourceLine != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: CcDims.gap4),
-                        child: Text(sourceLine!, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
-                      ),
-                    Text(l.tracksCount(collection.tracks.length),
-                        style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(children: [
-            Expanded(
-              child: FilledButton.icon(
-                key: const ValueKey('playlist-play'),
-                onPressed: onPlay,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(l.play),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ShufflePill(
-                key: const ValueKey('playlist-shuffle'),
-                listKey: listKey,
-                plus: false,
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('playlist-more'),
-              tooltip: CatalogAction.more.label(l),
-              onPressed: onMore,
-              icon: Icon(CatalogAction.more.icon),
-            ),
-          ]),
-        ],
-      ),
-    );
-  }
 }

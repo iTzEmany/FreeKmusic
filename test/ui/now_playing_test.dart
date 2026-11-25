@@ -19,6 +19,8 @@ import 'package:codecore/ui/theme/custom_theme.dart';
 import 'package:codecore/providers/theme_providers.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:codecore/ui/widgets/marquee_text.dart';
+import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
+import 'package:codecore/ui/screens/car/car_mode_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -490,10 +492,49 @@ void main() {
   testWidgets('symmetry: the top-bar title sits at the screen centre', (
     tester,
   ) async {
-    // Mobile: car mode + more on the right, back alone on the left.
+    // Mobile: only more on the right, back alone on the left.
     final h = await openPlayer(tester, desktop: false);
-    expect(find.byIcon(Icons.directions_car_outlined), findsOneWidget);
     expect(tester.getCenter(find.text('In riproduzione')).dx, closeTo(200, 1));
+    await h.dispose(tester);
+  });
+
+  testWidgets('D-732: car mode is in the ⋮ menu, not in view; devices, timer and queue stay in view', (
+    tester,
+  ) async {
+    final h = await openPlayer(tester, desktop: false);
+    expect(find.byIcon(Icons.directions_car_outlined), findsNothing);
+    expect(find.text('Dispositivi'), findsOneWidget);
+    expect(find.byKey(const Key('np-sleep-chip')), findsOneWidget);
+    expect(find.text('Coda'), findsOneWidget);
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await _settle(tester);
+    expect(find.text('Modalità in auto'), findsOneWidget);
+    await tester.tap(find.text('Modalità in auto'));
+    await _settle(tester);
+    expect(find.byType(CarModeScreen), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the heart is there for a streamed track too and favourites it', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 1);
+    final row = (await tester.runAsync(() async {
+      final r = await h.db.select(h.db.tracks).getSingle();
+      await (h.db.update(h.db.tracks)..where((t) => t.id.equals(r.id))).write(
+        const TracksCompanion(kind: Value(kStreamKind)),
+      );
+      return r;
+    }))!;
+    await tester.runAsync(() => h.handler.playQueue([row.id], 0));
+    await h.pump(tester, const NowPlayingScreen());
+    await tester.tap(find.byTooltip('Preferito'));
+    await _settle(tester);
+    final after = await tester.runAsync(
+      () => (h.db.select(h.db.tracks)..where((t) => t.id.equals(row.id))).getSingle(),
+    );
+    expect(after!.isFavorite, isTrue);
     await h.dispose(tester);
   });
 

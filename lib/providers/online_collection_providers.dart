@@ -364,9 +364,9 @@ void retryOnlineCollection(WidgetRef ref, OnlineCollectionRef r) => switch (r) {
 
 /// «Salva in Libreria»: a playlist called like the page (« (2)», « (3)»… if the name is
 /// taken) with the `ready` rows in page order; online rows become shadow rows, so the copy
-/// streams and no longer depends on the page (D-524). Returns the playlist name, or null
+/// streams and no longer depends on the page (D-524). Returns the playlist name and uuid, or null
 /// when no row is ready yet (nothing is created). A blank [title] becomes [fallback].
-Future<String?> saveToLibrary(WidgetRef ref, String title, List<TrackMatch> matches, {String fallback = 'Playlist'}) async {
+Future<({String name, String? uuid})?> saveToLibrary(WidgetRef ref, String title, List<TrackMatch> matches, {String fallback = 'Playlist'}) async {
   final ready = matches.whereType<TrackReady>().toList();
   if (ready.isEmpty) return null;
   final playlists = ref.read(playlistRepositoryProvider);
@@ -386,6 +386,6 @@ Future<String?> saveToLibrary(WidgetRef ref, String title, List<TrackMatch> matc
         },
     ];
     await playlists.addStreamTracks(id, ids);
-    return name;
+    return (name: name, uuid: await playlists.uuidOf(id));
   });
 }

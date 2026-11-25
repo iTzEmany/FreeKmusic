@@ -446,8 +446,17 @@ const lastSeenVersionKey = 'lastSeenVersion';
 /// F-214: the flatpak data-folder notice was shown. Device-bound: a restore must not repeat or hide it.
 const flatpakNoticeShownKey = 'flatpakNoticeShown';
 
+/// `savedOnlinePlaylist.<sourceUrl>` → uuid of the library playlist an online page was saved as (its heart).
+/// Device-bound: outside the backup, and checked against the playlists before use.
+const savedOnlinePlaylistPrefix = 'savedOnlinePlaylist.';
+
 class SettingsStore {
   SettingsStore(this._prefs);
+
+  String? readSavedOnlinePlaylist(String sourceUrl) => _prefs.getString('$savedOnlinePlaylistPrefix$sourceUrl');
+
+  Future<void> writeSavedOnlinePlaylist(String sourceUrl, String uuid) =>
+      _prefs.setString('$savedOnlinePlaylistPrefix$sourceUrl', uuid);
 
   final SharedPreferences _prefs;
 

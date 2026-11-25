@@ -43,10 +43,8 @@ Map<String, int> _failures(Evaluation e) {
 /// Every failure that exists today, per (screen, guideline). Known defects:
 /// phase 40 (D-14 and the tap-target work) removes entries as it fixes them.
 const _known = <(String, String), Map<String, int>>{
-  // Sleep timer and speed chips are under 48 px (the total time got its 48 px
-  // in phase 59.5).
+  // The speed chip is under 48 px (the sleep timer got its 48 px in 154.3).
   ('now playing', 'androidTapTarget'): {
-    'Timer di spegnimento': 1,
     'Velocità di riproduzione': 1,
   },
   // 150.5: the desktop player bar's dense controls (and the artist link) are

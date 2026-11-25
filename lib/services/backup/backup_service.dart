@@ -24,6 +24,7 @@ import '../../data/settings/settings_store.dart'
         lastSeenVersionKey,
         recogPassAfterKey,
         recogPassDoneKey,
+        savedOnlinePlaylistPrefix,
         storageModeD665Key;
 
 const kBackupFormat = 1;
@@ -57,7 +58,7 @@ const kDeviceBoundKeys = {
   'streamCacheVolume',
 };
 
-bool _staysOnDevice(String k) => kDeviceBoundKeys.contains(k) || k.startsWith(importDownloadTooPrefix);
+bool _staysOnDevice(String k) => kDeviceBoundKeys.contains(k) || k.startsWith(importDownloadTooPrefix) || k.startsWith(savedOnlinePlaylistPrefix);
 
 class BackupSummary {
   const BackupSummary({

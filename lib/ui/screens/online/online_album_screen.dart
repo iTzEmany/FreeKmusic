@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_log.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/favorite_collections_providers.dart';
 import '../../../providers/pending_playlist_adds.dart' show addToPlaylistTag;
 import '../../../providers/selection_providers.dart';
 import '../../../providers/import_providers.dart';
@@ -20,6 +21,7 @@ import '../../shell/shell_nav.dart';
 import '../playlists/playlist_picker.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/collection_header.dart' show CollectionHeader, collectionActions;
 import '../../widgets/confirm.dart';
 import '../../widgets/format_utils.dart';
 import '../../widgets/net_thumbnail.dart';
@@ -31,7 +33,6 @@ import 'online_list_play.dart';
 import 'online_page_frame.dart';
 import 'online_song_row.dart';
 import '../../widgets/show_msg.dart';
-import '../../widgets/shuffle_button.dart' show ShufflePill;
 import '../../widgets/action_catalog.dart';
 
 /// An album, single or EP of YouTube Music: cover, numbered songs with
@@ -106,6 +107,29 @@ class OnlineAlbumScreen extends ConsumerWidget {
     );
   }
 
+  /// The heart (D-724): off the library, a tap saves the album and favourites it; later taps only toggle the
+  /// favourite, the saved album stays.
+  /// True when the favourite changed; the heart shows no snackbar otherwise.
+  Future<bool> _toggleFavorite(BuildContext context, WidgetRef ref, List<YtResult> songs) async {
+    final toggle = ref.read(toggleFavoriteCollectionProvider);
+    final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
+    try {
+      var key = await ref.read(savedOnlineAlbumKeyProvider(songs.first.indexKey).future);
+      key ??= await saveOnlineAlbum(ref, songs);
+      if (key == null) {
+        showMsgOn(messenger, l.extSaveNothing);
+        return false;
+      }
+      await toggle(favoriteAlbumKind, key);
+      return true;
+    } on Object catch (e, st) {
+      AppLog.w('online album: heart failed', e, st);
+      showMsgOn(messenger, l.loadFailed);
+      return false;
+    }
+  }
+
   Future<void> _share(BuildContext context) async {
     await Clipboard.setData(ClipboardData(text: 'https://music.youtube.com/browse/$browseId'));
     if (context.mounted) showMsg(context, context.l10n.copied);
@@ -119,7 +143,16 @@ class OnlineAlbumScreen extends ConsumerWidget {
       ('album-menu-queue', CatalogAction.queue.icon, CatalogAction.queue.label(l), () => queueOnlineList(context, ref, songs)),
       ('album-menu-playlist', CatalogAction.playlist.icon, CatalogAction.playlist.label(l),
           () => _addToPlaylist(context, ref, songs)),
-      ('album-menu-share', CatalogAction.share.icon, CatalogAction.share.label(l), () => _share(context)),
+      ('album-menu-save', CatalogAction.library.icon, CatalogAction.library.label(l), () async {
+        final messenger = ScaffoldMessenger.of(context);
+        try {
+          final key = await saveOnlineAlbum(ref, songs);
+          showMsgOn(messenger, key == null ? l.extSaveNothing : l.extSavedAs(album.title));
+        } on Object catch (e, st) {
+          AppLog.w('online album: not saved', e, st);
+          showMsgOn(messenger, l.loadFailed);
+        }
+      }),
     ];
     return showCcActionSheet<String>(
       context: context,
@@ -130,6 +163,72 @@ class OnlineAlbumScreen extends ConsumerWidget {
             CcAction<String>(icon: icon, label: label, value: key, onTap: run),
         ],
       ],
+    );
+  }
+
+  Widget _header(BuildContext context, WidgetRef ref, YtmAlbum? a, List<YtResult> songs) {
+    final l = context.l10n;
+    final cc = context.cc;
+    final title = a?.title ?? release?.title ?? '';
+    final kind = a == null
+        ? release?.subtitle ?? ''
+        : [a.kindLabel, a.year].whereType<String>().where((s) => s.isNotEmpty).join(', ');
+    var total = Duration.zero;
+    for (final t in a?.tracks ?? const <YtmAlbumTrack>[]) {
+      total += t.result.duration ?? Duration.zero;
+    }
+    final stats = a == null || a.tracks.isEmpty
+        ? ''
+        : [
+            l.tracksCount(a.tracks.length),
+            if (total > Duration.zero) l.durationMinutes(total.inMinutes),
+          ].join(', ');
+    final artist = a?.artist;
+    final savedKey = songs.isEmpty ? null : ref.watch(savedOnlineAlbumKeyProvider(songs.first.indexKey)).value;
+    final fav = savedKey != null &&
+        (ref.watch(isFavoriteCollectionProvider((kind: favoriteAlbumKind, key: savedKey))).value ?? false);
+    return CollectionHeader(
+      cover: (s) => NetThumbnail(
+        url: thumbAt(context, a?.coverUrl ?? release?.thumbnailUrl, s),
+        width: s,
+        height: s,
+        radius: CcDims.rGrid,
+        icon: Icons.album_rounded,
+      ),
+      name: title,
+      subtitle: artist == null || artist.name.isEmpty
+          ? null
+          : InkWell(
+              key: const ValueKey('album-artist'),
+              onTap: artist.id.isEmpty ? null : () => ShellNav.open<void>(context, ArtistPageScreen(artist: artist)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: CcDims.gap4),
+                child: Text(artist.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: artist.id.isEmpty ? null : cc.accentSoft)),
+              ),
+            ),
+      meta: [kind, stats].where((s) => s.isNotEmpty).join('\n'),
+      actions: collectionActions(
+        context,
+        ref,
+        onPlay: songs.isEmpty ? null : () => playOrQueueOnline(context, ref, songs, listKey: _listKey),
+        shuffleIds: const [],
+        shuffleKey: _listKey,
+        shufflePlus: false,
+        favorite: fav,
+        onFavorite: songs.isEmpty ? null : () => _toggleFavorite(context, ref, songs),
+        onShare: a == null ? null : (_) => _share(context),
+        menu: a == null
+            ? null
+            : IconButton(
+                key: const ValueKey('album-more'),
+                tooltip: CatalogAction.more.label(l),
+                onPressed: () => _openMenu(context, ref, a, songs),
+                icon: Icon(CatalogAction.more.icon),
+              ),
+      ),
     );
   }
 
@@ -155,17 +254,7 @@ class OnlineAlbumScreen extends ConsumerWidget {
         ref.invalidate(onlineAlbumProvider(browseId));
       },
       slivers: [
-        SliverToBoxAdapter(
-          child: _AlbumHeader(
-            album: album,
-            release: release,
-            onPlay: songs.isEmpty
-                ? null
-                : () => playOrQueueOnline(context, ref, songs, listKey: _listKey),
-            listKey: _listKey,
-            onMore: album == null ? null : () => _openMenu(context, ref, album, songs),
-          ),
-        ),
+        SliverToBoxAdapter(child: _header(context, ref, album, songs)),
         if (data != null && data.stale)
           SliverToBoxAdapter(child: OfflineNotice(fetchedAt: data.fetchedAt)),
         if (album != null)
@@ -189,113 +278,6 @@ class OnlineAlbumScreen extends ConsumerWidget {
         else
           const SliverToBoxAdapter(child: PageSkeleton(rows: 8)),
       ],
-    );
-  }
-}
-
-class _AlbumHeader extends StatelessWidget {
-  const _AlbumHeader({required this.album, required this.release, required this.onPlay, required this.listKey, required this.onMore});
-
-  final YtmAlbum? album;
-  final YtmRelease? release;
-  final VoidCallback? onPlay, onMore;
-  final Object listKey;
-
-  static const _cover = 144.0;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final cc = context.cc;
-    final theme = Theme.of(context).textTheme;
-    final a = album;
-    final title = a?.title ?? release?.title ?? '';
-    final kind = a == null
-        ? release?.subtitle ?? ''
-        : [a.kindLabel, a.year].whereType<String>().where((s) => s.isNotEmpty).join(', ');
-    var total = Duration.zero;
-    for (final t in a?.tracks ?? const <YtmAlbumTrack>[]) {
-      total += t.result.duration ?? Duration.zero;
-    }
-    final stats = a == null || a.tracks.isEmpty
-        ? ''
-        : [
-            l.tracksCount(a.tracks.length),
-            if (total > Duration.zero) l.durationMinutes(total.inMinutes),
-          ].join(', ');
-    final artist = a?.artist;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              NetThumbnail(
-                url: thumbAt(context, a?.coverUrl ?? release?.thumbnailUrl, _cover),
-                width: _cover,
-                height: _cover,
-                radius: CcDims.rGrid,
-                icon: Icons.album_rounded,
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, maxLines: 3, overflow: TextOverflow.ellipsis, style: theme.titleLarge),
-                    if (artist != null && artist.name.isNotEmpty)
-                      InkWell(
-                        key: const ValueKey('album-artist'),
-                        onTap: artist.id.isEmpty
-                            ? null
-                            : () => ShellNav.open<void>(context, ArtistPageScreen(artist: artist)),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: CcDims.gap4),
-                          child: Text(artist.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.bodyLarge?.copyWith(
-                                  color: artist.id.isEmpty ? null : cc.accentSoft)),
-                        ),
-                      ),
-                    if (kind.isNotEmpty)
-                      Text(kind, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
-                    if (stats.isNotEmpty)
-                      Text(stats, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(children: [
-            Expanded(
-              child: FilledButton.icon(
-                key: const ValueKey('album-play'),
-                onPressed: onPlay,
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: Text(l.play),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: ShufflePill(
-                key: const ValueKey('album-shuffle'),
-                listKey: listKey,
-                plus: false,
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('album-more'),
-              tooltip: CatalogAction.more.label(l),
-              onPressed: onMore,
-              icon: Icon(CatalogAction.more.icon),
-            ),
-          ]),
-        ],
-      ),
     );
   }
 }

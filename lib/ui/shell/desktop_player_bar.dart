@@ -1,4 +1,3 @@
-import '../widgets/track_kind.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +7,7 @@ import '../../providers/jam_providers.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/track_ops.dart' show trackOpsProvider;
+import '../../services/audio/online_entries.dart' show isOnlineId;
 import '../../services/audio/play_queue.dart';
 import '../../services/jam/jam_models.dart';
 import '../screens/devices/devices_sheet.dart';
@@ -26,6 +26,9 @@ import '../widgets/mini_player.dart' show kBarCoverHero;
 import '../widgets/play_buttons.dart';
 import '../widgets/motion.dart';
 import '../widgets/track_art.dart';
+import '../widgets/action_catalog.dart';
+import '../widgets/karaoke_sheet.dart';
+import '../screens/now_playing/now_playing_controls.dart' show SleepChip;
 import '../widgets/radio_now.dart';
 import '../widgets/ring_progress.dart';
 import '../widgets/seek_bar.dart';
@@ -127,6 +130,7 @@ class _TrackInfo extends ConsumerWidget {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     final radio = radioOfTrack(ref, track);
+    final fav = isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
     final onAir = radio == null ? null : ref.watch(onAirProvider).value;
     final texts = radio == null ? null : radioTexts(l, radio, onAir);
     void openPlayer() => Navigator.of(context, rootNavigator: true).push(
@@ -177,13 +181,14 @@ class _TrackInfo extends ConsumerWidget {
         ),
         if (radio != null)
           RadioStarButton(station: radio, color: cc.textMuted)
-        else if (track.trackKind != TrackKind.online)
+        else
           IconButton(
-            tooltip: track.isFavorite ? l.removeFromFavorites : l.favorite,
-            onPressed: () => toggleFavorite(context, ref, track),
+            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.favorite,
+            // Disabled until a stream is bound to its library row.
+            onPressed: fav == null ? null : () => toggleFavorite(context, ref, fav),
             icon: HeartIcon(
-              favorite: track.isFavorite,
-              color: track.isFavorite ? cc.accent : cc.textMuted,
+              favorite: fav?.isFavorite ?? false,
+              color: fav?.isFavorite ?? false ? cc.accent : cc.textMuted,
             ),
           ),
       ],
@@ -446,9 +451,11 @@ class _Right extends ConsumerWidget {
           icon: Icon(Icons.lyrics_outlined, color: on(SidePanel.lyrics)),
           onPressed: () => panelCtl.toggle(SidePanel.lyrics),
         ),
+        const KaraokeButton(),
+        const SleepChip(),
         IconButton(
-          tooltip: l.queue,
-          icon: Icon(Icons.queue_music_rounded, color: on(SidePanel.queue)),
+          tooltip: CatalogAction.queuePanel.label(l),
+          icon: Icon(CatalogAction.queuePanel.icon, color: on(SidePanel.queue)),
           onPressed: () => panelCtl.toggle(SidePanel.queue),
         ),
         IconButton(

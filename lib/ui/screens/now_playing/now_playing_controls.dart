@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
+import '../../widgets/action_catalog.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/platform.dart';
@@ -307,7 +308,7 @@ class NpBottomRow extends ConsumerWidget {
               ),
             ),
             if (karaoke) const KaraokeButton(),
-            const _SleepChip(),
+            const SleepChip(),
             Expanded(
               child: Align(
                 alignment: AlignmentDirectional.centerEnd,
@@ -317,7 +318,7 @@ class NpBottomRow extends ConsumerWidget {
                   ),
                   onPressed: onQueue ?? () => showQueueSheet(context),
                   icon: Icon(
-                    Icons.queue_music_rounded,
+                    CatalogAction.queuePanel.icon,
                     size: 20,
                     color: cc.textMuted,
                   ),
@@ -379,14 +380,15 @@ class _VolumeRow extends ConsumerWidget {
   }
 }
 
-class _SleepChip extends ConsumerStatefulWidget {
-  const _SleepChip();
+/// The sleep timer chip; also in the desktop bar.
+class SleepChip extends ConsumerStatefulWidget {
+  const SleepChip({super.key});
 
   @override
-  ConsumerState<_SleepChip> createState() => _SleepChipState();
+  ConsumerState<SleepChip> createState() => SleepChipState();
 }
 
-class _SleepChipState extends ConsumerState<_SleepChip> {
+class SleepChipState extends ConsumerState<SleepChip> {
   Timer? _tick;
 
   @override
@@ -447,6 +449,7 @@ class _SleepChipState extends ConsumerState<_SleepChip> {
           }
         },
       child: Container(
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
         padding: const EdgeInsets.symmetric(
           horizontal: CcDims.gap12,
           vertical: CcDims.gap8,

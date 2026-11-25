@@ -56,7 +56,7 @@ Future<void> handleSharedPage(BuildContext context, WidgetRef ref, SharedText s)
     if (matches == null) return showMsgOn(messenger, l.shareImportNetwork);
     final String? name;
     try {
-      name = await saveToLibrary(ref, f.title, matches, fallback: l.newPlaylist);
+      name = (await saveToLibrary(ref, f.title, matches, fallback: l.newPlaylist))?.name;
     } on Object catch (e, st) {
       AppLog.w('shared page: playlist not saved', e, st);
       return showMsgOn(messenger, l.loadFailed);

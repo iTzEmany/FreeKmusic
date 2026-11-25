@@ -278,8 +278,8 @@ void main() {
           const TrackPending(),
           TrackReady.online(ytmSong('y2', 'Online two')),
         ];
-        name = await saveToLibrary(w, ' Mix ', matches);
-        second = await saveToLibrary(w, 'Mix', const [TrackNotFound()]);
+        name = (await saveToLibrary(w, ' Mix ', matches))?.name;
+        second = (await saveToLibrary(w, 'Mix', const [TrackNotFound()]))?.name;
       });
       expect(name, 'Mix (2)');
       expect(second, isNull);
@@ -305,7 +305,7 @@ void main() {
       Object? failure;
       await tester.runAsync(() async {
         lib = await db.select(db.tracks).getSingle();
-        name = await saveToLibrary(w, '   ', [TrackReady.online(ytmSong('y1', 'One'))], fallback: 'Nuova');
+        name = (await saveToLibrary(w, '   ', [TrackReady.online(ytmSong('y1', 'One'))], fallback: 'Nuova'))?.name;
         try {
           // A library row that does not exist: the playlist insert fails after the playlist was created.
           await saveToLibrary(w, 'Broken', [TrackReady.library(lib!.copyWith(id: 9999))]);

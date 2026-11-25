@@ -488,20 +488,26 @@ class _PlayerHeader extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (!desktop)
-                    IconButton(
-                      tooltip: l.carMode,
-                      icon: const Icon(Icons.directions_car_outlined),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CarModeScreen(),
-                        ),
-                      ),
-                    ),
                   IconButton(
                     tooltip: l.moreActions,
                     icon: Icon(CatalogAction.more.icon),
-                    onPressed: () => showTrackActions(context, track),
+                    onPressed: () {
+                      final nav = Navigator.of(context);
+                      showTrackActions(
+                        context,
+                        track,
+                        // D-732: car mode lives in ⋮, not as a button of its own.
+                        lead: desktop
+                            ? null
+                            : TrackAction(
+                                Icons.directions_car_outlined,
+                                l.carMode,
+                                () async => nav.push(
+                                  MaterialPageRoute<void>(builder: (_) => const CarModeScreen()),
+                                ),
+                              ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -622,8 +628,8 @@ class _TitleRow extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    final online = track.trackKind == TrackKind.online;
     final radio = this.radio;
+    final fav = isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
     final texts = radio == null ? null : radioTexts(l, radio, onAir);
     return Row(
       children: [
@@ -632,7 +638,7 @@ class _TitleRow extends ConsumerWidget {
             // The heart's glyph ends at npEdge: the title mirrors it.
             padding: EdgeInsetsDirectional.only(
               start: npEdge,
-              end: radio == null && online ? npEdge : 0,
+              end: 0,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -660,13 +666,14 @@ class _TitleRow extends ConsumerWidget {
         ),
         if (radio != null)
           RadioStarButton(station: radio)
-        else if (!online)
+        else
           IconButton(
-            tooltip: track.isFavorite ? l.removeFromFavorites : l.favorite,
-            onPressed: () => toggleFavorite(context, ref, track),
+            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.favorite,
+            // A stream not yet bound to its library row has nothing to favourite: disabled until it is.
+            onPressed: fav == null ? null : () => toggleFavorite(context, ref, fav),
             icon: HeartIcon(
-              favorite: track.isFavorite,
-              color: track.isFavorite ? cc.accent : cc.text,
+              favorite: fav?.isFavorite ?? false,
+              color: fav?.isFavorite ?? false ? cc.accent : cc.text,
             ),
           ),
       ],

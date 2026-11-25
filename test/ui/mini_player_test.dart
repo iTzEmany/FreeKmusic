@@ -85,6 +85,7 @@ void main() {
     expect(find.text('Caricamento…'), findsNothing);
     expect(find.text('Ann'), findsOneWidget);
     expect(find.byKey(const ValueKey('mini-loading')), findsNothing);
+    expect(find.byTooltip('Preferito'), findsOneWidget); // the heart is there for a stream too
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);

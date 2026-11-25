@@ -111,9 +111,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         );
       case _PlaylistAction.clearCover:
         await ops.setCover(id, null);
-      case _PlaylistAction.favorite:
-        final uuid = widget.playlist.uuid;
-        if (uuid != null) await ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, uuid);
       case _PlaylistAction.sendToDevice:
         DevicesSheet.show(context, trackIds: [for (final t in tracks) if (t.kind != kStreamKind) t.id]);
       case _PlaylistAction.export:
@@ -199,7 +196,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     );
   }
 
-  List<List<CcAction<_PlaylistAction>>> _menuGroups(bool hasCustomCover, bool personal, bool fav, List<Track> tracks) {
+  List<List<CcAction<_PlaylistAction>>> _menuGroups(bool hasCustomCover, bool personal, List<Track> tracks) {
     final l = context.l10n;
     return [
       [
@@ -229,12 +226,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             icon: Icons.hide_image_outlined,
             label: l.playlistRemoveCover,
             value: _PlaylistAction.clearCover,
-          ),
-        if (widget.playlist.uuid != null)
-          CcAction(
-            icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
-            value: _PlaylistAction.favorite,
           ),
         if (tracks.any((t) => t.kind != kStreamKind))
           CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _PlaylistAction.sendToDevice),
@@ -407,6 +398,13 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         onShare: tracks.isEmpty
             ? null
             : (r) => shareTracks(context, ref, SharedKind.playlist, _name, tracks, origin: r),
+        favorite: fav,
+        onFavorite: widget.playlist.uuid == null
+            ? null
+            : () async {
+                await ref.read(toggleFavoriteCollectionProvider)(favoritePlaylistKind, widget.playlist.uuid!);
+                return true;
+              },
         scrollerCount: tracks.length,
         shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
         shuffleKey: shuffleKey,
@@ -416,7 +414,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           onPressed: () async {
             final v = await showCcActionSheet<_PlaylistAction>(
               context: context,
-              groups: _menuGroups(custom != null, personal && !searching, fav, tracks),
+              groups: _menuGroups(custom != null, personal && !searching, tracks),
             );
             if (v != null) _onAction(v, id, key, tracks);
           },
@@ -463,7 +461,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
   }
 }
 
-enum _PlaylistAction { sort, edit, add, cover, clearCover, favorite, sendToDevice, export, rename, delete }
+enum _PlaylistAction { sort, edit, add, cover, clearCover, sendToDevice, export, rename, delete }
 
 class _EditRow extends StatelessWidget {
   const _EditRow({

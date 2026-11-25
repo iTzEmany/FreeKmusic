@@ -1,4 +1,7 @@
+import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/ui/shell/desktop_player_bar.dart';
+import 'package:drift/drift.dart' show Value;
+import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -13,11 +16,14 @@ Future<void> _settle(WidgetTester t) async {
 
 void main() {
   /// The bar over a queue of [tracks] songs, the first one playing.
-  Future<Harness> openBar(WidgetTester t, {int tracks = 3}) async {
+  Future<Harness> openBar(WidgetTester t, {int tracks = 3, bool stream = false}) async {
     t.view.physicalSize = const Size(1280, 800);
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
     final h = await Harness.create(t, tracks: tracks);
+    if (stream) {
+      await t.runAsync(() => h.db.update(h.db.tracks).write(const TracksCompanion(kind: Value(kStreamKind))));
+    }
     final rows = await t.runAsync(() => h.db.select(h.db.tracks).get());
     await t.runAsync(() => h.handler.playQueue([for (final r in rows!) r.id], 0));
     await h.pump(
@@ -63,6 +69,23 @@ void main() {
     );
     expect(row!.isFavorite, isTrue);
     expect(find.byTooltip('Rimuovi dai preferiti'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('the heart is there for a streamed track too and favourites it', (t) async {
+    final h = await openBar(t, tracks: 1, stream: true);
+    await tapTip(t, 'Preferito');
+    final row = await t.runAsync(() => h.db.select(h.db.tracks).getSingle());
+    expect(row!.isFavorite, isTrue);
+    await h.dispose(t);
+  });
+
+  testWidgets('timer and queue sit in the bar next to lyrics and devices', (t) async {
+    final h = await openBar(t);
+    expect(find.byKey(const Key('np-sleep-chip')), findsOneWidget);
+    for (final tip in ['Testo', 'Coda', 'Dispositivi']) {
+      expect(find.byTooltip(tip), findsOneWidget, reason: tip);
+    }
     await h.dispose(t);
   });
 
