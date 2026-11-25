@@ -439,6 +439,6 @@ void main() {
       addTearDown(() => Process.run('chmod', ['755', modelsDir().parent.path]));
       await expectLater(s.deleteModels(), throwsA(isA<FileSystemException>()));
       expect(modelsDir().existsSync(), isTrue);
-    });
+    }, skip: Platform.isWindows ? 'chmod does not make a folder read-only on Windows' : false);
   });
 }

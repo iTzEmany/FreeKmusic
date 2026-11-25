@@ -292,5 +292,5 @@ void main() {
     addTearDown(() => Process.run('chmod', ['755', file.parent.path]));
     await expectLater(c.read(chineseDictionaryProvider.notifier).delete(), throwsA(isA<FileSystemException>()));
     expect(file.existsSync(), isTrue);
-  });
+  }, skip: Platform.isWindows ? 'chmod does not make a folder read-only on Windows' : false);
 }

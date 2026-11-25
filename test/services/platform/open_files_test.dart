@@ -1,7 +1,10 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/platform/open_files.dart';
+import 'package:path/path.dart' as p;
 
 class _FakeTrack implements Track {
   _FakeTrack(this.path);
@@ -13,6 +16,9 @@ class _FakeTrack implements Track {
 
 Track _t(String path) => _FakeTrack(path);
 
+/// The path as OpenFiles normalizes it on this system (D:\\music\\a.mp3 on Windows).
+String abs(String path) => p.normalize(p.absolute(path));
+
 void main() {
   late List<List<Track>> played;
   late List<List<String>> outside, portal;
@@ -20,15 +26,17 @@ void main() {
   late Set<String> known;
   late OpenFiles open;
   late Set<String> missingOnDisk;
-  const folder = Folder(id: 1, path: '/music', addedAt: 0);
+  late Folder folder;
+
 
   setUp(() {
+    folder = Folder(id: 1, path: abs('/music'), addedAt: 0);
     played = [];
     outside = [];
     portal = [];
     scanned = [];
     addedDirs = [];
-    known = {'/music/a.mp3'};
+    known = {abs('/music/a.mp3')};
     missingOnDisk = {};
     open = OpenFiles(
       channel: const MethodChannel('test/open'),
@@ -41,7 +49,7 @@ void main() {
       play: (t) async => played.add(t),
       addFolder: (d) async {
         addedDirs.add(d);
-        known.add('/other/x.mp3');
+        known.add(abs('/other/x.mp3'));
       },
       onOutside: outside.add,
       onPortal: portal.add,
@@ -50,28 +58,28 @@ void main() {
   });
 
   test('several files play in the order given, scanning the new one', () async {
-    await open.handle(['/music/b.flac', '--flag', '/music/a.mp3']);
-    expect(played.single.map((t) => t.path), ['/music/b.flac', '/music/a.mp3']);
-    expect(scanned, ['/music/b.flac']);
+    await open.handle([abs('/music/b.flac'), '--flag', abs('/music/a.mp3')]);
+    expect(played.single.map((t) => t.path), [abs('/music/b.flac'), abs('/music/a.mp3')]);
+    expect(scanned, [abs('/music/b.flac')]);
     expect(outside, isEmpty);
   });
 
   test('a file outside the library folders warns instead of playing, and joins on request', () async {
-    await open.handle(['file:///other/x.mp3']);
+    await open.handle([Uri.file(abs('/other/x.mp3')).toString()]);
     expect(played, isEmpty);
-    expect(outside.single, ['/other/x.mp3']);
+    expect(outside.single, [abs('/other/x.mp3')]);
 
     await open.addToLibrary(outside.single);
-    expect(addedDirs, ['/other']);
-    expect(played.single.single.path, '/other/x.mp3');
+    expect(addedDirs, [abs('/other')]);
+    expect(played.single.single.path, abs('/other/x.mp3'));
   });
 
   test('relative paths become absolute and missing files are dropped', () async {
-    missingOnDisk = {'/music/gone.mp3'};
-    await open.handle(['/music/../music/a.mp3', '/music/gone.mp3', 'rel.mp3']);
-    expect(played.single.map((t) => t.path), ['/music/a.mp3']);
+    missingOnDisk = {abs('/music/gone.mp3')};
+    await open.handle([abs('/music/../music/a.mp3'), abs('/music/gone.mp3'), 'rel.mp3']);
+    expect(played.single.map((t) => t.path), [abs('/music/a.mp3')]);
     expect(outside.single.single, endsWith('rel.mp3'));
-    expect(outside.single.single, startsWith('/'));
+    expect(outside.single.single, predicate<String>(p.isAbsolute));
   });
 
   test('a documents-portal file is not played nor written: the user is told', () async {
@@ -80,16 +88,16 @@ void main() {
     expect(scanned, isEmpty);
     expect(played, isEmpty);
     expect(portal.single, ['/run/user/1000/doc/ab12/song.mp3']);
-  });
+  }, skip: Platform.isLinux ? false : 'documents portal is Flatpak-only');
 
   test('the runner channel delivers files after start', () async {
     TestWidgetsFlutterBinding.ensureInitialized();
     final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(const MethodChannel('test/open'), (call) async {
-      return call.method == 'takeFiles' ? ['/music/a.mp3'] : null;
+      return call.method == 'takeFiles' ? [abs('/music/a.mp3')] : null;
     });
     await open.start([]);
-    expect(played.single.single.path, '/music/a.mp3');
+    expect(played.single.single.path, abs('/music/a.mp3'));
     messenger.setMockMethodCallHandler(const MethodChannel('test/open'), null);
   });
 }
