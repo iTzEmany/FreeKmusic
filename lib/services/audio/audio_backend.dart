@@ -8,13 +8,16 @@ enum TransitionMode { normal, gapless, crossfade }
 
 class BackendException implements Exception {
   const BackendException(this.message,
-      {this.fileMissing = false, this.expired = false});
+      {this.fileMissing = false, this.expired = false, this.interrupted = false});
 
   final String message;
   final bool fileMissing;
 
   /// A stream address that was refused (HTTP 403/410): it can be asked again.
   final bool expired;
+
+  /// The load was cut by another request on the player: the file is not at fault.
+  final bool interrupted;
 
   @override
   String toString() => 'BackendException: $message';

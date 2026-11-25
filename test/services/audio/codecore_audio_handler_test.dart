@@ -448,6 +448,24 @@ void main() {
     expect(b.loaded.last, '/m/b.mp3');
   });
 
+  test('a current load cut by another request is asked again, not skipped as unplayable', () async {
+    backend.interruptedOnce.add('/m/a.mp3');
+    await handler.playQueue(ids, 0);
+    await settle();
+    expect(errors, isEmpty);
+    expect(backend.loaded, ['/m/a.mp3']);
+    expect(handler.currentTrack!.title, 'a');
+  });
+
+  test('interrupted 3 times: the bookmark stays and the failure is reported', () async {
+    await repo.setResumePosition(ids[0], 600000);
+    backend.interruptedAlways.add('/m/a.mp3');
+    await handler.playQueue(ids, 0);
+    await settle();
+    expect(errors.first.title, 'a');
+    expect((await repo.getById(ids[0]))!.resumePositionMs, 600000);
+  });
+
   test('a current-load error whose text says «interrupted» still fails and skips', () async {
     backend.failMessages['/m/a.mp3'] = 'unplayable stream: connection interrupted by peer';
     await handler.playQueue(ids, 0);

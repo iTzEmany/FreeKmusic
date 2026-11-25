@@ -11,6 +11,12 @@ class FakeBackend implements AudioBackend, GaplessCapable {
   final loaded = <String>[];
   final failing = <String>{};
 
+  /// Paths whose next load is cut by another request on the player (just_audio's «Loading interrupted»).
+  final interruptedOnce = <String>{};
+
+  /// Paths whose every load is cut like that.
+  final interruptedAlways = <String>{};
+
   /// Paths whose load fails like a load replaced by a newer one.
   /// Paths that fail with an unplayable error carrying this message.
   final failMessages = <String, String>{};
@@ -57,6 +63,9 @@ class FakeBackend implements AudioBackend, GaplessCapable {
   @override
   Future<void> load(String filePath) async {
     if (failing.contains(filePath)) throw const BackendException('missing', fileMissing: true);
+    if (interruptedOnce.remove(filePath) || interruptedAlways.contains(filePath)) {
+      throw const BackendException('load interrupted', interrupted: true);
+    }
     final m = failMessages[filePath];
     if (m != null) throw BackendException(m);
     nextPath = null;

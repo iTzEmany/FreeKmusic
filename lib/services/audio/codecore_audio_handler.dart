@@ -285,6 +285,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   Duration? _duration;
   Track? _current;
   int _loadToken = 0;
+  int _interruptedRetries = 0;
   // Tap-to-first-sound timing of the load in flight (logged once, see _onPosition).
   _Timing? _timing;
   int _consecutiveErrors = 0;
@@ -537,7 +538,7 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
   }
 
   /// A track played, advanced by itself or was chosen: the run of failures starts over.
-  void _resetErrors() => _consecutiveErrors = 0;
+  void _resetErrors() => _consecutiveErrors = _interruptedRetries = 0;
 
   /// A track chosen by the user starts a new series of failures.
   Future<void> _loadChosen() {
@@ -766,6 +767,16 @@ class CodecoreAudioHandler extends BaseAudioHandler with SeekHandler {
         return;
       }
       if (e is! BackendException) Error.throwWithStackTrace(e, st);
+      // Cut by something that is not a newer request of ours: the file is not at fault, so ask again a few times
+      // (the failed attempt's position 0 must not overwrite the bookmark); past that it is a failure like any other.
+      if (e.interrupted && _interruptedRetries < 2) {
+        _interruptedRetries++;
+        _noSaveId = track.id;
+        AppLog.w('load interrupted, asking again: ${e.message}');
+        await _loadCurrent(play: _playWhenReady, startAt: startAt, ended: ended, sameTrack: sameTrack, cold: cold);
+        return;
+      }
+      if (e.interrupted) _interruptedRetries = 0;
       AppLog.w('load failed: ${e.message}');
       if (radio != null) {
         _radioBusy = false;

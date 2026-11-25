@@ -43,6 +43,7 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   // still waiting obsolete.
   Future<void> _window = Future<void>.value();
   int _generation = 0;
+  int _loadSeq = 0;
   int _index = 0;
   String? _nextPath;
 
@@ -133,6 +134,21 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
     _index = 0;
   }
 
+  /// Two loads one after the other while the player is still activating (the first of a session) leave
+  /// just_audio stuck: even the newest load, and every later one, ends «Loading interrupted». stop() frees it.
+  Future<void> _setSource(Future<Duration?> Function() set) async {
+    final seq = ++_loadSeq;
+    try {
+      await set();
+    } on PlayerInterruptedException catch (e) {
+      if (seq != _loadSeq) rethrow; // a newer load of ours replaced this one: expected
+      AppLog.w('load interrupted by nothing newer, resetting the player: ${e.message}');
+      await _player.stop();
+      if (seq != _loadSeq) rethrow;
+      await set();
+    }
+  }
+
   @override
   Future<void> load(String filePath) async {
     if (!await File(filePath).exists()) {
@@ -140,11 +156,11 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
     }
     _resetWindow();
     try {
-      await _player.setFilePath(filePath);
+      await _setSource(() => _player.setFilePath(filePath));
     } on PlayerInterruptedException catch (e) {
-      // A newer load replaced this one: expected when skipping quickly.
+      // Replaced by a newer load, or stopped: expected when skipping quickly.
       AppLog.d('load interrupted: $filePath (${e.message})');
-      throw BackendException('load interrupted: ${e.message}');
+      throw BackendException('load interrupted: ${e.message}', interrupted: true);
     } on Object catch (e, st) {
       AppLog.w('load failed: $filePath', e, st);
       throw BackendException('unplayable file: $e');
@@ -160,8 +176,11 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
     try {
       // An empty (non-null) map would still start just_audio's local proxy,
       // which breaks HLS: relative segments after a redirect.
-      await _player.setAudioSource(
-          AudioSource.uri(uri, headers: headers.isEmpty ? null : headers));
+      await _setSource(() => _player.setAudioSource(
+          AudioSource.uri(uri, headers: headers.isEmpty ? null : headers)));
+    } on PlayerInterruptedException catch (e) {
+      AppLog.d('stream load interrupted: ${uri.host} (${e.message})');
+      throw BackendException('load interrupted: ${e.message}', interrupted: true);
     } on Object catch (e, st) {
       AppLog.w('stream load failed: ${uri.host}', e, st);
       throw BackendException('unplayable stream: $e',
@@ -187,7 +206,10 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   }
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() {
+    _loadSeq++; // a load in progress must not start again after the stop (see [_setSource])
+    return _player.stop();
+  }
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
@@ -204,6 +226,7 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   @override
   Future<void> dispose() async {
     _generation++;
+    _loadSeq++;
     await _indexSub.cancel();
     await _advanced.close();
     await _player.dispose();

@@ -1116,4 +1116,17 @@ void main() {
     expect(handle, findsOneWidget);
     await h.dispose(t);
   });
+
+  testWidgets('wide: the Album tab filter chips are as wide as their text', (t) async {
+    final h = await open(t, width: 1440);
+    await t.tap(find.text('Album').first);
+    await _settle(t);
+    final chips = find.byType(ChoiceChip);
+    expect(chips, findsNWidgets(3));
+    // Ahem (test font) is square: text is wider than real; a stretched third is > 350.
+    for (var i = 0; i < 3; i++) {
+      expect(t.getSize(chips.at(i)).width, lessThan(300));
+    }
+    await h.dispose(t);
+  });
 }

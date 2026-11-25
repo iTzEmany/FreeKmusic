@@ -7,6 +7,7 @@ import 'package:codecore/ui/screens/lyrics/lyrics_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
+import 'package:codecore/ui/widgets/context_menu.dart' show MenuAction;
 import 'package:codecore/ui/widgets/motion.dart';
 import 'package:codecore/ui/widgets/quality_tag.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_controls.dart';
@@ -541,6 +542,27 @@ void main() {
     await tester.tap(find.text('Modalità in auto'));
     await _settle(tester);
     expect(find.byType(CarModeScreen), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('desktop: the ⋮ of the player opens the pointer menu under the button, not the phone sheet', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 2);
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(tester, const NowPlayingScreen(desktop: true));
+    final button = tester.getRect(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni'));
+    await _settle(tester);
+    expect(find.byType(PopupMenuItem<MenuAction>), findsWidgets);
+    expect(find.byType(BottomSheet), findsNothing);
+    expect(find.byType(Dialog), findsNothing);
+    expect(find.text('Modalità in auto'), findsNothing, reason: 'car mode is a phone entry');
+    final menu = tester.getRect(find.byType(PopupMenuItem<MenuAction>).first);
+    expect(menu.top, greaterThanOrEqualTo(button.bottom - 1));
+    expect(menu.right, lessThanOrEqualTo(button.right + 1), reason: 'opens from the button leftwards, inside the window');
     await h.dispose(tester);
   });
 

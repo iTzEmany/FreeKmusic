@@ -2,6 +2,7 @@ import 'package:codecore/services/radio/radio_catalog.dart' show RadioList;
 import 'package:codecore/data/repositories/track_repository.dart'
     show SortOption;
 import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
+import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/page_frame.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:codecore/ui/widgets/shelf_scroller.dart';
@@ -425,6 +426,35 @@ void main() {
     expect(find.byKey(const ValueKey('fan-cover-0')), findsNothing);
     await h.dispose(tester);
   });
+
+  for (final w in [1000.0, 1100.0]) {
+    testWidgets('window $w px with the sidebar: the shelf keeps full-size tiles', (tester) async {
+      tester.view.physicalSize = Size(w, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester, tracks: 4);
+      await h.pump(
+        tester,
+        const Row(children: [
+          SizedBox(width: CcDims.sidebarWidth),
+          Expanded(child: HomeScreen()),
+        ]),
+      );
+      await _settle(tester);
+      expect(find.byKey(const ValueKey('fan-cover-0')), findsNothing);
+      final covers = find.descendant(
+        of: find.byType(ShelfScroller).last,
+        matching: find.byType(InkWell),
+      );
+      expect(covers, findsWidgets);
+      Rect r(int i) => tester.getRect(covers.at(i));
+      for (var i = 0; i < covers.evaluate().length; i++) {
+        expect(r(i).width, greaterThanOrEqualTo(96));
+        if (i > 0) expect(r(i).left, greaterThanOrEqualTo(r(i - 1).right));
+      }
+      await h.dispose(tester);
+    });
+  }
 
   for (final (label, page) in <(String, Type)>[
     ('Preferiti', FavoritesScreen),

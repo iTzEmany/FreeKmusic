@@ -14,20 +14,49 @@ class LibraryFilterBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final filter = ref.watch(libraryFilterProvider);
+    final names = {
+      LibraryFilter.all: l.showAll,
+      LibraryFilter.device: l.storageModeDevice,
+      LibraryFilter.stream: l.storageModeStream,
+    };
+    // Wide: chips as wide as their text, like the other chips (F-108).
+    final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     return Semantics(
       container: true,
       label: l.libraryFilterLabel,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
-        child: SegmentedBlocks<LibraryFilter>(
-          items: [
-            BlockItem(value: LibraryFilter.all, label: l.showAll),
-            BlockItem(value: LibraryFilter.device, label: l.storageModeDevice),
-            BlockItem(value: LibraryFilter.stream, label: l.storageModeStream),
-          ],
-          selected: ref.watch(libraryFilterProvider),
-          onChanged: ref.read(libraryFilterProvider.notifier).set,
+        padding: const EdgeInsets.fromLTRB(
+          CcDims.margin,
+          0,
+          CcDims.margin,
+          CcDims.gap8,
         ),
+        child: wide
+            ? Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: Wrap(
+                  spacing: CcDims.gap8,
+                  runSpacing: CcDims.gap4,
+                  children: [
+                    for (final f in LibraryFilter.values)
+                      ChoiceChip(
+                        label: Text(names[f]!),
+                        selected: filter == f,
+                        onSelected: (_) =>
+                            ref.read(libraryFilterProvider.notifier).set(f),
+                      ),
+                  ],
+                ),
+              )
+            : SegmentedBlocks<LibraryFilter>(
+                items: [
+                  for (final f in LibraryFilter.values)
+                    BlockItem(value: f, label: names[f]!),
+                ],
+                selected: filter,
+                onChanged: ref.read(libraryFilterProvider.notifier).set,
+              ),
       ),
     );
   }

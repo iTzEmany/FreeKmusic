@@ -40,3 +40,5 @@ Le **trappole** (cose che hanno già fatto perdere tempo) stanno nella sezione �
 
 ## Storico
 Tutte le fasi 0–116, le feature, i refactor, il vecchio PROGRESS e le vecchie architetture: [`storico/README.md`](storico/README.md). Non si aggiorna più.
+
+Il refactor «desktop-e-coerenza» (fasi 150-161) è concluso e archiviato in [`storico/refactor/desktop-e-coerenza/`](storico/refactor/desktop-e-coerenza/analisi.md) (D-748).

@@ -111,7 +111,9 @@ class HomeScreen extends ConsumerWidget {
         bottom: false,
         child: LayoutBuilder(
           builder: (context, box) {
-            final wide = box.maxWidth >= CcDims.wideBreakpoint;
+            // The window decides (as the shell does): at 1000 px the sidebar leaves < 840 px here.
+            final wide =
+                MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
             // Right column empty (nothing to resume, no daylist): the left takes all.
             final rightEmpty =
                 ref.watch(resumeItemsProvider).isEmpty &&

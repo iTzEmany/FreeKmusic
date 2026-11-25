@@ -26,6 +26,16 @@ import '../../support/fake_stream_preparer.dart';
 
 Future<void> settle() => pumpEventQueue();
 
+/// The shadow row of `youtube:v1` is written asynchronously: wait for it (bounded) instead of assuming it is there.
+Future<Track> waitShadowRow(AppDatabase db) async {
+  for (var i = 0; i < 50; i++) {
+    final row = await TrackRepository(db).streamRow('youtube:v1');
+    if (row != null) return row;
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+  }
+  throw StateError('shadow row of youtube:v1 never written');
+}
+
 YtResult result(String id, {String? thumb}) => YtResult(
       id: id,
       title: 'Song $id',
@@ -257,7 +267,7 @@ void main() {
     preparer.urls['youtube:v1'] = (addr, const {});
     await handler.playQueue([id], 0);
     await settle();
-    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
+    final shadow = (await waitShadowRow(db)).id;
     expect(online[id]?.trackId, shadow);
     backend.stateC.add(BackendState.playing);
     await settle();
@@ -276,7 +286,7 @@ void main() {
     await settle();
     backend.stateC.add(BackendState.playing);
     await settle();
-    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
+    final shadow = (await waitShadowRow(db)).id;
     final kept = ids.first;
     await TrackRepository(db).mergeStreamRow('youtube:v1', kept);
     expect(online[id]?.trackId, shadow);
@@ -303,7 +313,7 @@ void main() {
     preparer.urls['youtube:v1'] = (Uri.parse('https://rr1.googlevideo.com/v1'), const {});
     await handler.playQueue([id], 0);
     await settle();
-    final shadow = (await TrackRepository(db).streamRow('youtube:v1'))!.id;
+    final shadow = (await waitShadowRow(db)).id;
     await handler.playQueue([shadow, ids[0]], 0);
     await settle();
     await TrackRepository(db).mergeStreamRow('youtube:v1', ids[1]);
@@ -646,7 +656,7 @@ void main() {
     container.listen(liveCurrentTrackProvider, (_, _) {});
     await handler.playQueue([id], 0);
     await settle();
-    final row = (await TrackRepository(db).streamRow('youtube:v1'))!;
+    final row = (await waitShadowRow(db));
     await (db.update(db.tracks)..where((t) => t.id.equals(row.id)))
         .write(const TracksCompanion(lyricsPlain: Value('la la')));
     await settle();
