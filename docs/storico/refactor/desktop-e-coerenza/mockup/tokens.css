@@ -14,8 +14,8 @@
      on-accent   #12081F su accent 5.6:1 · error #FF6B81 su fondo 7.4:1 · line bianco 11% ~1.4:1 (decorativa)
 */
 
-@font-face{font-family:"Figtree";src:url("../../../../assets/fonts/Figtree-Variable.ttf") format("truetype");font-weight:300 900;font-display:swap}
-@font-face{font-family:"Unbounded";src:url("../../../../assets/fonts/Unbounded-Variable.ttf") format("truetype");font-weight:200 900;font-display:swap}
+@font-face{font-family:"Figtree";src:url("../../../../../assets/fonts/Figtree-Variable.ttf") format("truetype");font-weight:300 900;font-display:swap}
+@font-face{font-family:"Unbounded";src:url("../../../../../assets/fonts/Unbounded-Variable.ttf") format("truetype");font-weight:200 900;font-display:swap}
 
 :root{
   /* colori base (CcColors.notte) */
