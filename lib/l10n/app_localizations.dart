@@ -13434,6 +13434,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Scarico il file; poi chiudi l\'app e incolla il comando in un terminale.'**
   String get updateFlatpakHint;
+
+  /// No description provided for @tableSortBy.
+  ///
+  /// In it, this message translates to:
+  /// **'Ordina per {column}'**
+  String tableSortBy(String column);
+
+  /// No description provided for @tableSortedAscending.
+  ///
+  /// In it, this message translates to:
+  /// **'{column}, in ordine crescente'**
+  String tableSortedAscending(String column);
+
+  /// No description provided for @tableSortedDescending.
+  ///
+  /// In it, this message translates to:
+  /// **'{column}, in ordine decrescente'**
+  String tableSortedDescending(String column);
+
+  /// No description provided for @tableNumberColumn.
+  ///
+  /// In it, this message translates to:
+  /// **'Numero'**
+  String get tableNumberColumn;
 }
 
 class _AppLocalizationsDelegate

@@ -4441,5 +4441,30 @@
     }
   },
   "flatpakDataCopy": "Copier la commande",
-  "updateFlatpakHint": "Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal."
+  "updateFlatpakHint": "Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal.",
+  "tableSortBy": "Trier par {column}",
+  "@tableSortBy": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedAscending": "{column}, croissant",
+  "@tableSortedAscending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedDescending": "{column}, décroissant",
+  "@tableSortedDescending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableNumberColumn": "Numéro"
 }

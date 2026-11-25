@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../providers/selection_providers.dart';
@@ -52,21 +55,41 @@ class OnlineSelectionScope extends ConsumerWidget {
 }
 
 /// How one online song row reads the picks of list [selectionKey]: the song
-/// is id [index] of it.
+/// is id [index] of it. With [play] (what a plain tap does) [onTap] is always
+/// set and also takes Ctrl and Shift + click, as the local rows do.
 ({
   bool selecting,
   bool selected,
   int? position,
   VoidCallback? onTap,
   VoidCallback onLongPress,
-}) watchOnlinePick(WidgetRef ref, String selectionKey, int index) {
+}) watchOnlinePick(
+  WidgetRef ref,
+  String selectionKey,
+  int index, {
+  VoidCallback? play,
+}) {
   final picked = ref.watch(selectionProvider(selectionKey));
   final notifier = ref.read(selectionProvider(selectionKey).notifier);
+  void tap() {
+    final keys = HardwareKeyboard.instance;
+    final shift = keys.isShiftPressed;
+    if (!picked.active && !shift && !keys.isControlPressed && !keys.isMetaPressed) {
+      return play?.call();
+    }
+    // shortcut: the places of a list are 0..n-1, so a range is every place between the anchor and this one; upgrade if a list skips places.
+    shift
+        ? notifier.selectRange([
+            for (var i = 0; i <= math.max(index, picked.anchor ?? index); i++) i,
+          ], index)
+        : notifier.toggle(index);
+  }
+
   return (
     selecting: picked.active,
     selected: picked.contains(index),
     position: picked.contains(index) ? picked.positionOf(index) + 1 : null,
-    onTap: picked.active ? () => notifier.toggle(index) : null,
+    onTap: picked.active || play != null ? tap : null,
     onLongPress: () => notifier.toggle(index),
   );
 }

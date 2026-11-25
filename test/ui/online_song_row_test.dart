@@ -17,6 +17,7 @@ import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/online/online_song_row.dart';
 import 'package:codecore/ui/widgets/track_row.dart' show SwipeToQueue;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -168,6 +169,64 @@ void main() {
     expect(container.read(selectionProvider('k')).active, isFalse);
     expect(ctrl.calls, isEmpty);
     expect(find.byType(NowPlayingScreen), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Ctrl+click picks a song instead of playing it and Shift+click picks the range', (tester) async {
+    final h = await pumpRow(
+      tester,
+      child: Scaffold(
+        body: Column(
+          children: [
+            for (var i = 0; i < 4; i++)
+              OnlineSongTile(
+                result: YtResult(id: 'v$i', title: 'Song $i', channel: 'Chan', duration: const Duration(seconds: 90)),
+                index: i,
+                selectionKey: 'k',
+              ),
+          ],
+        ),
+      ),
+    );
+    final container = ProviderScope.containerOf(tester.element(find.byType(Column).first));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(find.text('Song 1'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await tester.pump();
+    expect(container.read(selectionProvider('k')).ids, {1});
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.tap(find.text('Song 3'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.pump();
+    expect(container.read(selectionProvider('k')).ids, {1, 2, 3});
+    expect(ctrl.calls, isEmpty);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a wide window shows the artist, the album and the length in columns of their own', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await pumpRow(
+      tester,
+      child: const Scaffold(
+        body: OnlineSongTile(
+          result: YtResult(
+            id: 'v1',
+            title: 'Online song',
+            channel: 'Chan',
+            duration: Duration(seconds: 90),
+            artists: ['Ann'],
+            album: 'The record',
+          ),
+          index: 0,
+          selectionKey: 'k',
+        ),
+      ),
+    );
+    expect(find.text('Ann'), findsOneWidget);
+    expect(find.text('The record'), findsOneWidget);
+    expect(find.text('1:30'), findsOneWidget);
     await h.dispose(tester);
   });
 

@@ -18,11 +18,10 @@ import '../../widgets/play_buttons.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/shuffle_button.dart';
 import '../../widgets/selection_bar.dart';
-import '../../widgets/track_row.dart';
+import '../../widgets/track_table.dart';
 import '../../widgets/track_row_selection.dart';
 import 'album_detail_screen.dart' show durationWords;
 import 'scan_status.dart';
-import '../../widgets/motion.dart';
 import '../../widgets/shrinking_header.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/async_body.dart';
@@ -160,31 +159,28 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
 
   Widget _list(
     List<Track> list,
+    TrackQuery query,
     bool compact,
     PlayerController ctrl,
     PlayContext ctx,
   ) {
-    final selection = RowSelection(
-      listKey: _selectionKey,
-      visibleIds: [for (final t in list) t.id],
-    );
-    final extent = trackRowExtentOf(context, compact);
-    return EntranceScope(
-      child: SliverFixedExtentList(
-        itemExtent: extent,
-        delegate: SliverChildBuilderDelegate(
-          childCount: list.length,
-          (_, i) => EnterOnce(
-            index: i,
-            child: LiveTrackRow(
-              track: list[i],
-              compact: compact,
-              selection: selection,
-              onTap: () => ctrl.playFromList(list, i, context: ctx),
-            ),
-          ),
-        ),
+    final current = tableSortOf(query.sort, descending: query.descending);
+    return TrackTable(
+      tracks: list,
+      compact: compact,
+      selection: RowSelection(
+        listKey: _selectionKey,
+        visibleIds: [for (final t in list) t.id],
       ),
+      sort: current,
+      onSort: (c) {
+        final next = current?.clicked(c) ?? TableSort(c);
+        _query.update(
+          (q) => q.copyWith(sort: c.sortOption, descending: !next.ascending),
+        );
+      },
+      // The queue is the list as shown, in the order of the sorted column.
+      onPlay: (_, i) => ctrl.playFromList(list, i, context: ctx),
     );
   }
 
@@ -253,12 +249,14 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
     // The A–Z strip only makes sense when the order is alphabetical; otherwise by position.
     final byTitle = query.sort == SortOption.title;
     final byArtist = query.sort == SortOption.artist;
+    // The table's headers sort and chips filter; the phone keeps its two bars.
+    final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     return AlphaScroller(
       controller: _scroll,
       itemExtent: rowHeight,
       itemCount: shown.length,
       topInset: () => _header.visible,
-      start: () => _header.extent,
+      start: () => _header.extent + (wide ? kTableHeaderHeight : 0),
       letters: [
         if (byTitle || byArtist)
           for (final t in shown) leadingLetter(byTitle ? t.title : t.artist),
@@ -283,6 +281,18 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                     hint: l.searchHint,
                   ),
                 ),
+                if (wide)
+                  _WideChips(
+                    query: query,
+                    showFilter: !widget.downloadedNoPlaylist,
+                    onAdded: (on) => _query.update(
+                      (q) => q.copyWith(
+                        sort: on ? SortOption.addedAt : SortOption.defaultOrder,
+                        descending: false,
+                      ),
+                    ),
+                  )
+                else ...[
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     CcDims.margin,
@@ -304,7 +314,8 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                     onChanged: (o) => _query.update((q) => q.copyWith(sort: o)),
                   ),
                 ),
-                if (!widget.downloadedNoPlaylist) const LibraryFilterBar(),
+                  if (!widget.downloadedNoPlaylist) const LibraryFilterBar(),
+                ],
               ],
             ),
           ),
@@ -332,10 +343,68 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                                   : l.noTracks,
                     ),
                   )
-                : _list(list, compact, ctrl, ctx),
+                : _list(list, query, compact, ctrl, ctx),
           ),
           SliverToBoxAdapter(child: SizedBox(height: context.dockInset)),
         ],
+      ),
+    );
+  }
+}
+
+/// The wide window's filter: chips in one line (the sort is in the table's headers), plus «recently added», which has no column.
+class _WideChips extends ConsumerWidget {
+  const _WideChips({
+    required this.query,
+    required this.showFilter,
+    required this.onAdded,
+  });
+
+  final TrackQuery query;
+  final bool showFilter;
+  final ValueChanged<bool> onAdded;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = context.l10n;
+    final filter = ref.watch(libraryFilterProvider);
+    final names = {
+      LibraryFilter.all: l.showAll,
+      LibraryFilter.device: l.storageModeDevice,
+      LibraryFilter.stream: l.storageModeStream,
+    };
+    return Semantics(
+      container: true,
+      label: l.libraryFilterLabel,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          CcDims.margin,
+          0,
+          CcDims.margin,
+          CcDims.gap8,
+        ),
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: CcDims.gap8,
+            runSpacing: CcDims.gap4,
+            children: [
+              if (showFilter)
+                for (final f in LibraryFilter.values)
+                  ChoiceChip(
+                    label: Text(names[f]!),
+                    selected: filter == f,
+                    onSelected: (_) =>
+                        ref.read(libraryFilterProvider.notifier).set(f),
+                  ),
+              FilterChip(
+                label: Text(l.sortAdded),
+                selected: query.sort == SortOption.addedAt,
+                onSelected: onAdded,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

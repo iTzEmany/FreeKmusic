@@ -4220,5 +4220,30 @@
     }
   },
   "flatpakDataCopy": "Copy command",
-  "updateFlatpakHint": "I download the file; then close the app and paste the command in a terminal."
+  "updateFlatpakHint": "I download the file; then close the app and paste the command in a terminal.",
+  "tableSortBy": "Sort by {column}",
+  "@tableSortBy": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedAscending": "{column}, ascending",
+  "@tableSortedAscending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedDescending": "{column}, descending",
+  "@tableSortedDescending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableNumberColumn": "Number"
 }

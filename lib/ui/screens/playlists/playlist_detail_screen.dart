@@ -25,15 +25,14 @@ import '../../widgets/collection_header.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/cover_picker_sheet.dart';
 import '../../widgets/empty_state.dart';
-import '../../widgets/motion.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/prompt_name.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/share_collection.dart';
 import '../../widgets/sort_sheet.dart';
 import '../../widgets/track_actions.dart';
-import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
+import '../../widgets/track_table.dart';
 import '../devices/devices_sheet.dart';
 import '../import/import_banner.dart';
 import '../library/album_detail_screen.dart' show collectionMeta;
@@ -291,7 +290,6 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
     // The mosaic follows the personal order, never the view order (D-424).
     final coverKeys = playlistCoverKeys(custom, stored.map((t) => t.coverKey));
     final durationMs = tracks.fold<int>(0, (a, t) => a + t.durationMs);
-    final extent = trackRowExtentOf(context, compact);
     final key = SelectionKey.playlistOf(id);
     final selection = RowSelection(
       listKey: key,
@@ -340,31 +338,39 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         },
       );
     } else {
-      list = EntranceScope(
-        child: SliverList.builder(
-          itemCount: shown.length,
-          itemBuilder: (_, i) {
-            final t = shown[i];
-            return SizedBox(
-              height: extent,
-              child: EnterOnce(
-                index: i,
-                child: LiveTrackRow(
-                  track: t,
-                  compact: compact,
-                  selection: selection,
-                  lead: TrackAction(
-                    Icons.playlist_remove_rounded,
-                    l.removeFromPlaylistAction,
-                    () => remove(t, whole(t)),
-                  ),
-                  onTap: () =>
-                      ctrl.playFromList(tracks, whole(t), context: playCtx),
-                ),
-              ),
-            );
-          },
+      final listSort = switch (order.sort) {
+        PlaylistSort.title => TableColumn.title,
+        PlaylistSort.artist => TableColumn.artist,
+        PlaylistSort.album => TableColumn.album,
+        PlaylistSort.duration => TableColumn.duration,
+        _ => null,
+      };
+      final current = listSort == null
+          ? null
+          : TableSort(listSort, ascending: order.ascending);
+      list = TrackTable(
+        tracks: shown,
+        compact: compact,
+        selection: selection,
+        sort: current,
+        onSort: (c) {
+          final next = current?.clicked(c) ?? TableSort(c);
+          final sort = switch (c) {
+            TableColumn.title => PlaylistSort.title,
+            TableColumn.artist => PlaylistSort.artist,
+            TableColumn.album => PlaylistSort.album,
+            TableColumn.duration => PlaylistSort.duration,
+            TableColumn.number => PlaylistSort.personal,
+          };
+          _saveOrder(id, sort, next.ascending);
+        },
+        lead: (t) => TrackAction(
+          Icons.playlist_remove_rounded,
+          l.removeFromPlaylistAction,
+          () => remove(t, whole(t)),
         ),
+        // The queue is the whole playlist in the order shown, not just a search.
+        onPlay: (t, _) => ctrl.playFromList(tracks, whole(t), context: playCtx),
       );
     }
 

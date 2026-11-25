@@ -11,6 +11,8 @@ import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:codecore/providers/selection_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -328,6 +330,34 @@ void main() {
     expect(y('Song 1'), lessThan(y('Song 0')));
     await h.dispose(tester);
   });
+  testWidgets('the sort blocks order by title', (tester) async {
+    final h = await _open(tester);
+    double y(String t) => tester.getTopLeft(find.text(t)).dy;
+    await tester.tap(find.text('Titolo'));
+    await _settle(tester);
+    expect([for (var i = 0; i < 4; i++) y('Song $i')], orderedEquals([for (var i = 0; i < 4; i++) y('Song $i')]..sort()));
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    expect(c.read(trackQueryProvider(false)).sort, SortOption.title);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Ctrl+click starts a selection and Shift+click extends it, without playing', (tester) async {
+    final h = await _open(tester);
+    final titles = _visibleTitles(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(find.text(titles[0]));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.tap(find.text(titles[2]));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await _settle(tester);
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    expect(c.read(selectionProvider(SelectionKey.all.key)).count, 3);
+    expect(h.handler.queueIds, isEmpty);
+    await h.dispose(tester);
+  });
+
   testWidgets('two screens open together do not share the search text', (
     tester,
   ) async {

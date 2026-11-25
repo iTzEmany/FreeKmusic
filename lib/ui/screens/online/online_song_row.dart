@@ -15,7 +15,7 @@ import '../../../services/online/youtube_service.dart';
 import '../../../providers/player_providers.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/track_actions.dart' show showOnlineActions;
-import '../../widgets/track_row.dart' show SwipeToQueue;
+import '../../widgets/track_row.dart' show SwipeToQueue, trackRowWide;
 import '../now_playing/now_playing_screen.dart' show playFromSearchAndOpen;
 import '../../widgets/download_bar.dart';
 import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
@@ -130,7 +130,12 @@ class OnlineSongTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pick = watchOnlinePick(ref, selectionKey, index);
+    final pick = watchOnlinePick(
+      ref,
+      selectionKey,
+      index,
+      play: () => tapOnline(context, ref, result),
+    );
     final inLibrary =
         ownedLocally ||
         ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
@@ -148,7 +153,7 @@ class OnlineSongTile extends ConsumerWidget {
       position: pick.position,
       number: number,
       square: true,
-      onTap: pick.onTap ?? () => tapOnline(context, ref, result),
+      onTap: pick.onTap,
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, result),
       onMore: () => showOnlineActions(context, ref, result),
@@ -247,7 +252,11 @@ class OnlineSongRow extends StatelessWidget {
               onLongPress: onLongPress,
               child: SizedBox(
                 height: onlineRowExtentOf(context),
-                child: Row(
+                child: LayoutBuilder(
+                  builder: (context, box) {
+                    // The columns of a `TrackTable` row: title, artist, album, length.
+                    final table = trackRowWide(context, box.maxWidth);
+                    return Row(
                   children: [
                     const SizedBox(width: CcDims.margin),
                     if (number != null && !selecting)
@@ -300,14 +309,45 @@ class OnlineSongRow extends StatelessWidget {
                       ),
                     const SizedBox(width: 12),
                     Expanded(
+                      flex: table ? 5 : 1,
                       child: _SongText(
                         result: result,
                         inLibrary: inLibrary,
                         onArtistTap: onArtistTap,
                         note: note,
                         tagLine: tagLine,
+                        table: table,
                       ),
                     ),
+                    if (table) ...[
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: _ArtistCell(result: result, onArtistTap: onArtistTap),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          result.album ?? '',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.bodyMedium,
+                        ),
+                      ),
+                      SizedBox(
+                        width: 56,
+                        child: Text(
+                          result.duration == null
+                              ? ''
+                              : formatDuration(result.duration!.inMilliseconds),
+                          textAlign: TextAlign.center,
+                          style: theme.labelSmall?.copyWith(
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ),
+                    ],
                     ?listen,
                     _DownloadState(
                       entryKey: item?.result.indexKey ?? result.indexKey,
@@ -334,6 +374,8 @@ class OnlineSongRow extends StatelessWidget {
                     else
                       const SizedBox(width: 8),
                   ],
+                    );
+                  },
                 ),
               ),
             ),
@@ -401,8 +443,11 @@ class _SongText extends StatelessWidget {
     required this.onArtistTap,
     required this.note,
     required this.tagLine,
+    required this.table,
   });
 
+  /// Wide table row: the artist and the length have columns of their own.
+  final bool table;
   final YtResult result;
   final bool inLibrary;
   final VoidCallback? onArtistTap;
@@ -430,6 +475,7 @@ class _SongText extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: theme.bodyLarge,
         ),
+        if (!table)
         Row(
           children: [
             Icon(
@@ -494,6 +540,46 @@ class _SongText extends StatelessWidget {
             ],
           ),
       ],
+    );
+  }
+}
+
+/// The artist of a wide row: a link when the page can open it, else the artist (or the channel).
+class _ArtistCell extends StatelessWidget {
+  const _ArtistCell({required this.result, required this.onArtistTap});
+
+  final YtResult result;
+  final VoidCallback? onArtistTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cc = context.cc;
+    final style = Theme.of(context).textTheme.bodyMedium;
+    final artist = result.artists.isEmpty ? '' : result.artists.first;
+    if (onArtistTap == null || artist.isEmpty) {
+      return Text(
+        artist.isEmpty ? result.channel : artist,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: InkWell(
+        key: ValueKey('artist-link-${result.id}'),
+        onTap: onArtistTap,
+        child: Text(
+          artist,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: style?.copyWith(
+            color: cc.accentSoft,
+            decoration: TextDecoration.underline,
+            decorationColor: cc.accentSoft,
+          ),
+        ),
+      ),
     );
   }
 }

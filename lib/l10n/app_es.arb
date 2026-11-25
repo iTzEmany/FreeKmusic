@@ -4220,5 +4220,30 @@
     }
   },
   "flatpakDataCopy": "Copiar comando",
-  "updateFlatpakHint": "Descargo el archivo; luego cierra la app y pega el comando en un terminal."
+  "updateFlatpakHint": "Descargo el archivo; luego cierra la app y pega el comando en un terminal.",
+  "tableSortBy": "Ordenar por {column}",
+  "@tableSortBy": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedAscending": "{column}, ascendente",
+  "@tableSortedAscending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedDescending": "{column}, descendente",
+  "@tableSortedDescending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableNumberColumn": "Número"
 }

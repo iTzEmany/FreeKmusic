@@ -68,16 +68,21 @@ class TrackQuery {
     this.sort = SortOption.defaultOrder,
     this.favoritesOnly = false,
     this.filter = LibraryFilter.all,
+    this.descending = false,
   });
 
   final String text;
   final SortOption sort;
+
+  /// The list shown from the last row up (a second click on a table header).
+  final bool descending;
   final bool favoritesOnly;
   final LibraryFilter filter;
 
-  TrackQuery copyWith({String? text, SortOption? sort, bool? favoritesOnly, LibraryFilter? filter}) =>
+  TrackQuery copyWith({String? text, SortOption? sort, bool? favoritesOnly, LibraryFilter? filter, bool? descending}) =>
       TrackQuery(
         text: text ?? this.text,
+        descending: descending ?? this.descending,
         sort: sort ?? this.sort,
         favoritesOnly: favoritesOnly ?? this.favoritesOnly,
         filter: filter ?? this.filter,
@@ -88,11 +93,12 @@ class TrackQuery {
       other is TrackQuery &&
       other.text == text &&
       other.sort == sort &&
+      other.descending == descending &&
       other.favoritesOnly == favoritesOnly &&
       other.filter == filter;
 
   @override
-  int get hashCode => Object.hash(text, sort, favoritesOnly, filter);
+  int get hashCode => Object.hash(text, sort, favoritesOnly, filter, descending);
 }
 
 class TrackQueryNotifier extends Notifier<TrackQuery> {
@@ -157,8 +163,9 @@ final _plainTracksProvider = StreamProvider.autoDispose.family<List<Track>, Trac
 );
 
 final tracksProvider = StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
-  final all = await readPlainList(ref, _plainTracksProvider(q.copyWith(text: '')));
-  yield await searchTracks(all, q.text);
+  final all = await readPlainList(ref, _plainTracksProvider(q.copyWith(text: '', descending: false)));
+  final found = await searchTracks(all, q.text);
+  yield q.descending ? found.reversed.toList() : found;
 });
 
 /// Id of the library folder that is a download location itself (null when none);
@@ -206,8 +213,9 @@ final _plainDownloadedProvider =
 /// Downloaded tracks that are in no playlist (D-485).
 final downloadedNoPlaylistProvider =
     StreamProvider.autoDispose.family<List<Track>, TrackQuery>((ref, q) async* {
-  final all = await readPlainList(ref, _plainDownloadedProvider(q.copyWith(text: '')));
-  yield await searchTracks(all, q.text);
+  final all = await readPlainList(ref, _plainDownloadedProvider(q.copyWith(text: '', descending: false)));
+  final found = await searchTracks(all, q.text);
+  yield q.descending ? found.reversed.toList() : found;
 });
 
 /// How many [downloadedNoPlaylistProvider] lists, counted by the database.
