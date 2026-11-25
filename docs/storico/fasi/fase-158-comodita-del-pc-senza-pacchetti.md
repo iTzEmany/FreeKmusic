@@ -18,7 +18,7 @@ Codice: `lib/ui/shell/app_shell.dart` (`:68` Listener, `:90-135` scorciatoie), `
   - Passi: 1) `Listener` nello shell: `kBackMouseButton` → `back()`, `kForwardMouseButton` → pila di «avanti» per scheda (si svuota alla navigazione nuova); 2) niente effetto sul telefono; 3) test widget con `PointerDownEvent(buttons: kBackMouseButton)`; 4) aggiungere il caso al test di sistema.
   - Comando mirato: `flutter test test/ui/shell_nav_test.dart test/ui/shell_keys_test.dart`
   - Fatto quando: indietro e avanti con il mouse riportano alla pagina giusta, anche dopo un nuovo percorso.
-- [ ] 158.3 Scorciatoie nuove ed elenco (F-209, D-732)
+- [x] 158.3 Scorciatoie nuove ed elenco (F-209, D-732)
   - File: `app_shell.dart`, `shell_keys.dart`, `search_screen.dart`, `settings_pages.dart`, nuovo overlay `lib/ui/shell/shortcuts_overlay.dart`, ARB (6 lingue con `scripts/arb_add.py`, poi `flutter gen-l10n`).
   - Passi: 1) Alt+→ (avanti), Backspace = indietro fuori dai campi di testo, F5 = ricarica la pagina corrente (Nuove uscite, Cerca, pagine online) (D-738), `/` (focus su Cerca, non quando si scrive in un campo), Ctrl+L = «Cerca e incolla un link» (apre Cerca col link degli appunti, D-732), Ctrl+, (Impostazioni), Ctrl+Q (esci, con la chiusura pulita di sempre), `?` (overlay con l'elenco); 2) le scorciatoie esistenti non cambiano; 3) una tabella unica tasto → azione che alimenta sia gli shortcut sia l'overlay e la sezione «Scorciatoie» di Impostazioni; 4) i tasti con testo in un campo non scattano.
   - Comando mirato: `flutter test test/ui/shell_keys_test.dart test/ui/search_screen_test.dart test/ui/settings_index_test.dart`
@@ -33,7 +33,7 @@ Codice: `lib/ui/shell/app_shell.dart` (`:68` Listener, `:90-135` scorciatoie), `
   - Passi: canale `MethodChannel` che imposta il titolo («Artista — Titolo · FreeKmusic»; in pausa o senza brano «FreeKmusic»); su Linux `gtk_window_set_title`, su Windows `SetWindowText`; errori loggati con `AppLog`, mai nel thread UI pesante.
   - Comando mirato: `flutter test` sul servizio con canale finto + `flutter analyze`
   - Fatto quando: test: cambio brano → chiamata al canale col titolo atteso; il titolo si vede nella finestra Xvfb (`xdotool getwindowname`).
-- [ ] 158.6 Estendere il test di sistema e i documenti
+- [x] 158.6 Estendere il test di sistema e i documenti
   - File: `integration_test/desktop_flow_test.dart`, `../architettura/piattaforme.md`.
   - Passi: aggiungere tasti laterali, Alt+→, Backspace, F5, `/`, Ctrl+L, Ctrl+, e `?`; documentare istanza unica, «Apri con» e scorciatoie.
   - Comando mirato: `xvfb-run -a flutter test integration_test/desktop_flow_test.dart -d linux`
@@ -49,3 +49,5 @@ Codice: `lib/ui/shell/app_shell.dart` (`:68` Listener, `:90-135` scorciatoie), `
 - 158.4: su Android l'apertura di file esterni gestisce solo ZIP/CSV, quindi il percorso «Apri con» è nuovo (`open_files.dart`, `playFromList`). Argomenti normalizzati e assoluti, inesistenti scartati. File fuori dalla libreria: avviso con «Aggiungi alla libreria» (aggiunge la cartella, scansiona, suona). File del portale Flatpak (`/run/user/<uid>/doc/…`): non suonano, avviso di aggiungere la cartella dalla Libreria (nessuna riga finta in `tracks`). `FREEKMUSIC_NON_UNIQUE=1` toglie l'unicità (prove, CI). Windows: classe `FREEKMUSIC_RUNNER_WIN32_WINDOW`, mutex, `WM_COPYDATA` con `SendMessageTimeout`: **non compilato qui** (Tocca a te).
 - 158.5: il separatore « · » del titolo è nel codice Dart con un commento (la guardia degli ARB vieta il separatore nei testi).
 - 158.6: test di sistema esteso con i tasti laterali; il fallimento visto in prova veniva da un mp3 rimasto nel HOME finto (5 brani invece di 4), non dal codice.
+- 158.3 (seconda PR): `/` e `?` con `CharacterActivator` (il carattere, non il tasto fisico: su tastiera italiana `/` è Maiusc+7); `flutter_test` non sa simulare `?` come tasto, i test lo mandano come tasto `/` con carattere `?`. Ctrl+, apre le Impostazioni nella scheda Home (pila di «indietro» di quella scheda). Ctrl+Q usa `exitApplication`, non `exit(0)`.
+- 158.3 (rinforzi): un tasto tenuto premuto non ripete l'azione (tranne il volume); F5 non riparte finché il ricaricamento precedente non è finito; Ctrl+L accetta solo un link http/https (altrimenti apre Cerca vuota con il focus nel campo); Backspace è ignorato dentro fogli e dialoghi. Ctrl+Q usa `exitApplication(required)`, oggi lo stesso percorso della X della finestra: quando la 159 aggiunge `window_manager` (chiusura nella barra di sistema) i due devono passare dalla stessa funzione di chiusura.
