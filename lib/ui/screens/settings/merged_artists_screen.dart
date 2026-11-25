@@ -9,6 +9,7 @@ import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/section_header.dart';
 import '../../widgets/show_msg.dart';
 import '../online/artist_page_screen.dart';
 import '../online/merged_profiles.dart';
@@ -47,10 +48,7 @@ class MergedArtistsScreen extends ConsumerWidget {
         ShellNav.open<void>(context, ArtistPageScreen(artist: YtmArtistRef(id: id, name: name(id))));
     final ops = ref.read(artistMergeOpsProvider);
     final theme = Theme.of(context).textTheme;
-    Widget header(String text) => Padding(
-          padding: const EdgeInsets.fromLTRB(CcDims.margin, CcDims.gap16, CcDims.margin, CcDims.gap4),
-          child: Semantics(header: true, child: Text(text, style: theme.titleSmall)),
-        );
+    Widget header(String text) => SectionHeader(text);
     return Scaffold(
       appBar: CcAppBar(title: l.settingsMergedArtists),
       body: groups.isEmpty && pairs.isEmpty

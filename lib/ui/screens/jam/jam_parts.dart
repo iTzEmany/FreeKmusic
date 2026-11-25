@@ -22,6 +22,7 @@ import '../../widgets/net_thumbnail.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/track_actions.dart' show downloadOnline;
 import '../../widgets/track_artists_sheet.dart';
+import '../../widgets/action_catalog.dart';
 
 /// A curiosity as the owner sends it, «text\nurl»: the text without the source
 /// url (which is not shown); null when there is none.
@@ -161,7 +162,7 @@ class JamQueueRow extends ConsumerWidget {
             CcAction(icon: Icons.near_me_outlined, label: l.jamJumpHere, onTap: onJump),
             if (item.selfFetchable && !inLibrary())
               CcAction(
-                icon: Icons.download_rounded,
+                icon: CatalogAction.download.icon,
                 label: l.ytDownloadOnDevice,
                 onTap: () => downloadOnline(
                   context,
@@ -171,8 +172,8 @@ class JamQueueRow extends ConsumerWidget {
               ),
             if (canSave)
               CcAction(
-                icon: Icons.library_add_outlined,
-                label: l.addToLibrary,
+                icon: CatalogAction.library.icon,
+                label: CatalogAction.library.label(l),
                 onTap: () async {
                   final ok = await ref.read(jamSaverProvider).save(item);
                   if (context.mounted) showMsg(context, ok ? l.libraryAddedMany(1) : l.libraryAddFailed);
@@ -274,7 +275,7 @@ class JamQueueRow extends ConsumerWidget {
               tooltip: l.moreActions,
               visualDensity: VisualDensity.standard,
               constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-              icon: Icon(Icons.more_vert_rounded, color: cc.textMuted),
+              icon: Icon(CatalogAction.more.icon, color: cc.textMuted),
               onPressed: () => _openMenu(context, ref, artists),
             ),
             if (showHandle)

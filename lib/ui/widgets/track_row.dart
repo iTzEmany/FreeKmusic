@@ -27,6 +27,7 @@ import 'track_drag.dart';
 import 'track_row_selection.dart';
 import 'motion.dart';
 import 'show_msg.dart';
+import 'action_catalog.dart';
 
 enum TrackRowVariant {
   /// Cover, title, «artist · album».
@@ -294,10 +295,10 @@ class _TrackRowState extends State<TrackRow> {
   Widget _moreButton(BuildContext context, {required bool visible}) {
     if (!visible) return const SizedBox(width: 48, height: 48);
     return IconButton(
-      tooltip: context.l10n.moreOptions,
+      tooltip: CatalogAction.more.label(context.l10n),
       onPressed: widget.onMore,
       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-      icon: Icon(Icons.more_vert_rounded, color: context.cc.textMuted),
+      icon: Icon(CatalogAction.more.icon, color: context.cc.textMuted),
     );
   }
 
@@ -775,7 +776,7 @@ class _SwipeToQueueState extends State<SwipeToQueue> {
             onHorizontalDragCancel: () => _end(w, cancelled: true),
             child: Semantics(
               customSemanticsActions: {
-                CustomSemanticsAction(label: context.l10n.addToQueue):
+                CustomSemanticsAction(label: CatalogAction.queue.label(context.l10n)):
                     widget.onQueue,
               },
               child: Stack(
@@ -787,7 +788,7 @@ class _SwipeToQueueState extends State<SwipeToQueue> {
                       padding: const EdgeInsets.only(left: CcDims.gap24),
                       color: context.cc.surface2,
                       child: Icon(
-                        Icons.queue_rounded,
+                        CatalogAction.queue.icon,
                         color: context.cc.accentSoft,
                       ),
                     ),

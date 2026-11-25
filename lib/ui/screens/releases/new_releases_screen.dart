@@ -207,13 +207,8 @@ class _NewReleasesScreenState extends ConsumerState<NewReleasesScreen> {
                   child: _artistChips(artists),
                 ),
               if (shown.isEmpty)
-                SizedBox(
-                  height: 260,
-                  child: EmptyState(
-                    icon: Icons.album_outlined,
-                    message: l.releasesEmpty,
-                  ),
-                )
+                // No fixed height: icon + text grow with the text scale inside the ListView.
+                EmptyState(icon: Icons.album_outlined, message: l.releasesEmpty)
               else
                 for (final r in shown) _ReleaseRow(release: r),
             ],

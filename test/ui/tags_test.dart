@@ -54,7 +54,7 @@ void main() {
 
   testWidgets('a track\'s «Etichette…» creates a tag and gives it to the track, then removes it', (tester) async {
     await open(tester, const AllTracksScreen());
-    await tester.tap(find.descendant(of: find.widgetWithText(TrackRow, 'Song 1').first, matching: find.byTooltip('Altre opzioni')).first);
+    await tester.tap(find.descendant(of: find.widgetWithText(TrackRow, 'Song 1').first, matching: find.byTooltip('Altre azioni')).first);
     await _settle(tester);
     await tester.tap(find.text('Etichette…'));
     await _settle(tester);
@@ -165,7 +165,7 @@ void main() {
     await _settle(tester);
 
     // Rename the first row («calm», the list is by name).
-    await tester.tap(find.byTooltip('Altre opzioni').first);
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await _settle(tester);
     await tester.tap(find.text('Rinomina etichetta'));
     await _settle(tester);
@@ -177,7 +177,7 @@ void main() {
     expect(find.text('Live'), findsOneWidget);
 
     // Delete the first row, now «Live»: asks first, only the tag goes.
-    await tester.tap(find.byTooltip('Altre opzioni').first);
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await _settle(tester);
     await tester.tap(find.text('Elimina'));
     await _settle(tester);
@@ -195,7 +195,7 @@ void main() {
     await tagWith(tester, 'Live', [0]);
     await tagWith(tester, 'Calm', [1]);
     await _settle(tester);
-    await tester.tap(find.byTooltip('Altre opzioni').last);
+    await tester.tap(find.byTooltip('Altre azioni').last);
     await _settle(tester);
     await tester.tap(find.text('Rinomina etichetta'));
     await _settle(tester);

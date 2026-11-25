@@ -50,7 +50,7 @@ void main() {
 
   testWidgets('guest: ⋮ → «Aggiungi in coda» on an online row queues in the Jam', (tester) async {
     final h = await pumpRow(tester);
-    await tester.tap(find.byTooltip('Altre opzioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Aggiungi in coda'));
     await tester.pumpAndSettle();

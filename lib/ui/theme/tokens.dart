@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants.dart' show kInputDebounce;
+import '../../core/platform.dart' show isDesktop;
 
 /// Visual tokens of docs/storico/fasi/fase-11 («Sistema visivo»). Widgets read them through
 /// `context.cc`; no hex literals outside this file.
@@ -42,7 +43,7 @@ class CcColors extends ThemeExtension<CcColors> {
     accentSoft: Color(0xFFD9C8FF),
     onAccent: Color(0xFF12081F),
     text: Color(0xFFF4F0FA),
-    textMuted: Color(0xFFA79DB8),
+    textMuted: Color(0xFFB3AAC2),
     textFaint: Color(0xFF887F99),
     heroBase: Color(0xFF3B1F70),
     error: Color(0xFFFF6B81),
@@ -117,6 +118,14 @@ abstract final class CcDims {
   static const gap16 = 16.0;
   static const gap24 = 24.0;
   static const gap32 = 32.0;
+
+  /// Space between two blocks (24 dp phone, 32 px desktop); each block puts
+  /// half of it above and half below, so the gap is the same on both sides.
+  static double get blockGap => isDesktop ? gap32 : gap24;
+  static double get blockPad => blockGap / 2;
+
+  /// Fixed height of a section header, with or without its action.
+  static const sectionHeaderHeight = 48.0;
 
   /// Off-scale radii: pills and hairline bars.
   static const rPill = 999.0;

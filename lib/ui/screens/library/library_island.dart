@@ -21,6 +21,7 @@ import '../smart/smart_playlist_editor.dart';
 import 'folders_sheet.dart';
 import 'library_toolbar.dart';
 import 'scan_status.dart';
+import '../../widgets/action_catalog.dart';
 
 /// Heights of the rows that leave while the list scrolls (title first, then the
 /// sort row); the tabs between them stay. They grow with the text scale.
@@ -305,7 +306,7 @@ class _TitleRow extends ConsumerWidget {
                     ),
                     IconButton(
                       tooltip: l.moreActions,
-                      icon: const Icon(Icons.more_vert_rounded),
+                      icon: Icon(CatalogAction.more.icon),
                       onPressed: () => _menu(context, ref),
                     ),
                   ],

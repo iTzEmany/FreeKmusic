@@ -28,6 +28,7 @@ import '../online/artist_picker_sheet.dart';
 import '../releases/follow_button.dart';
 import 'album_detail_screen.dart';
 import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../widgets/action_catalog.dart';
 
 /// An artist: Play / Shuffle over all their tracks, the five most played and
 /// the albums (rows if few, grid if many).
@@ -217,7 +218,7 @@ class _ArtistMenu extends ConsumerWidget {
         IconButton(
           key: const ValueKey('artist-more'),
           tooltip: l.moreActions,
-          icon: const Icon(Icons.more_vert_rounded),
+          icon: Icon(CatalogAction.more.icon),
           onPressed: () async {
             final v = await showCcActionSheet<_ArtistAction>(
               context: context,

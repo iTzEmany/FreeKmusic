@@ -316,7 +316,7 @@ void main() {
       final h = await Harness.create(tester);
       await h.pump(tester, const Scaffold(body: LibraryScreen()));
       await _settle(tester);
-      expect(await _open(tester, find.byTooltip('Altre azioni')), [
+      expect(await _open(tester, find.byTooltip('Altre azioni').first), [
         'folders',
         'scan',
         'share',
@@ -342,7 +342,7 @@ void main() {
       }))!;
       await h.pump(tester, PlaylistDetailScreen(playlist: playlist));
       await _settle(tester);
-      expect(await _open(tester, find.byTooltip('Altre azioni')), [
+      expect(await _open(tester, find.byTooltip('Altre azioni').first), [
         'sort',
         'edit',
         'add',
@@ -381,7 +381,7 @@ void main() {
       ))!.firstWhere((a) => a.title == 'Album 0');
       await h.pump(tester, AlbumDetailScreen(album: album));
       await _settle(tester);
-      expect(await _open(tester, find.byTooltip('Altre azioni')), [
+      expect(await _open(tester, find.byTooltip('Altre azioni').first), [
         'queue',
         'playlist',
         'favorite',
@@ -411,7 +411,7 @@ void main() {
     ))!;
     await h.pump(tester, SmartPlaylistScreen(id: id));
     await _settle(tester);
-    expect(await _open(tester, find.byTooltip('Altre azioni')), [
+    expect(await _open(tester, find.byTooltip('Altre azioni').first), [
       'edit',
       'convert',
       'delete',

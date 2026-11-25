@@ -1438,12 +1438,6 @@ abstract class AppLocalizations {
   /// **'Sullo stesso Wi‑Fi, apri «Ricevi» sull’altro dispositivo e inserisci indirizzo e PIN.'**
   String get shareHint;
 
-  /// No description provided for @shareMenu.
-  ///
-  /// In it, this message translates to:
-  /// **'Condividi…'**
-  String get shareMenu;
-
   /// No description provided for @shareAction.
   ///
   /// In it, this message translates to:
@@ -1515,12 +1509,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Ripeti'**
   String get repeat;
-
-  /// No description provided for @moreOptions.
-  ///
-  /// In it, this message translates to:
-  /// **'Altre opzioni'**
-  String get moreOptions;
 
   /// No description provided for @back.
   ///
@@ -8774,12 +8762,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Video non disponibile: suona solo la base.'**
   String get karaokeVideoFailed;
-
-  /// No description provided for @ytmAlbumQueue.
-  ///
-  /// In it, this message translates to:
-  /// **'Metti in coda l’album'**
-  String get ytmAlbumQueue;
 
   /// No description provided for @addedToLibrary.
   ///

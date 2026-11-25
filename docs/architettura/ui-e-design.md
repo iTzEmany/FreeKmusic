@@ -35,9 +35,10 @@ Come è fatta la UI (`lib/ui/`): la shell con le schede e il dock, i token di de
 | `DownloadBar` | `download_bar.dart` | L'unica barra di avanzamento di un download (`entryKey` = `<source>:<id>`): avanzamento, poi «Scaricato» per qualche secondo (D-697), poi il pulsante `idle`. |
 | `CcAppBar` | `cc_app_bar.dart` | Barra della pagina (l'unico `AppBar(`). |
 | `AsyncBody<T>`, `RowsLoading`, `LoadError` | `async_body.dart`, `error_state.dart` | Caricamento, vuoto, errore, dati. |
-| `Skeleton`, `EmptyState`, `ErrorState` | `skeleton.dart`, `empty_state.dart`, `error_state.dart` | Segnaposto e stati. |
+| `Skeleton`, `EmptyState`, `ErrorState` | `skeleton.dart`, `empty_state.dart`, `error_state.dart` | Segnaposto e stati. `EmptyState` ha sempre icona (`icon`, 32 dp, `textMuted`), testo (`message`, `help`) e, se serve, un'azione (`actionLabel`/`onAction`, anche una seconda), tutto in alto a sinistra. |
+| `CatalogAction` | `action_catalog.dart` | La tabella azione → icona → testo (vedi «Catalogo azioni»). |
 | `CcTile`, `CcSearchField`, `GenreGrid` | `cc_tile.dart`, `cc_search_field.dart`, `genre_grid.dart` | Riquadri e campo di ricerca con attesa breve. |
-| `TrackRow`, `TrackArt`, `CoverImage`, `AlbumCard`, `SectionHeader` | file omonimi | Righe, copertine, schede, intestazioni. |
+| `TrackRow`, `TrackArt`, `CoverImage`, `AlbumCard`, `SectionHeader` | file omonimi | Righe, copertine, schede, intestazioni. `SectionHeader` è alto sempre `CcDims.sectionHeaderHeight` (48 dp): il pulsante «Tutti» (`actionLabel`) sta sempre nell'intestazione e non la fa crescere. |
 | `MarqueeText` | `marquee_text.dart` | Solo titoli lunghi dei player, mai nelle liste. |
 | `RingProgress`, `ProgressFrame`, `ActivityButton`, `SeekBar` | file omonimi | L'anello di avanzamento e i controlli del player. |
 | `FocusRingButton`, `ActionButton`, `PressScale` | `focus_ring_button.dart`, `action_button.dart`, `motion.dart` | Pulsanti con anello di focus e feedback al tocco. |
@@ -101,8 +102,10 @@ Sul desktop e sulle finestre larghe (`CcDims.wideBreakpoint`, 840) la shell dive
 Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio per le scelte** (elenchi, azioni, selettori). Ogni foglio si apre con `showCcSheet` (sempre sul navigator di radice, così copre dock e sidebar, 250 ms, zero con «Riduci animazioni»). I menu sono `showCcActionSheet` con `CcAction`. Dalla fase 138 un foglio senza `constraints` propri occupa `min(560, larghezza)` (`minWidth` in `showCcSheet`, un solo punto): un foglio con poco contenuto non resta stretto al centro. I campi di ricerca e il nome di una playlist non prendono il focus da soli (D-667): la tastiera si apre solo al tocco; Ctrl+F resta su desktop.
 
 ### Token
-- **Colori**: `context.cc` (`CcColors`: `bg`, `surface1..3`, `accent`, `accentSoft`, `onAccent`, `text`, `textMuted`, `textFaint`, `heroBase`, `error`, `separator`). Un tema dell'utente può avere qualsiasi colore, quindi nessun widget ne tiene uno proprio.
-- **Misure**: `CcDims` (raggi `rList` 4, `rGrid` 8, `rCard` 12, `rSheet` 16; scala `gap4`…`gap32`; altezze di dock, barra, sidebar).
+- **Colori**: `context.cc` (`CcColors`: `bg`, `surface1..3`, `accent`, `accentSoft`, `onAccent`, `text`, `textMuted`, `textFaint`, `heroBase`, `error`, `separator`; nel tema Notte `textMuted` è #B3AAC2, più chiaro di prima per il contrasto del testo secondario). Un tema dell'utente può avere qualsiasi colore, quindi nessun widget ne tiene uno proprio.
+- **Misure**: `CcDims` (raggi `rList` 4, `rGrid` 8, `rCard` 12, `rSheet` 16; scala `gap4`…`gap32`; altezze di dock, barra, sidebar; `blockGap` 24 (32 su desktop) tra i blocchi, `blockPad` = metà di `blockGap` dentro il blocco, `sectionHeaderHeight` 48).
+- **Catalogo azioni (fase 152)**: `CatalogAction` (`action_catalog.dart`) è l'unica tabella azione → icona → testo; menu, barre e intestazioni prendono icona (`.icon`) ed etichetta (`.label(l10n)`) da lì. Coda `add_to_queue`, libreria `bookmark_add`, playlist `playlist_add`, scarica `download`, condividi `share`, esporta `save_alt` (esportare un file non è condividere), ⋮ = `more` (`moreActions`, «Altre azioni»). `queue_music` è solo di `queuePanel` (la coda come luogo: pannello, coda vuota), mai dell'azione «aggiungi alla coda».
+- **Stati vuoti**: `EmptyState` richiede un'icona; per «coda» usa `CatalogAction.queuePanel.icon`.
 - **Movimento**: `CcMotion` con una sola scala, 120 (`press`), 180 (`enter`), 250 (`sheet`), 320 (`page`) ms, `easeOutCubic` in entrata e `easeInCubic` in uscita. Le durate passano sempre da `ccDuration(context, d)`, che dà zero con «Riduci animazioni». Si animano trasformazioni e opacità.
 - **Attese che non sono movimento**: `CcTiming` (`debounce`, `poll`, `msg` 4 s, `msgAction` 3 s, `msgLong` 5 s…). Non seguono la scala del movimento.
 - **Testo**: `buildTextTheme` e `ccStyle` (Figtree e Unbounded, entrambi variabili: il peso va in `fontWeight` e in `fontVariations`). Una dimensione fuori dal tema solo con `.sized()`.

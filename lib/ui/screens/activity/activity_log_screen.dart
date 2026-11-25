@@ -30,6 +30,7 @@ import '../now_playing/proposal_card.dart' show identLabel, recogSourceLabel;
 import 'activity_log_entry.dart';
 import 'enrich_round_screen.dart';
 import 'proposals_screen.dart';
+import '../../widgets/action_catalog.dart';
 
 /// «Recognized: AcoustID 3, text 5» from the `sources` of a round's `detail`.
 @visibleForTesting
@@ -174,7 +175,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
         actions: [
           if (log.entries.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.more_vert_rounded),
+              icon: Icon(CatalogAction.more.icon),
               tooltip: MaterialLocalizations.of(context).showMenuTooltip,
               onPressed: () => showCcActionSheet<void>(
                 context: context,

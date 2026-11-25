@@ -9,6 +9,7 @@ import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/cc_app_bar.dart';
 import '../../theme/tokens.dart';
+import '../../widgets/action_catalog.dart';
 
 class MissingTracksScreen extends ConsumerStatefulWidget {
   const MissingTracksScreen({super.key});
@@ -100,7 +101,7 @@ class _MissingTracksScreenState extends ConsumerState<MissingTracksScreen> {
                   ),
                   trailing: IconButton(
                     tooltip: l.moreActions,
-                    icon: const Icon(Icons.more_vert_rounded),
+                    icon: Icon(CatalogAction.more.icon),
                     onPressed: () async {
                       final v = await showCcActionSheet<_MissingAction>(
                         context: context,

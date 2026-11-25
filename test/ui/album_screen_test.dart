@@ -72,7 +72,7 @@ void main() {
     }
 
     await settle();
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Cambia copertina'), findsOneWidget);
     expect(find.text('Ripristina copertina originale'), findsNothing);
@@ -81,7 +81,7 @@ void main() {
 
     await tester.runAsync(() => TrackRepository(h.db).setManualAlbumCover('artist|album 0', 'manual-key'));
     await settle();
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Ripristina copertina originale'), findsOneWidget);
     await h.dispose(tester);
@@ -126,7 +126,7 @@ void main() {
     }
 
     await settle();
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Cambia copertina'));
     await settle();

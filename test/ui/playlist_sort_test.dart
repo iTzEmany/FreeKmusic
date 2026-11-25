@@ -155,13 +155,13 @@ void main() {
     final before = await pairs();
     expect(before, hasLength(6));
     Future<void> openSort() async {
-      await tester.tap(find.byTooltip('Altre azioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await settle();
       await tester.tap(find.text('Ordina per'));
       await settle();
     }
 
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await settle();
     expect(find.text('Modifica ordine'), findsOneWidget);
     await tester.tap(find.text('Ordina per'));
@@ -169,7 +169,7 @@ void main() {
     await tester.tap(find.text('Titolo'));
     await settle();
     expect(h.store.readSettings().playlistSorts['$id'], 'title:asc');
-    await tester.tap(find.byTooltip('Altre azioni'));
+    await tester.tap(find.byTooltip('Altre azioni').first);
     await settle();
     expect(find.text('Modifica ordine'), findsNothing);
     expect(await pairs(), before);
@@ -210,7 +210,7 @@ void main() {
     }
 
     Future<void> openSort() async {
-      await tester.tap(find.byTooltip('Altre azioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await settle();
       await tester.tap(find.text('Ordina per'));
       await settle();

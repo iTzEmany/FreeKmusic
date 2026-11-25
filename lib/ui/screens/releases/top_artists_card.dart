@@ -18,11 +18,9 @@ class TopArtistsCard extends ConsumerWidget {
     final cc = context.cc;
     final options = ref.read(releaseOptionsProvider.notifier);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        CcDims.margin,
-        CcDims.gap24,
-        CcDims.margin,
-        0,
+      padding: EdgeInsets.symmetric(
+        horizontal: CcDims.margin,
+        vertical: CcDims.blockPad,
       ),
       child: Container(
         key: const ValueKey('top-artists-card'),

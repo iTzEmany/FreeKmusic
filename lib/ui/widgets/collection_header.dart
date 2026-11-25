@@ -10,6 +10,7 @@ import 'alpha_scroller.dart';
 import 'keep_offline_action.dart';
 import 'play_buttons.dart';
 import 'shuffle_button.dart';
+import 'action_catalog.dart';
 
 /// Page of one collection (album, artist, playlist, favourites): a pinned bar
 /// whose title appears while scrolling, the cover at the left of name and meta
@@ -117,7 +118,7 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
           child: IconButton(
             onPressed: () => keepOfflineFlow(context, ref, widget.downloadTracks!),
             tooltip: context.l10n.ytDownload,
-            icon: const Icon(Icons.download_rounded),
+            icon: Icon(CatalogAction.download.icon),
           ),
         ),
       if (widget.onShare != null)
@@ -129,8 +130,8 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
                 final box = ctx.findRenderObject();
                 widget.onShare!(box is RenderBox ? box.localToGlobal(Offset.zero) & box.size : null);
               },
-              tooltip: context.l10n.shareAction,
-              icon: const Icon(Icons.share_rounded),
+              tooltip: CatalogAction.share.label(context.l10n),
+              icon: Icon(CatalogAction.share.icon),
             ),
           ),
         ),

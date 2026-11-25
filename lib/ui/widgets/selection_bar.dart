@@ -9,6 +9,7 @@ import '../../providers/selection_providers.dart';
 import '../theme/tokens.dart';
 import 'bulk_actions.dart';
 import 'track_actions.dart';
+import 'action_catalog.dart';
 
 /// The bar that takes the place of a page's header while tracks are picked:
 /// «N selezionati», select all, ✕, the quick actions and the full menu.
@@ -82,7 +83,7 @@ class SelectionBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
             IconButton(
               tooltip: l.bulkActions,
-              icon: const Icon(Icons.more_vert_rounded),
+              icon: Icon(CatalogAction.more.icon),
               onPressed: picked.isEmpty
                   ? null
                   : () => showTrackActionGroups(

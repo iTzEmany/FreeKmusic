@@ -128,7 +128,7 @@ void main() {
       expect(find.bySemanticsLabel(RegExp(r'^[, \n]+$')), findsNothing);
       handle.dispose();
 
-      await tester.tap(find.byTooltip('Altre opzioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await tester.pumpAndSettle();
       expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       expect(find.text('Aggiungi a playlist…'), findsOneWidget);
@@ -175,7 +175,7 @@ void main() {
       expect(find.text('Suggerito'), findsNothing);
       expect(find.text('Ann'), findsOneWidget);
       expect(find.text(', '), findsNothing);
-      await tester.tap(find.byTooltip('Altre opzioni'));
+      await tester.tap(find.byTooltip('Altre azioni').first);
       await tester.pumpAndSettle();
       expect(find.text('Aggiungi alla libreria'), findsOneWidget);
       expect(find.text('Non mi piace'), findsNothing);

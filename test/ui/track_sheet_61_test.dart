@@ -36,7 +36,7 @@ void main() {
     }))!;
     await h.pump(tester, PlaylistDetailScreen(playlist: playlist));
     await _settle(tester);
-    await tester.tap(find.byTooltip('Altre opzioni').first);
+    await tester.tap(find.byTooltip('Altre azioni').last);
     await _settle(tester);
     final entries = shownMenuEntries(
       tester,
@@ -80,7 +80,7 @@ void main() {
     final t = (await tester.runAsync(() => h.db.select(h.db.tracks).getSingle()))!;
     await row(tester, h, t);
     await _settle(tester);
-    final size = tester.getSize(find.byTooltip('Altre opzioni'));
+    final size = tester.getSize(find.byTooltip('Altre azioni').first);
     expect(size.width, greaterThanOrEqualTo(48));
     expect(size.height, greaterThanOrEqualTo(48));
     await h.dispose(tester);
@@ -92,13 +92,13 @@ void main() {
     final t = (await tester.runAsync(() => h.db.select(h.db.tracks).getSingle()))!;
     await row(tester, h, t, platform: TargetPlatform.linux);
     await _settle(tester);
-    expect(find.byTooltip('Altre opzioni'), findsNothing);
+    expect(find.byTooltip('Altre azioni'), findsNothing);
     final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
     await mouse.addPointer(location: Offset.zero);
     addTearDown(mouse.removePointer);
     await mouse.moveTo(tester.getCenter(find.byType(TrackRow)));
     await _settle(tester);
-    final size = tester.getSize(find.byTooltip('Altre opzioni'));
+    final size = tester.getSize(find.byTooltip('Altre azioni').first);
     expect(size.width, greaterThanOrEqualTo(48));
     expect(size.height, greaterThanOrEqualTo(48));
     await h.dispose(tester);
@@ -110,17 +110,17 @@ void main() {
     final t = (await tester.runAsync(() => h.db.select(h.db.tracks).getSingle()))!;
     await row(tester, h, t, platform: TargetPlatform.linux);
     await _settle(tester);
-    expect(find.byTooltip('Altre opzioni'), findsNothing);
+    expect(find.byTooltip('Altre azioni'), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
-    expect(find.byTooltip('Altre opzioni'), findsOneWidget);
+    expect(find.byTooltip('Altre azioni'), findsOneWidget);
     await h.dispose(tester);
 
     final h2 = await Harness.create(tester, tracks: 1);
     final t2 = (await tester.runAsync(() => h2.db.select(h2.db.tracks).getSingle()))!;
     await row(tester, h2, t2);
     await _settle(tester);
-    expect(find.byTooltip('Altre opzioni'), findsOneWidget);
+    expect(find.byTooltip('Altre azioni'), findsOneWidget);
     await h2.dispose(tester);
   });
 }

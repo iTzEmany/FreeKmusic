@@ -816,9 +816,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Im selben WLAN auf dem anderen Gerät „Empfangen“ öffnen und Adresse und PIN eingeben.';
 
   @override
-  String get shareMenu => 'Teilen…';
-
-  @override
   String get shareAction => 'Teilen';
 
   @override
@@ -855,9 +852,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get repeat => 'Wiederholen';
-
-  @override
-  String get moreOptions => 'Weitere Optionen';
 
   @override
   String get back => 'Zurück';
@@ -5656,9 +5650,6 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get karaokeVideoFailed =>
       'Video nicht verfügbar: nur die Begleitung spielt.';
-
-  @override
-  String get ytmAlbumQueue => 'Album zur Warteschlange hinzufügen';
 
   @override
   String get addedToLibrary => 'Zur Bibliothek hinzugefügt';

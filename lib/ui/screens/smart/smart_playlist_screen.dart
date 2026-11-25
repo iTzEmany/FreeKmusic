@@ -27,6 +27,7 @@ import '../../widgets/track_row_selection.dart';
 import 'smart_playlist_editor.dart';
 import '../../widgets/show_msg.dart';
 import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../widgets/action_catalog.dart';
 
 /// A smart playlist: its tracks come from the rules and change by themselves,
 /// so the page is read-only (no reordering, no «add songs»).
@@ -124,7 +125,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
         shuffleKey: shuffleKey,
         menu: IconButton(
           tooltip: l.moreActions,
-          icon: const Icon(Icons.more_vert_rounded),
+          icon: Icon(CatalogAction.more.icon),
           onPressed: () async {
             final v = await showCcActionSheet<_SmartAction>(
               context: context,
