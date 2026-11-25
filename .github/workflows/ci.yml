@@ -75,6 +75,8 @@ jobs:
           git diff --exit-code -- lib/l10n
       - name: Documentation links
         run: python3 scripts/check_docs_links.py
+      - name: F-Droid recipe matches the pubspec version
+        run: python3 scripts/fdroid_version.py --check
       - name: Performance script labels
         run: python3 scripts/check_perf_labels.py
       # node is preinstalled on ubuntu-latest.

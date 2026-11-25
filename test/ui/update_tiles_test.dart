@@ -5,6 +5,7 @@ import 'package:codecore/services/update/update_target.dart';
 import 'package:codecore/ui/screens/settings/update_page.dart';
 import 'package:codecore/ui/screens/settings/update_tiles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
@@ -133,6 +134,33 @@ void main() {
     final h = await open(tester, idle, kind: UpdateKind.deb);
     expect(find.text('Scarica dal browser'), findsOneWidget);
     expect(find.textContaining('Aggiorna ·'), findsNothing);
+    await h.dispose(tester);
+  });
+
+  testWidgets('flatpak, ready: shows the install command with the file path and «Copia» copies it', (tester) async {
+    String? copied;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (c) async {
+      if (c.method == 'Clipboard.setData') copied = (c.arguments as Map)['text'] as String;
+      return null;
+    });
+    addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final h = await open(
+      tester,
+      const UpdateDownloadState(UpdatePhase.ready, path: '/home/u/updates/freekmusic-9.9.9.flatpak'),
+      kind: UpdateKind.flatpak,
+    );
+    const cmd = 'flatpak install --user /home/u/updates/freekmusic-9.9.9.flatpak';
+    expect(find.text(cmd), findsOneWidget);
+    await tester.tap(find.text('Copia'));
+    await tester.pump();
+    expect(copied, cmd);
+    await h.dispose(tester);
+  });
+
+  testWidgets('other formats, ready: no install command, no «Copia»', (tester) async {
+    final h = await open(tester, UpdateDownloadState(UpdatePhase.ready, asset: apk));
+    expect(find.textContaining('flatpak install'), findsNothing);
+    expect(find.text('Copia'), findsNothing);
     await h.dispose(tester);
   });
 
