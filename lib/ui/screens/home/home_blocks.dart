@@ -17,9 +17,13 @@ import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../online/artist_page_sections.dart' show thumbAt;
+import '../../widgets/cover_image.dart';
 import '../../widgets/play_buttons.dart';
+import '../../widgets/shelf_scroller.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/shuffle_button.dart';
+import '../../../data/repositories/library_queries.dart' show AlbumSummary;
+import '../library/album_detail_screen.dart';
 import '../library/all_tracks_screen.dart';
 import '../library/favorites_screen.dart';
 import '../library/library_shortcuts.dart';
@@ -133,7 +137,10 @@ class ShortcutsRow extends ConsumerWidget {
 
 /// «Aggiunti da poco»: the fan (20 albums once open), and «Mostra tutti» for the full list by date.
 class AddedLately extends ConsumerWidget {
-  const AddedLately({super.key});
+  const AddedLately({super.key, this.wide = false});
+
+  /// Desktop: a shelf of covers for the mouse instead of the fan.
+  final bool wide;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -151,14 +158,17 @@ class AddedLately extends ConsumerWidget {
           );
         },
       ),
-      children: [CoverFan(albums: albums)],
+      children: [if (wide) _AlbumShelf(albums) else CoverFan(albums: albums)],
     );
   }
 }
 
 /// «Nuove uscite»: its own block, only while there are new releases (D-671).
 class NewReleasesBlock extends ConsumerWidget {
-  const NewReleasesBlock({super.key});
+  const NewReleasesBlock({super.key, this.wide = false});
+
+  /// Desktop: the shelf gets the mouse arrows and wheel ([ShelfScroller]).
+  final bool wide;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -169,7 +179,8 @@ class NewReleasesBlock extends ConsumerWidget {
     final l = context.l10n;
     final recent =
         ref.watch(recentReleasesProvider(30)).value ?? const <RecentRelease>[];
-    if (recent.isEmpty) return const SizedBox.shrink(); // 30-day window or loading
+    // 30-day window or loading.
+    if (recent.isEmpty) return const SizedBox.shrink();
     return HomeBlock(
       header: SectionHeader(
         l.newReleasesTitle,
@@ -181,22 +192,28 @@ class NewReleasesBlock extends ConsumerWidget {
       children: [
         SizedBox(
           height: _shelfHeight,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(
-              CcDims.gap12,
-              0,
-              CcDims.gap12,
-              CcDims.gap12,
+          child: _scroller(
+            (controller) => ListView.separated(
+              controller: controller,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(
+                CcDims.gap12,
+                0,
+                CcDims.gap12,
+                CcDims.gap12,
+              ),
+              itemCount: recent.length.clamp(0, _shelfMax),
+              separatorBuilder: (_, _) => const SizedBox(width: CcDims.gap12),
+              itemBuilder: (_, i) => _ReleaseTile(recent[i]),
             ),
-            itemCount: recent.length.clamp(0, _shelfMax),
-            separatorBuilder: (_, _) => const SizedBox(width: CcDims.gap12),
-            itemBuilder: (_, i) => _ReleaseTile(recent[i]),
           ),
         ),
       ],
     );
   }
+
+  Widget _scroller(Widget Function(ScrollController? c) list) =>
+      wide ? ShelfScroller(builder: (_, c) => list(c)) : list(null);
 }
 
 const _shelfMax = 8;
@@ -250,6 +267,71 @@ class _ReleaseTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The recently added albums as covers on a [ShelfScroller] (desktop home).
+class _AlbumShelf extends StatelessWidget {
+  const _AlbumShelf(this.albums);
+
+  final List<AlbumSummary> albums;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final theme = Theme.of(context).textTheme;
+    return SizedBox(
+      height: _shelfHeight + CcDims.gap16,
+      child: ShelfScroller(
+        builder: (_, controller) => ListView.separated(
+          controller: controller,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(
+            CcDims.gap12,
+            0,
+            CcDims.gap12,
+            CcDims.gap12,
+          ),
+          itemCount: albums.length,
+          separatorBuilder: (_, _) => const SizedBox(width: CcDims.gap12),
+          itemBuilder: (_, i) {
+            final a = albums[i];
+            return InkWell(
+              onTap: () =>
+                  ShellNav.open<void>(context, AlbumDetailScreen(album: a)),
+              child: SizedBox(
+                width: _shelfCover,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CoverImage(
+                      coverKey: a.coverKey,
+                      size: _shelfCover,
+                      radius: CcDims.rList,
+                    ),
+                    const SizedBox(height: CcDims.gap4),
+                    Text(
+                      a.title ?? l.unknownAlbum,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.bodyMedium,
+                    ),
+                    Text(
+                      a.variousArtists
+                          ? l.variousArtists
+                          : (a.artist ?? l.unknownArtist),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

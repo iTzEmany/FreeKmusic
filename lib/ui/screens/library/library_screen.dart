@@ -56,6 +56,7 @@ import 'library_shortcuts.dart';
 import 'library_island.dart';
 import '../../widgets/alpha_scroller.dart';
 import '../../widgets/motion.dart';
+import '../../widgets/page_frame.dart';
 
 /// Playlists, albums and artists in one place, with Favourites and
 /// «Tutti i brani» pinned on top.
@@ -292,105 +293,107 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         },
         child: Scaffold(
           backgroundColor: Colors.transparent,
-          body: Stack(
-            children: [
-              // Kept mounted so the scroll position survives the search.
-              Positioned.fill(
-                child: ExcludeFocus(
-                  excluding: _searching,
-                  child: Offstage(
-                    offstage: _searching,
-                    child: NotificationListener<ScrollNotification>(
-                      onNotification: (n) => _onScroll(n, rows.shrinkMax),
-                      child: body,
-                    ),
-                  ),
-                ),
-              ),
-              if (_searching)
+          body: PageFrame(
+            child: Stack(
+              children: [
+                // Kept mounted so the scroll position survives the search.
                 Positioned.fill(
-                  key: const ValueKey('library-results'),
-                  // Starts under the sort row and follows it as it closes.
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0, end: 1),
-                    duration: ccDuration(context, CcMotion.sheet),
-                    curve: CcMotion.curveIn,
-                    builder: (_, t, child) => Padding(
-                      padding: EdgeInsets.only(top: inset - rows.toolbar * t),
-                      child: child,
+                  child: ExcludeFocus(
+                    excluding: _searching,
+                    child: Offstage(
+                      offstage: _searching,
+                      child: NotificationListener<ScrollNotification>(
+                        onNotification: (n) => _onScroll(n, rows.shrinkMax),
+                        child: body,
+                      ),
                     ),
-                    child: text.isEmpty
-                        ? const SizedBox.shrink()
-                        : LibraryResults(
-                            text: text,
-                            kind: _kind,
-                            onOnline: () {
-                              ref
-                                  .read(searchPrefillProvider.notifier)
-                                  .set(text);
-                              _setSearching(false);
-                              ShellNav.showSearch(context, ref);
-                            },
-                          ),
                   ),
                 ),
-              Positioned(
-                top: CcDims.gap12,
-                left: CcDims.gap8,
-                right: CcDims.gap8,
-                child: LibraryIsland(
-                  shrink: _shrink,
-                  searching: _searching,
-                  onSearch: () => _setSearching(true),
-                  field: CcSearchField(
-                    key: const ValueKey('library-search-bar'),
-                    controller: _searchController,
-                    focusNode: _searchFocus,
-                    hint: l.librarySearchHint,
-                    onQuery: (v) {
-                      if (_searching) setState(() => _text = v);
+                if (_searching)
+                  Positioned.fill(
+                    key: const ValueKey('library-results'),
+                    // Starts under the sort row and follows it as it closes.
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: 1),
+                      duration: ccDuration(context, CcMotion.sheet),
+                      curve: CcMotion.curveIn,
+                      builder: (_, t, child) => Padding(
+                        padding: EdgeInsets.only(top: inset - rows.toolbar * t),
+                        child: child,
+                      ),
+                      child: text.isEmpty
+                          ? const SizedBox.shrink()
+                          : LibraryResults(
+                              text: text,
+                              kind: _kind,
+                              onOnline: () {
+                                ref
+                                    .read(searchPrefillProvider.notifier)
+                                    .set(text);
+                                _setSearching(false);
+                                ShellNav.showSearch(context, ref);
+                              },
+                            ),
+                    ),
+                  ),
+                Positioned(
+                  top: CcDims.gap12,
+                  left: CcDims.gap8,
+                  right: CcDims.gap8,
+                  child: LibraryIsland(
+                    shrink: _shrink,
+                    searching: _searching,
+                    onSearch: () => _setSearching(true),
+                    field: CcSearchField(
+                      key: const ValueKey('library-search-bar'),
+                      controller: _searchController,
+                      focusNode: _searchFocus,
+                      hint: l.librarySearchHint,
+                      onQuery: (v) {
+                        if (_searching) setState(() => _text = v);
+                      },
+                      onCloseEmpty: () => _setSearching(false),
+                    ),
+                    kind: _kind,
+                    onKind: (k) {
+                      ref
+                          .read(
+                            selectionProvider(SelectionKey.search.key).notifier,
+                          )
+                          .clear();
+                      setState(() {
+                        _kind = k;
+                        _shrink.value = 0;
+                      });
                     },
-                    onCloseEmpty: () => _setSearching(false),
-                  ),
-                  kind: _kind,
-                  onKind: (k) {
-                    ref
-                        .read(
-                          selectionProvider(SelectionKey.search.key).notifier,
-                        )
-                        .clear();
-                    setState(() {
-                      _kind = k;
+                    countLabel: count,
+                    sort: sort,
+                    ascending: ascending,
+                    grid: grid,
+                    density: settings.libraryDensity,
+                    onDensity: (d) => _setSettings(density: d),
+                    onSort: (s, asc) {
+                      if (fallback && s == LibrarySort.alpha) {
+                        setState(() => _fallbackAscending = asc);
+                      } else {
+                        _fallbackAscending = null;
+                        _setSettings(sort: s, ascending: asc);
+                      }
+                    },
+                    onToggleGrid: () {
+                      // The new list starts at the top, so the island is whole.
                       _shrink.value = 0;
-                    });
-                  },
-                  countLabel: count,
-                  sort: sort,
-                  ascending: ascending,
-                  grid: grid,
-                  density: settings.libraryDensity,
-                  onDensity: (d) => _setSettings(density: d),
-                  onSort: (s, asc) {
-                    if (fallback && s == LibrarySort.alpha) {
-                      setState(() => _fallbackAscending = asc);
-                    } else {
-                      _fallbackAscending = null;
-                      _setSettings(sort: s, ascending: asc);
-                    }
-                  },
-                  onToggleGrid: () {
-                    // The new list starts at the top, so the island is whole.
-                    _shrink.value = 0;
-                    _setSettings(grid: !grid);
-                  },
-                  onTabsHeight: (h) {
-                    if ((h - _tabsHeight).abs() > 0.5) {
-                      setState(() => _tabsHeight = h);
-                    }
-                  },
+                      _setSettings(grid: !grid);
+                    },
+                    onTabsHeight: (h) {
+                      if ((h - _tabsHeight).abs() > 0.5) {
+                        setState(() => _tabsHeight = h);
+                      }
+                    },
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -738,7 +741,11 @@ class _LibraryGrid extends StatelessWidget {
             sliver: SliverGrid.builder(
               gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                 // S, M, L; M is the size the grid always had.
-                maxCrossAxisExtent: const [140.0, 180.0, 240.0][density.clamp(0, 2)],
+                maxCrossAxisExtent: const [
+                  140.0,
+                  180.0,
+                  240.0,
+                ][density.clamp(0, 2)],
                 childAspectRatio: 0.8,
               ),
               itemCount: entries.length,

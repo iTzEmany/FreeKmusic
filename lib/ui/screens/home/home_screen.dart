@@ -10,6 +10,7 @@ import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/page_frame.dart';
 import '../../../providers/folder_actions.dart';
 import '../activity/activity_log_screen.dart';
 import '../settings/settings_screen.dart';
@@ -106,60 +107,55 @@ class HomeScreen extends ConsumerWidget {
       // bottom: false, the list scrolls under the dock and pads itself.
       body: SafeArea(
         bottom: false,
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: LayoutBuilder(
-              builder: (context, box) {
-                final wide = box.maxWidth >= CcDims.wideBreakpoint;
-                const lead = [ShuffleHero(), ShortcutsRow(), ExportifyCard()];
-                return ListView(
-                  children: [
-                    header,
-                    if (!ref.watch(audioPermissionProvider))
-                      const AudioPermissionBanner(),
-                    if (wide) ...[
-                      // Desktop (mockup): invite and counters left, Riprendi right.
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          SizedBox(
-                            width: 420,
-                            child: Column(
-                              children: [
-                                ShuffleHero(),
-                                ShortcutsRow(),
-                                ExportifyCard(),
-                                AddedLately(),
-                              ],
-                            ),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final wide = box.maxWidth >= CcDims.wideBreakpoint;
+            const lead = [ShuffleHero(), ShortcutsRow(), ExportifyCard()];
+            return PageFrame(
+              child: ListView(
+                children: [
+                  header,
+                  if (!ref.watch(audioPermissionProvider))
+                    const AudioPermissionBanner(),
+                  if (wide) ...[
+                    // Desktop: 12 columns (5 + 7), then the shelves full width.
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Expanded(
+                          flex: 5,
+                          child: Column(
+                            children: [
+                              ShuffleHero(),
+                              ShortcutsRow(),
+                              ExportifyCard(),
+                            ],
                           ),
-                          SizedBox(width: 48),
-                          Expanded(
-                            child: Column(
-                              children: [
-                                ResumeList(),
-                                NewReleasesBlock(),
-                                DaylistCard(),
-                              ],
-                            ),
+                        ),
+                        SizedBox(width: CcDims.gap32),
+                        Expanded(
+                          flex: 7,
+                          child: Column(
+                            children: [ResumeList(), DaylistCard()],
                           ),
-                        ],
-                      ),
-                    ] else ...[
-                      ...lead,
-                      const ResumeList(),
-                      const NewReleasesBlock(),
-                      const DaylistCard(),
-                      const AddedLately(),
-                    ],
-                    HomeBottomRows(wide: wide),
-                    const SizedBox(height: 24),
+                        ),
+                      ],
+                    ),
+                    const NewReleasesBlock(wide: true),
+                    const AddedLately(wide: true),
+                  ] else ...[
+                    ...lead,
+                    const ResumeList(),
+                    const NewReleasesBlock(),
+                    const DaylistCard(),
+                    const AddedLately(),
                   ],
-                );
-              },
-            ),
-          ),
+                  HomeBottomRows(wide: wide),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

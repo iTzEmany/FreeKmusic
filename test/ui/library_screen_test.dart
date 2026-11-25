@@ -26,6 +26,7 @@ import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
+import 'package:codecore/ui/widgets/page_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
@@ -814,12 +815,12 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('desktop: all shortcuts on one row', (t) async {
+  testWidgets('desktop: the shortcuts fit in the 1136 px frame on at most two rows', (t) async {
     final h = await open(t, width: 1600);
     final fav = block(t, 'Preferiti');
     final last = block(t, 'Scaricati senza playlist');
-    expect(last.top, fav.top);
-    expect(last.left, greaterThan(fav.right));
+    expect(last.bottom - fav.top, lessThanOrEqualTo(2 * fav.height + 16));
+    expect(last.right, lessThanOrEqualTo(fav.left + PageFrame.maxWidth));
     await h.dispose(t);
   });
 

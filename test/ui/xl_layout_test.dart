@@ -40,14 +40,15 @@ void main() {
     }
   });
 
-  testWidgets('at 1280 px the queue opens by itself once a track plays, 360 px wide', (tester) async {
+  testWidgets('at 1280 px the panel starts closed and opens 360 px wide', (tester) async {
     _size(tester, 1280, 800);
     final h = await Harness.create(tester, tracks: 4);
     await h.pump(tester, const AppShell());
     await _settle(tester);
-    expect(find.byType(SidePanelView), findsNothing, reason: 'nothing is playing yet');
-
     await tester.runAsync(() => h.handler.playQueue([1, 2, 3, 4], 0));
+    await _settle(tester);
+    expect(find.byType(SidePanelView), findsNothing, reason: 'closed by default');
+    _panel(tester).toggle(SidePanel.queue);
     await _settle(tester);
     expect(find.byType(SidePanelView), findsOneWidget);
     expect(tester.getSize(find.byType(SidePanelView)).width, 360);
@@ -61,30 +62,15 @@ void main() {
     await tester.runAsync(() => h.handler.playQueue([1, 2, 3, 4, 5], 1));
     await h.pump(tester, const AppShell());
     await _settle(tester);
+    _panel(tester).toggle(SidePanel.queue);
+    await _settle(tester);
     expect(find.byType(SidePanelView), findsOneWidget);
     expect(find.byType(DesktopSidebar), findsOneWidget);
     expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
 
-  testWidgets('a panel closed by hand stays closed, even for the next track', (tester) async {
-    _size(tester, 1280, 800);
-    final h = await Harness.create(tester, tracks: 4);
-    await tester.runAsync(() => h.handler.playQueue([1, 2, 3, 4], 0));
-    await h.pump(tester, const AppShell());
-    await _settle(tester);
-    expect(find.byType(SidePanelView), findsOneWidget);
-
-    _panel(tester).close();
-    await _settle(tester);
-    expect(find.byType(SidePanelView), findsNothing);
-    await tester.runAsync(() => h.handler.skipToNext());
-    await _settle(tester);
-    expect(find.byType(SidePanelView), findsNothing, reason: 'the user decided');
-    await h.dispose(tester);
-  });
-
-  testWidgets('below 1200 px nothing opens by itself and the panel stays 320 px', (tester) async {
+  testWidgets('below 1200 px the panel is 320 px wide', (tester) async {
     _size(tester, 1100, 800);
     final h = await Harness.create(tester, tracks: 4);
     await tester.runAsync(() => h.handler.playQueue([1, 2, 3, 4], 0));

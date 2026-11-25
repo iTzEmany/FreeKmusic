@@ -2,7 +2,9 @@ import 'package:codecore/services/radio/radio_catalog.dart' show RadioList;
 import 'package:codecore/data/repositories/track_repository.dart'
     show SortOption;
 import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
+import 'package:codecore/ui/widgets/page_frame.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
+import 'package:codecore/ui/widgets/shelf_scroller.dart';
 import 'package:codecore/ui/screens/home/home_blocks.dart' show ShortcutsRow;
 import 'package:codecore/ui/screens/home/home_row.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
@@ -406,7 +408,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('wide window: Home uses the width, fan shows covers or art', (
+  testWidgets('wide window: Home uses the width, shelves of covers', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(1600, 900);
@@ -417,15 +419,10 @@ void main() {
     await _settle(tester);
     expect(
       tester.getSize(find.byType(ListView).first).width,
-      greaterThan(1000),
+      PageFrame.maxWidth,
     );
-    final cover = find.byKey(const ValueKey('fan-cover-0'));
-    expect(cover, findsOneWidget);
-    expect(
-      find.descendant(of: cover, matching: find.byType(Text)),
-      findsOneWidget,
-    );
-    expect(tester.getSize(cover).width, 84);
+    expect(find.byType(ShelfScroller), findsWidgets, reason: 'shelves, not the fan');
+    expect(find.byKey(const ValueKey('fan-cover-0')), findsNothing);
     await h.dispose(tester);
   });
 

@@ -11,6 +11,7 @@ import 'package:codecore/services/radio/radio_catalog.dart';
 import 'package:codecore/services/radio/radio_station.dart';
 import 'package:codecore/ui/screens/radio/radio_region_sheet.dart';
 import 'package:codecore/ui/screens/radio/radio_screen.dart';
+import 'package:codecore/ui/widgets/page_frame.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,6 +90,16 @@ void main() {
     ]);
     await _settle(tester);
   }
+
+  testWidgets('at 1920 px the page is 1136 px wide and centered', (tester) async {
+    await open(tester, width: 1920);
+    final r = tester.getRect(find
+        .descendant(of: find.byType(PageFrame), matching: find.byType(ConstrainedBox))
+        .first);
+    expect(r.width, PageFrame.maxWidth);
+    expect(r.center.dx, 960);
+    await h.dispose(tester);
+  });
 
   testWidgets('first visit without a region: the sheet opens and the choice shows in the chip',
       (tester) async {
