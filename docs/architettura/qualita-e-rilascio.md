@@ -68,6 +68,7 @@ Questo documento dice come si verifica una modifica e come esce una versione. Co
 
 - I golden girano solo su Linux (`if (!Platform.isLinux) return;`): i caratteri e il rendering cambiano da un sistema all'altro.
 - Il comparatore (`tolerant_comparator.dart`) accetta fino allo 0,5% di pixel diversi.
+- Taglie (`ShotSize` in `test_shots/support/shot_harness.dart`): `phone` 360×800 e `desktop` 1280×800 sono quelle di `ShotSize.values`, su cui girano i golden storici; `desktop1000/1440/1920` (altezza 900) servono solo a `desktop_widths_golden_test.dart` (rete del refactor desktop, fase 150: 9 schermate × 3 larghezze più 6 `phone360_*`).
 - Si rigenerano con `--update-goldens` solo per un cambio visivo voluto (D-20) e solo per il file che fallisce. Poi si annullano con `git checkout` i PNG cambiati senza motivo.
 - Gli errori finiscono in `test/goldens/failures`: la CI li carica come artefatto. In locale va ripulita con `pulizia.sh`.
 - Su Linux senza schermo: `HOME=<scratch>/home env -u WAYLAND_DISPLAY GDK_BACKEND=x11 xvfb-run -a -s "-screen 0 1280x800x24" <comando>`.
