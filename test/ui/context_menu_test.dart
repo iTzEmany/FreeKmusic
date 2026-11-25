@@ -82,7 +82,7 @@ void main() {
   testWidgets('the menu has the entries of the sheet (the ⋮ of a phone)', (tester) async {
     debugIsDesktopOverride = false;
     final h = await pumpOnlineRow(tester);
-    await tester.tap(find.byTooltip('Altre opzioni'));
+    await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pumpAndSettle();
     final sheet = [
       for (final t in tester.widgetList<ListTile>(find.descendant(of: find.byType(BottomSheet), matching: find.byType(ListTile))))
@@ -100,10 +100,10 @@ void main() {
   testWidgets('desktop: the ⋮ opens the same menu under the button', (tester) async {
     debugIsDesktopOverride = true;
     final h = await pumpOnlineRow(tester);
-    await tester.tap(find.byTooltip('Altre opzioni'));
+    await tester.tap(find.byTooltip('Altre azioni'));
     await tester.pumpAndSettle();
     expect(_items, findsWidgets);
-    final button = tester.getBottomLeft(find.byTooltip('Altre opzioni'));
+    final button = tester.getBottomLeft(find.byTooltip('Altre azioni'));
     expect((tester.getTopLeft(_items.first).dy - button.dy).abs(), lessThan(24));
     await h.dispose(tester);
   });
