@@ -86,7 +86,7 @@ void main() {
     expect(find.text('Caricamento…'), findsNothing);
     expect(find.text('Ann'), findsOneWidget);
     expect(find.byKey(const ValueKey('mini-loading')), findsNothing);
-    expect(find.byTooltip('Preferito'), findsOneWidget); // the heart is there for a stream too
+    expect(find.byTooltip('Aggiungi ai preferiti'), findsOneWidget); // the heart is there for a stream too
 
     await t.pumpWidget(const SizedBox());
     await h.dispose(t);
@@ -96,7 +96,7 @@ void main() {
 void _favoriteSnackTest() {
   testWidgets('the mini player heart says «Aggiunto ai preferiti» with «Annulla»', (t) async {
     final h = await _shell(t);
-    await t.tap(find.descendant(of: find.byType(MiniPlayer), matching: find.byTooltip('Preferito')));
+    await t.tap(find.descendant(of: find.byType(MiniPlayer), matching: find.byTooltip('Aggiungi ai preferiti')));
     await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await t.pump(const Duration(milliseconds: 300));
     expect(find.text('Aggiunto ai preferiti'), findsOneWidget);

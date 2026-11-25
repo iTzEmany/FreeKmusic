@@ -197,7 +197,7 @@ SliverToBoxAdapter(
                   coverKeys: playlistCoverKeys(playlists[i].playlist.coverKey, [playlists[i].autoCoverKey]),
                   radius: CcDims.rGrid,
                 ),
-                title: Text(playlists[i].playlist.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                title: Text(l.playlistLabel(playlists[i].playlist.name), maxLines: 1, overflow: TextOverflow.ellipsis),
                 subtitle: Text(l.tracksCount(playlists[i].trackCount)),
                 onTap: () => ShellNav.open<void>(context, PlaylistDetailScreen(playlist: playlists[i].playlist)),
               ),

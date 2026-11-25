@@ -152,7 +152,7 @@ List<Widget> searchSectionRows(
                 p.autoCoverKey,
               ]),
             ),
-            title: p.playlist.name,
+            title: l.playlistLabel(p.playlist.name),
             subtitle: l.playlistCountLabel(p.trackCount),
             onTap: () => ShellNav.open<void>(
               context,

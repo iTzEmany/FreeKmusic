@@ -173,7 +173,7 @@ class _SidebarPlaylists extends ConsumerWidget {
                 p.autoCoverKey,
               ]),
             ),
-            p.playlist.name,
+            l.playlistLabel(p.playlist.name),
             l.playlistCountLabel(p.trackCount),
             () => ShellNav.openInLibrary(
               context,

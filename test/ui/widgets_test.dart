@@ -2,6 +2,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
+
 import 'dart:io';
 
 import 'package:codecore/ui/widgets/empty_state.dart';
@@ -28,7 +29,9 @@ Track _track({
   int? trackNumber,
   int? bitDepth,
   int? rate,
-}) => Track(saved: false, coverSource: 0, 
+}) => Track(
+  saved: false,
+  coverSource: 0,
   id: 1,
   path: '/m/a.mp3',
   title: title,
@@ -88,9 +91,7 @@ void main() {
     expect(find.byIcon(Icons.favorite_rounded), findsNothing);
   });
 
-  testWidgets('EmptyState: top left, icon, one filled action', (
-    tester,
-  ) async {
+  testWidgets('EmptyState: top left, icon, one filled action', (tester) async {
     var taps = 0;
     await _pump(
       tester,
@@ -236,15 +237,58 @@ void main() {
 
   group('SegmentedBlocks', () {
     Widget blocks(int sel, ValueChanged<int> on) => SegmentedBlocks<int>(
-          items: const [
-            BlockItem(value: 0, icon: Icons.apps_rounded, label: 'Tutto'),
-            BlockItem(value: 1, icon: Icons.queue_music_rounded, label: 'Playlist'),
-            BlockItem(value: 2, icon: Icons.album_rounded, label: 'Album'),
-            BlockItem(value: 3, icon: Icons.person_rounded, label: 'Artisti'),
-          ],
-          selected: sel,
-          onChanged: on,
-        );
+      items: const [
+        BlockItem(value: 0, icon: Icons.apps_rounded, label: 'Tutto'),
+        BlockItem(value: 1, icon: Icons.queue_music_rounded, label: 'Playlist'),
+        BlockItem(value: 2, icon: Icons.album_rounded, label: 'Album'),
+        BlockItem(value: 3, icon: Icons.person_rounded, label: 'Artisti'),
+      ],
+      selected: sel,
+      onChanged: on,
+    );
+
+    for (final scale in [1.0, 2.0]) {
+      testWidgets(
+        'compact chips at 360 dp keep one line and one height (text $scale)',
+        (t) async {
+          t.platformDispatcher.textScaleFactorTestValue = scale;
+          addTearDown(t.platformDispatcher.clearTextScaleFactorTestValue);
+          await _pump(
+            t,
+            SegmentedBlocks<int>(
+              compact: true,
+              items: const [
+                BlockItem(value: 0, label: 'Tutte'),
+                BlockItem(value: 1, label: 'YouTube Music'),
+                BlockItem(value: 2, label: 'YouTube'),
+              ],
+              selected: 0,
+              onChanged: (_) {},
+            ),
+            width: 360,
+          );
+          expect(t.takeException(), isNull);
+          final heights = {
+            for (final label in ['Tutte', 'YouTube Music', 'YouTube'])
+              t
+                  .getSize(
+                    find
+                        .ancestor(
+                          of: find.text(label),
+                          matching: find.byType(InkWell),
+                        )
+                        .first,
+                  )
+                  .height,
+          };
+          expect(heights, hasLength(1));
+          expect(
+            t.getSize(find.text('YouTube Music')).height,
+            lessThan(30 * scale),
+          );
+        },
+      );
+    }
 
     testWidgets('tapping a block selects it', (t) async {
       int? got;
@@ -257,14 +301,18 @@ void main() {
       t.view.physicalSize = const Size(360, 780);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
-      await t.pumpWidget(MaterialApp(
-        theme: buildThemeFromColors(CcColors.notte, false),
-        home: MediaQuery(
-          data: const MediaQueryData(
-              size: Size(360, 780), textScaler: TextScaler.linear(1.5)),
-          child: Scaffold(body: blocks(0, (_) {})),
+      await t.pumpWidget(
+        MaterialApp(
+          theme: buildThemeFromColors(CcColors.notte, false),
+          home: MediaQuery(
+            data: const MediaQueryData(
+              size: Size(360, 780),
+              textScaler: TextScaler.linear(1.5),
+            ),
+            child: Scaffold(body: blocks(0, (_) {})),
+          ),
         ),
-      ));
+      );
       final a = t.getRect(find.text('Tutto'));
       final c = t.getRect(find.text('Album'));
       expect(c.top, greaterThan(a.bottom));
@@ -272,8 +320,9 @@ void main() {
       expect(t.takeException(), isNull);
     });
 
-    testWidgets('falls back to 2x2 when a single word is wider than a block',
-        (t) async {
+    testWidgets('falls back to 2x2 when a single word is wider than a block', (
+      t,
+    ) async {
       await _pump(
         t,
         Align(
@@ -282,10 +331,22 @@ void main() {
             width: 320,
             child: SegmentedBlocks<int>(
               items: const [
-                BlockItem(value: 0, icon: Icons.apps_rounded, label: 'Predefinitissimo'),
+                BlockItem(
+                  value: 0,
+                  icon: Icons.apps_rounded,
+                  label: 'Predefinitissimo',
+                ),
                 BlockItem(value: 1, icon: Icons.title_rounded, label: 'Titolo'),
-                BlockItem(value: 2, icon: Icons.person_rounded, label: 'Artista'),
-                BlockItem(value: 3, icon: Icons.schedule_rounded, label: 'Recenti'),
+                BlockItem(
+                  value: 2,
+                  icon: Icons.person_rounded,
+                  label: 'Artista',
+                ),
+                BlockItem(
+                  value: 3,
+                  icon: Icons.schedule_rounded,
+                  label: 'Recenti',
+                ),
               ],
               selected: 0,
               onChanged: (_) {},
@@ -293,25 +354,31 @@ void main() {
           ),
         ),
       );
-      expect(t.getRect(find.text('Artista')).top,
-          greaterThan(t.getRect(find.text('Predefinitissimo')).bottom));
+      expect(
+        t.getRect(find.text('Artista')).top,
+        greaterThan(t.getRect(find.text('Predefinitissimo')).bottom),
+      );
       expect(t.takeException(), isNull);
     });
 
     testWidgets('reduced motion: no slide', (t) async {
       Widget app(int sel) => MaterialApp(
-            theme: buildThemeFromColors(CcColors.notte, false),
-            home: MediaQuery(
-              data: const MediaQueryData(
-                  size: Size(400, 800), disableAnimations: true),
-              child: Scaffold(body: blocks(sel, (_) {})),
-            ),
-          );
+        theme: buildThemeFromColors(CcColors.notte, false),
+        home: MediaQuery(
+          data: const MediaQueryData(
+            size: Size(400, 800),
+            disableAnimations: true,
+          ),
+          child: Scaffold(body: blocks(sel, (_) {})),
+        ),
+      );
       await t.pumpWidget(app(0));
       await t.pumpWidget(app(2));
       await t.pump(const Duration(milliseconds: 1));
-      expect(t.widget<AnimatedSlide>(find.byType(AnimatedSlide)).duration,
-          Duration.zero);
+      expect(
+        t.widget<AnimatedSlide>(find.byType(AnimatedSlide)).duration,
+        Duration.zero,
+      );
     });
 
     testWidgets('blocks are focusable and announce selected', (t) async {
@@ -320,17 +387,19 @@ void main() {
       await t.sendKeyEvent(LogicalKeyboardKey.tab);
       await t.pump();
       expect(
-          Focus.of(t.element(find.byType(InkWell).first), scopeOk: true)
-              .hasFocus,
-          isTrue);
+        Focus.of(t.element(find.byType(InkWell).first), scopeOk: true).hasFocus,
+        isTrue,
+      );
       expect(
-          t.getSemantics(find.text('Album')),
-          matchesSemantics(
-              label: 'Album',
-              isButton: true,
-              isSelected: true,
-              hasSelectedState: true,
-              hasTapAction: true));
+        t.getSemantics(find.text('Album')),
+        matchesSemantics(
+          label: 'Album',
+          isButton: true,
+          isSelected: true,
+          hasSelectedState: true,
+          hasTapAction: true,
+        ),
+      );
       h.dispose();
     });
   });
@@ -344,30 +413,39 @@ void main() {
 
   group('showCcSheet', () {
     testWidgets('showCcSheet honours reduced motion', (tester) async {
-      await tester.pumpWidget(MaterialApp(
-        home: MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: Builder(
-            builder: (context) => TextButton(
-              onPressed: () => showCcSheet<void>(
-                  context: context, builder: (_) => const Text('body')),
-              child: const Text('open'),
+      await tester.pumpWidget(
+        MaterialApp(
+          home: MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => showCcSheet<void>(
+                  context: context,
+                  builder: (_) => const Text('body'),
+                ),
+                child: const Text('open'),
+              ),
             ),
           ),
         ),
-      ));
+      );
       await tester.tap(find.text('open'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 1));
       final firstTop = tester.getTopLeft(find.text('body')).dy;
       await tester.pumpAndSettle();
-      expect(firstTop, tester.getTopLeft(find.text('body')).dy,
-          reason: 'already at its final position, no slide');
+      expect(
+        firstTop,
+        tester.getTopLeft(find.text('body')).dy,
+        reason: 'already at its final position, no slide',
+      );
     });
 
     test('no raw showModalBottomSheet outside cc_sheet and car mode', () {
       final bad = [
-        for (final f in Directory('lib').listSync(recursive: true).whereType<File>())
+        for (final f in Directory(
+          'lib',
+        ).listSync(recursive: true).whereType<File>())
           if (f.path.endsWith('.dart') &&
               !f.path.endsWith('cc_sheet.dart') &&
               !f.path.endsWith('car_playlists_sheet.dart') &&

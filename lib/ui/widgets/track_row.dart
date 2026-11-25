@@ -274,7 +274,7 @@ class _TrackRowState extends State<TrackRow> {
           width: 40,
           child: showHeart && widget.onFavorite != null
               ? IconButton(
-                  tooltip: fav ? l.removeFromFavorites : l.favorite,
+                  tooltip: fav ? l.removeFromFavorites : l.bulkAddToFavorites,
                   onPressed: widget.onFavorite,
                   visualDensity: ccIconDensity,
                   icon: HeartIcon(
@@ -373,7 +373,7 @@ class _TrackRowState extends State<TrackRow> {
       children: [
         if (wide && (_hover || fav) && widget.onFavorite != null)
           IconButton(
-            tooltip: fav ? l.removeFromFavorites : l.favorite,
+            tooltip: fav ? l.removeFromFavorites : l.bulkAddToFavorites,
             onPressed: widget.onFavorite,
             visualDensity: ccIconDensity,
             icon: Icon(

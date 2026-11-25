@@ -240,7 +240,7 @@ class _CarTopBar extends ConsumerWidget {
         ),
         if (track != null && track.trackKind != TrackKind.online)
           IconButton(
-            tooltip: track.isFavorite ? l.removeFromFavorites : l.favorite,
+            tooltip: track.isFavorite ? l.removeFromFavorites : l.bulkAddToFavorites,
             iconSize: 36,
             onPressed: () => toggleFavorite(context, ref, track),
             icon: HeartIcon(

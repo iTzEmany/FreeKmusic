@@ -242,7 +242,7 @@ const _jamGuestRow = ['Salta qui', 'Vai all’artista'];
 const _contextMenu = [
   'Anteprima 20 s',
   'Aggiungi in coda',
-  'Preferito',
+  'Aggiungi ai preferiti',
   'Aggiungi a playlist…',
   'Etichette…',
   'Vai all’album',

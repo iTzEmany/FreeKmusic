@@ -316,7 +316,7 @@ class _MiniCard extends ConsumerWidget {
                 icon: Icons.favorite_rounded,
                 iconWidget: HeartIcon(favorite: track.isFavorite),
                 color: track.isFavorite ? cc.accent : null,
-                tooltip: track.isFavorite ? l.removeFromFavorites : l.favorite,
+                tooltip: track.isFavorite ? l.removeFromFavorites : l.bulkAddToFavorites,
                 onPressed: () => toggleFavorite(context, ref, track),
               ),
             _MiniButton(

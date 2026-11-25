@@ -380,7 +380,7 @@ List<TrackActionGroup> trackActions(
         track.isFavorite
             ? Icons.favorite_rounded
             : Icons.favorite_border_rounded,
-        track.isFavorite ? l.removeFromFavorites : l.favorite,
+        track.isFavorite ? l.removeFromFavorites : l.bulkAddToFavorites,
         () => toggleFavorite(outer, ref, track),
         onOnlineEntry: true,
       ),

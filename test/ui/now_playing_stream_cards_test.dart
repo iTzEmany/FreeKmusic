@@ -103,7 +103,7 @@ void main() {
       gate.complete();
       await _wait(t);
       expect(heart().onPressed, isNotNull);
-      await t.tap(find.byTooltip('Preferito'));
+      await t.tap(find.byTooltip('Aggiungi ai preferiti'));
       await _wait(t);
       final row = await t.runAsync(() => (h.db.select(h.db.tracks)..where((r) => r.kind.equals(kStreamKind))).getSingle());
       expect(row!.isFavorite, isTrue);

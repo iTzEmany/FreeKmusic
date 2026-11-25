@@ -63,7 +63,7 @@ void main() {
 
   testWidgets('the heart favourites the playing song', (t) async {
     final h = await openBar(t);
-    await tapTip(t, 'Preferito');
+    await tapTip(t, 'Aggiungi ai preferiti');
     final row = await t.runAsync(
       () => (h.db.select(h.db.tracks)..where((r) => r.title.equals('Song 0'))).getSingle(),
     );
@@ -74,7 +74,7 @@ void main() {
 
   testWidgets('the heart is there for a streamed track too and favourites it', (t) async {
     final h = await openBar(t, tracks: 1, stream: true);
-    await tapTip(t, 'Preferito');
+    await tapTip(t, 'Aggiungi ai preferiti');
     final row = await t.runAsync(() => h.db.select(h.db.tracks).getSingle());
     expect(row!.isFavorite, isTrue);
     await h.dispose(t);

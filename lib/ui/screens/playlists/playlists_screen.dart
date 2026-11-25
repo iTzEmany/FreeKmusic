@@ -78,7 +78,7 @@ class PlaylistsScreen extends ConsumerWidget {
                       child: ListTile(
                         leading: CoverImage(coverKey: p.coverKey, size: 48),
                         title: Text(
-                          p.playlist.name,
+                          l.playlistLabel(p.playlist.name),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

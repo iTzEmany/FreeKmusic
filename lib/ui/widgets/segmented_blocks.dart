@@ -78,14 +78,20 @@ class SegmentedBlocks<T> extends StatelessWidget {
                           size: 22,
                           color: on ? cc.bg : cc.textMuted,
                         ),
-                      Text(
-                        item.label,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelLarge
-                            ?.copyWith(color: fg),
-                      ),
+                      // Compact chips stay on one line and shrink to fit.
+                      () {
+                        final label = Text(
+                          item.label,
+                          maxLines: compact ? 1 : 2,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(color: fg),
+                        );
+                        return compact
+                            ? FittedBox(fit: BoxFit.scaleDown, child: label)
+                            : label;
+                      }(),
                     ],
                   ),
                 ),

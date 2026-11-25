@@ -59,19 +59,46 @@ void main() {
     return h;
   }
 
-  testWidgets('a track left in the middle restarts from its own row at the saved point', (
-    tester,
-  ) async {
+  testWidgets(
+    'a track left in the middle restarts from its own row at the saved point',
+    (tester) async {
+      final h = await openResume(tester);
+      final id = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!
+          .firstWhere((t) => t.title == 'Song 2')
+          .id;
+      await tester.tap(find.byKey(const ValueKey('resume-track')));
+      await _settle(tester);
+      expect(h.handler.queueIds, [id]);
+      expect(h.handler.currentIndex, 0);
+      // The handler resumes 5 s before the saved 60 s.
+      expect(h.backend.seeks.last, const Duration(seconds: 55));
+      await h.dispose(tester);
+    },
+  );
+
+  testWidgets(
+    'a ring tile names its item under the cover, read once by the semantics',
+    (tester) async {
+      final sem = tester.ensureSemantics();
+      final h = await openResume(tester);
+      final album = find.byKey(const ValueKey('resume-album'));
+      final name = find.descendant(
+        of: find.byType(ResumeList),
+        matching: find.textContaining('Album '),
+      );
+      expect(name, findsWidgets);
+      expect(tester.getSize(album).width, lessThan(60));
+      expect(find.bySemanticsLabel(RegExp('Album \\d')), findsOneWidget);
+      await h.dispose(tester);
+      sem.dispose();
+    },
+  );
+
+  testWidgets('the ring does not overflow at text 2.0', (tester) async {
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     final h = await openResume(tester);
-    final id = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!
-        .firstWhere((t) => t.title == 'Song 2')
-        .id;
-    await tester.tap(find.byKey(const ValueKey('resume-track')));
-    await _settle(tester);
-    expect(h.handler.queueIds, [id]);
-    expect(h.handler.currentIndex, 0);
-    // The handler resumes 5 s before the saved 60 s.
-    expect(h.backend.seeks.last, const Duration(seconds: 55));
+    expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });
 
