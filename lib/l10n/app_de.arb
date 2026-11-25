@@ -4187,5 +4187,15 @@
   "updateNews": "Neuheiten",
   "updateNew": "neu",
   "shareKindTrack": "Titel",
-  "shareUntitled": "Ohne Titel"
+  "shareUntitled": "Ohne Titel",
+  "openOutsideLibrary": "{count, plural, one{Die Datei liegt außerhalb der Bibliotheksordner} other{{count} Dateien liegen außerhalb der Bibliotheksordner}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Zur Bibliothek hinzufügen",
+  "openPortalFile": "Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen"
 }

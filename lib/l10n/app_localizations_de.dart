@@ -8611,4 +8611,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareUntitled => 'Ohne Titel';
+
+  @override
+  String openOutsideLibrary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Dateien liegen außerhalb der Bibliotheksordner',
+      one: 'Die Datei liegt außerhalb der Bibliotheksordner',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get openAddToLibrary => 'Zur Bibliothek hinzufügen';
+
+  @override
+  String get openPortalFile =>
+      'Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen';
 }

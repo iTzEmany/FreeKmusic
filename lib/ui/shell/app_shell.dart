@@ -5,6 +5,7 @@ import 'dart:ui' show DisplayFeatureType;
 import '../screens/share/pairing_dialogs.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart' show kBackMouseButton, kForwardMouseButton;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -79,10 +80,7 @@ class AppShell extends ConsumerWidget {
     WidgetRef ref, {
     required bool preview,
   }) {
-    void back() => ref
-        .read(tabNavigatorKeysProvider)[ref.read(navIndexProvider)]
-        .currentState
-        ?.maybePop();
+    void back() => ref.read(forwardStacksProvider)[ref.read(navIndexProvider)].back();
     final ctrl = ref.read(playerControllerProvider);
     final vol = ref.read(volumeProvider.notifier);
 
@@ -180,6 +178,7 @@ class AppShell extends ConsumerWidget {
       observers: [
         if (i == NavTab.search.index)
           _UnfocusOnPush(ref.read(searchFocusProvider).unfocus),
+        ref.read(forwardStacksProvider)[i],
       ],
       onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => root),
     );
@@ -281,7 +280,14 @@ class AppShell extends ConsumerWidget {
         // Any click ends a preview started from the menu.
         child: Listener(
           behavior: HitTestBehavior.translucent,
-          onPointerDown: (_) {
+          onPointerDown: (e) {
+            // Mouse side buttons: back (as Alt+Left) and forward.
+            final i = ref.read(navIndexProvider);
+            if (e.buttons == kBackMouseButton) {
+              ref.read(forwardStacksProvider)[i].back();
+            } else if (e.buttons == kForwardMouseButton) {
+              ref.read(forwardStacksProvider)[i].forward();
+            }
             if (ref.read(previewProvider).active) {
               ref.read(previewProvider.notifier).stop();
             }
