@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/palette.dart' show contrastRatio;
+import '../theme/palette.dart' show readableOn;
 import '../theme/tokens.dart';
 import 'cc_tile.dart';
 
@@ -82,7 +82,7 @@ class GenreGrid extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: fontSize,
-                        color: on ? cc.onAccent : (g.color != null ? _textOn(g.color!) : cc.text),
+                        color: on ? cc.onAccent : (g.color != null ? readableOn(g.color!) : cc.text),
                       ),
                     ),
                     if (g.subtitle != null)
@@ -92,7 +92,7 @@ class GenreGrid extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: fontSize,
-                          color: on ? cc.onAccent : (g.color != null ? _textOn(g.color!) : cc.textMuted),
+                          color: on ? cc.onAccent : (g.color != null ? readableOn(g.color!) : cc.textMuted),
                         ),
                       ),
                   ],
@@ -105,9 +105,3 @@ class GenreGrid extends StatelessWidget {
     );
   }
 }
-
-/// White or black, whichever reads better on [bg] (≥ 4.5:1 on the genre tiles).
-Color _textOn(Color bg) =>
-    contrastRatio(Colors.white, bg) >= contrastRatio(Colors.black, bg)
-    ? Colors.white
-    : Colors.black;

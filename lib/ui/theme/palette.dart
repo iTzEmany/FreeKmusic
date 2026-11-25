@@ -88,6 +88,12 @@ Color onAccentFor(Color accent) {
       : ink;
 }
 
+/// Pure white or black, whichever reads better on [bg] (more contrast than [onAccentFor]'s ink).
+Color readableOn(Color bg) =>
+    contrastRatio(Colors.white, bg) >= contrastRatio(Colors.black, bg)
+    ? Colors.white
+    : Colors.black;
+
 /// The colour behind a cover with no tint: very dark or very light.
 Color heroFor(Color accent, bool isLight) {
   final hsl = HSLColor.fromColor(accent);
