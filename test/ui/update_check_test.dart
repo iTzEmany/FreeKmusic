@@ -1,3 +1,4 @@
+import 'package:codecore/core/app_info.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
@@ -116,7 +117,7 @@ void main() {
   });
 
   for (final (label, web, text) in [
-    ('up to date', _Web('v1.0.0'), 'Hai l’ultima versione (1.7.0)'),
+    ('up to date', _Web('v1.0.0'), 'Hai l’ultima versione ($kAppVersion)'),
     ('rate limited', _Limited(), 'GitHub chiede di aspettare: riprova più tardi.'),
     ('failed', _Broken(), 'Non riesco a leggere l’ultima versione. Controlla la connessione.'),
   ]) {
