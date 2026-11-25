@@ -8642,4 +8642,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get viewDensity => 'Densità della griglia';
+
+  @override
+  String get densitySmall => 'piccola';
+
+  @override
+  String get densityMedium => 'media';
+
+  @override
+  String get densityLarge => 'grande';
 }

@@ -4432,5 +4432,8 @@
     }
   },
   "tableNumberColumn": "Número",
-  "viewDensity": "Densidade da grelha"
+  "viewDensity": "Densidade da grelha",
+  "densitySmall": "pequena",
+  "densityMedium": "média",
+  "densityLarge": "grande"
 }

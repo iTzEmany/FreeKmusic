@@ -23,7 +23,7 @@ import '../../widgets/track_actions.dart' show showTrackActions;
 import '../online/online_song_row.dart' show queueOnline;
 import '../../theme/app_theme.dart' show trackRowExtentOf;
 import '../../widgets/selection_bar.dart';
-import '../../widgets/track_row.dart' show LiveTrackRow, SwipeToQueue;
+import '../../widgets/track_row.dart' show LiveTrackRow, SwipeToQueue, trackRowWide;
 import '../../widgets/track_row_selection.dart';
 import '../../widgets/track_table.dart';
 import '../../../providers/settings_providers.dart' show settingsProvider;
@@ -47,7 +47,6 @@ class DaylistScreen extends ConsumerWidget {
     final actions = ref.read(daylistActionsProvider);
     // A wide window lists the own songs as the table does (Ctrl / Shift + click pick them);
     // the order is the daylist's own, so the headers do not sort.
-    final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     final compact = ref.watch(settingsProvider).compactMode;
     final own = <Track>[
       for (final i in d?.result.items ?? const <DaylistItem>[]) ?i.track,
@@ -87,7 +86,9 @@ class DaylistScreen extends ConsumerWidget {
                 style: text.bodyLarge?.copyWith(color: cc.textMuted),
               ),
             )
-          : ListView(
+          : LayoutBuilder(builder: (context, box) {
+              final wide = trackRowWide(context, box.maxWidth);
+              return ListView(
               padding: const EdgeInsets.only(bottom: CcDims.gap24)
                   .withDock(context),
               children: [
@@ -179,7 +180,8 @@ class DaylistScreen extends ConsumerWidget {
                         )
                       : _OwnRow(item.track!, () => actions.play(startIndex: i)),
               ],
-            ),
+            );
+            }),
       ),
     );
   }

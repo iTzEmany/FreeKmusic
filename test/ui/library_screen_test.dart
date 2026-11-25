@@ -30,6 +30,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:codecore/providers/activity_providers.dart';
 import 'package:codecore/providers/selection_providers.dart';
@@ -776,6 +777,16 @@ void main() {
     final s = (await t.runAsync(() async => (await SettingsStore.open()).readSettings()))!;
     expect((s.libraryGrid, s.libraryDensity), (false, 2));
     await h.dispose(t);
+  });
+
+  testWidgets('wide: an old saved «false» that was never a choice still starts as a grid', (t) async {
+    SharedPreferences.setMockInitialValues({'storageMode': 'device', 'libraryGrid': false});
+    final old = (await t.runAsync(() async => (await SettingsStore.open()).readSettings()))!;
+    expect(old.libraryGrid, isNull);
+    final store = (await t.runAsync(() async => await SettingsStore.open()))!;
+    await t.runAsync(() => store.writeSettings(old.copyWith(libraryGrid: false)));
+    final chosen = (await t.runAsync(() async => (await SettingsStore.open()).readSettings()))!;
+    expect(chosen.libraryGrid, isFalse, reason: 'a real choice is kept');
   });
 
   testWidgets('phone: first start is a list, no density control', (t) async {

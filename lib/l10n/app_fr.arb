@@ -4467,5 +4467,8 @@
     }
   },
   "tableNumberColumn": "Numéro",
-  "viewDensity": "Densité de la grille"
+  "viewDensity": "Densité de la grille",
+  "densitySmall": "petite",
+  "densityMedium": "moyenne",
+  "densityLarge": "grande"
 }

@@ -362,7 +362,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             TableColumn.duration => PlaylistSort.duration,
             TableColumn.number => PlaylistSort.personal,
           };
-          _saveOrder(id, sort, next.ascending);
+          // Another column starts as its criterion does (duration: longest first), the same one flips.
+          _saveOrder(id, sort, c == current?.column ? next.ascending : sort.ascendingByDefault);
         },
         lead: (t) => TrackAction(
           Icons.playlist_remove_rounded,

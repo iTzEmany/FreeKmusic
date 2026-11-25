@@ -8669,4 +8669,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get viewDensity => 'Densidad de la cuadrícula';
+
+  @override
+  String get densitySmall => 'pequeña';
+
+  @override
+  String get densityMedium => 'mediana';
+
+  @override
+  String get densityLarge => 'grande';
 }

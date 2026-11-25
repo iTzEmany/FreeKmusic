@@ -8615,4 +8615,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get viewDensity => 'Grid density';
+
+  @override
+  String get densitySmall => 'small';
+
+  @override
+  String get densityMedium => 'medium';
+
+  @override
+  String get densityLarge => 'large';
 }

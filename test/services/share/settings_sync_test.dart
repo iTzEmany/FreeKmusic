@@ -132,6 +132,7 @@ void main() {
     'receiveFromLan',
     'playlistSorts',
     'libraryGrid',
+    'libraryGridChosen',
     'libraryDensity',
     'recentSearches',
     'ytNoticeSeen',

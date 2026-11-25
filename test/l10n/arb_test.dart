@@ -9,6 +9,7 @@ const _langs = ['en', 'de', 'es', 'fr', 'pt'];
 /// words that are the same in the other languages.
 const _sameAsItalian = {
   'karaoke',
+  'densityLarge', // es, fr and pt
   'karaokePercent', // only a placeholder and a unit
   'chartGenrePop',
   'chartGenreRock',

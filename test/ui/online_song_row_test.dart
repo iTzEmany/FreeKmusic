@@ -16,6 +16,7 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/online/online_song_row.dart';
 import 'package:codecore/ui/widgets/track_row.dart' show SwipeToQueue;
+import 'package:codecore/ui/screens/online/online_selection_scope.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -176,15 +177,20 @@ void main() {
     final h = await pumpRow(
       tester,
       child: Scaffold(
-        body: Column(
-          children: [
-            for (var i = 0; i < 4; i++)
-              OnlineSongTile(
-                result: YtResult(id: 'v$i', title: 'Song $i', channel: 'Chan', duration: const Duration(seconds: 90)),
-                index: i,
-                selectionKey: 'k',
-              ),
-          ],
+        body: OnlineSelectionScope(
+          selectionKey: 'k',
+          ids: const [0, 1, 2, 3],
+          actions: (_) => const [],
+          child: Column(
+            children: [
+              for (var i = 0; i < 4; i++)
+                OnlineSongTile(
+                  result: YtResult(id: 'v$i', title: 'Song $i', channel: 'Chan', duration: const Duration(seconds: 90)),
+                  index: i,
+                  selectionKey: 'k',
+                ),
+            ],
+          ),
         ),
       ),
     );

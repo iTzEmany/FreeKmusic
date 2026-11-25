@@ -58,6 +58,7 @@ const kDeviceBoundKeys = {
   'streamCacheVolume',
   // Layout of this screen (D-739): list/grid and its density stay on the PC.
   'libraryGrid',
+  'libraryGridChosen',
   'libraryDensity',
 };
 

@@ -8653,4 +8653,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get viewDensity => 'Densidade da grelha';
+
+  @override
+  String get densitySmall => 'pequena';
+
+  @override
+  String get densityMedium => 'média';
+
+  @override
+  String get densityLarge => 'grande';
 }

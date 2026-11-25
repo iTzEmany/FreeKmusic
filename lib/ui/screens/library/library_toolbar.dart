@@ -133,8 +133,16 @@ class LibraryToolbar extends StatelessWidget {
                 minimumSize: WidgetStatePropertyAll(Size(48, 48)),
               ),
               segments: [
-                for (final (i, t) in const ['S', 'M', 'L'].indexed)
-                  ButtonSegment(value: i, label: Text(t), tooltip: l.viewDensity),
+                for (final (i, t, name) in [
+                  (0, 'S', l.densitySmall),
+                  (1, 'M', l.densityMedium),
+                  (2, 'L', l.densityLarge),
+                ])
+                  ButtonSegment(
+                    value: i,
+                    label: Semantics(label: name, excludeSemantics: true, child: Text(t)),
+                    tooltip: l.viewDensity,
+                  ),
               ],
               selected: {density},
               onSelectionChanged: (v) => onDensity!(v.first),

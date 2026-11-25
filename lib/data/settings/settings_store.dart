@@ -533,7 +533,8 @@ class SettingsStore {
     librarySort: _prefs.getString('librarySort') ?? 'recent',
     librarySortAscending: _readSortAscending(),
     playlistSorts: _readPlaylistSorts(),
-    libraryGrid: _prefs.getBool('libraryGrid'),
+    // Older versions always saved the key, so only a saved choice counts.
+    libraryGrid: _prefs.getBool('libraryGridChosen') == true ? _prefs.getBool('libraryGrid') : null,
     libraryDensity: (_prefs.getInt('libraryDensity') ?? 1).clamp(0, 2),
     recentSearches: _prefs.getStringList('recentSearches') ?? const [],
     ytNoticeSeen: _prefs.getBool('ytNoticeSeen') ?? false,
@@ -648,7 +649,10 @@ class SettingsStore {
     }
     await _prefs.setString('playlistSorts', jsonEncode(s.playlistSorts));
     final grid = s.libraryGrid;
-    if (grid != null) await _prefs.setBool('libraryGrid', grid);
+    if (grid != null) {
+      await _prefs.setBool('libraryGrid', grid);
+      await _prefs.setBool('libraryGridChosen', true);
+    }
     await _prefs.setInt('libraryDensity', s.libraryDensity);
     await _prefs.setStringList('recentSearches', s.recentSearches);
     await _prefs.setBool('ytNoticeSeen', s.ytNoticeSeen);

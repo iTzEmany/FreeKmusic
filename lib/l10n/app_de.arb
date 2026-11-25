@@ -4246,5 +4246,8 @@
     }
   },
   "tableNumberColumn": "Nummer",
-  "viewDensity": "Rasterdichte"
+  "viewDensity": "Rasterdichte",
+  "densitySmall": "klein",
+  "densityMedium": "mittel",
+  "densityLarge": "groß"
 }

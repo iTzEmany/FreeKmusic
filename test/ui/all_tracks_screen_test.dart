@@ -332,12 +332,23 @@ void main() {
   });
   testWidgets('the sort blocks order by title', (tester) async {
     final h = await _open(tester);
-    double y(String t) => tester.getTopLeft(find.text(t)).dy;
     await tester.tap(find.text('Titolo'));
     await _settle(tester);
-    expect([for (var i = 0; i < 4; i++) y('Song $i')], orderedEquals([for (var i = 0; i < 4; i++) y('Song $i')]..sort()));
+    expect(_visibleTitles(tester), ['Song 0', 'Song 1', 'Song 2', 'Song 3']);
     final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
     expect(c.read(trackQueryProvider(false)).sort, SortOption.title);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a sort block of the phone starts ascending, whatever the wide table left', (tester) async {
+    final h = await _open(tester);
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    c.read(trackQueryProvider(false).notifier).update((q) => q.copyWith(sort: SortOption.addedAt, descending: true));
+    await _settle(tester);
+    await tester.tap(find.text('Titolo'));
+    await _settle(tester);
+    expect(c.read(trackQueryProvider(false)).descending, isFalse);
+    expect(_visibleTitles(tester), ['Song 0', 'Song 1', 'Song 2', 'Song 3']);
     await h.dispose(tester);
   });
 

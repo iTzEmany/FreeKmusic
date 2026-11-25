@@ -4246,5 +4246,8 @@
     }
   },
   "tableNumberColumn": "Number",
-  "viewDensity": "Grid density"
+  "viewDensity": "Grid density",
+  "densitySmall": "small",
+  "densityMedium": "medium",
+  "densityLarge": "large"
 }

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,14 +42,23 @@ class OnlineSelectionScope extends ConsumerWidget {
     return SelectionScope(
       listKey: selectionKey,
       visibleIds: ids,
-      child: overlay
+      child: _VisibleIds(ids, child: overlay
           ? Stack(children: [
               Positioned.fill(child: child),
               if (bar != null) Positioned(top: 0, left: 0, right: 0, child: bar),
             ])
-          : Column(children: [?bar, Expanded(child: child)]),
+          : Column(children: [?bar, Expanded(child: child)])),
     );
   }
+}
+
+/// The ids shown now, in order, for the rows' Shift + click ranges.
+class _VisibleIds extends InheritedWidget {
+  const _VisibleIds(this.ids, {required super.child});
+  final List<int> ids;
+
+  @override
+  bool updateShouldNotify(_VisibleIds old) => old.ids != ids;
 }
 
 /// How one online song row reads the picks of list [selectionKey]: the song
@@ -77,12 +84,8 @@ class OnlineSelectionScope extends ConsumerWidget {
     if (!picked.active && !shift && !keys.isControlPressed && !keys.isMetaPressed) {
       return play?.call();
     }
-    // shortcut: the places of a list are 0..n-1, so a range is every place between the anchor and this one; upgrade if a list skips places.
-    shift
-        ? notifier.selectRange([
-            for (var i = 0; i <= math.max(index, picked.anchor ?? index); i++) i,
-          ], index)
-        : notifier.toggle(index);
+    final visible = ref.context.dependOnInheritedWidgetOfExactType<_VisibleIds>()?.ids ?? const <int>[];
+    shift ? notifier.selectRange(visible, index) : notifier.toggle(index);
   }
 
   return (

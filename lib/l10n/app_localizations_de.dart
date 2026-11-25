@@ -8679,4 +8679,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get viewDensity => 'Rasterdichte';
+
+  @override
+  String get densitySmall => 'klein';
+
+  @override
+  String get densityMedium => 'mittel';
+
+  @override
+  String get densityLarge => 'groß';
 }

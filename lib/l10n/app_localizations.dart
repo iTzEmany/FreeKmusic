@@ -13464,6 +13464,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Densità della griglia'**
   String get viewDensity;
+
+  /// No description provided for @densitySmall.
+  ///
+  /// In it, this message translates to:
+  /// **'piccola'**
+  String get densitySmall;
+
+  /// No description provided for @densityMedium.
+  ///
+  /// In it, this message translates to:
+  /// **'media'**
+  String get densityMedium;
+
+  /// No description provided for @densityLarge.
+  ///
+  /// In it, this message translates to:
+  /// **'grande'**
+  String get densityLarge;
 }
 
 class _AppLocalizationsDelegate

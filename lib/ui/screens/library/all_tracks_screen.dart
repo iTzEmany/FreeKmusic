@@ -18,6 +18,7 @@ import '../../widgets/play_buttons.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../../widgets/shuffle_button.dart';
 import '../../widgets/selection_bar.dart';
+import '../../widgets/track_row.dart' show trackRowWide;
 import '../../widgets/track_table.dart';
 import '../../widgets/track_row_selection.dart';
 import 'album_detail_screen.dart' show durationWords;
@@ -250,7 +251,8 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
     final byTitle = query.sort == SortOption.title;
     final byArtist = query.sort == SortOption.artist;
     // The table's headers sort and chips filter; the phone keeps its two bars.
-    final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
+    return LayoutBuilder(builder: (context, box) {
+    final wide = trackRowWide(context, box.maxWidth);
     return AlphaScroller(
       controller: _scroll,
       itemExtent: rowHeight,
@@ -311,7 +313,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
                         BlockItem(value: o, label: _sortLabel(context, o)),
                     ],
                     selected: query.sort,
-                    onChanged: (o) => _query.update((q) => q.copyWith(sort: o)),
+                    onChanged: (o) => _query.update((q) => q.copyWith(sort: o, descending: false)),
                   ),
                 ),
                   if (!widget.downloadedNoPlaylist) const LibraryFilterBar(),
@@ -349,6 +351,7 @@ class _AllTracksScreenState extends ConsumerState<AllTracksScreen> {
         ],
       ),
     );
+    });
   }
 }
 
