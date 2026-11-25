@@ -19,7 +19,7 @@ concurrency:
 
 env:
   # Same version as the development machine (flutter --version).
-  FLUTTER_VERSION: '3.47.1'
+  FLUTTER_VERSION: '3.47.9'
   # Shared runners are slower than the development PC: the performance tests
   # keep their budgets but allow this many times more (default 2).
   CODECORE_PERF_MARGIN: '4'
