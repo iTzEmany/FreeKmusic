@@ -8601,4 +8601,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shareUntitled => 'Sin título';
+
+  @override
+  String get flatpakDataTitle => '¿Datos de otra versión?';
+
+  @override
+  String flatpakDataBody(String oldDir, String newDir) {
+    return 'Esta app Flatpak usa su propia carpeta de datos, vacía. Si antes usabas AppImage o deb, tu biblioteca está en $oldDir. Para traerla, cierra la app y pega este comando en un terminal (fuera de Flatpak); los datos y ajustes irán a $newDir. La app no copia nada por sí sola.';
+  }
+
+  @override
+  String get flatpakDataCopy => 'Copiar comando';
 }

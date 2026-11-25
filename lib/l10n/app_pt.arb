@@ -4373,5 +4373,18 @@
   "updateNews": "Novidades",
   "updateNew": "nova",
   "shareKindTrack": "Faixa",
-  "shareUntitled": "Sem título"
+  "shareUntitled": "Sem título",
+  "flatpakDataTitle": "Dados de outra versão?",
+  "flatpakDataBody": "Este app Flatpak usa a sua própria pasta de dados, vazia. Se antes usava AppImage ou deb, a sua biblioteca está em {oldDir}. Para a trazer, feche o app e cole este comando num terminal (fora do Flatpak); dados e definições irão para {newDir}. O app não copia nada sozinho.",
+  "@flatpakDataBody": {
+    "placeholders": {
+      "oldDir": {
+        "type": "String"
+      },
+      "newDir": {
+        "type": "String"
+      }
+    }
+  },
+  "flatpakDataCopy": "Copiar comando"
 }

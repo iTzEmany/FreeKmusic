@@ -6,6 +6,7 @@ import '../../data/repositories/artist_info_repository.dart';
 import '../../data/repositories/track_repository.dart';
 import 'curiosity_finder.dart';
 import 'http_client.dart';
+import 'musicbrainz_client.dart' show MusicBrainzUnavailable;
 import 'query_cleaner.dart';
 
 /// What the last search could not do, per part: `songLimited` / `artistLimited`
@@ -92,7 +93,10 @@ class CuriosityService {
       (found.artistError, false),
     ]) {
       if (err == null) continue;
-      if (err is RateLimitedException) {
+      if (err is MusicBrainzUnavailable) {
+        // Resting (already logged by the client): «cannot ask now», so the chain waits for the rest to end.
+        isSong ? songLimited = true : artistLimited = true;
+      } else if (err is RateLimitedException) {
         AppLog.w('curiosity refused', err);
         isSong ? songLimited = true : artistLimited = true;
       } else {

@@ -4408,5 +4408,18 @@
   "updateNews": "Nouveautés",
   "updateNew": "nouvelle",
   "shareKindTrack": "Titre",
-  "shareUntitled": "Sans titre"
+  "shareUntitled": "Sans titre",
+  "flatpakDataTitle": "Données d’une autre version ?",
+  "flatpakDataBody": "Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans {oldDir}. Pour l’amener ici, fermez l’app et collez cette commande dans un terminal (hors Flatpak) ; données et réglages iront dans {newDir}. L’app ne copie rien toute seule.",
+  "@flatpakDataBody": {
+    "placeholders": {
+      "oldDir": {
+        "type": "String"
+      },
+      "newDir": {
+        "type": "String"
+      }
+    }
+  },
+  "flatpakDataCopy": "Copier la commande"
 }

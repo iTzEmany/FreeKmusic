@@ -13380,6 +13380,24 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Senza titolo'**
   String get shareUntitled;
+
+  /// No description provided for @flatpakDataTitle.
+  ///
+  /// In it, this message translates to:
+  /// **'Dati di una versione precedente?'**
+  String get flatpakDataTitle;
+
+  /// No description provided for @flatpakDataBody.
+  ///
+  /// In it, this message translates to:
+  /// **'Questa app Flatpak usa una cartella dati sua, vuota. Se prima usavi AppImage o deb, la tua libreria è in {oldDir}. Per portarla qui chiudi l\'app e incolla in un terminale (fuori dal Flatpak) questo comando; dati e impostazioni finiranno in {newDir}. L\'app non copia nulla da sola.'**
+  String flatpakDataBody(String oldDir, String newDir);
+
+  /// No description provided for @flatpakDataCopy.
+  ///
+  /// In it, this message translates to:
+  /// **'Copia comando'**
+  String get flatpakDataCopy;
 }
 
 class _AppLocalizationsDelegate
