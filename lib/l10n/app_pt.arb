@@ -4375,7 +4375,7 @@
   "shareKindTrack": "Faixa",
   "shareUntitled": "Sem título",
   "flatpakDataTitle": "Dados de outra versão?",
-  "flatpakDataBody": "Este app Flatpak usa a sua própria pasta de dados, vazia. Se antes usava AppImage ou deb, a sua biblioteca está em {oldDir}. Para a trazer, feche o app e cole este comando num terminal (fora do Flatpak); dados e definições irão para {newDir}. O app não copia nada sozinho.",
+  "flatpakDataBody": "Este app Flatpak usa a sua própria pasta de dados, vazia. Se antes usava AppImage ou deb, a sua biblioteca está em {oldDir}. Para a trazer, feche o app, cole este comando num terminal (fora do Flatpak) e depois reabra o app: dados e definições irão para {newDir}. O app não copia nada sozinho.",
   "@flatpakDataBody": {
     "placeholders": {
       "oldDir": {
@@ -4386,5 +4386,6 @@
       }
     }
   },
-  "flatpakDataCopy": "Copiar comando"
+  "flatpakDataCopy": "Copiar comando",
+  "updateFlatpakHint": "Descarrego o ficheiro; depois feche o app e cole o comando num terminal."
 }

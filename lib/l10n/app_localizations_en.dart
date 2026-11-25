@@ -8553,9 +8553,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String flatpakDataBody(String oldDir, String newDir) {
-    return 'This Flatpak app uses its own, empty data folder. If you used the AppImage or deb before, your library is in $oldDir. To bring it here, close the app and paste this command in a terminal (outside the Flatpak); data and settings will end up in $newDir. The app copies nothing by itself.';
+    return 'This Flatpak app uses its own, empty data folder. If you used the AppImage or deb before, your library is in $oldDir. To bring it here, close the app, paste this command in a terminal (outside the Flatpak) and then reopen the app: data and settings will end up in $newDir. The app copies nothing by itself.';
   }
 
   @override
   String get flatpakDataCopy => 'Copy command';
+
+  @override
+  String get updateFlatpakHint =>
+      'I download the file; then close the app and paste the command in a terminal.';
 }

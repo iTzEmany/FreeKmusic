@@ -8651,9 +8651,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String flatpakDataBody(String oldDir, String newDir) {
-    return 'Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans $oldDir. Pour l’amener ici, fermez l’app et collez cette commande dans un terminal (hors Flatpak) ; données et réglages iront dans $newDir. L’app ne copie rien toute seule.';
+    return 'Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans $oldDir. Pour l’amener ici, fermez l’app, collez cette commande dans un terminal (hors Flatpak), puis rouvrez l’app : données et réglages iront dans $newDir. L’app ne copie rien toute seule.';
   }
 
   @override
   String get flatpakDataCopy => 'Copier la commande';
+
+  @override
+  String get updateFlatpakHint =>
+      'Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal.';
 }

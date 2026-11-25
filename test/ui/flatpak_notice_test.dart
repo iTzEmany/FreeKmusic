@@ -29,6 +29,11 @@ void main() {
     expect(due(_flatpak, shown: true), isFalse);
   });
 
+  test('the copy command sets the empty new folder aside before copying', () {
+    expect(flatpakCopyCommand.indexOf('mv '), lessThan(flatpakCopyCommand.indexOf('cp -a')));
+    expect(flatpakCopyCommand, contains('.vuota'));
+  });
+
   testWidgets('shown the first time with a flatpak and an empty library, not the second', (tester) async {
     final h = await Harness.create(tester);
     await _open(tester, h, _flatpak);

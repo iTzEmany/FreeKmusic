@@ -134,6 +134,6 @@ void main() {
     expect(web.urls, hasLength(asked), reason: 'the client rests: no new request of any kind');
     now = now.add(const Duration(minutes: 2));
     await c.read(curiosityProvider(track.id).notifier).fetch(track);
-    expect(web.urls.length, greaterThan(asked), reason: 'the rest is over: it asks again');
+    expect(web.urls, hasLength(asked + 1), reason: 'the rest is over: one request, then it rests again');
   });
 }

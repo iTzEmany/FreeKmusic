@@ -10,7 +10,7 @@ import 'musicbrainz_client.dart' show MusicBrainzUnavailable;
 import 'query_cleaner.dart';
 
 /// What the last search could not do, per part: `songLimited` / `artistLimited`
-/// = Wikipedia refused (too many requests), so «nothing found» would be a lie.
+/// = Wikipedia refused (too many requests) or MusicBrainz is resting, so «nothing found» would be a lie.
 class CuriosityOutcome {
   const CuriosityOutcome({
     this.songLimited = false,

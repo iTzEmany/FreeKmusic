@@ -23,7 +23,11 @@ Future<void> showFlatpakDataDialog(BuildContext context) => showDialog<void>(
       ),
       actions: [
         TextButton(
-          onPressed: () => Clipboard.setData(const ClipboardData(text: flatpakCopyCommand)),
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(ctx);
+            await Clipboard.setData(const ClipboardData(text: flatpakCopyCommand));
+            messenger.showSnackBar(SnackBar(content: Text(l.copied)));
+          },
           child: Text(l.flatpakDataCopy),
         ),
         TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.close)),

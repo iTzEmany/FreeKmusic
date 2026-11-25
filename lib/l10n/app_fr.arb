@@ -4410,7 +4410,7 @@
   "shareKindTrack": "Titre",
   "shareUntitled": "Sans titre",
   "flatpakDataTitle": "Données d’une autre version ?",
-  "flatpakDataBody": "Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans {oldDir}. Pour l’amener ici, fermez l’app et collez cette commande dans un terminal (hors Flatpak) ; données et réglages iront dans {newDir}. L’app ne copie rien toute seule.",
+  "flatpakDataBody": "Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans {oldDir}. Pour l’amener ici, fermez l’app, collez cette commande dans un terminal (hors Flatpak), puis rouvrez l’app : données et réglages iront dans {newDir}. L’app ne copie rien toute seule.",
   "@flatpakDataBody": {
     "placeholders": {
       "oldDir": {
@@ -4421,5 +4421,6 @@
       }
     }
   },
-  "flatpakDataCopy": "Copier la commande"
+  "flatpakDataCopy": "Copier la commande",
+  "updateFlatpakHint": "Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal."
 }

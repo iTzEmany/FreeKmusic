@@ -151,6 +151,7 @@ void main() {
     );
     const cmd = 'flatpak install --user /home/u/updates/freekmusic-9.9.9.flatpak';
     expect(find.text(cmd), findsOneWidget);
+    expect(find.textContaining('incolla il comando'), findsOneWidget);
     await tester.tap(find.text('Copia'));
     await tester.pump();
     expect(copied, cmd);

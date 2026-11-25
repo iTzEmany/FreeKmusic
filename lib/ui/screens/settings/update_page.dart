@@ -211,7 +211,7 @@ class _UpdateFooter extends ConsumerWidget {
     Widget main(String label, VoidCallback? onPressed) => FilledButton(onPressed: onPressed, child: Text(label));
     final children = switch (s.phase) {
       UpdatePhase.idle => [
-        if (!flatpak) Text(self ? l.updateSelfHint : l.updateBrowserHint),
+        Text(flatpak ? l.updateFlatpakHint : self ? l.updateSelfHint : l.updateBrowserHint),
         const SizedBox(height: 12),
         main(
           flatpak
@@ -251,6 +251,8 @@ class _UpdateFooter extends ConsumerWidget {
         TextButton(onPressed: n.cancel, child: Text(l.cancel)),
       ],
       UpdatePhase.ready when flatpak && s.path != null => [
+        Text(l.updateFlatpakHint),
+        const SizedBox(height: 8),
         SelectableText(flatpakInstallCommand(s.path!), style: const TextStyle(fontFamily: 'monospace')),
         const SizedBox(height: 12),
         main(l.copy, () async {

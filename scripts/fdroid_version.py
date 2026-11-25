@@ -20,6 +20,10 @@ old = open(path).read()
 new = re.sub(r"(versionName:\s*)\S+", rf"\g<1>{name}", old, count=1)
 new = re.sub(r"(versionCode:\s*)\S+", rf"\g<1>{code}", new, count=1)
 new = re.sub(r"(\n\s+commit:\s*)v\S+", rf"\g<1>v{name}", new, count=1)
+if check:
+    got = [re.search(rf"{k}:\s*(\S+)", old) for k in ("versionName", "versionCode", "commit")]
+    if None in got:
+        sys.exit(f"{path}: versionName, versionCode or commit is missing")
 if new == old:
     sys.exit(0)
 if check:

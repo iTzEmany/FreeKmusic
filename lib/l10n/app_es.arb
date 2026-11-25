@@ -4189,7 +4189,7 @@
   "shareKindTrack": "Canción",
   "shareUntitled": "Sin título",
   "flatpakDataTitle": "¿Datos de otra versión?",
-  "flatpakDataBody": "Esta app Flatpak usa su propia carpeta de datos, vacía. Si antes usabas AppImage o deb, tu biblioteca está en {oldDir}. Para traerla, cierra la app y pega este comando en un terminal (fuera de Flatpak); los datos y ajustes irán a {newDir}. La app no copia nada por sí sola.",
+  "flatpakDataBody": "Esta app Flatpak usa su propia carpeta de datos, vacía. Si antes usabas AppImage o deb, tu biblioteca está en {oldDir}. Para traerla, cierra la app, pega este comando en un terminal (fuera de Flatpak) y vuelve a abrir la app: los datos y ajustes irán a {newDir}. La app no copia nada por sí sola.",
   "@flatpakDataBody": {
     "placeholders": {
       "oldDir": {
@@ -4200,5 +4200,6 @@
       }
     }
   },
-  "flatpakDataCopy": "Copiar comando"
+  "flatpakDataCopy": "Copiar comando",
+  "updateFlatpakHint": "Descargo el archivo; luego cierra la app y pega el comando en un terminal."
 }
