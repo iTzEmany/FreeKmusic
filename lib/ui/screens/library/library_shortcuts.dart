@@ -73,8 +73,8 @@ class LibraryShortcuts extends StatelessWidget {
                           if (s.meta != null)
                             Text(
                               s.meta!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              maxLines: wrap ? null : 1,
+                              overflow: wrap ? null : TextOverflow.ellipsis,
                               style: theme.bodySmall?.copyWith(
                                 color: cc.textMuted,
                               ),
