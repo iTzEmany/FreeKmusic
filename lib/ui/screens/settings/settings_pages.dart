@@ -23,7 +23,9 @@ import '../../widgets/cover_image.dart';
 import '../../../providers/folder_actions.dart';
 import '../library/folders_sheet.dart';
 import '../../../providers/share_providers.dart';
+import '../../shell/shell_keys.dart' show ShortcutGroup, shortcutGroupText;
 import '../../shell/shell_nav.dart';
+import '../../shell/shortcuts_overlay.dart' show shortcutRows;
 import '../share/share_screen.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/prompt_name.dart';
@@ -57,7 +59,6 @@ import 'dislikes_screen.dart';
 import 'shuffle_plus_tiles.dart';
 import 'release_settings_tiles.dart';
 import 'merged_artists_screen.dart';
-import '../../widgets/empty_state.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../import/exportify_remind_choice.dart';
 import '../../widgets/show_msg.dart';
@@ -83,7 +84,7 @@ enum SettingsPage {
   network,
   backup,
   advanced,
-  shortcuts, // desktop only; filled by 158.3
+  shortcuts, // desktop only
 }
 
 /// The pages shown on this platform (D-720: shortcuts only on desktop).
@@ -136,14 +137,11 @@ class SettingsPageView extends ConsumerWidget {
       SettingsPage.backup => _backup(context, ref),
       SettingsPage.advanced => _advanced(context, ref),
       SettingsPage.shortcuts => [
-        SettingsGroup(
-          children: [
-            EmptyState(
-              icon: Icons.keyboard_outlined,
-              message: context.l10n.shortcutsEmpty,
-            ),
-          ],
-        ),
+        for (final g in ShortcutGroup.values)
+          SettingsGroup(
+            title: shortcutGroupText(context.l10n, g),
+            children: shortcutRows(context, g),
+          ),
       ],
     };
     // A page with a single group needs no group title.

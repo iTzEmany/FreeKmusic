@@ -8656,5 +8656,56 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsPageShortcuts => 'Scorciatoie';
 
   @override
-  String get shortcutsEmpty => 'Le scorciatoie da tastiera compariranno qui.';
+  String get shortcutGroupPlayback => 'Riproduzione';
+
+  @override
+  String get shortcutGroupNavigation => 'Navigazione';
+
+  @override
+  String get shortcutGroupSearch => 'Cerca';
+
+  @override
+  String get shortcutGroupApp => 'Applicazione';
+
+  @override
+  String get shortcutPlayPause => 'Riproduci o metti in pausa';
+
+  @override
+  String get shortcutPrevious => 'Brano precedente';
+
+  @override
+  String get shortcutNext => 'Brano successivo';
+
+  @override
+  String get shortcutVolumeDown => 'Volume più basso';
+
+  @override
+  String get shortcutVolumeUp => 'Volume più alto';
+
+  @override
+  String get shortcutBack => 'Indietro';
+
+  @override
+  String get shortcutForward => 'Avanti';
+
+  @override
+  String get shortcutReload => 'Ricarica la pagina';
+
+  @override
+  String get shortcutSettings => 'Apri le impostazioni';
+
+  @override
+  String get shortcutSearch => 'Vai a Cerca';
+
+  @override
+  String get shortcutPasteLink => 'Cerca e incolla un link';
+
+  @override
+  String get shortcutShowList => 'Mostra l\'elenco delle scorciatoie';
+
+  @override
+  String get shortcutQuit => 'Chiudi FreeKmusic';
+
+  @override
+  String get shortcutKeySpace => 'Spazio';
 }

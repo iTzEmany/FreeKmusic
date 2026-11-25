@@ -8667,5 +8667,56 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsPageShortcuts => 'Atalhos';
 
   @override
-  String get shortcutsEmpty => 'Os atalhos de teclado aparecerão aqui.';
+  String get shortcutGroupPlayback => 'Reprodução';
+
+  @override
+  String get shortcutGroupNavigation => 'Navegação';
+
+  @override
+  String get shortcutGroupSearch => 'Pesquisa';
+
+  @override
+  String get shortcutGroupApp => 'App';
+
+  @override
+  String get shortcutPlayPause => 'Reproduzir ou pausar';
+
+  @override
+  String get shortcutPrevious => 'Faixa anterior';
+
+  @override
+  String get shortcutNext => 'Próxima faixa';
+
+  @override
+  String get shortcutVolumeDown => 'Diminuir o volume';
+
+  @override
+  String get shortcutVolumeUp => 'Aumentar o volume';
+
+  @override
+  String get shortcutBack => 'Voltar';
+
+  @override
+  String get shortcutForward => 'Avançar';
+
+  @override
+  String get shortcutReload => 'Recarregar a página';
+
+  @override
+  String get shortcutSettings => 'Abrir as configurações';
+
+  @override
+  String get shortcutSearch => 'Ir para a pesquisa';
+
+  @override
+  String get shortcutPasteLink => 'Pesquisar e colar um link';
+
+  @override
+  String get shortcutShowList => 'Mostrar a lista de atalhos';
+
+  @override
+  String get shortcutQuit => 'Sair do FreeKmusic';
+
+  @override
+  String get shortcutKeySpace => 'Espaço';
 }

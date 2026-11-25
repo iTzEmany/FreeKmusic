@@ -1,4 +1,12 @@
+import 'dart:async';
+
+import 'package:codecore/l10n/app_localizations.dart';
+import 'package:codecore/providers/app_restart_provider.dart';
+import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
+import 'package:codecore/providers/ui_providers.dart';
+import 'package:codecore/ui/screens/settings/settings_screen.dart';
+import 'package:codecore/ui/shell/shortcuts_overlay.dart';
 import 'package:codecore/providers/preview_providers.dart';
 import 'package:codecore/services/audio/preview_player.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
@@ -148,6 +156,228 @@ void main() {
     await chord(t, LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.arrowDown);
     expect(c.read(volumeProvider), closeTo(0.45, 1e-9));
     await h.dispose(t);
+  });
+
+  Future<void> tap(WidgetTester t, LogicalKeyboardKey key, {LogicalKeyboardKey? mod}) async {
+    if (mod != null) await t.sendKeyDownEvent(mod);
+    await t.sendKeyEvent(key);
+    if (mod != null) await t.sendKeyUpEvent(mod);
+    await t.pump(const Duration(milliseconds: 300));
+  }
+
+  GlobalKey<NavigatorState> homeNav(ProviderContainer c) => c.read(tabNavigatorKeysProvider)[NavTab.home.index];
+
+  Future<void> pushPage(WidgetTester t, ProviderContainer c) async {
+    homeNav(c).currentState!.push(MaterialPageRoute<void>(builder: (_) => const Scaffold(body: Text('inner'))));
+    await t.pumpAndSettle();
+  }
+
+  testWidgets('shell: Backspace goes back, Alt+Right forward again', (t) async {
+    final h = await shell(t);
+    final c = container(t);
+    await pushPage(t, c);
+    await tap(t, LogicalKeyboardKey.backspace);
+    await t.pumpAndSettle();
+    expect(find.text('inner'), findsNothing);
+    await tap(t, LogicalKeyboardKey.arrowRight, mod: LogicalKeyboardKey.altLeft);
+    await t.pumpAndSettle();
+    expect(find.text('inner'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('shell: F5 asks the page on screen to reload', (t) async {
+    final h = await shell(t);
+    final c = container(t);
+    await tap(t, LogicalKeyboardKey.f5);
+    expect(c.read(reloadRequestProvider), 1);
+    await h.dispose(t);
+  });
+
+  testWidgets('shell: «/» goes to search with the field focused', (t) async {
+    final h = await shell(t);
+    final c = container(t);
+    await tap(t, LogicalKeyboardKey.slash);
+    expect(c.read(navIndexProvider), isNot(NavTab.home.index));
+    await h.dispose(t);
+  });
+
+  testWidgets('shell: Ctrl+L opens Search with the link on the clipboard', (t) async {
+    t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.getData') return <String, Object?>{'text': 'https://example.com/x'};
+      return null;
+    });
+    addTearDown(() => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final h = await shell(t);
+    final c = container(t);
+    await tap(t, LogicalKeyboardKey.keyL, mod: LogicalKeyboardKey.controlLeft);
+    await t.pump(const Duration(milliseconds: 300));
+    expect(c.read(navIndexProvider), NavTab.search.index);
+    expect(c.read(searchControllerProvider).text, 'https://example.com/x');
+    await h.dispose(t);
+  });
+
+  testWidgets('shell: Ctrl+, opens the settings', (t) async {
+    final h = await shell(t);
+    await tap(t, LogicalKeyboardKey.comma, mod: LogicalKeyboardKey.controlLeft);
+    await t.pumpAndSettle();
+    expect(find.byType(SettingsScreen), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('shell: Ctrl+Q quits', (t) async {
+    var quit = 0;
+    final h = await shell(t, extra: [quitAppProvider.overrideWithValue(() async => quit++)]);
+    await tap(t, LogicalKeyboardKey.keyQ, mod: LogicalKeyboardKey.controlLeft);
+    expect(quit, 1);
+    await h.dispose(t);
+  });
+
+  // «?» is the slash key with that character (the table matches the character).
+  Future<void> question(WidgetTester t) async {
+    await t.sendKeyDownEvent(LogicalKeyboardKey.slash, character: '?');
+    await t.sendKeyUpEvent(LogicalKeyboardKey.slash);
+    await t.pump(const Duration(milliseconds: 300));
+  }
+
+  testWidgets('shell: «?» opens the list with every action of the table', (t) async {
+    final h = await shell(t);
+    t.view.physicalSize = const Size(1280, 2400);
+    await question(t);
+    await t.pumpAndSettle();
+    for (final a in ShortcutAction.values) {
+      expect(find.byKey(ValueKey('shortcut-${a.name}')), findsOneWidget, reason: a.name);
+    }
+    await h.dispose(t);
+  });
+
+  testWidgets('the overlay can be opened on its own', (t) async {
+    await t.pumpWidget(MaterialApp(localizationsDelegates: AppLocalizations.localizationsDelegates, home: Builder(builder: (c) => TextButton(onPressed: () => showShortcutsOverlay(c), child: const Text('go')))));
+    await t.tap(find.text('go'));
+    await t.pumpAndSettle();
+    expect(find.byType(AlertDialog), findsOneWidget);
+  });
+
+  testWidgets('with a text field focused Backspace, «/» and «?» are text, not shortcuts', (t) async {
+    final log = <String>[];
+    final text = TextEditingController();
+    addTearDown(text.dispose);
+    final k = shortcutBindings({for (final a in ShortcutAction.values) a: () => log.add(a.name)});
+    await t.pumpWidget(MaterialApp(
+      home: ShellKeys(bindings: k.bindings, textOnly: k.textOnly, child: Scaffold(body: TextField(controller: text))),
+    ));
+    await t.tap(find.byType(TextField));
+    await t.pump();
+    await t.sendKeyEvent(LogicalKeyboardKey.backspace);
+    await t.sendKeyEvent(LogicalKeyboardKey.slash);
+    await t.sendKeyDownEvent(LogicalKeyboardKey.slash, character: '/');
+    await t.sendKeyUpEvent(LogicalKeyboardKey.slash);
+    await question(t);
+    expect(log, isEmpty);
+    await t.sendKeyEvent(LogicalKeyboardKey.f5);
+    expect(log, ['reload']);
+  });
+
+  testWidgets('a held key fires once, except the volume', (t) async {
+    final log = <String>[];
+    final k = shortcutBindings({for (final a in ShortcutAction.values) a: () => log.add(a.name)});
+    await t.pumpWidget(MaterialApp(
+      home: ShellKeys(bindings: k.bindings, textOnly: k.textOnly, repeatable: k.repeatable, child: const Scaffold(body: Text('x'))),
+    ));
+    await t.sendKeyDownEvent(LogicalKeyboardKey.f5);
+    await t.sendKeyRepeatEvent(LogicalKeyboardKey.f5);
+    await t.sendKeyRepeatEvent(LogicalKeyboardKey.f5);
+    await t.sendKeyUpEvent(LogicalKeyboardKey.f5);
+    expect(log, ['reload']);
+    log.clear();
+    await t.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await t.sendKeyDownEvent(LogicalKeyboardKey.arrowUp);
+    await t.sendKeyRepeatEvent(LogicalKeyboardKey.arrowUp);
+    await t.sendKeyUpEvent(LogicalKeyboardKey.arrowUp);
+    await t.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    expect(log, ['volumeUp', 'volumeUp']);
+  });
+
+  testWidgets('Backspace inside an open sheet is left to the sheet', (t) async {
+    final log = <String>[];
+    final k = shortcutBindings({for (final a in ShortcutAction.values) a: () => log.add(a.name)});
+    await t.pumpWidget(MaterialApp(
+      home: ShellKeys(
+        bindings: k.bindings,
+        textOnly: k.textOnly,
+        child: Navigator(
+          onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (c) => Scaffold(
+            body: TextButton(
+              onPressed: () => showDialog<void>(context: c, useRootNavigator: false, builder: (_) => const AlertDialog(content: Text('sheet'))),
+              child: const Text('open'),
+            ),
+          )),
+        ),
+      ),
+    ));
+    await t.sendKeyEvent(LogicalKeyboardKey.backspace);
+    expect(log, ['back']);
+    log.clear();
+    await t.tap(find.text('open'));
+    await t.pumpAndSettle();
+    await t.sendKeyEvent(LogicalKeyboardKey.backspace);
+    expect(log, isEmpty);
+  });
+
+  testWidgets('listenReload: a second F5 while the first reload runs is dropped', (t) async {
+    var runs = 0;
+    final gate = Completer<void>();
+    late ProviderContainer c;
+    await t.pumpWidget(ProviderScope(child: MaterialApp(home: Consumer(builder: (ctx, ref, _) {
+      c = ProviderScope.containerOf(ctx);
+      listenReload(ctx, ref, () {
+        runs++;
+        return gate.future;
+      });
+      return const Text('p');
+    }))));
+    c.read(reloadRequestProvider.notifier).request();
+    c.read(reloadRequestProvider.notifier).request();
+    await t.pump();
+    expect(runs, 1);
+    gate.complete();
+    await t.pump();
+    c.read(reloadRequestProvider.notifier).request();
+    await t.pump();
+    expect(runs, 2);
+  });
+
+  testWidgets('shell: Ctrl+L with a non-link on the clipboard opens an empty Search with focus', (t) async {
+    t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      if (call.method == 'Clipboard.getData') return <String, Object?>{'text': 'just some words'};
+      return null;
+    });
+    addTearDown(() => t.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
+    final h = await shell(t);
+    final c = container(t);
+    await tap(t, LogicalKeyboardKey.keyL, mod: LogicalKeyboardKey.controlLeft);
+    await t.pump(const Duration(milliseconds: 300));
+    expect(c.read(navIndexProvider), NavTab.search.index);
+    expect(c.read(searchControllerProvider).text, isEmpty);
+    expect(c.read(searchFocusProvider).hasFocus, isTrue);
+    await h.dispose(t);
+  });
+
+  testWidgets('listenReload: only the page on top reloads', (t) async {
+    final hits = <String>[];
+    late ProviderContainer c;
+    Widget page(String name) => Consumer(builder: (ctx, ref, _) {
+      listenReload(ctx, ref, () => hits.add(name));
+      return Text(name);
+    });
+    await t.pumpWidget(ProviderScope(child: MaterialApp(home: Consumer(builder: (ctx, ref, _) {
+      c = ProviderScope.containerOf(ctx);
+      return page('under');
+    }))));
+    Navigator.of(t.element(find.text('under'))).push(MaterialPageRoute<void>(builder: (_) => page('top')));
+    await t.pumpAndSettle();
+    c.read(reloadRequestProvider.notifier).request();
+    await t.pump();
+    expect(hits, ['top']);
   });
 
   testWidgets('shell: Esc with no preview running does not call stop', (t) async {

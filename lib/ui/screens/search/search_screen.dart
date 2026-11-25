@@ -113,6 +113,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     ref.listen(searchPrefillProvider, (_, next) => _applyPrefill(next));
+    // F5: the same search again.
+    listenReload(context, ref, () {
+      if (_text.isNotEmpty) setState(() => _submitted++);
+    });
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: PageFrame(child: Column(

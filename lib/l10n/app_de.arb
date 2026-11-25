@@ -4251,5 +4251,22 @@
   "densityMedium": "mittel",
   "densityLarge": "groß",
   "settingsPageShortcuts": "Tastenkürzel",
-  "shortcutsEmpty": "Hier erscheinen die Tastenkürzel."
+  "shortcutGroupPlayback": "Wiedergabe",
+  "shortcutGroupNavigation": "Navigation",
+  "shortcutGroupSearch": "Suche",
+  "shortcutGroupApp": "App",
+  "shortcutPlayPause": "Wiedergabe oder Pause",
+  "shortcutPrevious": "Vorheriger Titel",
+  "shortcutNext": "Nächster Titel",
+  "shortcutVolumeDown": "Leiser",
+  "shortcutVolumeUp": "Lauter",
+  "shortcutBack": "Zurück",
+  "shortcutForward": "Vor",
+  "shortcutReload": "Seite neu laden",
+  "shortcutSettings": "Einstellungen öffnen",
+  "shortcutSearch": "Zur Suche",
+  "shortcutPasteLink": "Link suchen und einfügen",
+  "shortcutShowList": "Liste der Tastenkürzel anzeigen",
+  "shortcutQuit": "FreeKmusic beenden",
+  "shortcutKeySpace": "Leertaste"
 }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../data/repositories/release_repository.dart';
+import '../../../providers/ui_providers.dart' show listenReload;
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/releases_providers.dart';
@@ -156,6 +157,7 @@ class _NewReleasesScreenState extends ConsumerState<NewReleasesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    listenReload(context, ref, _checkNow); // F5
     final l = context.l10n;
     final all =
         ref.watch(recentReleasesProvider(90)).value ?? const <RecentRelease>[];

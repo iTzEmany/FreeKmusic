@@ -8693,5 +8693,56 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsPageShortcuts => 'Tastenkürzel';
 
   @override
-  String get shortcutsEmpty => 'Hier erscheinen die Tastenkürzel.';
+  String get shortcutGroupPlayback => 'Wiedergabe';
+
+  @override
+  String get shortcutGroupNavigation => 'Navigation';
+
+  @override
+  String get shortcutGroupSearch => 'Suche';
+
+  @override
+  String get shortcutGroupApp => 'App';
+
+  @override
+  String get shortcutPlayPause => 'Wiedergabe oder Pause';
+
+  @override
+  String get shortcutPrevious => 'Vorheriger Titel';
+
+  @override
+  String get shortcutNext => 'Nächster Titel';
+
+  @override
+  String get shortcutVolumeDown => 'Leiser';
+
+  @override
+  String get shortcutVolumeUp => 'Lauter';
+
+  @override
+  String get shortcutBack => 'Zurück';
+
+  @override
+  String get shortcutForward => 'Vor';
+
+  @override
+  String get shortcutReload => 'Seite neu laden';
+
+  @override
+  String get shortcutSettings => 'Einstellungen öffnen';
+
+  @override
+  String get shortcutSearch => 'Zur Suche';
+
+  @override
+  String get shortcutPasteLink => 'Link suchen und einfügen';
+
+  @override
+  String get shortcutShowList => 'Liste der Tastenkürzel anzeigen';
+
+  @override
+  String get shortcutQuit => 'FreeKmusic beenden';
+
+  @override
+  String get shortcutKeySpace => 'Leertaste';
 }
