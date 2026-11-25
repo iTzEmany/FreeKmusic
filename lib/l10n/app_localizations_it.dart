@@ -8651,4 +8651,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get densityLarge => 'grande';
+
+  @override
+  String get settingsPageShortcuts => 'Scorciatoie';
+
+  @override
+  String get shortcutsEmpty => 'Le scorciatoie da tastiera compariranno qui.';
 }

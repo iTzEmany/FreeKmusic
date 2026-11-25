@@ -2,6 +2,7 @@ import 'package:codecore/ui/widgets/focus_ring_button.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -51,5 +52,27 @@ void main() {
     Focus.of(t.element(find.byType(SizedBox).first)).requestFocus();
     await t.pumpAndSettle();
     expect(ring(), findsOneWidget);
+  });
+
+  testWidgets('Tab moves focus through buttons in reading order', (t) async {
+    final a = FocusNode(), b = FocusNode(), c = FocusNode();
+    addTearDown(() {
+      a.dispose();
+      b.dispose();
+      c.dispose();
+    });
+    await t.pumpWidget(MaterialApp(
+      home: Material(
+        child: Column(children: [
+          for (final n in [a, b, c])
+            TextButton(focusNode: n, onPressed: () {}, child: const Text('x')),
+        ]),
+      ),
+    ));
+    for (final n in [a, b, c]) {
+      await t.sendKeyEvent(LogicalKeyboardKey.tab);
+      await t.pump();
+      expect(n.hasFocus, isTrue);
+    }
   });
 }

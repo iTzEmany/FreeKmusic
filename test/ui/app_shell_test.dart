@@ -410,6 +410,21 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('the right panel opens by itself at 1200 px, not at 1199', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final (w, open) in [(1199.0, false), (1200.0, true)]) {
+      tester.view.physicalSize = Size(w, 800);
+      final h = await Harness.create(tester, tracks: 2);
+      final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+      await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+      await h.pump(tester, const AppShell());
+      await _settle(tester);
+      expect(find.byType(SidePanelView), open ? findsOneWidget : findsNothing, reason: '$w');
+      await h.dispose(tester);
+    }
+  });
+
   testWidgets('opening an album keeps mini-player and bar; back closes it',
       (tester) async {
     _phone(tester);

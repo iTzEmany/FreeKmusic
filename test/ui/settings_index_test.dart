@@ -1,3 +1,4 @@
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/providers/jam_gate_providers.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
@@ -27,7 +28,11 @@ const _titles = [
 void _size(WidgetTester t, double w, double h) {
   t.view.physicalSize = Size(w, h);
   t.view.devicePixelRatio = 1;
-  addTearDown(t.view.reset);
+  debugIsDesktopOverride = w >= 840;
+  addTearDown(() {
+    t.view.reset();
+    debugIsDesktopOverride = null;
+  });
 }
 
 ProviderContainer _container(WidgetTester t) =>
@@ -268,6 +273,32 @@ void main() {
     await t.sendKeyEvent(LogicalKeyboardKey.enter);
     await t.pumpAndSettle();
     expect(t.widget<ListTile>(entry).selected, isTrue);
+    await h.dispose(t);
+  });
+
+  testWidgets('desktop: phone-only options are hidden, Scorciatoie exists', (t) async {
+    _size(t, 1280, 800);
+    final h = await Harness.create(t);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    expect(find.text('Dimensione testo'), findsNothing);
+    expect(find.text('Dock e intestazioni sfocati'), findsNothing);
+    await t.tap(find.text('Scorciatoie'));
+    await t.pumpAndSettle();
+    expect(find.byIcon(Icons.keyboard_outlined), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('phone: phone-only options are shown, no Scorciatoie', (t) async {
+    _size(t, 400, 1200);
+    final h = await Harness.create(t);
+    await h.pump(
+      t,
+      const Scaffold(body: SettingsScreen(initial: SettingsPage.appearance)),
+    );
+    expect(find.text('Dimensione testo'), findsOneWidget);
+    expect(find.text('Dock e intestazioni sfocati'), findsOneWidget);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    expect(find.text('Scorciatoie'), findsNothing);
     await h.dispose(t);
   });
 }

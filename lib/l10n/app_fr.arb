@@ -4470,5 +4470,7 @@
   "viewDensity": "Densité de la grille",
   "densitySmall": "petite",
   "densityMedium": "moyenne",
-  "densityLarge": "grande"
+  "densityLarge": "grande",
+  "settingsPageShortcuts": "Raccourcis",
+  "shortcutsEmpty": "Les raccourcis clavier apparaîtront ici."
 }

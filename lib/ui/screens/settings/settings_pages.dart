@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,6 +57,7 @@ import 'dislikes_screen.dart';
 import 'shuffle_plus_tiles.dart';
 import 'release_settings_tiles.dart';
 import 'merged_artists_screen.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/segmented_blocks.dart';
 import '../import/exportify_remind_choice.dart';
 import '../../widgets/show_msg.dart';
@@ -80,7 +83,14 @@ enum SettingsPage {
   network,
   backup,
   advanced,
+  shortcuts, // desktop only; filled by 158.3
 }
+
+/// The pages shown on this platform (D-720: shortcuts only on desktop).
+List<SettingsPage> get visibleSettingsPages => [
+  for (final p in SettingsPage.values)
+    if (p != SettingsPage.shortcuts || isDesktop) p,
+];
 
 String settingsPageTitle(AppLocalizations l, SettingsPage p) => switch (p) {
   SettingsPage.appearance => l.settingsPageAppearance,
@@ -91,6 +101,7 @@ String settingsPageTitle(AppLocalizations l, SettingsPage p) => switch (p) {
   SettingsPage.network => l.settingsPageNetwork,
   SettingsPage.backup => l.settingsPageBackup,
   SettingsPage.advanced => l.settingsPageAdvanced,
+  SettingsPage.shortcuts => l.settingsPageShortcuts,
 };
 
 /// The groups of one settings page, in a scrolling column (max 760 wide).
@@ -124,19 +135,51 @@ class SettingsPageView extends ConsumerWidget {
       SettingsPage.network => _network(context, ref),
       SettingsPage.backup => _backup(context, ref),
       SettingsPage.advanced => _advanced(context, ref),
+      SettingsPage.shortcuts => [
+        SettingsGroup(
+          children: [
+            EmptyState(
+              icon: Icons.keyboard_outlined,
+              message: context.l10n.shortcutsEmpty,
+            ),
+          ],
+        ),
+      ],
     };
     // A page with a single group needs no group title.
     final single = groups.length == 1;
-    return Center(
+    final list = ListView(
+      padding: const EdgeInsets.only(bottom: CcDims.gap24).withDock(context),
+      children: [
+        for (final g in groups)
+          single ? SettingsGroup(children: g.children) : g,
+      ],
+    );
+    if (!isDesktop) {
+      return Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: list,
+        ),
+      );
+    }
+    // Desktop (D-720): label and switch stay close, text >= 13 px, 36 px rows.
+    final theme = Theme.of(context);
+    final small = theme.textTheme.bodySmall;
+    return Align(
+      alignment: Alignment.topLeft,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 760),
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: CcDims.gap24)
-              .withDock(context),
-          children: [
-            for (final g in groups)
-              single ? SettingsGroup(children: g.children) : g,
-          ],
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: Theme(
+          data: theme.copyWith(
+            listTileTheme: theme.listTileTheme.copyWith(minTileHeight: 36),
+            textTheme: theme.textTheme.copyWith(
+              bodySmall: small?.copyWith(
+                fontSize: math.max(13, small.fontSize ?? 13),
+              ),
+            ),
+          ),
+          child: list,
         ),
       ),
     );
@@ -152,43 +195,45 @@ List<SettingsGroup> _appearance(BuildContext context, WidgetRef ref) {
       title: l.settingsAppearance,
       children: [
         const ThemeTiles(),
-        SwitchListTile(
-          key: const ValueKey('blurred-chrome'),
-          title: Text(l.blurredChrome),
-          subtitle: Text(l.blurredChromeHint),
-          value: s.blurredChrome,
-          onChanged: (v) =>
-              notifier.update((c) => c.copyWith(blurredChrome: v)),
-        ),
+        if (!isDesktop)
+          SwitchListTile(
+            key: const ValueKey('blurred-chrome'),
+            title: Text(l.blurredChrome),
+            subtitle: Text(l.blurredChromeHint),
+            value: s.blurredChrome,
+            onChanged: (v) =>
+                notifier.update((c) => c.copyWith(blurredChrome: v)),
+          ),
         const IconFollowTile(),
-        ListTile(
-          title: Text(l.settingsTextSize),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: CcDims.gap8),
-            child: SegmentedBlocks<double>(
-              items: [
-                BlockItem(
-                  value: 0.9,
-                  icon: Icons.text_decrease,
-                  label: l.textSmall,
-                ),
-                BlockItem(
-                  value: 1.0,
-                  icon: Icons.text_fields,
-                  label: l.textNormal,
-                ),
-                BlockItem(
-                  value: 1.15,
-                  icon: Icons.text_increase,
-                  label: l.textLarge,
-                ),
-              ],
-              selected: s.fontScale,
-              onChanged: (v) =>
-                  notifier.update((c) => c.copyWith(fontScale: v)),
+        if (!isDesktop)
+          ListTile(
+            title: Text(l.settingsTextSize),
+            subtitle: Padding(
+              padding: const EdgeInsets.only(top: CcDims.gap8),
+              child: SegmentedBlocks<double>(
+                items: [
+                  BlockItem(
+                    value: 0.9,
+                    icon: Icons.text_decrease,
+                    label: l.textSmall,
+                  ),
+                  BlockItem(
+                    value: 1.0,
+                    icon: Icons.text_fields,
+                    label: l.textNormal,
+                  ),
+                  BlockItem(
+                    value: 1.15,
+                    icon: Icons.text_increase,
+                    label: l.textLarge,
+                  ),
+                ],
+                selected: s.fontScale,
+                onChanged: (v) =>
+                    notifier.update((c) => c.copyWith(fontScale: v)),
+              ),
             ),
           ),
-        ),
         SwitchListTile(
           title: Text(l.settingsCompact),
           value: s.compactMode,
@@ -374,14 +419,15 @@ List<SettingsGroup> _library(BuildContext context, WidgetRef ref) {
         const QualityTile(stream: false),
         const QualityTile(stream: true),
         const AutoBackupTile(),
-        SwitchListTile(
-          secondary: const Icon(Icons.network_cell_outlined),
-          title: Text(l.prefetchOnMobile),
-          value: settings.prefetchOnMobile,
-          onChanged: (v) => ref
-              .read(settingsProvider.notifier)
-              .update((c) => c.copyWith(prefetchOnMobile: v)),
-        ),
+        if (!isDesktop)
+          SwitchListTile(
+            secondary: const Icon(Icons.network_cell_outlined),
+            title: Text(l.prefetchOnMobile),
+            value: settings.prefetchOnMobile,
+            onChanged: (v) => ref
+                .read(settingsProvider.notifier)
+                .update((c) => c.copyWith(prefetchOnMobile: v)),
+          ),
         const FreeSpaceTile(),
       ],
     ),

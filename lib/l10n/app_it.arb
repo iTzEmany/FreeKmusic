@@ -4978,5 +4978,7 @@
   "viewDensity": "Densità della griglia",
   "densitySmall": "piccola",
   "densityMedium": "media",
-  "densityLarge": "grande"
+  "densityLarge": "grande",
+  "settingsPageShortcuts": "Scorciatoie",
+  "shortcutsEmpty": "Le scorciatoie da tastiera compariranno qui."
 }

@@ -4435,5 +4435,7 @@
   "viewDensity": "Densidade da grelha",
   "densitySmall": "pequena",
   "densityMedium": "média",
-  "densityLarge": "grande"
+  "densityLarge": "grande",
+  "settingsPageShortcuts": "Atalhos",
+  "shortcutsEmpty": "Os atalhos de teclado aparecerão aqui."
 }

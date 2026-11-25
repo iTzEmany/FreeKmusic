@@ -41,7 +41,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: [
-              for (final p in SettingsPage.values)
+              for (final p in visibleSettingsPages)
                 ListTile(
                   selected: wide && !_stats && p == _page,
                   selectedTileColor: cc.surface2,
