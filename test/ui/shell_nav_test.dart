@@ -37,4 +37,46 @@ void main() {
     expect(tab.currentState!.canPop(), isFalse);
     expect(find.text('eq'), findsOneWidget);
   });
+
+  testWidgets('mouse side buttons go back and forward, and a new page forgets forward', (tester) async {
+    late WidgetRef ref;
+    await tester.pumpWidget(ProviderScope(
+      child: Consumer(builder: (c, r, _) {
+        ref = r;
+        return MaterialApp(
+          home: Navigator(
+            key: r.read(tabNavigatorKeysProvider)[0],
+            observers: [r.read(forwardStacksProvider)[0]],
+            onGenerateRoute: (_) => MaterialPageRoute<void>(builder: (_) => const Text('home')),
+          ),
+        );
+      }),
+    ));
+    final nav = ref.read(tabNavigatorKeysProvider)[0].currentState!;
+    final f = ref.read(forwardStacksProvider)[0];
+    nav.push(MaterialPageRoute<void>(builder: (_) => const Text('a')));
+    await tester.pumpAndSettle();
+    nav.pop();
+    await tester.pumpAndSettle();
+    expect(find.text('home'), findsOneWidget);
+    f.forward();
+    await tester.pumpAndSettle();
+    expect(find.text('a'), findsOneWidget);
+    nav.pop();
+    await tester.pumpAndSettle();
+    nav.push(MaterialPageRoute<void>(builder: (_) => const Text('b')));
+    await tester.pumpAndSettle();
+    nav.pop();
+    await tester.pumpAndSettle();
+    f.forward();
+    await tester.pumpAndSettle();
+    expect(find.text('b'), findsOneWidget);
+    nav.pop();
+    await tester.pumpAndSettle();
+    nav.push(MaterialPageRoute<void>(builder: (_) => const Text('c')));
+    await tester.pumpAndSettle();
+    f.forward();
+    await tester.pumpAndSettle();
+    expect(find.text('c'), findsOneWidget);
+  });
 }
