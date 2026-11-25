@@ -147,6 +147,9 @@ void main() {
     expect(find.text('Nessuna etichetta: creane una dal menu di un brano.'), findsOneWidget);
     expect(find.byIcon(Icons.label_outline_rounded), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Apri tutti i brani'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Apri tutti i brani'));
+    await _settle(tester);
+    expect(find.byType(AllTracksScreen), findsOneWidget);
     await h.dispose(tester);
 
     await open(tester, const TagsScreen());

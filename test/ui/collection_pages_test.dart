@@ -1,3 +1,4 @@
+import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/favorite_collections_repository.dart';
 import 'package:codecore/data/repositories/library_queries.dart';
@@ -426,6 +427,9 @@ void main() {
     expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Apri tutti i brani'), findsOneWidget);
     expect(find.byTooltip('Riproduci'), findsNothing);
+    await tester.tap(find.widgetWithText(FilledButton, 'Apri tutti i brani'));
+    await _settle(tester);
+    expect(find.byType(AllTracksScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });

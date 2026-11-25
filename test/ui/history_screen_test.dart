@@ -1,3 +1,4 @@
+import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/play_history_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
@@ -97,6 +98,9 @@ void main() {
     expect(find.text('Qui comparirà quello che ascolti.'), findsOneWidget);
     expect(find.byIcon(Icons.history_rounded), findsOneWidget);
     expect(find.widgetWithText(FilledButton, 'Apri tutti i brani'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Apri tutti i brani'));
+    await _settle(tester);
+    expect(find.byType(AllTracksScreen), findsOneWidget);
     expect(find.text('Cronologia cancellata'), findsOneWidget);
     final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
     expect(rows.map((t) => t.playCount), [4, 4, 4]);
