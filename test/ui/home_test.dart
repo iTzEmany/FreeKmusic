@@ -40,11 +40,8 @@ void main() {
     tester,
   ) async {
     final h = await _open(tester);
-    final bar = tester.widget<LinearProgressIndicator>(
-      find.descendant(
-        of: find.byKey(const ValueKey('resume-track')),
-        matching: find.byType(LinearProgressIndicator),
-      ),
+    final bar = tester.widget<CircularProgressIndicator>(
+      find.byType(CircularProgressIndicator),
     );
     expect(bar.value, closeTo(60 / 185, 0.01));
     await h.dispose(tester);
@@ -52,7 +49,7 @@ void main() {
 
   testWidgets('no overflow at text scale 2.0 on 360 px', (tester) async {
     final h = await _open(tester, textScale: 2);
-    expect(find.text('Riprendi'), findsOneWidget);
+    expect(find.text('Riprendi'), findsWidgets);
     expect(tester.takeException(), isNull);
     await h.dispose(tester);
   });

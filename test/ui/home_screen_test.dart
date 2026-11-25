@@ -1,5 +1,6 @@
 import 'package:codecore/services/radio/radio_catalog.dart' show RadioList;
-import 'package:codecore/data/repositories/track_repository.dart' show SortOption;
+import 'package:codecore/data/repositories/track_repository.dart'
+    show SortOption;
 import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
 import 'package:codecore/ui/screens/home/home_blocks.dart' show ShortcutsRow;
@@ -263,7 +264,7 @@ void main() {
       );
       await h.pump(tester, const HomeScreen());
       await _settle(tester);
-      expect(find.text('Riprendi'), findsOneWidget);
+      expect(find.text('Riprendi'), findsWidgets);
       expect(find.text('Song 2'), findsOneWidget);
       // 185 s long, 60 s in: 125 s left rounds up to 3 minutes.
       expect(find.text('Mancano 3 minuti'), findsOneWidget);
@@ -279,13 +280,8 @@ void main() {
     await _settle(tester);
     final row = find.byKey(const ValueKey('resume-track'));
     expect(row, findsOneWidget);
-    expect(
-      find.descendant(
-        of: row,
-        matching: find.textContaining(RegExp(r'rano \d di 4')),
-      ),
-      findsOneWidget,
-    );
+    // The playing item is the big one in the middle: its subtitle is under the ring.
+    expect(find.textContaining(RegExp(r'rano \d di 4')), findsOneWidget);
     await h.dispose(tester);
   });
 
@@ -386,19 +382,16 @@ void main() {
     },
   );
 
-  testWidgets(
-    '«Riprendi» shows one tile per area: the queue wins its own, albums apart',
-    (tester) async {
-      final h = await openRanked(tester);
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-      await _settle(tester);
-      expect(find.byKey(const ValueKey('resume-track')), findsOneWidget);
-      expect(find.byKey(const ValueKey('resume-album')), findsOneWidget);
-      expect(find.byKey(const ValueKey('resume-podcast')), findsNothing);
-      expect(find.byKey(const ValueKey('resume-radio')), findsNothing);
-      await h.dispose(tester);
-    },
-  );
+  testWidgets('«Riprendi» keeps the queue item and the album', (tester) async {
+    final h = await openRanked(tester);
+    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await _settle(tester);
+    expect(find.byKey(const ValueKey('resume-track')), findsOneWidget);
+    expect(find.byKey(const ValueKey('resume-album')), findsOneWidget);
+    expect(find.byKey(const ValueKey('resume-podcast')), findsNothing);
+    expect(find.byKey(const ValueKey('resume-radio')), findsNothing);
+    await h.dispose(tester);
+  });
 
   testWidgets('wide window: Home uses the width, fan shows covers or art', (
     tester,
@@ -445,7 +438,10 @@ void main() {
     addTearDown(tester.view.reset);
     final h = await Harness.create(tester, tracks: 4, radio: true);
     await h.store.writeSettings(
-      h.store.readSettings().copyWith(radioCountry: 'IT', radioRegion: 'lombardia'),
+      h.store.readSettings().copyWith(
+        radioCountry: 'IT',
+        radioRegion: 'lombardia',
+      ),
     );
     await h.pump(
       tester,
@@ -454,7 +450,9 @@ void main() {
         radioRefreshProvider.overrideWithValue(() async => false),
         radioCountriesProvider.overrideWith((ref) async => const []),
         nearYouProvider.overrideWith((ref) async => null),
-        radioCountryStationsProvider.overrideWith((ref) async => RadioList(const [])),
+        radioCountryStationsProvider.overrideWith(
+          (ref) async => RadioList(const []),
+        ),
       ],
     );
     await _settle(tester);

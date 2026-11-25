@@ -1,7 +1,8 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/library_queries.dart' show LastPlay;
-import 'package:codecore/providers/daylist_providers.dart' show DaylistActions, daylistActionsProvider;
+import 'package:codecore/providers/daylist_providers.dart'
+    show DaylistActions, daylistActionsProvider;
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
@@ -42,9 +43,25 @@ class _DaylistSpy implements DaylistActions {
 }
 
 Track _song(int id) => Track(
-  saved: false, coverSource: 0, id: id, path: '/m/$id.mp3', title: 'T$id', albumKey: 'k',
-  durationMs: 60000, format: 'mp3', sizeBytes: 1, mtimeMs: 1, hasCover: false, isFavorite: false,
-  enrichStatus: 0, userEdited: false, missing: false, ignored: false, kind: 0, addedAt: 1, playCount: 0,
+  saved: false,
+  coverSource: 0,
+  id: id,
+  path: '/m/$id.mp3',
+  title: 'T$id',
+  albumKey: 'k',
+  durationMs: 60000,
+  format: 'mp3',
+  sizeBytes: 1,
+  mtimeMs: 1,
+  hasCover: false,
+  isFavorite: false,
+  enrichStatus: 0,
+  userEdited: false,
+  missing: false,
+  ignored: false,
+  kind: 0,
+  addedAt: 1,
+  playCount: 0,
 );
 
 /// The block alone, inside a box of [blockWidth] dp when given.
@@ -63,7 +80,9 @@ Future<_DaylistSpy> _pumpResume(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        resumableTracksProvider.overrideWith((ref) => Stream.value(const <Track>[])),
+        resumableTracksProvider.overrideWith(
+          (ref) => Stream.value(const <Track>[]),
+        ),
         lastPlaysProvider.overrideWith((ref) => Stream.value(plays)),
         savedRadiosProvider.overrideWith((ref) => Stream.value(radios)),
         isPlayingProvider.overrideWith((ref) => Stream.value(true)),
@@ -101,69 +120,134 @@ void main() {
     (PlayContextKind.playlist, 'playlist', 'Mix'),
     (PlayContextKind.radio, 'radio', 'Radio X'),
   ]) {
-    testWidgets('a queue playing from $kind: no error, the tile of the area shows its own $title', (tester) async {
-      await _pumpResume(
-        tester,
-        source: PlayContext(kind, title),
-        current: _song(1),
-        queue: [_song(1)],
-        entries: [
-          const LibraryEntry(kind: LibraryKind.album, id: 'a', title: 'Disco', count: 1, lastPlayedAt: 5),
-          const LibraryEntry(kind: LibraryKind.playlist, id: 'p', title: 'Mix', count: 1, lastPlayedAt: 5),
-        ],
-        radios: [
-          SavedRadio(
-            stationId: 's', name: 'Radio X', streamUrl: 'u', homepage: '', faviconUrl: '', countryCode: '',
-            state: '', tags: '', codec: '', bitrate: 0, hls: false, position: 0, addedAt: 1,
-            lastPlayedAt: 5, unreachable: false,
-          ),
-        ],
-      );
-      expect(tester.takeException(), isNull);
-      expect(find.descendant(of: find.byKey(ValueKey('resume-$key')), matching: find.text(title)), findsOneWidget);
-    });
+    testWidgets(
+      'a queue playing from $kind: no error, the tile of the area shows its own $title',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        await _pumpResume(
+          tester,
+          source: PlayContext(kind, title),
+          current: _song(1),
+          queue: [_song(1)],
+          entries: [
+            const LibraryEntry(
+              kind: LibraryKind.album,
+              id: 'a',
+              title: 'Disco',
+              count: 1,
+              lastPlayedAt: 5,
+            ),
+            const LibraryEntry(
+              kind: LibraryKind.playlist,
+              id: 'p',
+              title: 'Mix',
+              count: 1,
+              lastPlayedAt: 5,
+            ),
+          ],
+          radios: [
+            SavedRadio(
+              stationId: 's',
+              name: 'Radio X',
+              streamUrl: 'u',
+              homepage: '',
+              faviconUrl: '',
+              countryCode: '',
+              state: '',
+              tags: '',
+              codec: '',
+              bitrate: 0,
+              hls: false,
+              position: 0,
+              addedAt: 1,
+              lastPlayedAt: 5,
+              unreachable: false,
+            ),
+          ],
+        );
+        expect(tester.takeException(), isNull);
+        expect(
+          tester.getSemantics(find.byKey(ValueKey('resume-$key'))).label,
+          contains(title),
+        );
+        semantics.dispose();
+      },
+    );
   }
 
-  testWidgets('the tile of what plays pauses/resumes it on tap, one semantics node each tile', (tester) async {
-    final semantics = tester.ensureSemantics();
-    final spy = _Spy();
-    await _pumpResume(
-      tester,
-      spy: spy,
-      source: const PlayContext(PlayContextKind.library),
-      current: _song(1),
-      queue: [_song(1)],
-      plays: [LastPlay(8, _song(2), 5)],
-    );
-    final now = find.byKey(const ValueKey('resume-track'));
-    expect(tester.getSemantics(now).label, contains('T1'));
-    expect(tester.getSemantics(find.byKey(const ValueKey('resume-daylist'))).label, contains('Daylist'));
-    await tester.tap(now);
-    expect(spy.toggles, 1);
-    expect(spy.played, isEmpty);
-    semantics.dispose();
-  });
+  testWidgets(
+    'the tile of what plays pauses/resumes it on tap, one semantics node each tile',
+    (tester) async {
+      final semantics = tester.ensureSemantics();
+      final spy = _Spy();
+      await _pumpResume(
+        tester,
+        spy: spy,
+        source: const PlayContext(PlayContextKind.library),
+        current: _song(1),
+        queue: [_song(1)],
+        plays: [LastPlay(8, _song(2), 5)],
+      );
+      final now = find.byKey(const ValueKey('resume-track'));
+      expect(tester.getSemantics(now).label, contains('T1'));
+      expect(
+        tester.getSemantics(find.byKey(const ValueKey('resume-daylist'))).label,
+        contains('Daylist'),
+      );
+      await tester.tap(now);
+      expect(spy.toggles, 1);
+      expect(spy.played, isEmpty);
+      semantics.dispose();
+    },
+  );
 
-  testWidgets('an album or playlist with a blank title shows the fallback', (tester) async {
+  testWidgets('an album or playlist with a blank title shows the fallback', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
     await _pumpResume(
       tester,
-      plays: [LastPlay(0, _song(1), 5, contextName: ''), LastPlay(2, _song(2), 4, contextName: ' ')],
+      plays: [
+        LastPlay(0, _song(1), 5, contextName: ''),
+        LastPlay(2, _song(2), 4, contextName: ' '),
+      ],
       entries: [
-        const LibraryEntry(kind: LibraryKind.album, id: 'k', title: '', count: 1, lastPlayedAt: 5),
-        const LibraryEntry(kind: LibraryKind.playlist, id: 'p', title: ' ', count: 1, lastPlayedAt: 4),
+        const LibraryEntry(
+          kind: LibraryKind.album,
+          id: 'k',
+          title: '',
+          count: 1,
+          lastPlayedAt: 5,
+        ),
+        const LibraryEntry(
+          kind: LibraryKind.playlist,
+          id: 'p',
+          title: ' ',
+          count: 1,
+          lastPlayedAt: 4,
+        ),
       ],
     );
     final l = AppLocalizations.of(tester.element(find.byType(ResumeList)));
-    expect(find.descendant(of: find.byKey(const ValueKey('resume-album')), matching: find.text(l.unknownAlbum)), findsOneWidget);
+    expect(
+      tester.getSemantics(find.byKey(const ValueKey('resume-album'))).label,
+      contains(l.unknownAlbum),
+    );
+    semantics.dispose();
   });
 
   testWidgets('a daylist from the plays starts it on tap', (tester) async {
-    final daylist = await _pumpResume(tester, plays: [LastPlay(8, _song(1), 5)]);
+    final daylist = await _pumpResume(
+      tester,
+      plays: [LastPlay(8, _song(1), 5)],
+    );
     await tester.tap(find.byKey(const ValueKey('resume-daylist')));
     expect(daylist.plays, 1);
   });
 
-  testWidgets('the daylist that is playing is not started again by a tap', (tester) async {
+  testWidgets('the daylist that is playing is not started again by a tap', (
+    tester,
+  ) async {
     final daylist = await _pumpResume(
       tester,
       source: const PlayContext(PlayContextKind.daylist),
@@ -175,22 +259,52 @@ void main() {
     expect(daylist.plays, 0);
   });
 
-  for (final (blockWidth, columns) in [(500.0, 2), (700.0, 3)]) {
-    testWidgets('in a window of 1400 dp a block of $blockWidth dp has $columns columns', (tester) async {
-      tester.view.physicalSize = const Size(1400, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await _pumpResume(
-        tester,
-        blockWidth: blockWidth,
-        plays: [LastPlay(null, _song(1), 5), LastPlay(8, _song(2), 4)],
-        entries: [const LibraryEntry(kind: LibraryKind.album, id: 'a', title: 'Disco', count: 1, lastPlayedAt: 5)],
-      );
-      final tops = {
-        for (final k in ['track', 'daylist', 'album']) tester.getTopLeft(find.byKey(ValueKey('resume-$k'))).dy,
-      };
-      expect(tops, hasLength(columns == 2 ? 2 : 1));
-    });
+  for (final n in [0, 1, 3, 8]) {
+    testWidgets(
+      '$n listens: the ring has the middle and ${n < 2 ? 0 : n - 1} on the arc, no gaps',
+      (tester) async {
+        final semantics = tester.ensureSemantics();
+        final spy = _Spy();
+        await _pumpResume(
+          tester,
+          spy: spy,
+          plays: [
+            for (var i = 1; i <= n; i++) LastPlay(null, _song(i), 100 - i),
+          ],
+        );
+        final slots = find.byWidgetPredicate(
+          (w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('resume-'),
+        );
+        expect(slots, findsNWidgets(n));
+        if (n == 0) {
+          semantics.dispose();
+          return;
+        }
+        expect(find.byIcon(Icons.play_circle_outline_rounded), findsOneWidget);
+        for (final e in slots.evaluate()) {
+          final r = tester.getRect(find.byElementPredicate((x) => x == e));
+          expect(r.width, greaterThanOrEqualTo(48));
+          expect(r.height, greaterThanOrEqualTo(48));
+          expect(
+            tester.getSemantics(find.byElementPredicate((x) => x == e)).label,
+            isNotEmpty,
+          );
+        }
+        // The most recent is in the middle; a tap on the last one resumes that listen.
+        final core = tester.getCenter(
+          find.byKey(const ValueKey('resume-track')),
+        );
+        if (n > 1) {
+          final end = find.byKey(ValueKey('resume-track-${n - 1}'));
+          expect(tester.getCenter(end).dy, isNot(core.dy));
+          await tester.tap(end);
+          expect(spy.played.last, [n]);
+        }
+        semantics.dispose();
+      },
+    );
   }
 
   testWidgets(
@@ -260,7 +374,7 @@ void main() {
         ),
         reason: 'TalkBack reads where it was left and what is left',
       );
-      await tester.tap(find.text('Seconda parte'));
+      await tester.tap(find.byKey(const ValueKey('resume-podcast')));
       expect(spy.played, [
         [7],
       ]);
@@ -328,77 +442,6 @@ void main() {
       expect(find.textContaining('riprendi da'), findsNothing);
     },
   );
-
-  for (final (width, columns) in [(400.0, 2), (1200.0, 3)]) {
-    testWidgets('the grid has $columns columns at $width dp, tiles of 48 dp', (
-      tester,
-    ) async {
-      tester.view.physicalSize = Size(width, 900);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      Track t(int id, int kind) => Track(
-        saved: false,
-        coverSource: 0,
-        id: id,
-        path: '/m/$id.mp3',
-        title: 'T$id',
-        albumKey: 'k',
-        durationMs: 60000,
-        format: 'mp3',
-        sizeBytes: 1,
-        mtimeMs: 1,
-        hasCover: false,
-        isFavorite: false,
-        enrichStatus: 0,
-        userEdited: false,
-        missing: false,
-        ignored: false,
-        kind: kind,
-        addedAt: 1,
-        playCount: 0,
-        lastPlayedAt: 10,
-      );
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            resumableTracksProvider.overrideWith(
-              (ref) => Stream.value([t(1, 0), t(2, 1)]),
-            ),
-            lastPlaysProvider.overrideWith(
-              (ref) => Stream.value([LastPlay(8, t(3, 0), 5)]),
-            ),
-            savedRadiosProvider.overrideWith((ref) => Stream.value(const [])),
-            isPlayingProvider.overrideWith((ref) => Stream.value(false)),
-            currentTrackProvider.overrideWith((ref) => Stream.value(null)),
-            queueProvider.overrideWith((ref) => Stream.value(const <Track>[])),
-            playContextProvider.overrideWithValue(null),
-            recentEntriesProvider.overrideWithValue(const []),
-            playerControllerProvider.overrideWithValue(_Spy()),
-          ],
-          child: MaterialApp(
-            locale: const Locale('it'),
-            theme: buildThemeFromColors(CcColors.notte, false),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const Scaffold(
-              body: SingleChildScrollView(child: ResumeList()),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 50));
-      await tester.pump(const Duration(milliseconds: 50));
-      final tops = {
-        for (final k in ['track', 'podcast', 'daylist'])
-          tester.getTopLeft(find.byKey(ValueKey('resume-$k'))).dy,
-      };
-      expect(tops, hasLength(columns == 2 ? 2 : 1));
-      expect(
-        tester.getSize(find.byKey(const ValueKey('resume-track'))).height,
-        greaterThanOrEqualTo(48),
-      );
-    });
-  }
 
   for (final n in [0, 3]) {
     testWidgets('«Nuove uscite» block shows only with releases ($n)', (
