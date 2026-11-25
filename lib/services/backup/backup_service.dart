@@ -18,6 +18,7 @@ import '../../data/settings/settings_store.dart'
     show
         SettingsStore,
         enrichMarkKey,
+        flatpakNoticeShownKey,
         genreRereadAfterKey,
         genreRereadDoneKey,
         lastSeenVersionKey,
@@ -37,6 +38,7 @@ const kDeviceBoundKeys = {
   jamFriendsKey,
   jamAnnounceKeyKey,
   enrichMarkKey,
+  flatpakNoticeShownKey,
   recogPassAfterKey,
   recogPassDoneKey,
   genreRereadAfterKey,

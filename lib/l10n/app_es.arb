@@ -4188,6 +4188,7 @@
   "updateNew": "nueva",
   "shareKindTrack": "Canción",
   "shareUntitled": "Sin título",
+<<<<<<< HEAD
   "libraryHistorySub": "Escuchado hace poco",
   "genresCount": "{count, plural, one{1 género} other{{count} géneros}}",
   "@genresCount": {
@@ -4197,6 +4198,22 @@
       }
     }
   },
+=======
+  "flatpakDataTitle": "¿Datos de otra versión?",
+  "flatpakDataBody": "Esta app Flatpak usa su propia carpeta de datos, vacía. Si antes usabas AppImage o deb, tu biblioteca está en {oldDir}. Para traerla, cierra la app, pega este comando en un terminal (fuera de Flatpak) y vuelve a abrir la app: los datos y ajustes irán a {newDir}. La app no copia nada por sí sola.",
+  "@flatpakDataBody": {
+    "placeholders": {
+      "oldDir": {
+        "type": "String"
+      },
+      "newDir": {
+        "type": "String"
+      }
+    }
+  },
+  "flatpakDataCopy": "Copiar comando",
+  "updateFlatpakHint": "Descargo el archivo; luego cierra la app y pega el comando en un terminal.",
+>>>>>>> origin/master
   "openOutsideLibrary": "{count, plural, one{El archivo está fuera de las carpetas de la biblioteca} other{{count} archivos están fuera de las carpetas de la biblioteca}}",
   "@openOutsideLibrary": {
     "placeholders": {

@@ -67,3 +67,9 @@ UpdateAsset? pickUpdateAsset(List<UpdateAsset> assets, UpdateTarget t) {
   }
   return null;
 }
+
+/// The bundle is downloaded but the sandbox cannot install it: the user runs this (D-715/F-204).
+String flatpakInstallCommand(String path) {
+  final arg = RegExp(r'^[\w@%+=:,./-]+$').hasMatch(path) ? path : "'${path.replaceAll("'", "'\\''")}'";
+  return 'flatpak install --user $arg';
+}

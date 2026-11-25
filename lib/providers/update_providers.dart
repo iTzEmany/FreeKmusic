@@ -112,7 +112,7 @@ final updatesCleanupProvider = Provider<void>((ref) {
 enum UpdatePhase { idle, confirmSize, downloading, ready, error, differentSigner, needsPermission }
 
 class UpdateDownloadState {
-  const UpdateDownloadState(this.phase, {this.asset, this.received = 0, this.failure});
+  const UpdateDownloadState(this.phase, {this.asset, this.received = 0, this.failure, this.path});
 
   final UpdatePhase phase;
   final UpdateAsset? asset;
@@ -120,6 +120,9 @@ class UpdateDownloadState {
 
   /// With [UpdatePhase.error].
   final UpdateFailure? failure;
+
+  /// With [UpdatePhase.ready] on Flatpak: the downloaded bundle, for the install command.
+  final String? path;
 }
 
 /// The update flow: pick the file, ask on a metered network (D-656), download,
@@ -160,7 +163,7 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
     final asset = target == null ? null : pickUpdateAsset(info.assets, target);
     if (asset == null) return _browse(info.url, null);
     // Without a digest the file cannot be checked: no point in downloading it.
-    if (!selfInstalls(target!.kind) || asset.sha256 == null) return _browse(asset.url.toString(), asset);
+    if (!(selfInstalls(target!.kind) || target.kind == UpdateKind.flatpak) || asset.sha256 == null) return _browse(asset.url.toString(), asset);
     if ((await ref.read(networkProbeProvider).current()).metered) {
       state = UpdateDownloadState(UpdatePhase.confirmSize, asset: asset);
       return;
@@ -249,6 +252,9 @@ class UpdateDownloadNotifier extends Notifier<UpdateDownloadState> {
           AndroidInstallResult.failed => done(UpdatePhase.error, UpdateFailure.installFailed),
         };
         if (ref.mounted && state.phase == UpdatePhase.needsPermission) await android.openInstallSettings();
+      } else if (target.kind == UpdateKind.flatpak) {
+        // No execution from the sandbox: the page shows the command.
+        state = UpdateDownloadState(UpdatePhase.ready, asset: asset, path: file.path);
       } else {
         final ok = await ref.read(desktopUpdateProvider).install(file, target, fallback: asset.url);
         if (!ref.mounted) return;

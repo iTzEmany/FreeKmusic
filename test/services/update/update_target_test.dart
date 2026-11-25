@@ -51,6 +51,11 @@ void main() {
     expect(pickUpdateAsset(_release('1.6.2').where((a) => !a.name.endsWith('.deb')).toList(), const UpdateTarget(kind: UpdateKind.deb)), isNull);
   });
 
+  test('the flatpak command quotes a path with spaces or quotes', () {
+    expect(flatpakInstallCommand('/home/u/updates/freekmusic-1.8.0.flatpak'), 'flatpak install --user /home/u/updates/freekmusic-1.8.0.flatpak');
+    expect(flatpakInstallCommand("/home/u/my dir/it's.flatpak"), "flatpak install --user '/home/u/my dir/it'\\''s.flatpak'");
+  });
+
   test('only Android, Windows and AppImage install by themselves', () {
     expect([for (final k in UpdateKind.values) if (selfInstalls(k)) k], [
       UpdateKind.androidFull,

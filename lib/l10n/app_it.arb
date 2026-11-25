@@ -4917,6 +4917,7 @@
   "updateNew": "nuova",
   "shareKindTrack": "Brano",
   "shareUntitled": "Senza titolo",
+<<<<<<< HEAD
   "libraryHistorySub": "Ultimi ascolti",
   "genresCount": "{count, plural, one{1 genere} other{{count} generi}}",
   "@genresCount": {
@@ -4926,6 +4927,22 @@
       }
     }
   },
+=======
+  "flatpakDataTitle": "Dati di una versione precedente?",
+  "flatpakDataBody": "Questa app Flatpak usa una cartella dati sua, vuota. Se prima usavi AppImage o deb, la tua libreria è in {oldDir}. Per portarla qui chiudi l'app, incolla in un terminale (fuori dal Flatpak) questo comando e poi riapri l'app: i dati e le impostazioni finiranno in {newDir}. L'app non copia nulla da sola.",
+  "@flatpakDataBody": {
+    "placeholders": {
+      "oldDir": {
+        "type": "String"
+      },
+      "newDir": {
+        "type": "String"
+      }
+    }
+  },
+  "flatpakDataCopy": "Copia comando",
+  "updateFlatpakHint": "Scarico il file; poi chiudi l'app e incolla il comando in un terminale.",
+>>>>>>> origin/master
   "openOutsideLibrary": "{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}",
   "@openOutsideLibrary": {
     "placeholders": {

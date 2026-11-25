@@ -30,7 +30,13 @@ class UpdateProgress {
   final File? file;
 }
 
-Future<Directory> updatesDir() async => Directory(p.join((await getTemporaryDirectory()).path, 'updates'));
+/// In the Flatpak sandbox the temporary folder is a private /tmp the host cannot see; the cache
+/// folder maps to `~/.var/app/ID/cache/ID` there, so the pasted `flatpak install` finds the file.
+Future<Directory> updatesDir({Map<String, String>? env, Future<Directory> Function()? tmp, Future<Directory> Function()? cache}) async {
+  final flatpak = ((env ?? Platform.environment)['FLATPAK_ID'] ?? '').isNotEmpty;
+  final base = flatpak ? await (cache ?? getApplicationCacheDirectory)() : await (tmp ?? getTemporaryDirectory)();
+  return Directory(p.join(base.path, 'updates'));
+}
 
 /// Empties the downloads folder (what is left of an earlier update).
 Future<void> clearUpdatesDir([Future<Directory> Function()? dir]) async {

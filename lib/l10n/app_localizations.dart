@@ -13381,17 +13381,29 @@ abstract class AppLocalizations {
   /// **'Senza titolo'**
   String get shareUntitled;
 
-  /// No description provided for @libraryHistorySub.
+  /// No description provided for @flatpakDataTitle.
   ///
   /// In it, this message translates to:
-  /// **'Ultimi ascolti'**
-  String get libraryHistorySub;
+  /// **'Dati di una versione precedente?'**
+  String get flatpakDataTitle;
 
-  /// No description provided for @genresCount.
+  /// No description provided for @flatpakDataBody.
   ///
   /// In it, this message translates to:
-  /// **'{count, plural, one{1 genere} other{{count} generi}}'**
-  String genresCount(int count);
+  /// **'Questa app Flatpak usa una cartella dati sua, vuota. Se prima usavi AppImage o deb, la tua libreria è in {oldDir}. Per portarla qui chiudi l\'app, incolla in un terminale (fuori dal Flatpak) questo comando e poi riapri l\'app: i dati e le impostazioni finiranno in {newDir}. L\'app non copia nulla da sola.'**
+  String flatpakDataBody(String oldDir, String newDir);
+
+  /// No description provided for @flatpakDataCopy.
+  ///
+  /// In it, this message translates to:
+  /// **'Copia comando'**
+  String get flatpakDataCopy;
+
+  /// No description provided for @updateFlatpakHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Scarico il file; poi chiudi l\'app e incolla il comando in un terminale.'**
+  String get updateFlatpakHint;
 
   /// No description provided for @openOutsideLibrary.
   ///
