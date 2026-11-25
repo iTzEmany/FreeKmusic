@@ -129,6 +129,12 @@ class CodecoreApp extends ConsumerWidget {
         ),
       );
     });
+    ref.listen(openPortalProvider, (_, next) {
+      if (next.value == null) return;
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(content: Builder(builder: (c) => CcSnackContent(c.l10n.openPortalFile, CcTiming.msg))),
+      );
+    });
     ref.listen(jamOnlineFailuresProvider, (_, next) {
       final r = next.value;
       if (r != null) {

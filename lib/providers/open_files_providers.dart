@@ -16,6 +16,15 @@ final _outsideController = Provider<StreamController<List<String>>>((ref) {
 /// Files opened with the app that sit outside the library folders: the UI offers «Aggiungi alla libreria».
 final openOutsideProvider = StreamProvider<List<String>>((ref) => ref.watch(_outsideController).stream);
 
+final _portalController = Provider<StreamController<List<String>>>((ref) {
+  final c = StreamController<List<String>>.broadcast();
+  ref.onDispose(c.close);
+  return c;
+});
+
+/// Files opened through the Flatpak documents portal: not playable, the UI says what to do.
+final openPortalProvider = StreamProvider<List<String>>((ref) => ref.watch(_portalController).stream);
+
 final openFilesProvider = Provider<OpenFiles>((ref) {
   final folders = ref.read(folderRepositoryProvider);
   return OpenFiles(
@@ -30,5 +39,6 @@ final openFilesProvider = Provider<OpenFiles>((ref) {
       await ref.read(scanStateProvider.notifier).scanAll();
     },
     onOutside: (paths) => ref.read(_outsideController).add(paths),
+    onPortal: (paths) => ref.read(_portalController).add(paths),
   );
 });

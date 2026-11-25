@@ -4928,5 +4928,6 @@
       }
     }
   },
-  "openAddToLibrary": "Aggiungi alla libreria"
+  "openAddToLibrary": "Aggiungi alla libreria",
+  "openPortalFile": "Il file è fuori dalle cartelle che l'app può leggere: aggiungi la sua cartella dalla Libreria"
 }

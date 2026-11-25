@@ -15,18 +15,21 @@ Track _t(String path) => _FakeTrack(path);
 
 void main() {
   late List<List<Track>> played;
-  late List<List<String>> outside;
+  late List<List<String>> outside, portal;
   late List<String> scanned, addedDirs;
   late Set<String> known;
   late OpenFiles open;
+  late Set<String> missingOnDisk;
   const folder = Folder(id: 1, path: '/music', addedAt: 0);
 
   setUp(() {
     played = [];
     outside = [];
+    portal = [];
     scanned = [];
     addedDirs = [];
     known = {'/music/a.mp3'};
+    missingOnDisk = {};
     open = OpenFiles(
       channel: const MethodChannel('test/open'),
       folders: () async => [folder],
@@ -41,6 +44,8 @@ void main() {
         known.add('/other/x.mp3');
       },
       onOutside: outside.add,
+      onPortal: portal.add,
+      exists: (path) async => !missingOnDisk.contains(path),
     );
   });
 
@@ -59,6 +64,22 @@ void main() {
     await open.addToLibrary(outside.single);
     expect(addedDirs, ['/other']);
     expect(played.single.single.path, '/other/x.mp3');
+  });
+
+  test('relative paths become absolute and missing files are dropped', () async {
+    missingOnDisk = {'/music/gone.mp3'};
+    await open.handle(['/music/../music/a.mp3', '/music/gone.mp3', 'rel.mp3']);
+    expect(played.single.map((t) => t.path), ['/music/a.mp3']);
+    expect(outside.single.single, endsWith('rel.mp3'));
+    expect(outside.single.single, startsWith('/'));
+  });
+
+  test('a documents-portal file is not played nor written: the user is told', () async {
+    await open.handle(['/run/user/1000/doc/ab12/song.mp3']);
+    expect(outside, isEmpty);
+    expect(scanned, isEmpty);
+    expect(played, isEmpty);
+    expect(portal.single, ['/run/user/1000/doc/ab12/song.mp3']);
   });
 
   test('the runner channel delivers files after start', () async {

@@ -8624,4 +8624,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get openAddToLibrary => 'Añadir a la biblioteca';
+
+  @override
+  String get openPortalFile =>
+      'El archivo está fuera de las carpetas que la app puede leer: añade su carpeta desde la Biblioteca';
 }

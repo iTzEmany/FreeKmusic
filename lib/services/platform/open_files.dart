@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show File;
 
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
@@ -19,7 +20,12 @@ class OpenFiles {
     required this.play,
     required this.addFolder,
     required this.onOutside,
-  }) : _channel = channel ?? const MethodChannel('freekmusic/window');
+    required this.onPortal,
+    Future<bool> Function(String path)? exists,
+  }) : _exists = exists ?? ((path) => File(path).exists()),
+       _channel = channel ?? const MethodChannel('freekmusic/window');
+
+  final Future<bool> Function(String path) _exists;
 
   final MethodChannel _channel;
   final Future<List<Folder>> Function() folders;
@@ -31,6 +37,9 @@ class OpenFiles {
   /// The first track plays now, the others follow in order.
   final Future<void> Function(List<Track> tracks) play;
   final Future<void> Function(String dir) addFolder;
+
+  /// Flatpak documents-portal files the app cannot read by folder: the UI explains.
+  final void Function(List<String> paths) onPortal;
 
   /// Files outside every library folder: the UI offers «Aggiungi alla libreria».
   final void Function(List<String> paths) onOutside;
@@ -75,20 +84,38 @@ class OpenFiles {
     }
   }
 
+  /// A file seen through the Flatpak documents portal (`/run/user/<uid>/doc/...`).
+  static bool isPortalPath(String path) => RegExp(r'^/run/user/\d+/doc/').hasMatch(path);
+
   /// One launch at a time, so two quick «Apri con» keep their order.
   Future<void> handle(Iterable<String> raw) => _chain = _chain.then((_) => _handle(raw));
 
   Future<void> _handle(Iterable<String> raw) async {
-    final paths = audioPaths(raw);
+    // Arguments come from outside: absolute, normalized, and only files that exist.
+    final paths = <String>[];
+    for (final path in audioPaths(raw).map((a) => p.normalize(p.absolute(a)))) {
+      if (await _exists(path)) {
+        paths.add(path);
+      } else {
+        AppLog.w('open-with: $path does not exist');
+      }
+    }
     if (paths.isEmpty) return;
     try {
       final all = await folders();
       final tracks = <Track>[];
       final outside = <String>[];
+      final portal = <String>[];
       for (final path in paths) {
         var t = await trackAt(path);
         if (t == null) {
           final home = all.where((f) => p.isWithin(f.path, path)).firstOrNull;
+          if (home == null && isPortalPath(path)) {
+            // No library row for a file the app cannot read by folder: nothing is written, the user is told.
+            AppLog.i('open-with: portal file $path is outside the readable folders, not played');
+            portal.add(path);
+            continue;
+          }
           if (home == null) {
             outside.add(path);
             continue;
@@ -104,6 +131,7 @@ class OpenFiles {
       }
       if (tracks.isNotEmpty) await play(tracks);
       if (outside.isNotEmpty) onOutside(outside);
+      if (portal.isNotEmpty) onPortal(portal);
     } on Object catch (e, st) {
       AppLog.w('open-with failed', e, st);
     }

@@ -8668,4 +8668,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get openAddToLibrary => 'Ajouter à la bibliothèque';
+
+  @override
+  String get openPortalFile =>
+      'Le fichier est hors des dossiers que l’app peut lire : ajoutez son dossier depuis la Bibliothèque';
 }

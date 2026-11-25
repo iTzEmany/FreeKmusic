@@ -4199,5 +4199,6 @@
       }
     }
   },
-  "openAddToLibrary": "Zur Bibliothek hinzufügen"
+  "openAddToLibrary": "Zur Bibliothek hinzufügen",
+  "openPortalFile": "Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen"
 }

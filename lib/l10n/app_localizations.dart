@@ -13410,6 +13410,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Aggiungi alla libreria'**
   String get openAddToLibrary;
+
+  /// No description provided for @openPortalFile.
+  ///
+  /// In it, this message translates to:
+  /// **'Il file è fuori dalle cartelle che l\'app può leggere: aggiungi la sua cartella dalla Libreria'**
+  String get openPortalFile;
 }
 
 class _AppLocalizationsDelegate

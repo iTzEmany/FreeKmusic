@@ -4199,5 +4199,6 @@
       }
     }
   },
-  "openAddToLibrary": "Add to library"
+  "openAddToLibrary": "Add to library",
+  "openPortalFile": "The file is outside the folders the app can read: add its folder from the Library"
 }

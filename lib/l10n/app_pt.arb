@@ -4385,5 +4385,6 @@
       }
     }
   },
-  "openAddToLibrary": "Adicionar à biblioteca"
+  "openAddToLibrary": "Adicionar à biblioteca",
+  "openPortalFile": "O ficheiro está fora das pastas que a app pode ler: adicione a sua pasta a partir da Biblioteca"
 }

@@ -4420,5 +4420,6 @@
       }
     }
   },
-  "openAddToLibrary": "Ajouter à la bibliothèque"
+  "openAddToLibrary": "Ajouter à la bibliothèque",
+  "openPortalFile": "Le fichier est hors des dossiers que l’app peut lire : ajoutez son dossier depuis la Bibliothèque"
 }

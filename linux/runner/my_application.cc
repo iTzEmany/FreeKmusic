@@ -62,7 +62,9 @@ static void my_application_activate(GApplication* application) {
   // Already running (a second launch without files): bring it forward.
   GList* existing = gtk_application_get_windows(GTK_APPLICATION(application));
   if (existing != nullptr) {
-    gtk_window_present(GTK_WINDOW(existing->data));
+    if (gtk_widget_get_visible(GTK_WIDGET(existing->data))) {
+      gtk_window_present(GTK_WINDOW(existing->data));
+    }
     return;
   }
   GtkWindow* window =
@@ -178,7 +180,9 @@ static void my_application_open(GApplication* application, GFile** files,
     if (path != nullptr) g_ptr_array_add(self->pending_files, path);
   }
   GList* windows = gtk_application_get_windows(GTK_APPLICATION(application));
-  if (windows != nullptr) gtk_window_present(GTK_WINDOW(windows->data));
+  if (windows != nullptr && gtk_widget_get_visible(GTK_WIDGET(windows->data))) {
+    gtk_window_present(GTK_WINDOW(windows->data));
+  }
   if (self->channel != nullptr) {
     fl_method_channel_invoke_method(self->channel, "opened", nullptr, nullptr,
                                     nullptr, nullptr);
@@ -237,7 +241,7 @@ MyApplication* my_application_new() {
   // FREEKMUSIC_NON_UNIQUE=1 opts out: tests and `flutter run` beside the
   // installed app.
   GApplicationFlags flags = G_APPLICATION_HANDLES_OPEN;
-  if (g_getenv("FREEKMUSIC_NON_UNIQUE") != nullptr) {
+  if (g_strcmp0(g_getenv("FREEKMUSIC_NON_UNIQUE"), "1") == 0) {
     flags = (GApplicationFlags)(flags | G_APPLICATION_NON_UNIQUE);
   }
   return MY_APPLICATION(g_object_new(my_application_get_type(),
