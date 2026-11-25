@@ -25,6 +25,7 @@ import '../../widgets/track_row_selection.dart';
 import 'online_selection_scope.dart';
 import '../../../services/jam/jam_models.dart' show jamFullResult;
 import '../../widgets/show_msg.dart';
+import '../../widgets/action_catalog.dart';
 
 const kOnlineRowHeight = 72.0;
 
@@ -294,7 +295,7 @@ class OnlineSongRow extends StatelessWidget {
                 if (onMore != null && !selecting)
                   IconButton(
                     tooltip: l.moreOptions,
-                    icon: const Icon(Icons.more_vert_rounded),
+                    icon: Icon(CatalogAction.more.icon),
                     onPressed: onMore,
                   )
                 else
@@ -349,7 +350,7 @@ class _DownloadState extends ConsumerWidget {
     } else {
       trailing = IconButton(
         tooltip: l.addToLibrary,
-        icon: const Icon(Icons.library_add_rounded),
+        icon: Icon(CatalogAction.library.icon),
         onPressed: onDownload,
       );
     }

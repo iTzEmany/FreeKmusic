@@ -30,6 +30,7 @@ import 'online_list_play.dart';
 import 'online_collection_rows.dart';
 import 'online_page_frame.dart';
 import 'online_song_row.dart';
+import '../../widgets/action_catalog.dart';
 
 /// A playlist, album or channel read from a link: cover, songs streamed on tap,
 /// Play, Shuffle and a ⋮ menu with «Scarica» and «Copia link». A Deezer or
@@ -105,7 +106,7 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
       groups: [
         [
           CcAction<String>(
-            icon: Icons.download_rounded,
+            icon: CatalogAction.download.icon,
             label: _external ? l.extDownloadAll : l.ytDownload,
             value: 'playlist-menu-download',
             onTap: () => _external
@@ -123,8 +124,8 @@ class _OnlinePlaylistScreenState extends ConsumerState<OnlinePlaylistScreen> {
               },
             ),
           CcAction<String>(
-            icon: Icons.library_add_rounded,
-            label: l.extSaveToLibrary,
+            icon: CatalogAction.library.icon,
+            label: l.addToLibrary,
             value: 'playlist-menu-save',
             onTap: () async {
               final name = await saveToLibrary(ref, c.title, matches, fallback: l.newPlaylist);
@@ -363,7 +364,7 @@ class _Header extends StatelessWidget {
               key: const ValueKey('playlist-more'),
               tooltip: l.ytmMore,
               onPressed: onMore,
-              icon: const Icon(Icons.more_vert_rounded),
+              icon: Icon(CatalogAction.more.icon),
             ),
           ]),
         ],

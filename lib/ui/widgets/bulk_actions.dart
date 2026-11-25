@@ -18,6 +18,7 @@ import 'delete_tracks.dart';
 import 'keep_offline_action.dart';
 import 'track_actions.dart';
 import 'show_msg.dart';
+import 'action_catalog.dart';
 
 /// Where a selection lives: decides which actions make sense.
 class BulkContext {
@@ -132,7 +133,7 @@ List<TrackActionGroup> bulkActions(
         await ctrl.playFromList(playable, 0);
         done();
       }),
-      TrackAction(Icons.queue_rounded, l.addToQueue, () async {
+      TrackAction(CatalogAction.queue.icon, l.addToQueue, () async {
         var added = 0, full = false;
         for (final t in playable) {
           final r = await ctrl.addToQueue(t.id);
@@ -146,7 +147,7 @@ List<TrackActionGroup> bulkActions(
         done();
       }),
       if (ref.read(jamProvider).active)
-        TrackAction(Icons.queue_music_rounded, l.jamAddToJam, () async {
+        TrackAction(CatalogAction.queue.icon, l.jamAddToJam, () async {
           final remote = ref.read(jamProvider).remote;
           final r = await ref.read(jamProvider.notifier).addTracks(playable);
           if (outer.mounted) {
@@ -166,7 +167,7 @@ List<TrackActionGroup> bulkActions(
         allFavorite ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
         favorites,
       ),
-      TrackAction(Icons.playlist_add_rounded, l.addToPlaylist, () async {
+      TrackAction(CatalogAction.playlist.icon, l.addToPlaylist, () async {
         if (await showAddToPlaylistSheet(outer, ref, tracks)) done();
       }),
       TrackAction(Icons.label_outline_rounded, l.tagAddToSelection, () async {
@@ -189,7 +190,7 @@ List<TrackActionGroup> bulkActions(
     if (allMissing || music.isNotEmpty || savedStreams.isNotEmpty)
       TrackActionGroup(l.groupOther, [
         if (savedStreams.isNotEmpty) ...[
-          TrackAction(Icons.download_rounded, l.ytDownload, download),
+          TrackAction(CatalogAction.download.icon, l.ytDownload, download),
           TrackAction(Icons.delete_outline_rounded, l.removeFromLibrary, removeSavedStreams),
         ],
         // Only for tracks whose file is gone: the library row has nothing left

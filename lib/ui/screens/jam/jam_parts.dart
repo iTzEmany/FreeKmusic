@@ -22,6 +22,7 @@ import '../../widgets/net_thumbnail.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/track_actions.dart' show downloadOnline;
 import '../../widgets/track_artists_sheet.dart';
+import '../../widgets/action_catalog.dart';
 
 /// A curiosity as the owner sends it, «text\nurl»: the text without the source
 /// url (which is not shown); null when there is none.
@@ -171,7 +172,7 @@ class JamQueueRow extends ConsumerWidget {
               ),
             if (canSave)
               CcAction(
-                icon: Icons.library_add_outlined,
+                icon: CatalogAction.library.icon,
                 label: l.addToLibrary,
                 onTap: () async {
                   final ok = await ref.read(jamSaverProvider).save(item);

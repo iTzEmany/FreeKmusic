@@ -13,6 +13,7 @@ import '../../theme/tokens.dart';
 import '../playlists/playlist_picker.dart';
 import 'now_playing_controls.dart' show npEdge;
 import '../../widgets/show_msg.dart';
+import '../../widgets/action_catalog.dart';
 
 /// «Suggerito · simile a «…»» with download, add to a playlist and «Non mi piace».
 class SuggestedInfo extends ConsumerWidget {
@@ -42,7 +43,7 @@ class SuggestedInfo extends ConsumerWidget {
           entryKey: key,
           idle: saved
               ? _Tile(
-                  icon: Icons.download_rounded,
+                  icon: CatalogAction.download.icon,
                   label: l.ytDownloadOnDevice,
                   onPressed: () => downloadOnline(
                     context,
@@ -88,7 +89,7 @@ class SuggestedInfo extends ConsumerWidget {
               _slot(
                 entry?.result.indexKey,
                 _Tile(
-                  icon: Icons.library_add_rounded,
+                  icon: CatalogAction.library.icon,
                   label: l.addToLibrary,
                   onPressed: () async {
                     final now = await actions.downloadEntry(track.id);
@@ -104,7 +105,7 @@ class SuggestedInfo extends ConsumerWidget {
               _slot(
                 null,
                 _Tile(
-                  icon: Icons.playlist_add_rounded,
+                  icon: CatalogAction.playlist.icon,
                   label: l.addToPlaylist,
                   onPressed: () async {
                     final picked = await pickPlaylist(context, ref);

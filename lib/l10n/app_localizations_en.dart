@@ -814,9 +814,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'On the same Wi‑Fi, open “Receive” on the other device and enter address and PIN.';
 
   @override
-  String get shareMenu => 'Share…';
-
-  @override
   String get shareAction => 'Share';
 
   @override
@@ -5615,9 +5612,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get karaokeVideoFailed =>
       'Video unavailable: only the backing track plays.';
-
-  @override
-  String get ytmAlbumQueue => 'Add album to queue';
 
   @override
   String get addedToLibrary => 'Added to library';

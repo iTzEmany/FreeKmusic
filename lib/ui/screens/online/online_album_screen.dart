@@ -32,6 +32,7 @@ import 'online_page_frame.dart';
 import 'online_song_row.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/shuffle_button.dart' show ShufflePill;
+import '../../widgets/action_catalog.dart';
 
 /// An album, single or EP of YouTube Music: cover, numbered songs with
 /// «Scarica», Play, Shuffle and a ⋮ menu (with «Scarica album»). [release] is what the page
@@ -113,12 +114,12 @@ class OnlineAlbumScreen extends ConsumerWidget {
   Future<void> _openMenu(BuildContext context, WidgetRef ref, YtmAlbum album, List<YtResult> songs) {
     final l = context.l10n;
     final items = <(String, IconData, String, VoidCallback)>[
-      ('album-menu-download', Icons.download_rounded, l.ytmDownloadAlbum,
+      ('album-menu-download', CatalogAction.download.icon, l.ytmDownloadAlbum,
           () => _downloadAlbum(context, ref, album)),
-      ('album-menu-queue', Icons.queue_rounded, l.ytmAlbumQueue, () => queueOnlineList(context, ref, songs)),
-      ('album-menu-playlist', Icons.playlist_add_rounded, l.addToPlaylist,
+      ('album-menu-queue', CatalogAction.queue.icon, l.addToQueue, () => queueOnlineList(context, ref, songs)),
+      ('album-menu-playlist', CatalogAction.playlist.icon, l.addToPlaylist,
           () => _addToPlaylist(context, ref, songs)),
-      ('album-menu-share', Icons.share_rounded, l.shareMenu, () => _share(context)),
+      ('album-menu-share', CatalogAction.share.icon, l.shareAction, () => _share(context)),
     ];
     return showCcActionSheet<String>(
       context: context,
@@ -290,7 +291,7 @@ class _AlbumHeader extends StatelessWidget {
               key: const ValueKey('album-more'),
               tooltip: l.ytmMore,
               onPressed: onMore,
-              icon: const Icon(Icons.more_vert_rounded),
+              icon: Icon(CatalogAction.more.icon),
             ),
           ]),
         ],

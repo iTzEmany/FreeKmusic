@@ -41,6 +41,7 @@ import '../../widgets/ring_progress.dart';
 import '../../../providers/theme_providers.dart';
 import '../../theme/cover_tint.dart';
 import '../../widgets/marquee_text.dart';
+import '../../widgets/action_catalog.dart';
 
 const _playerRouteName = 'now-playing';
 const _wideBreakpoint = 900.0;
@@ -499,7 +500,7 @@ class _PlayerHeader extends ConsumerWidget {
                     ),
                   IconButton(
                     tooltip: l.moreActions,
-                    icon: const Icon(Icons.more_vert_rounded),
+                    icon: Icon(CatalogAction.more.icon),
                     onPressed: () => showTrackActions(context, track),
                   ),
                 ],

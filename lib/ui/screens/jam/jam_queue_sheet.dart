@@ -13,6 +13,7 @@ import '../../widgets/empty_state.dart';
 import '../../widgets/segmented_blocks.dart';
 import 'jam_parts.dart';
 import 'jam_track_info_screen.dart';
+import '../../widgets/action_catalog.dart';
 
 /// The shared queue as a draggable modal sheet, opened by the «Coda» button
 /// (as the player's queue).
@@ -98,7 +99,7 @@ class _JamQueueSliverState extends ConsumerState<JamQueueSliver> {
             child: SizedBox(
               height: 240,
               child: EmptyState(
-                icon: Icons.queue_music_rounded,
+                icon: CatalogAction.queuePanel.icon,
                 message: l.jamEmpty,
               ),
             ),

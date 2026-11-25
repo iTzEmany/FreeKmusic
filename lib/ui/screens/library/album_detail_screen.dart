@@ -40,6 +40,7 @@ import '../online/online_selection_scope.dart';
 import '../online/online_song_row.dart';
 import '../playlists/playlist_dialogs.dart';
 import 'artist_screen.dart';
+import '../../widgets/action_catalog.dart';
 
 /// «1 ora e 52 minuti»; never «0 minuti» (under a minute rounds up).
 String durationWords(AppLocalizations l, int ms) {
@@ -252,7 +253,7 @@ class _AlbumMissingState extends ConsumerState<_AlbumMissing> {
       actions: (picked) => [
         IconButton(
           tooltip: ref.read(settingsProvider).storageMode == StorageMode.stream ? l.addToLibrary : l.ytDownload,
-          icon: const Icon(Icons.download_rounded),
+          icon: Icon(CatalogAction.download.icon),
           onPressed: () {
             startOnlineDownloads(context, ref, [
               for (final i in picked.orderedIds)
@@ -328,15 +329,15 @@ class _AlbumMenu extends ConsumerWidget {
     final fav = ref.watch(isFavoriteCollectionProvider((kind: favoriteAlbumKind, key: album.albumKey))).value ?? false;
     return IconButton(
       tooltip: l.moreActions,
-      icon: const Icon(Icons.more_vert_rounded),
+      icon: Icon(CatalogAction.more.icon),
       onPressed: () async {
         final v = await showCcActionSheet<_AlbumAction>(
           context: context,
           title: album.title ?? l.unknownAlbum,
           groups: [
             [
-              CcAction(icon: Icons.queue_music_rounded, label: l.addToQueue, value: _AlbumAction.queue),
-              CcAction(icon: Icons.playlist_add_rounded, label: l.addToPlaylist, value: _AlbumAction.playlist),
+              CcAction(icon: CatalogAction.queue.icon, label: l.addToQueue, value: _AlbumAction.queue),
+              CcAction(icon: CatalogAction.playlist.icon, label: l.addToPlaylist, value: _AlbumAction.playlist),
               CcAction(
                 icon: fav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                 label: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,

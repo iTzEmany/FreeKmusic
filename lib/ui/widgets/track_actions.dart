@@ -63,6 +63,7 @@ import 'quality_tag.dart';
 import '../../services/jam/jam_models.dart' show jamFullResult;
 import 'share_collection.dart';
 import 'show_msg.dart';
+import 'action_catalog.dart';
 
 /// One entry of the track menu.
 class TrackAction {
@@ -125,7 +126,7 @@ List<TrackActionGroup> onlineTrackActions(
       // Gone as soon as the entry is in the library, also with the sheet open (R-93).
       if (!entryInLibrary(ref, track.id))
         TrackAction(
-          Icons.library_add_rounded,
+          CatalogAction.library.icon,
           l.addToLibrary,
           () => downloadOnline(
             outer,
@@ -136,7 +137,7 @@ List<TrackActionGroup> onlineTrackActions(
       // Saved without a file: «Scarica» puts it on the device (the player keeps the entry's negative id).
       if (saved)
         TrackAction(
-          Icons.download_rounded,
+          CatalogAction.download.icon,
           l.ytDownloadOnDevice,
           () => downloadOnline(
             outer,
@@ -144,7 +145,7 @@ List<TrackActionGroup> onlineTrackActions(
             start: () => ref.read(libraryAdderProvider).download(entry.result),
           ),
         ),
-      TrackAction(Icons.playlist_add_rounded, l.addToPlaylist, () async {
+      TrackAction(CatalogAction.playlist.icon, l.addToPlaylist, () async {
         final picked = await pickPlaylist(outer, ref);
         if (picked == null) return;
         final now = await actions.addToPlaylist(track.id, picked.id);
@@ -211,7 +212,7 @@ List<TrackActionGroup> onlineTrackActions(
 }
 
 TrackAction _shareAction(BuildContext outer, WidgetRef ref, Track track, Rect? anchor) => TrackAction(
-  Icons.share_rounded,
+  CatalogAction.share.icon,
   outer.l10n.shareAction,
   () => shareTracks(outer, ref, SharedKind.track, track.title, [track], subtitle: track.artist, origin: anchor),
   onStreamRow: true,
@@ -324,7 +325,7 @@ List<TrackActionGroup> trackActions(
           },
           onStreamRow: true,
         ),
-      TrackAction(Icons.queue_rounded, l.addToQueue, () async {
+      TrackAction(CatalogAction.queue.icon, l.addToQueue, () async {
         final added = await ctrl.addToQueue(track.id);
         if (outer.mounted) showQueued(outer, added);
       }, onStreamRow: true),
@@ -333,7 +334,7 @@ List<TrackActionGroup> trackActions(
       // An unsaved shadow row in streaming mode joins the library without a file: never next to «Scarica».
       if (unsavedShadow && streaming)
         TrackAction(
-          Icons.library_add_rounded,
+          CatalogAction.library.icon,
           l.addToLibrary,
           () => downloadOnline(
             outer,
@@ -345,7 +346,7 @@ List<TrackActionGroup> trackActions(
       // «Scarica» saves too (D-695) and promotes the row to a file.
       if (streamKey != null && state != TrackState.downloaded && !(unsavedShadow && streaming))
         TrackAction(
-          Icons.download_rounded,
+          CatalogAction.download.icon,
           streaming ? l.ytDownloadOnDevice : l.ytDownload,
           () => downloadOnline(
             outer,
@@ -383,7 +384,7 @@ List<TrackActionGroup> trackActions(
         onOnlineEntry: true,
       ),
       TrackAction(
-        Icons.playlist_add_rounded,
+        CatalogAction.playlist.icon,
         l.addToPlaylist,
         () async => showAddToPlaylistSheet(outer, ref, [track]),
       ),
@@ -816,12 +817,12 @@ List<TrackAction> onlineResultActions(
   final ctrl = ref.read(playerControllerProvider);
   bool inLibrary() => ref.read(libraryAdderProvider).alreadyThere(r.id, r.source);
   return [
-    TrackAction(Icons.queue_rounded, l.addToQueue, () async {
+    TrackAction(CatalogAction.queue.icon, l.addToQueue, () async {
       final full = ctrl.jamQueueFull;
       await ctrl.enqueueOnline(r);
       if (outer.mounted) showQueued(outer, full ? jamFullResult : null);
     }),
-    TrackAction(Icons.playlist_add_rounded, l.addToPlaylist, () async {
+    TrackAction(CatalogAction.playlist.icon, l.addToPlaylist, () async {
       final picked = await pickPlaylist(outer, ref);
       if (picked == null || !outer.mounted) return;
       final now = await ref
@@ -839,14 +840,14 @@ List<TrackAction> onlineResultActions(
       }
     }),
     TrackAction(
-      Icons.library_add_rounded,
+      CatalogAction.library.icon,
       l.addToLibrary,
       () => downloadOnline(outer, inLibrary: inLibrary(), start: () => ref.read(libraryAdderProvider).add(r)),
     ),
     // In device mode the first item already downloads.
     if (ref.read(settingsProvider).storageMode == StorageMode.stream)
       TrackAction(
-        Icons.download_rounded,
+        CatalogAction.download.icon,
         l.ytDownloadOnDevice,
         // A saved stream is no file: only a downloaded one blocks it.
         () => downloadOnline(

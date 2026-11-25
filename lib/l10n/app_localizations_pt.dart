@@ -817,9 +817,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Na mesma rede Wi‑Fi, abra «Receber» no outro dispositivo e introduza o endereço e o PIN.';
 
   @override
-  String get shareMenu => 'Partilhar…';
-
-  @override
   String get shareAction => 'Partilhar';
 
   @override
@@ -5636,9 +5633,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get karaokeVideoFailed => 'Vídeo indisponível: só toca a base.';
-
-  @override
-  String get ytmAlbumQueue => 'Adicionar álbum à fila';
 
   @override
   String get addedToLibrary => 'Adicionada à biblioteca';
