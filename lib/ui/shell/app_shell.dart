@@ -22,7 +22,10 @@ import '../../providers/preview_providers.dart';
 import '../../providers/shuffle_plus_providers.dart';
 import '../../services/shuffle_plus/shuffle_plus_controller.dart'
     show ShufflePlusNotice;
+import '../../providers/app_restart_provider.dart' show quitAppProvider;
 import '../../providers/ui_providers.dart';
+import '../screens/settings/settings_screen.dart';
+import '../widgets/cc_app_bar.dart' show CcAppBar;
 import '../../providers/youtube_providers.dart' show ytDlpStatusProvider;
 import '../screens/library/library_screen.dart';
 import '../screens/memory/memory_screen.dart';
@@ -42,6 +45,7 @@ import '../../providers/releases_providers.dart' show launchTargetProvider;
 import '../screens/import/import_flow.dart' show openImportFile;
 import '../../services/online/shared_text.dart';
 import 'shell_nav.dart';
+import 'shortcuts_overlay.dart' show showShortcutsOverlay;
 import '../../l10n/l10n_ext.dart';
 import '../theme/tokens.dart';
 import '../widgets/enrich_result_listener.dart';
@@ -66,74 +70,97 @@ bool ctrlFTargetsLibrary({required bool youtube, required int tab}) =>
 class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
-  static const _space = SingleActivator(LogicalKeyboardKey.space);
-  static const _volUp = SingleActivator(
-    LogicalKeyboardKey.arrowUp,
-    control: true,
-  );
-  static const _volDown = SingleActivator(
-    LogicalKeyboardKey.arrowDown,
-    control: true,
-  );
-
-  Map<ShortcutActivator, VoidCallback> _shortcuts(
+  /// One handler per [ShortcutAction]; the keys come from the table.
+  ({Map<ShortcutActivator, VoidCallback> bindings, Set<ShortcutActivator> textOnly}) _shortcuts(
+    BuildContext context,
     WidgetRef ref, {
     required bool preview,
   }) {
-    void back() => ref.read(forwardStacksProvider)[ref.read(navIndexProvider)].back();
+    ForwardStack stack() => ref.read(forwardStacksProvider)[ref.read(navIndexProvider)];
     final ctrl = ref.read(playerControllerProvider);
     final vol = ref.read(volumeProvider.notifier);
 
     void bump(double d) =>
         vol.set((ref.read(volumeProvider) + d).clamp(0.0, 1.0));
-    return {
-      _space: ctrl.togglePlayPause,
-      const SingleActivator(LogicalKeyboardKey.arrowRight, control: true):
-          ctrl.next,
-      const SingleActivator(LogicalKeyboardKey.arrowLeft, control: true):
-          ctrl.previous,
+
+    void goSearch() {
+      ref.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState?.popUntil((r) => r.isFirst);
+      ref.read(navIndexProvider.notifier).set(NavTab.search.index);
+    }
+
+    void search() {
+      if (ctrlFTargetsLibrary(
+        youtube: kEnableYoutube,
+        tab: ref.read(navIndexProvider),
+      )) {
+        final wasLibrary = ref.read(navIndexProvider) == NavTab.library.index;
+        final nav = ref.read(tabNavigatorKeysProvider)[NavTab.library.index];
+        // An album or a list may sit above the Library: the lens is on its root.
+        nav.currentState?.popUntil((r) => r.isFirst);
+        ref.read(navIndexProvider.notifier).set(NavTab.library.index);
+        void request() =>
+            ref.read(librarySearchRequestProvider.notifier).request();
+        if (wasLibrary) {
+          request();
+        } else {
+          // The tab may only mount after the frame and must hear the request.
+          WidgetsBinding.instance.addPostFrameCallback((_) => request());
+          WidgetsBinding.instance.scheduleFrame();
+        }
+        return;
+      }
+      goSearch();
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => ref.read(searchFocusProvider).requestFocus(),
+      );
+    }
+
+    // D-732: Search with the link on the clipboard.
+    Future<void> pasteLink() async {
+      final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim() ?? '';
+      goSearch();
+      if (text.isNotEmpty) ref.read(searchPrefillProvider.notifier).set(text);
+    }
+
+    final k = shortcutBindings({
+      ShortcutAction.playPause: ctrl.togglePlayPause,
+      ShortcutAction.previous: ctrl.previous,
+      ShortcutAction.next: ctrl.next,
+      ShortcutAction.volumeDown: () => bump(-0.05),
+      ShortcutAction.volumeUp: () => bump(0.05),
+      ShortcutAction.back: () => stack().back(),
+      ShortcutAction.forward: () => stack().forward(),
+      ShortcutAction.reload: ref.read(reloadRequestProvider.notifier).request,
+      ShortcutAction.settings: () => ShellNav.openInHome(
+        context,
+        ref,
+        Scaffold(
+          appBar: CcAppBar(title: context.l10n.navSettings),
+          body: const SettingsScreen(),
+        ),
+      ),
+      ShortcutAction.search: search,
+      ShortcutAction.pasteLink: () => unawaited(pasteLink()),
+      ShortcutAction.shortcuts: () => unawaited(showShortcutsOverlay(context)),
+      ShortcutAction.quit: () => unawaited(ref.read(quitAppProvider)()),
+    });
+    return (
+      textOnly: k.textOnly,
+      bindings: {
+      ...k.bindings,
       // Hardware media keys (delivered to the focused window).
       const SingleActivator(LogicalKeyboardKey.mediaPlayPause):
           ctrl.togglePlayPause,
       const SingleActivator(LogicalKeyboardKey.mediaTrackNext): ctrl.next,
       const SingleActivator(LogicalKeyboardKey.mediaTrackPrevious):
           ctrl.previous,
-      const SingleActivator(LogicalKeyboardKey.keyF, control: true): () {
-        if (ctrlFTargetsLibrary(
-          youtube: kEnableYoutube,
-          tab: ref.read(navIndexProvider),
-        )) {
-          final wasLibrary = ref.read(navIndexProvider) == NavTab.library.index;
-          final nav = ref.read(tabNavigatorKeysProvider)[NavTab.library.index];
-          // An album or a list may sit above the Library: the lens is on its root.
-          nav.currentState?.popUntil((r) => r.isFirst);
-          ref.read(navIndexProvider.notifier).set(NavTab.library.index);
-          void request() =>
-              ref.read(librarySearchRequestProvider.notifier).request();
-          if (wasLibrary) {
-            request();
-          } else {
-            // The tab may only mount after the frame and must hear the request.
-            WidgetsBinding.instance.addPostFrameCallback((_) => request());
-            WidgetsBinding.instance.scheduleFrame();
-          }
-          return;
-        }
-        ref.read(tabNavigatorKeysProvider)[NavTab.search.index].currentState?.popUntil((r) => r.isFirst);
-        ref.read(navIndexProvider.notifier).set(NavTab.search.index);
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => ref.read(searchFocusProvider).requestFocus(),
-        );
-      },
-      const SingleActivator(LogicalKeyboardKey.arrowLeft, alt: true): back,
       // Ends a 20 s preview started from the menu. Only bound while one
       // runs: ShellKeys would swallow the Esc a sheet in a tab needs.
       if (preview)
         const SingleActivator(LogicalKeyboardKey.escape): () =>
             ref.read(previewProvider.notifier).stop(),
-      _volUp: () => bump(0.05),
-      _volDown: () => bump(-0.05),
-    };
+      },
+    );
   }
 
   @override
@@ -271,12 +298,14 @@ class AppShell extends ConsumerWidget {
       child: content,
     );
     if (isDesktop) {
+      final sk = _shortcuts(
+        context,
+        ref,
+        preview: ref.watch(previewProvider.select((p) => p.active)),
+      );
       content = ShellKeys(
-        bindings: _shortcuts(
-          ref,
-          preview: ref.watch(previewProvider.select((p) => p.active)),
-        ),
-        textOnly: const {_space, _volUp, _volDown},
+        bindings: sk.bindings,
+        textOnly: sk.textOnly,
         // Any click ends a preview started from the menu.
         child: Listener(
           behavior: HitTestBehavior.translucent,

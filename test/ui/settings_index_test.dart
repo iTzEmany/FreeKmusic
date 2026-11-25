@@ -6,6 +6,7 @@ import 'package:codecore/providers/share_providers.dart';
 import 'package:codecore/providers/theme_providers.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/screens/stats/stats_screen.dart';
+import 'package:codecore/ui/shell/shell_keys.dart' show ShortcutAction;
 import 'package:codecore/ui/theme/custom_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -276,15 +277,17 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('desktop: phone-only options are hidden, Scorciatoie exists', (t) async {
-    _size(t, 1280, 800);
+  testWidgets('desktop: phone-only options are hidden, Scorciatoie lists the whole table', (t) async {
+    _size(t, 1280, 2400);
     final h = await Harness.create(t);
     await h.pump(t, const Scaffold(body: SettingsScreen()));
     expect(find.text('Dimensione testo'), findsNothing);
     expect(find.text('Dock e intestazioni sfocati'), findsNothing);
     await t.tap(find.text('Scorciatoie'));
     await t.pumpAndSettle();
-    expect(find.byIcon(Icons.keyboard_outlined), findsOneWidget);
+    for (final a in ShortcutAction.values) {
+      expect(find.byKey(ValueKey('shortcut-${a.name}')), findsOneWidget, reason: a.name);
+    }
     await h.dispose(t);
   });
 

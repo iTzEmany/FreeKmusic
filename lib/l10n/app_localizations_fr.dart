@@ -8727,5 +8727,56 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsPageShortcuts => 'Raccourcis';
 
   @override
-  String get shortcutsEmpty => 'Les raccourcis clavier apparaîtront ici.';
+  String get shortcutGroupPlayback => 'Lecture';
+
+  @override
+  String get shortcutGroupNavigation => 'Navigation';
+
+  @override
+  String get shortcutGroupSearch => 'Recherche';
+
+  @override
+  String get shortcutGroupApp => 'Application';
+
+  @override
+  String get shortcutPlayPause => 'Lecture ou pause';
+
+  @override
+  String get shortcutPrevious => 'Titre précédent';
+
+  @override
+  String get shortcutNext => 'Titre suivant';
+
+  @override
+  String get shortcutVolumeDown => 'Baisser le volume';
+
+  @override
+  String get shortcutVolumeUp => 'Augmenter le volume';
+
+  @override
+  String get shortcutBack => 'Retour';
+
+  @override
+  String get shortcutForward => 'Avancer';
+
+  @override
+  String get shortcutReload => 'Recharger la page';
+
+  @override
+  String get shortcutSettings => 'Ouvrir les réglages';
+
+  @override
+  String get shortcutSearch => 'Aller à la recherche';
+
+  @override
+  String get shortcutPasteLink => 'Rechercher et coller un lien';
+
+  @override
+  String get shortcutShowList => 'Afficher la liste des raccourcis';
+
+  @override
+  String get shortcutQuit => 'Quitter FreeKmusic';
+
+  @override
+  String get shortcutKeySpace => 'Espace';
 }

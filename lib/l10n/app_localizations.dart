@@ -13489,11 +13489,113 @@ abstract class AppLocalizations {
   /// **'Scorciatoie'**
   String get settingsPageShortcuts;
 
-  /// No description provided for @shortcutsEmpty.
+  /// No description provided for @shortcutGroupPlayback.
   ///
   /// In it, this message translates to:
-  /// **'Le scorciatoie da tastiera compariranno qui.'**
-  String get shortcutsEmpty;
+  /// **'Riproduzione'**
+  String get shortcutGroupPlayback;
+
+  /// No description provided for @shortcutGroupNavigation.
+  ///
+  /// In it, this message translates to:
+  /// **'Navigazione'**
+  String get shortcutGroupNavigation;
+
+  /// No description provided for @shortcutGroupSearch.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca'**
+  String get shortcutGroupSearch;
+
+  /// No description provided for @shortcutGroupApp.
+  ///
+  /// In it, this message translates to:
+  /// **'Applicazione'**
+  String get shortcutGroupApp;
+
+  /// No description provided for @shortcutPlayPause.
+  ///
+  /// In it, this message translates to:
+  /// **'Riproduci o metti in pausa'**
+  String get shortcutPlayPause;
+
+  /// No description provided for @shortcutPrevious.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano precedente'**
+  String get shortcutPrevious;
+
+  /// No description provided for @shortcutNext.
+  ///
+  /// In it, this message translates to:
+  /// **'Brano successivo'**
+  String get shortcutNext;
+
+  /// No description provided for @shortcutVolumeDown.
+  ///
+  /// In it, this message translates to:
+  /// **'Volume più basso'**
+  String get shortcutVolumeDown;
+
+  /// No description provided for @shortcutVolumeUp.
+  ///
+  /// In it, this message translates to:
+  /// **'Volume più alto'**
+  String get shortcutVolumeUp;
+
+  /// No description provided for @shortcutBack.
+  ///
+  /// In it, this message translates to:
+  /// **'Indietro'**
+  String get shortcutBack;
+
+  /// No description provided for @shortcutForward.
+  ///
+  /// In it, this message translates to:
+  /// **'Avanti'**
+  String get shortcutForward;
+
+  /// No description provided for @shortcutReload.
+  ///
+  /// In it, this message translates to:
+  /// **'Ricarica la pagina'**
+  String get shortcutReload;
+
+  /// No description provided for @shortcutSettings.
+  ///
+  /// In it, this message translates to:
+  /// **'Apri le impostazioni'**
+  String get shortcutSettings;
+
+  /// No description provided for @shortcutSearch.
+  ///
+  /// In it, this message translates to:
+  /// **'Vai a Cerca'**
+  String get shortcutSearch;
+
+  /// No description provided for @shortcutPasteLink.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca e incolla un link'**
+  String get shortcutPasteLink;
+
+  /// No description provided for @shortcutShowList.
+  ///
+  /// In it, this message translates to:
+  /// **'Mostra l\'elenco delle scorciatoie'**
+  String get shortcutShowList;
+
+  /// No description provided for @shortcutQuit.
+  ///
+  /// In it, this message translates to:
+  /// **'Chiudi FreeKmusic'**
+  String get shortcutQuit;
+
+  /// No description provided for @shortcutKeySpace.
+  ///
+  /// In it, this message translates to:
+  /// **'Spazio'**
+  String get shortcutKeySpace;
 }
 
 class _AppLocalizationsDelegate

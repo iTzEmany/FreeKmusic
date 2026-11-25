@@ -108,6 +108,12 @@ Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_m
 - **Limite Flatpak**: un file aperto dal portale dei documenti (`/run/user/<uid>/doc/...`) fuori dalle cartelle leggibili non suona e non scrive righe in `tracks`: uno snackbar chiede di aggiungere la sua cartella dalla Libreria.
 - `.desktop` (Flatpak e deb/AppImage): `MimeType` audio ed `Exec=… %U`.
 
+### Scorciatoie da tastiera desktop (fase 158, D-732, D-738, D-740)
+- **Una tabella** (`ShortcutAction` in `lib/ui/shell/shell_keys.dart`): azione, gruppo, tasti (`ShortcutKey`, con `textOnly` per i tasti che con un campo di testo in primo piano sono testo). Alimenta le associazioni dello shell (`AppShell._shortcuts` dà un solo gestore per azione: `shortcutBindings`), la finestra aperta con «?» (`shortcuts_overlay.dart`) e Impostazioni > Scorciatoie. Una azione nuova = una voce nella tabella + il testo in `ShortcutAction.text` + il gestore nello shell.
+- Tasti: Spazio, Ctrl+←/→ (brano), Ctrl+↑/↓ (volume), Alt+← o Backspace (indietro), Alt+→ (avanti, `ForwardStack.forward`), F5 (ricarica), Ctrl+, (Impostazioni, nella scheda Home), Ctrl+F o `/` (cerca), Ctrl+L («Cerca e incolla un link»: Cerca col testo degli appunti, via `searchPrefillProvider`), `?` (elenco), Ctrl+Q (esci con `ServicesBinding.exitApplication`, come la chiusura della finestra; `quitAppProvider`). `/` e `?` usano `CharacterActivator`: contano il carattere, qualunque tastiera richieda Shift. Backspace, Spazio, `/`, `?` e Ctrl+↑/↓ non scattano in un campo di testo. I tasti multimediali e l'Esc dell'anteprima restano fuori tabella.
+- **F5** = `reloadRequestProvider` (contatore) e `listenReload` (`ui_providers.dart`): reagisce solo la pagina in primo piano (route corrente e scheda visibile). Cerca rifà la stessa ricerca, Nuove uscite lancia «Controlla ora», le pagine online (`OnlinePageFrame`: artista, album, playlist e classifica, discografia, brani) rifanno il `onRefresh` del tirare-per-aggiornare. Le altre pagine non fanno niente.
+- Prova di sistema: `integration_test/desktop_flow_test.dart` (Alt+→, Backspace, F5, `/`, Ctrl+L, Ctrl+, e `?`; Ctrl+Q no, chiuderebbe il test).
+
 ### Differenze per piattaforma
 | Aspetto | Android | Windows / Linux | macOS |
 |---|---|---|---|

@@ -4251,5 +4251,22 @@
   "densityMedium": "medium",
   "densityLarge": "large",
   "settingsPageShortcuts": "Shortcuts",
-  "shortcutsEmpty": "Keyboard shortcuts will appear here."
+  "shortcutGroupPlayback": "Playback",
+  "shortcutGroupNavigation": "Navigation",
+  "shortcutGroupSearch": "Search",
+  "shortcutGroupApp": "App",
+  "shortcutPlayPause": "Play or pause",
+  "shortcutPrevious": "Previous track",
+  "shortcutNext": "Next track",
+  "shortcutVolumeDown": "Volume down",
+  "shortcutVolumeUp": "Volume up",
+  "shortcutBack": "Back",
+  "shortcutForward": "Forward",
+  "shortcutReload": "Reload the page",
+  "shortcutSettings": "Open settings",
+  "shortcutSearch": "Go to Search",
+  "shortcutPasteLink": "Search and paste a link",
+  "shortcutShowList": "Show the list of shortcuts",
+  "shortcutQuit": "Quit FreeKmusic",
+  "shortcutKeySpace": "Space"
 }

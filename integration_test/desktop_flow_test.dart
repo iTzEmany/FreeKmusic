@@ -2,6 +2,8 @@ import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/selection_providers.dart';
+import 'package:codecore/providers/ui_providers.dart' show reloadRequestProvider, searchControllerProvider;
+import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/shell/desktop_sidebar.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/gestures.dart' show PointerDeviceKind, kBackMouseButton, kForwardMouseButton, kSecondaryButton;
@@ -129,11 +131,41 @@ void main() {
     await waitFor(tester, () => !libNav.currentState!.canPop(),
         reason: 'back button closed the page');
 
+    // Alt+Right reopens the page the back button closed, Backspace closes it.
+    await press(LogicalKeyboardKey.arrowRight, alt: true);
+    expect(libNav.currentState!.canPop(), isTrue, reason: 'Alt+Right reopened the page');
+    await press(LogicalKeyboardKey.backspace);
+    await waitFor(tester, () => !libNav.currentState!.canPop(), reason: 'Backspace closed the page');
+
     // Ctrl+F from Home opens Search.
     await tester.tap(find.descendant(of: find.byType(DesktopSidebar), matching: find.text(l.navHome)));
     await settle(tester);
     await press(LogicalKeyboardKey.keyF, ctrl: true);
     expect(c.read(navIndexProvider), NavTab.search.index, reason: 'Ctrl+F from Home opens Search');
+
+    // F5 asks the page for a reload, `/` goes to Search, Ctrl+L opens it with the clipboard link.
+    await press(LogicalKeyboardKey.f5);
+    expect(c.read(reloadRequestProvider), 1, reason: 'F5 requested a reload');
+    await tester.tap(find.descendant(of: find.byType(DesktopSidebar), matching: find.text(l.navHome)));
+    await settle(tester);
+    await press(LogicalKeyboardKey.slash);
+    expect(c.read(navIndexProvider), isNot(NavTab.home.index), reason: '/ leaves Home for the search');
+    await tester.tap(find.descendant(of: find.byType(DesktopSidebar), matching: find.text(l.navHome)));
+    await settle(tester);
+    await Clipboard.setData(const ClipboardData(text: 'https://example.com/a-link'));
+    await press(LogicalKeyboardKey.keyL, ctrl: true);
+    expect(c.read(navIndexProvider), NavTab.search.index, reason: 'Ctrl+L opens Search');
+    expect(c.read(searchControllerProvider).text, 'https://example.com/a-link');
+
+    // Ctrl+, opens the settings, «?» the list of shortcuts, Esc closes it.
+    await press(LogicalKeyboardKey.comma, ctrl: true);
+    expect(find.byType(SettingsScreen), findsOneWidget, reason: 'Ctrl+, opened the settings');
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.slash, character: '?');
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.slash);
+    await settle(tester, by: const Duration(milliseconds: 300));
+    expect(find.byType(AlertDialog), findsOneWidget, reason: '? opened the list');
+    await press(LogicalKeyboardKey.escape);
+    await waitFor(tester, () => find.byType(AlertDialog).evaluate().isEmpty, reason: 'Esc closed the list');
 
     // Resize: no layout exception at 1000 and 1920.
     for (final w in [1000.0, 1920.0]) {

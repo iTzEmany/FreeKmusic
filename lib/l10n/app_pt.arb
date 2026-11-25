@@ -4437,5 +4437,22 @@
   "densityMedium": "média",
   "densityLarge": "grande",
   "settingsPageShortcuts": "Atalhos",
-  "shortcutsEmpty": "Os atalhos de teclado aparecerão aqui."
+  "shortcutGroupPlayback": "Reprodução",
+  "shortcutGroupNavigation": "Navegação",
+  "shortcutGroupSearch": "Pesquisa",
+  "shortcutGroupApp": "App",
+  "shortcutPlayPause": "Reproduzir ou pausar",
+  "shortcutPrevious": "Faixa anterior",
+  "shortcutNext": "Próxima faixa",
+  "shortcutVolumeDown": "Diminuir o volume",
+  "shortcutVolumeUp": "Aumentar o volume",
+  "shortcutBack": "Voltar",
+  "shortcutForward": "Avançar",
+  "shortcutReload": "Recarregar a página",
+  "shortcutSettings": "Abrir as configurações",
+  "shortcutSearch": "Ir para a pesquisa",
+  "shortcutPasteLink": "Pesquisar e colar um link",
+  "shortcutShowList": "Mostrar a lista de atalhos",
+  "shortcutQuit": "Sair do FreeKmusic",
+  "shortcutKeySpace": "Espaço"
 }

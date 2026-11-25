@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/selection_providers.dart';
+import '../../../providers/ui_providers.dart' show listenReload;
 import '../../../services/online/youtube_service.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
@@ -43,6 +44,7 @@ class OnlinePageFrame extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
     final key = selectionKey;
+    listenReload(context, ref, onRefresh); // F5
     final scroll = CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [

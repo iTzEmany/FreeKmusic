@@ -4980,5 +4980,22 @@
   "densityMedium": "media",
   "densityLarge": "grande",
   "settingsPageShortcuts": "Scorciatoie",
-  "shortcutsEmpty": "Le scorciatoie da tastiera compariranno qui."
+  "shortcutGroupPlayback": "Riproduzione",
+  "shortcutGroupNavigation": "Navigazione",
+  "shortcutGroupSearch": "Cerca",
+  "shortcutGroupApp": "Applicazione",
+  "shortcutPlayPause": "Riproduci o metti in pausa",
+  "shortcutPrevious": "Brano precedente",
+  "shortcutNext": "Brano successivo",
+  "shortcutVolumeDown": "Volume più basso",
+  "shortcutVolumeUp": "Volume più alto",
+  "shortcutBack": "Indietro",
+  "shortcutForward": "Avanti",
+  "shortcutReload": "Ricarica la pagina",
+  "shortcutSettings": "Apri le impostazioni",
+  "shortcutSearch": "Vai a Cerca",
+  "shortcutPasteLink": "Cerca e incolla un link",
+  "shortcutShowList": "Mostra l'elenco delle scorciatoie",
+  "shortcutQuit": "Chiudi FreeKmusic",
+  "shortcutKeySpace": "Spazio"
 }
