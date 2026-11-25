@@ -4,6 +4,7 @@ import '../../../core/platform.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 
 import '../car/car_mode_screen.dart';
 
@@ -264,7 +265,7 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     final reduce = MediaQuery.disableAnimationsOf(context);
     // Option «tinta della copertina» (D-54): one flat colour, else `bg`.
     final tinted = ref.watch(themeBackgroundProvider).coverBackdrop;
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: tinted
           ? resolvedHeroTint(context, ref, track?.coverKey)
           : cc.bg,
@@ -346,6 +347,14 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
                 ),
         ),
       ),
+    );
+    if (!(widget.desktop ?? isDesktop)) return scaffold;
+    // Desktop: Esc closes the full-screen player, like the arrow.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): () => Navigator.of(context).maybePop(),
+      },
+      child: Focus(autofocus: true, child: scaffold),
     );
   }
 }

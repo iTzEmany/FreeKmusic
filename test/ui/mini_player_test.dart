@@ -33,6 +33,7 @@ Future<Harness> _shell(WidgetTester t, {double textScale = 1}) async {
 }
 
 void main() {
+  _favoriteSnackTest();
   testWidgets('textScale 2.0 on 360 px: mini player and dock do not overflow',
       (t) async {
     final h = await _shell(t, textScale: 2);
@@ -88,6 +89,18 @@ void main() {
     expect(find.byTooltip('Preferito'), findsOneWidget); // the heart is there for a stream too
 
     await t.pumpWidget(const SizedBox());
+    await h.dispose(t);
+  });
+}
+
+void _favoriteSnackTest() {
+  testWidgets('the mini player heart says «Aggiunto ai preferiti» with «Annulla»', (t) async {
+    final h = await _shell(t);
+    await t.tap(find.descendant(of: find.byType(MiniPlayer), matching: find.byTooltip('Preferito')));
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await t.pump(const Duration(milliseconds: 300));
+    expect(find.text('Aggiunto ai preferiti'), findsOneWidget);
+    expect(find.text('Annulla'), findsOneWidget);
     await h.dispose(t);
   });
 }

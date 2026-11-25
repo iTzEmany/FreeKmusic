@@ -87,7 +87,7 @@ void main() {
   }
 
   group('icon row', () {
-    Future<Harness> pumpScaffold(WidgetTester tester, {int? kind, ValueChanged<Rect?>? onShare}) async {
+    Future<Harness> pumpScaffold(WidgetTester tester, {int? kind, ValueChanged<Rect?>? onShare, bool heart = false}) async {
       final h = await Harness.create(tester, tracks: 0);
       final downloadTracks = kind == null
           ? null
@@ -105,7 +105,8 @@ void main() {
           shuffleIds: const [1, 2],
           downloadTracks: downloadTracks,
           onShare: onShare,
-          menu: const SizedBox.square(dimension: 48),
+          onFavorite: heart ? () async => true : null,
+          menu: const SizedBox.square(key: ValueKey('menu'), dimension: 48),
         ),
       );
       return h;
@@ -120,6 +121,22 @@ void main() {
       await h.dispose(tester);
       h = await pumpScaffold(tester);
       expect(find.byTooltip('Condividi'), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('at 360 dp every action, Scarica included, sits on one row', (tester) async {
+      final h = await pumpScaffold(tester, kind: kStreamKind, onShare: (_) {}, heart: true);
+      final ys = <double>{
+        for (final f in [
+          find.byType(PlayCircleButton),
+          find.byTooltip('Scarica'),
+          find.byKey(const ValueKey('collection-favorite')),
+          find.byTooltip('Condividi'),
+          find.byKey(const ValueKey('menu')),
+        ])
+          tester.getCenter(f.first).dy,
+      };
+      expect(ys, hasLength(1));
       await h.dispose(tester);
     });
 

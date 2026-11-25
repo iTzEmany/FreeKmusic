@@ -547,7 +547,7 @@ void main() {
     await _settle(tester);
     final repo = FavoriteCollectionsRepository(h.db);
     expect(await tester.runAsync(() => repo.isFavoriteNow('album', 'artist|album 0')), isTrue);
-    expect(find.byTooltip('Togli dai preferiti'), findsOneWidget);
+    expect(find.byTooltip('Rimuovi dai preferiti'), findsOneWidget);
     await h.dispose(tester);
   });
 

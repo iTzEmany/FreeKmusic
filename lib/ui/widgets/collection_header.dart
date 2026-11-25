@@ -293,7 +293,7 @@ class _FavoriteButtonState extends ConsumerState<_FavoriteButton> {
       child: IconButton(
         key: const ValueKey('collection-favorite'),
         onPressed: widget.enabled ? _tap : null,
-        tooltip: fav ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
+        tooltip: fav ? l.removeFromFavorites : l.bulkAddToFavorites,
         icon: Icon(fav ? Icons.favorite_rounded : Icons.favorite_border_rounded),
       ),
     );
@@ -341,7 +341,8 @@ class CollectionHeader extends StatelessWidget {
             child: cover!(coverSize),
           );
     final actionRow = Wrap(
-      spacing: 8,
+      // 4 dp on the phone: Play, Casuale, Scarica, cuore, Condividi and ⋮ fit one row at 360 dp.
+      spacing: wide ? 8 : 4,
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: actions,

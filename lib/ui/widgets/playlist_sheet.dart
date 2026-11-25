@@ -111,6 +111,8 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
         ? ref.watch(playlistsContainingProvider(widget.tracks!.map((t) => t.id).join(','))).value ?? const <int>{}
         : const <int>{};
     final canCreate = _name.text.trim().isNotEmpty;
+    // In the wide desktop dialog the sheet is as tall as its content; on a phone it fills.
+    final dialog = ccSheetIsDialog(context);
     return SafeArea(
       child: Semantics(
       scopesRoute: true,
@@ -118,6 +120,7 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
       namesRoute: true,
       label: adding ? l.addToPlaylist : l.newPlaylist,
       child: Column(
+        mainAxisSize: dialog ? MainAxisSize.min : MainAxisSize.max,
         children: [
           SizedBox(
             height: 56,
@@ -189,8 +192,10 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
               ),
             ),
           ),
-          Expanded(
+          Flexible(
+            fit: dialog ? FlexFit.loose : FlexFit.tight,
             child: ListView.builder(
+              shrinkWrap: dialog,
               itemCount: lists.length,
               itemExtent: 64,
               itemBuilder: (_, i) {
