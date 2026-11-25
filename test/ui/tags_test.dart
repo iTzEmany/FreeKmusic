@@ -212,7 +212,7 @@ void main() {
     await tagWith(tester, 'Calm', [1]);
     await _settle(tester);
     expect(find.text('Etichette'), findsOneWidget);
-    expect(find.bySemanticsLabel('Etichette, 2'), findsOneWidget);
+    expect(find.bySemanticsLabel('Etichette, 2 etichette'), findsOneWidget);
     await tester.tap(find.text('Etichette'));
     await _settle(tester);
     expect(find.byType(TagsScreen), findsOneWidget);

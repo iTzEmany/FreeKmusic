@@ -788,7 +788,7 @@ void main() {
       await _settle(tester);
 
       expect(find.text('Podcast'), findsOneWidget);
-      expect(find.bySemanticsLabel('Podcast, 2'), findsOneWidget);
+      expect(find.bySemanticsLabel('Podcast, 2 podcast'), findsOneWidget);
       await tester.tap(find.text('Podcast'));
       await _settle(tester);
       expect(
