@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
 import 'package:codecore/ui/widgets/focus_ring_button.dart';
+import 'package:codecore/ui/widgets/segmented_blocks.dart';
+import 'package:flutter/services.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:flutter/material.dart';
@@ -51,5 +54,40 @@ void main() {
     Focus.of(t.element(find.byType(SizedBox).first)).requestFocus();
     await t.pumpAndSettle();
     expect(ring(), findsOneWidget);
+  });
+
+  // 157.6: the ring marks focus only, never selection (F-115).
+  testWidgets('after 3 Tabs the focused block has the ring and is not the selected one', (t) async {
+    final colors = CcColors.notte;
+    var selected = 0;
+    await t.pumpWidget(MaterialApp(
+      theme: buildThemeFromColors(colors, false),
+      home: Material(
+        child: StatefulBuilder(
+          builder: (_, set) => SegmentedBlocks<int>(
+            items: [for (var i = 0; i < 4; i++) BlockItem(value: i, label: 'B$i')],
+            selected: selected,
+            onChanged: (v) => set(() => selected = v),
+          ),
+        ),
+      ),
+    ));
+    Finder ring() => find.byWidgetPredicate((w) =>
+        w is DecoratedBox &&
+        w.position == DecorationPosition.foreground &&
+        (w.decoration as BoxDecoration).border != null);
+    // Selected (block 0) but not focused: no ring.
+    expect(ring(), findsNothing);
+    FocusManager.instance.highlightStrategy = FocusHighlightStrategy.alwaysTraditional;
+    for (var i = 0; i < 3; i++) {
+      await t.sendKeyEvent(LogicalKeyboardKey.tab);
+      await t.pump();
+    }
+    // Focus is on block 2 (third Tab): it has the ring, the selection is still block 0.
+    expect(ring(), findsOneWidget);
+    expect(find.descendant(of: ring(), matching: find.text('B2')), findsOneWidget);
+    expect(selected, 0);
+    final nodes = t.getSemantics(find.text('B2'));
+    expect(nodes.flagsCollection.isSelected, isNot(ui.Tristate.isTrue));
   });
 }

@@ -168,7 +168,7 @@ class _TrackInfo extends ConsumerWidget {
             children: [
               MarqueeText(texts?.title ?? track.title, style: theme.bodyLarge),
               if (radio == null)
-                ArtistLinks(track, style: theme.bodyMedium, minHeight: 0)
+                ArtistLinks(track, style: theme.bodyMedium, minHeight: 36)
               else
                 Text(
                   texts!.subtitle,
@@ -307,7 +307,7 @@ class _Center extends ConsumerWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         SizedBox(
-          height: 44,
+          height: 40,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants.dart';
@@ -17,6 +16,7 @@ import '../screens/playlists/playlists_screen.dart' show showPlaylistMenu;
 import '../screens/playlists/playlist_dialogs.dart';
 import '../screens/smart/smart_playlist_editor.dart';
 import '../theme/tokens.dart';
+import '../widgets/focus_ring_button.dart';
 import '../widgets/new_playlist_menu.dart';
 import '../widgets/playlist_cover.dart';
 import '../widgets/track_drag.dart';
@@ -252,9 +252,11 @@ class _SidebarItem extends StatelessWidget {
           );
     return Tooltip(
       message: label,
-      child: InkWell(
-        onTap: onTap,
-        child: SizedBox(height: 48, child: child),
+      child: FocusRing(
+        child: InkWell(
+          onTap: onTap,
+          child: SizedBox(height: 48, child: child),
+        ),
       ),
     );
   }
@@ -286,40 +288,44 @@ class _CoverRow extends StatelessWidget {
       onDrop: onDrop,
       child: Tooltip(
         message: title,
-        child: InkWell(
-          onTap: onTap,
-          onSecondaryTapDown: onMenu == null ? null : (d) => onMenu!(d.globalPosition),
-          // Grows with the text size: two lines at 150 % no longer fit in 56.
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
-            child: Row(
-              children: [
-                SizedBox(width: collapsed ? 16 : 12),
-                cover,
-                if (!collapsed) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.bodyLarge,
-                        ),
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.bodyMedium,
-                        ),
-                      ],
+        child: FocusRing(
+          child: InkWell(
+            onTap: onTap,
+            onSecondaryTapDown: onMenu == null
+                ? null
+                : (d) => onMenu!(d.globalPosition),
+            // Grows with the text size: two lines at 150 % no longer fit in 56.
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 56),
+              child: Row(
+                children: [
+                  SizedBox(width: collapsed ? 16 : 12),
+                  cover,
+                  if (!collapsed) ...[
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.bodyLarge,
+                          ),
+                          Text(
+                            subtitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.bodyMedium,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -327,4 +333,3 @@ class _CoverRow extends StatelessWidget {
     );
   }
 }
-

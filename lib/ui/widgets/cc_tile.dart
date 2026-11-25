@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
+import 'focus_ring_button.dart';
 
 /// A tappable card: `surface1` (or [color]) with the card radius, ripple and
 /// one button node for screen readers that reads [semanticsLabel]. Without
@@ -27,15 +28,19 @@ class CcTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = Material(
-      color: color ?? context.cc.surface1,
-      borderRadius: BorderRadius.circular(CcDims.rCard),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: minHeight),
-          child: child,
+    final radius = BorderRadius.circular(CcDims.rCard);
+    final card = FocusRing(
+      radius: radius,
+      child: Material(
+        color: color ?? context.cc.surface1,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: minHeight),
+            child: child,
+          ),
         ),
       ),
     );
