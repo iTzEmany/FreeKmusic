@@ -1,3 +1,4 @@
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/activity_providers.dart';
 import 'dart:async';
@@ -226,6 +227,8 @@ void main() {
 
   testWidgets('the dock blurs only when the setting is on', (t) async {
     _phone(t);
+    debugIsDesktopOverride = false;
+    addTearDown(() => debugIsDesktopOverride = null);
     final h = await Harness.create(t, tracks: 2);
     await h.pump(t, const AppShell());
     await _settle(t);

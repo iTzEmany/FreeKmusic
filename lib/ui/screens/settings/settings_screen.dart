@@ -54,12 +54,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       fontWeight: wide && !_stats && p == _page ? FontWeight.w700 : null,
                     ),
                   ),
-                  subtitle: Text(
-                    settingsSummary(context, ref, p),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: text.bodySmall?.copyWith(color: cc.textMuted),
-                  ),
+                  subtitle: switch (settingsSummary(context, ref, p)) {
+                    '' => null,
+                    final summary => Text(
+                      summary,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: text.bodySmall?.copyWith(color: cc.textMuted),
+                    ),
+                  },
                   trailing: wide ? null : const Icon(Icons.chevron_right_rounded),
                   onTap: () => wide
                       ? setState(() {

@@ -1,4 +1,5 @@
 import 'package:codecore/app.dart';
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,28 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/app_harness.dart';
 
 void main() {
+  for (final desktop in [true, false]) {
+    testWidgets('saved fontScale 1.15 ${desktop ? "is ignored on desktop" : "applies on phone"}', (tester) async {
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      debugIsDesktopOverride = desktop;
+      addTearDown(() {
+        tester.view.reset();
+        debugIsDesktopOverride = null;
+      });
+      final h = await Harness.create(tester, tracks: 1);
+      await tester.pumpWidget(ProviderScope(overrides: h.overrides, child: const CodecoreApp()));
+      await tester.pump(const Duration(milliseconds: 200));
+      ProviderScope.containerOf(tester.element(find.byType(CodecoreApp)))
+          .read(settingsProvider.notifier)
+          .update((s) => s.copyWith(fontScale: 1.15));
+      await tester.pump(const Duration(milliseconds: 600));
+      final scaler = MediaQuery.textScalerOf(tester.element(find.byType(Scaffold).first));
+      expect(scaler.scale(10), desktop ? closeTo(10, 0.01) : closeTo(11.5, 0.01));
+      await h.dispose(tester);
+    });
+  }
+
   // The smallest choice and a scale above the largest one (1.15): the scale
   // is applied linearly, so the values in between add nothing.
   for (final scale in [0.9, 1.5]) {
