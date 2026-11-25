@@ -69,12 +69,14 @@ void main() {
   testWidgets('the volume slider sets the volume, mute zeroes it and restores it', (t) async {
     final h = await openBar(t);
     final volume = find.byType(Slider).last; // the first one is the seek line
+    final start = t.widget<Slider>(volume).value;
+    expect(start, greaterThan(0));
     await t.drag(volume, const Offset(-1000, 0));
     await _settle(t);
     expect(h.backend.volumes.last, 0.0);
     await t.tap(volume);
     await _settle(t);
-    expect(h.backend.volumes.last, closeTo(0.5, 0.2));
+    expect(h.backend.volumes.last, closeTo(0.5, 0.05));
     await tapTip(t, 'Muto');
     expect(h.backend.volumes.last, 0.0);
     await tapTip(t, 'Muto');

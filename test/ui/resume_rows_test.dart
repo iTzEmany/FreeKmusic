@@ -59,7 +59,7 @@ void main() {
     return h;
   }
 
-  testWidgets('a track left in the middle restarts from its own row', (
+  testWidgets('a track left in the middle restarts from its own row at the saved point', (
     tester,
   ) async {
     final h = await openResume(tester);
@@ -70,6 +70,8 @@ void main() {
     await _settle(tester);
     expect(h.handler.queueIds, [id]);
     expect(h.handler.currentIndex, 0);
+    // The handler resumes 5 s before the saved 60 s.
+    expect(h.backend.seeks.last, const Duration(seconds: 55));
     await h.dispose(tester);
   });
 

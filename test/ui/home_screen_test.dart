@@ -2,6 +2,7 @@ import 'package:codecore/services/radio/radio_catalog.dart' show RadioList;
 import 'package:codecore/data/repositories/track_repository.dart' show SortOption;
 import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
+import 'package:codecore/ui/screens/home/home_blocks.dart' show ShortcutsRow;
 import 'package:codecore/ui/screens/home/home_row.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
@@ -28,6 +29,9 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(const Duration(milliseconds: 300));
 }
+
+Finder _inShortcuts(String label) =>
+    find.descendant(of: find.byType(ShortcutsRow), matching: find.text(label));
 
 void main() {
   testWidgets('home without music: empty state with add folder', (
@@ -425,7 +429,7 @@ void main() {
   ]) {
     testWidgets('the «$label» shortcut opens its page', (tester) async {
       final h = await openHome(tester);
-      await tester.tap(find.text(label));
+      await tester.tap(_inShortcuts(label));
       await _settle(tester);
       expect(
         find.byWidgetPredicate((w) => w.runtimeType == page),
@@ -454,7 +458,7 @@ void main() {
       ],
     );
     await _settle(tester);
-    await tester.tap(find.text('Radio'));
+    await tester.tap(_inShortcuts('Radio'));
     await _settle(tester);
     expect(find.byType(RadioScreen), findsOneWidget);
     await h.dispose(tester);
@@ -464,7 +468,15 @@ void main() {
     tester,
   ) async {
     final h = await openHome(tester);
-    await tester.tap(find.text('Tutti'));
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Aggiunti da poco'),
+          matching: find.byType(HomeBlock),
+        ),
+        matching: find.text('Tutti'),
+      ),
+    );
     await _settle(tester);
     final screen = tester.widget<AllTracksScreen>(find.byType(AllTracksScreen));
     expect(screen.initialSort, SortOption.addedAt);
