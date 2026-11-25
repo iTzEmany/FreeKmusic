@@ -4387,5 +4387,15 @@
     }
   },
   "flatpakDataCopy": "Copiar comando",
-  "updateFlatpakHint": "Descarrego o ficheiro; depois feche o app e cole o comando num terminal."
+  "updateFlatpakHint": "Descarrego o ficheiro; depois feche o app e cole o comando num terminal.",
+  "openOutsideLibrary": "{count, plural, one{O ficheiro está fora das pastas da biblioteca} other{{count} ficheiros estão fora das pastas da biblioteca}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Adicionar à biblioteca",
+  "openPortalFile": "O ficheiro está fora das pastas que a app pode ler: adicione a sua pasta a partir da Biblioteca"
 }

@@ -4422,5 +4422,15 @@
     }
   },
   "flatpakDataCopy": "Copier la commande",
-  "updateFlatpakHint": "Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal."
+  "updateFlatpakHint": "Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal.",
+  "openOutsideLibrary": "{count, plural, one{Le fichier est hors des dossiers de la bibliothèque} other{{count} fichiers sont hors des dossiers de la bibliothèque}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Ajouter à la bibliothèque",
+  "openPortalFile": "Le fichier est hors des dossiers que l’app peut lire : ajoutez son dossier depuis la Bibliothèque"
 }

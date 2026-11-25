@@ -4930,5 +4930,15 @@
     }
   },
   "flatpakDataCopy": "Copia comando",
-  "updateFlatpakHint": "Scarico il file; poi chiudi l'app e incolla il comando in un terminale."
+  "updateFlatpakHint": "Scarico il file; poi chiudi l'app e incolla il comando in un terminale.",
+  "openOutsideLibrary": "{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Aggiungi alla libreria",
+  "openPortalFile": "Il file è fuori dalle cartelle che l'app può leggere: aggiungi la sua cartella dalla Libreria"
 }

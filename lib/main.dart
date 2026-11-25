@@ -37,7 +37,9 @@ import 'providers/youtube_providers.dart'
     show createYtDlpService, ytDlpServiceProvider;
 import 'providers/karaoke_video_providers.dart';
 import 'providers/library_providers.dart';
+import 'providers/open_files_providers.dart' show openFilesProvider;
 import 'providers/player_providers.dart';
+import 'services/platform/window_title.dart';
 import 'providers/stream_providers.dart';
 import 'providers/vanished_providers.dart';
 import 'services/stream/stream_cache.dart';
@@ -62,7 +64,7 @@ import 'services/covers/cover_thumbnails.dart';
 import 'services/lyrics/romanization_cache.dart' show romanizationCacheFileName;
 import 'services/perf/perf_probe.dart';
 
-Future<void> main() async {
+Future<void> main(List<String> args) async {
   final sinceMain = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
   AppLog.i('avvio');
@@ -326,7 +328,22 @@ Future<void> main() async {
       AppLog.w('restore playback failed', e, st);
     }
     persistence.start();
+    // After the restore, or it would replace the file that was just opened.
+    if (Platform.isLinux || Platform.isWindows) {
+      await container.read(openFilesProvider).start(args);
+    }
   }());
+  if (Platform.isLinux || Platform.isWindows) {
+    final title = WindowTitle();
+    void syncTitle() {
+      final t = handler.currentTrack;
+      final song = t != null && handler.playbackState.value.playing ? songLabel(t.artist, t.title) : null;
+      unawaited(title.update(song));
+    }
+
+    handler.currentTrackStream.listen((_) => syncTitle());
+    handler.playbackState.map((s) => s.playing).distinct().listen((_) => syncTitle());
+  }
   if (kPerfProbe) {
     unawaited(PerfProbe.start(db: db, covers: covers, sinceMain: sinceMain));
   }

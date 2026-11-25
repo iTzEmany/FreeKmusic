@@ -8600,4 +8600,22 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get updateFlatpakHint =>
       'Descarrego o ficheiro; depois feche o app e cole o comando num terminal.';
+
+  @override
+  String openOutsideLibrary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros estão fora das pastas da biblioteca',
+      one: 'O ficheiro está fora das pastas da biblioteca',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get openAddToLibrary => 'Adicionar à biblioteca';
+
+  @override
+  String get openPortalFile =>
+      'O ficheiro está fora das pastas que a app pode ler: adicione a sua pasta a partir da Biblioteca';
 }

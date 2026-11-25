@@ -4201,5 +4201,15 @@
     }
   },
   "flatpakDataCopy": "Befehl kopieren",
-  "updateFlatpakHint": "Ich lade die Datei herunter; schließe dann die App und füge den Befehl in einem Terminal ein."
+  "updateFlatpakHint": "Ich lade die Datei herunter; schließe dann die App und füge den Befehl in einem Terminal ein.",
+  "openOutsideLibrary": "{count, plural, one{Die Datei liegt außerhalb der Bibliotheksordner} other{{count} Dateien liegen außerhalb der Bibliotheksordner}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Zur Bibliothek hinzufügen",
+  "openPortalFile": "Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen"
 }
