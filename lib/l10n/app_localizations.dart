@@ -13434,6 +13434,54 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Scarico il file; poi chiudi l\'app e incolla il comando in un terminale.'**
   String get updateFlatpakHint;
+
+  /// No description provided for @tableSortBy.
+  ///
+  /// In it, this message translates to:
+  /// **'Ordina per {column}'**
+  String tableSortBy(String column);
+
+  /// No description provided for @tableSortedAscending.
+  ///
+  /// In it, this message translates to:
+  /// **'{column}, in ordine crescente'**
+  String tableSortedAscending(String column);
+
+  /// No description provided for @tableSortedDescending.
+  ///
+  /// In it, this message translates to:
+  /// **'{column}, in ordine decrescente'**
+  String tableSortedDescending(String column);
+
+  /// No description provided for @tableNumberColumn.
+  ///
+  /// In it, this message translates to:
+  /// **'Numero'**
+  String get tableNumberColumn;
+
+  /// No description provided for @viewDensity.
+  ///
+  /// In it, this message translates to:
+  /// **'Densità della griglia'**
+  String get viewDensity;
+
+  /// No description provided for @densitySmall.
+  ///
+  /// In it, this message translates to:
+  /// **'piccola'**
+  String get densitySmall;
+
+  /// No description provided for @densityMedium.
+  ///
+  /// In it, this message translates to:
+  /// **'media'**
+  String get densityMedium;
+
+  /// No description provided for @densityLarge.
+  ///
+  /// In it, this message translates to:
+  /// **'grande'**
+  String get densityLarge;
 }
 
 class _AppLocalizationsDelegate

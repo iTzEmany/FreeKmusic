@@ -11,6 +11,8 @@ import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:codecore/providers/selection_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -328,6 +330,45 @@ void main() {
     expect(y('Song 1'), lessThan(y('Song 0')));
     await h.dispose(tester);
   });
+  testWidgets('the sort blocks order by title', (tester) async {
+    final h = await _open(tester);
+    await tester.tap(find.text('Titolo'));
+    await _settle(tester);
+    expect(_visibleTitles(tester), ['Song 0', 'Song 1', 'Song 2', 'Song 3']);
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    expect(c.read(trackQueryProvider(false)).sort, SortOption.title);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a sort block of the phone starts ascending, whatever the wide table left', (tester) async {
+    final h = await _open(tester);
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    c.read(trackQueryProvider(false).notifier).update((q) => q.copyWith(sort: SortOption.addedAt, descending: true));
+    await _settle(tester);
+    await tester.tap(find.text('Titolo'));
+    await _settle(tester);
+    expect(c.read(trackQueryProvider(false)).descending, isFalse);
+    expect(_visibleTitles(tester), ['Song 0', 'Song 1', 'Song 2', 'Song 3']);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Ctrl+click starts a selection and Shift+click extends it, without playing', (tester) async {
+    final h = await _open(tester);
+    final titles = _visibleTitles(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(find.text(titles[0]));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.tap(find.text(titles[2]));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await _settle(tester);
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    expect(c.read(selectionProvider(SelectionKey.all.key)).count, 3);
+    expect(h.handler.queueIds, isEmpty);
+    await h.dispose(tester);
+  });
+
   testWidgets('two screens open together do not share the search text', (
     tester,
   ) async {

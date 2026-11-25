@@ -30,6 +30,7 @@ class CollectionScaffold extends ConsumerStatefulWidget {
     this.coverKey,
     this.subtitle,
     this.meta,
+    this.extra,
     this.menu,
     this.onPlay,
     this.downloadTracks,
@@ -58,6 +59,9 @@ class CollectionScaffold extends ConsumerStatefulWidget {
   /// A line under the name (e.g. the artist link).
   final Widget? subtitle;
   final String? meta;
+
+  /// Genre… (wide header only, under [meta]).
+  final String? extra;
   final Widget? menu;
   final VoidCallback? onPlay;
 
@@ -152,6 +156,7 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
             name: widget.name,
             subtitle: widget.subtitle,
             meta: widget.meta,
+            extra: widget.extra,
             actions: actions,
           ),
         ),
@@ -303,6 +308,7 @@ class CollectionHeader extends StatelessWidget {
     required this.name,
     this.subtitle,
     this.meta,
+    this.extra,
     this.actions = const [],
   });
 
@@ -313,6 +319,9 @@ class CollectionHeader extends StatelessWidget {
   /// A line under the name (e.g. the artist link).
   final Widget? subtitle;
   final String? meta;
+
+  /// Genre…: shown on the wide header only.
+  final String? extra;
   final List<Widget> actions;
 
   @override
@@ -324,6 +333,18 @@ class CollectionHeader extends StatelessWidget {
     final wide = width >= CcDims.wideBreakpoint;
     final stacked = !wide && (width / scale < 300 || width < 360);
     final coverSize = wide ? 200.0 : 128.0;
+    final coverBox = cover == null
+        ? null
+        : KeyedSubtree(
+            key: const ValueKey('collection-cover'),
+            child: cover!(coverSize),
+          );
+    final actionRow = Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: actions,
+    );
     final info = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -340,14 +361,17 @@ class CollectionHeader extends StatelessWidget {
           const SizedBox(height: 4),
           Text(meta!, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
         ],
+        if (wide && extra != null) ...[
+          const SizedBox(height: 4),
+          Text(extra!, style: theme.bodyMedium?.copyWith(color: cc.textMuted)),
+        ],
+        // D-721: on the wide window the actions sit beside the cover, under the text.
+        if (wide && coverBox != null && actions.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          actionRow,
+        ],
       ],
     );
-    final coverBox = cover == null
-        ? null
-        : KeyedSubtree(
-            key: const ValueKey('collection-cover'),
-            child: cover!(coverSize),
-          );
     return Align(
       alignment: Alignment.topLeft,
       child: ConstrainedBox(
@@ -377,14 +401,9 @@ class CollectionHeader extends StatelessWidget {
                     Expanded(child: info),
                   ],
                 ),
-              if (actions.isNotEmpty) ...[
+              if (actions.isNotEmpty && !(wide && coverBox != null)) ...[
                 const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: actions,
-                ),
+                actionRow,
               ],
             ],
           ),

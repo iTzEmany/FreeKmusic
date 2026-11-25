@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
+import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/library/library_genres_screen.dart';
@@ -23,13 +24,13 @@ import 'package:codecore/ui/widgets/cc_search_field.dart';
 import 'package:codecore/ui/widgets/library_filter_bar.dart';
 import 'package:codecore/ui/widgets/skeleton.dart';
 import 'package:codecore/ui/theme/tokens.dart';
-import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderParagraph;
 import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:codecore/providers/activity_providers.dart';
 import 'package:codecore/providers/selection_providers.dart';
@@ -193,7 +194,7 @@ void main() {
     final sem = t.ensureSemantics();
     final h = await open(t, width: 900);
     expect(find.bySemanticsLabel(RegExp('^Ordina per')), findsOneWidget);
-    final tabs = t.getTopLeft(find.byType(SegmentedBlocks<LibraryKind?>));
+    final tabs = t.getTopLeft(find.byKey(const ValueKey('library-tabs')));
     await t.tap(find.byIcon(Icons.search_rounded));
     await _settle(t);
     expect(find.byType(CcSearchField), findsOneWidget);
@@ -212,7 +213,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(t.getTopLeft(find.byType(SegmentedBlocks<LibraryKind?>)), tabs);
+    expect(t.getTopLeft(find.byKey(const ValueKey('library-tabs'))), tabs);
     expect(find.text('Playlist').hitTestable(), findsOneWidget);
     await t.enterText(find.byType(TextField), 'Song');
     await t.pump(const Duration(milliseconds: 300));
@@ -245,7 +246,7 @@ void main() {
     Finder inResults(String s) =>
         find.descendant(of: find.byType(LibraryResults), matching: find.text(s));
     expect(inResults('Brani'), findsOneWidget);
-    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Album')));
+    await t.tap(find.descendant(of: find.byKey(const ValueKey('library-tabs')), matching: find.text('Album')));
     await _settle(t);
     expect(inResults('Brani'), findsNothing);
     expect(inResults('Song 0'), findsNothing);
@@ -335,7 +336,7 @@ void main() {
     t.view.physicalSize = const Size(900, 600);
     await _settle(t);
     final island = find.byType(LibraryIsland);
-    final tabs = find.byType(SegmentedBlocks<LibraryKind?>);
+    final tabs = find.byKey(const ValueKey('library-tabs'));
     final full = t.getRect(island).height;
     final tabsTop = t.getTopLeft(tabs).dy;
     expect(find.text('Libreria').hitTestable(), findsOneWidget);
@@ -399,7 +400,7 @@ void main() {
     await t.pump(const Duration(milliseconds: 300));
     await indexReady(t);
     await _settle(t);
-    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Playlist')));
+    await t.tap(find.descendant(of: find.byKey(const ValueKey('library-tabs')), matching: find.text('Playlist')));
     await _settle(t);
     // 15 playlists, no «Mostra tutti»: the preview would stop at 12.
     final results = find.byType(LibraryResults);
@@ -409,11 +410,11 @@ void main() {
     final key = SelectionKey.search.key;
     c.listen(selectionProvider(key), (_, _) {});
     c.read(selectionProvider(key).notifier).toggle(1);
-    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Tutto')));
+    await t.tap(find.descendant(of: find.byKey(const ValueKey('library-tabs')), matching: find.text('Tutto')));
     await _settle(t);
     expect(c.read(selectionProvider(key)).active, isFalse);
     c.read(selectionProvider(key).notifier).toggle(1);
-    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Album')));
+    await t.tap(find.descendant(of: find.byKey(const ValueKey('library-tabs')), matching: find.text('Album')));
     await _settle(t);
     expect(c.read(selectionProvider(key)).active, isFalse);
     await h.dispose(t);
@@ -449,7 +450,7 @@ void main() {
     await scrollBy(t, 142);
     expect(offset(t), greaterThan(100));
     Finder tab(String s) =>
-        find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text(s));
+        find.descendant(of: find.byKey(const ValueKey('library-tabs')), matching: find.text(s));
     await t.tap(tab('Playlist'));
     await _settle(t);
     await t.tap(tab('Tutto'));
@@ -492,7 +493,7 @@ void main() {
     for (final s in ['Brani', 'The Track', 'Artisti', 'The Artist', 'Playlist', 'The List']) {
       expect(inResults(s), findsWidgets, reason: s);
     }
-    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Album')));
+    await t.tap(find.descendant(of: find.byKey(const ValueKey('library-tabs')), matching: find.text('Album')));
     await _settle(t);
     expect(inResults('The Album'), findsWidgets);
     // «The Artist» stays: it is the album's subtitle.
@@ -524,7 +525,7 @@ void main() {
     await t.pump();
     await ctrlA();
     expect(c.read(selectionProvider(key)).count, greaterThan(1));
-    await t.tap(find.descendant(of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text('Album')));
+    await t.tap(find.descendant(of: find.byKey(const ValueKey('library-tabs')), matching: find.text('Album')));
     await _settle(t);
     c.read(selectionProvider(key).notifier).toggle(1);
     await t.pump();
@@ -549,7 +550,7 @@ void main() {
     await _settle(t);
     final field = t.getRect(find.byType(TextField));
     expect(field.top, greaterThanOrEqualTo(isl.top));
-    expect(field.bottom, lessThanOrEqualTo(t.getTopLeft(find.byType(SegmentedBlocks<LibraryKind?>)).dy));
+    expect(field.bottom, lessThanOrEqualTo(t.getTopLeft(find.byKey(const ValueKey('library-tabs'))).dy));
     expect(t.takeException(), isNull);
     await h.dispose(t);
   });
@@ -566,7 +567,7 @@ void main() {
     }
     final isl = t.getRect(find.byType(LibraryIsland));
     expect(isl.left, 8);
-    expect(t.getRect(log).bottom, lessThan(t.getTopLeft(find.byType(SegmentedBlocks<LibraryKind?>)).dy));
+    expect(t.getRect(log).bottom, lessThan(t.getTopLeft(find.byKey(const ValueKey('library-tabs'))).dy));
     for (final f in [
       find.descendant(of: find.byType(LibraryIsland), matching: find.byType(IconButton)),
       find.ancestor(of: find.text('Recenti'), matching: find.byType(InkWell)),
@@ -764,6 +765,49 @@ void main() {
     },
   );
 
+  testWidgets('wide: first start is a grid, and the choice and density survive a restart', (t) async {
+    final h = await open(t, width: 1440);
+    expect(find.byIcon(Icons.view_list_rounded), findsOneWidget, reason: 'grid shown: the toggle offers the list');
+    expect(find.byKey(const ValueKey('library-density')), findsOneWidget);
+    await t.tap(find.text('L'));
+    await _settle(t);
+    await t.tap(find.byIcon(Icons.view_list_rounded));
+    await _settle(t);
+    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    final s = (await t.runAsync(() async => (await SettingsStore.open()).readSettings()))!;
+    expect((s.libraryGrid, s.libraryDensity), (false, 2));
+    await h.dispose(t);
+  });
+
+  testWidgets('wide: an old saved «false» that was never a choice still starts as a grid', (t) async {
+    SharedPreferences.setMockInitialValues({'storageMode': 'device', 'libraryGrid': false});
+    final old = (await t.runAsync(() async => (await SettingsStore.open()).readSettings()))!;
+    expect(old.libraryGrid, isNull);
+    final store = (await t.runAsync(() async => await SettingsStore.open()))!;
+    await t.runAsync(() => store.writeSettings(old.copyWith(libraryGrid: false)));
+    final chosen = (await t.runAsync(() async => (await SettingsStore.open()).readSettings()))!;
+    expect(chosen.libraryGrid, isFalse, reason: 'a real choice is kept');
+  });
+
+  testWidgets('phone: first start is a list, no density control', (t) async {
+    final h = await open(t);
+    expect(find.byIcon(Icons.grid_view_rounded), findsOneWidget);
+    expect(find.byKey(const ValueKey('library-density')), findsNothing);
+    await h.dispose(t);
+  });
+
+  testWidgets('wide: tabs are as wide as their text, from the left margin; chips wrap without cuts', (t) async {
+    final h = await open(t, width: 1000);
+    final tab = t.getRect(find.ancestor(of: find.text('Playlist').first, matching: find.byType(InkWell)).first);
+    expect(tab.width, lessThan(160));
+    expect(t.getRect(find.text('Tutto')).left, lessThan(t.getRect(find.text('Playlist').first).left));
+    for (final e in find.descendant(of: find.byType(LibraryShortcuts), matching: find.byType(Text)).evaluate()) {
+      expect((e.widget as Text).overflow, isNull, reason: 'no ellipsis on a chip');
+    }
+    expect(t.takeException(), isNull);
+    await h.dispose(t);
+  });
+
   testWidgets('the grid has no Statistiche shortcut (D-484)', (t) async {
     final h = await open(t, width: 360);
     expect(find.text('Statistiche'), findsNothing);
@@ -779,7 +823,7 @@ void main() {
     await h.dispose(t);
   });
 
-  testWidgets('desktop, German: shortcuts stay on one row without overflow', (
+  testWidgets('desktop, German: shortcuts wrap onto at most two rows without overflow', (
     t,
   ) async {
     t.view.physicalSize = const Size(1280, 1400);
@@ -798,7 +842,7 @@ void main() {
               .evaluate())
         t.getRect(find.byWidget(e.widget)).top,
     };
-    expect(tops.length, 1);
+    expect(tops.length, lessThanOrEqualTo(2));
     expect(t.takeException(), isNull);
     await h.dispose(t);
   });
@@ -834,7 +878,7 @@ void main() {
     final h = await open(t);
     expect(
       find.descendant(
-        of: find.byType(SegmentedBlocks<LibraryKind?>),
+        of: find.byKey(const ValueKey('library-tabs')),
         matching: find.byWidgetPredicate(
           (w) => w is ListView && w.scrollDirection == Axis.horizontal,
         ),
@@ -1046,16 +1090,6 @@ void main() {
       await h.dispose(t);
     },
   );
-
-  testWidgets('desktop: content reaches the same right edge as the header', (
-    t,
-  ) async {
-    final h = await open(t, width: 1600);
-    final r = t.getRect(find.byType(SegmentedBlocks<LibraryKind?>));
-    final menu = t.getRect(find.byTooltip('Altre azioni').first);
-    expect(r.right, greaterThanOrEqualTo(menu.right - 2 * CcDims.margin));
-    await h.dispose(t);
-  });
 
   testWidgets('the scroll strip shows from alphaScrollerMinItems entries on', (t) async {
     final h = await open(t, tracks: 0);

@@ -44,6 +44,11 @@ enum TrackRowVariant {
   pick,
 }
 
+/// Whether a row [maxWidth] wide shows its columns (the table layout).
+bool trackRowWide(BuildContext context, double maxWidth) =>
+    MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint &&
+    maxWidth >= 520;
+
 /// The only track row of the app. Fixed height: pair it with `itemExtent`
 /// from `trackRowExtentOf`.
 class TrackRow extends StatefulWidget {
@@ -70,12 +75,16 @@ class TrackRow extends StatefulWidget {
     this.subtitleSuffix,
     this.albumAsSubtitle = false,
     this.inLibrary = false,
+    this.artistColumn = false,
   });
 
   final Track track;
   final VoidCallback onTap;
   final TrackRowVariant variant;
   final bool isCurrent, isPlaying, compact, picked;
+
+  /// Wide row only: the artist gets a column of its own (a `TrackTable`) instead of sitting under the title.
+  final bool artistColumn;
 
   /// Queue variant: the song is in the library (check circle before the handle).
   final bool inLibrary;
@@ -130,7 +139,7 @@ class _TrackRowState extends State<TrackRow> {
         _ => false,
       };
 
-  String _subtitle(BuildContext context) {
+  String _subtitle(BuildContext context, {bool artist = true}) {
     final t = widget.track;
     final parts = <String>[];
     switch (widget.variant) {
@@ -143,7 +152,7 @@ class _TrackRowState extends State<TrackRow> {
         }
       case _:
         final main = widget.albumAsSubtitle ? t.album : t.artist;
-        if (main != null) parts.add(main);
+        if (main != null && artist) parts.add(main);
     }
     final resume = t.resumePositionMs;
     if (resume != null) {
@@ -394,11 +403,7 @@ class _TrackRowState extends State<TrackRow> {
   /// enough: the desktop side panel is 320 px inside a wide window.
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, c) => _row(
-      context,
-      MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint &&
-          c.maxWidth >= 520,
-    ),
+    builder: (context, c) => _row(context, trackRowWide(context, c.maxWidth)),
   );
 
   Widget _row(BuildContext context, bool wide) {
@@ -406,6 +411,8 @@ class _TrackRowState extends State<TrackRow> {
     final theme = Theme.of(context);
     final t = widget.track;
     final subtitle = _subtitle(context);
+    final asColumn = wide && widget.artistColumn && widget.variant == TrackRowVariant.standard;
+    final titleSub = asColumn ? _subtitle(context, artist: false) : subtitle;
     final cover = widget.compact ? 40.0 : 48.0;
     final titleStyle = theme.textTheme.bodyLarge?.copyWith(
       color: widget.isCurrent ? cc.accent : cc.text,
@@ -434,9 +441,9 @@ class _TrackRowState extends State<TrackRow> {
               ],
             ],
           ),
-          if (subtitle.isNotEmpty)
+          if (titleSub.isNotEmpty)
             Text(
-              subtitle,
+              titleSub,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium,
@@ -476,6 +483,20 @@ class _TrackRowState extends State<TrackRow> {
             const SizedBox(width: 12),
           ],
           Expanded(flex: 5, child: titleBlock),
+          if (asColumn) ...[
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 3,
+              child: ExcludeSemantics(
+                child: Text(
+                  t.artist ?? '',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ),
+          ],
           if (widget.variant != TrackRowVariant.album) ...[
             const SizedBox(width: 12),
             Expanded(
@@ -611,7 +632,11 @@ class LiveTrackRow extends ConsumerWidget {
     this.albumAsSubtitle = false,
     this.inLibrary = false,
     this.current,
+    this.artistColumn = false,
   });
+
+  /// See [TrackRow.artistColumn].
+  final bool artistColumn;
 
   /// Decides «is the playing one» when the list knows better than the id
   /// (a queue row is never the current entry); null: by id.
@@ -717,6 +742,7 @@ class LiveTrackRow extends ConsumerWidget {
       subtitleSuffix: subtitleSuffix,
       albumAsSubtitle: albumAsSubtitle,
       inLibrary: inLibrary,
+      artistColumn: artistColumn,
       onSecondaryTap: actions,
       onFavorite: () => toggleFavorite(context, ref, track),
       compact: compact,

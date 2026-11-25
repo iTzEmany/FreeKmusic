@@ -121,6 +121,36 @@ void main() {
     expect(ids(PlaylistOrder.parse('title:desc'), src), [for (var i = 0; i < 500; i++) i]);
   });
 
+  testWidgets('the first click on «Durata» of the table sorts longest first, a second one flips it', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    final id = (await tester.runAsync(() async {
+      final all = await h.db.select(h.db.tracks).get();
+      final repo = PlaylistRepository(h.db);
+      final id = await repo.create('Notte');
+      await repo.addTracks(id, [for (final t in all) t.id]);
+      return id;
+    }))!;
+    await h.pump(tester,
+        PlaylistDetailScreen(playlist: Playlist(id: id, name: 'Notte', createdAt: 0, updatedAt: 0)));
+    Future<void> settle() async {
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    await settle();
+    await tester.tap(find.text('Durata'));
+    await settle();
+    expect(h.store.readSettings().playlistSorts['$id'], 'duration:desc');
+    await tester.tap(find.text('Durata'));
+    await settle();
+    expect(h.store.readSettings().playlistSorts['$id'], 'duration:asc');
+    await h.dispose(tester);
+  });
+
   testWidgets('another order hides «Modifica ordine» and leaves position alone',
       (tester) async {
     tester.view.physicalSize = const Size(400, 900);

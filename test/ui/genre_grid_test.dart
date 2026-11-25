@@ -1,3 +1,4 @@
+import 'package:codecore/ui/theme/palette.dart' show contrastRatio;
 import 'package:codecore/ui/widgets/genre_grid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,6 +66,40 @@ void main() {
     final h = await _grid(tester, scale: 2);
     expect(_firstRow(tester), 2);
     expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
+  for (final c in [const Color(0xFFFFEB3B), const Color(0xFF1565C0), const Color(0xFFE91E63), const Color(0xFF4CAF50)]) {
+    testWidgets('text on the saturated tile $c reads at 4.5:1 or more, subtitle too (F-117)', (tester) async {
+      final h = await Harness.create(tester);
+      await h.pump(
+        tester,
+        Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              GenreGrid(onSelect: (_) {}, items: [GenreItem('x', 'Rock', subtitle: '3 brani', color: c)]),
+            ],
+          ),
+        ),
+      );
+      for (final t in ['Rock', '3 brani']) {
+        final color = tester.widget<Text>(find.text(t)).style!.color!;
+        expect(contrastRatio(color, c), greaterThanOrEqualTo(4.5), reason: t);
+      }
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('13 px text on a wide window, 12 on the phone', (tester) async {
+    tester.view.physicalSize = const Size(1400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester);
+    await h.pump(
+      tester,
+      Scaffold(body: CustomScrollView(slivers: [GenreGrid(onSelect: (_) {}, items: const [GenreItem('x', 'Rock', subtitle: '3 brani')])])),
+    );
+    expect(tester.widget<Text>(find.text('3 brani')).style!.fontSize, 13);
     await h.dispose(tester);
   });
 }

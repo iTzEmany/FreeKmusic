@@ -8632,4 +8632,34 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get updateFlatpakHint =>
       'Descarrego o ficheiro; depois feche o app e cole o comando num terminal.';
+
+  @override
+  String tableSortBy(String column) {
+    return 'Ordenar por $column';
+  }
+
+  @override
+  String tableSortedAscending(String column) {
+    return '$column, crescente';
+  }
+
+  @override
+  String tableSortedDescending(String column) {
+    return '$column, decrescente';
+  }
+
+  @override
+  String get tableNumberColumn => 'Número';
+
+  @override
+  String get viewDensity => 'Densidade da grelha';
+
+  @override
+  String get densitySmall => 'pequena';
+
+  @override
+  String get densityMedium => 'média';
+
+  @override
+  String get densityLarge => 'grande';
 }

@@ -4220,5 +4220,34 @@
     }
   },
   "flatpakDataCopy": "Befehl kopieren",
-  "updateFlatpakHint": "Ich lade die Datei herunter; schließe dann die App und füge den Befehl in einem Terminal ein."
+  "updateFlatpakHint": "Ich lade die Datei herunter; schließe dann die App und füge den Befehl in einem Terminal ein.",
+  "tableSortBy": "Nach {column} sortieren",
+  "@tableSortBy": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedAscending": "{column}, aufsteigend",
+  "@tableSortedAscending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableSortedDescending": "{column}, absteigend",
+  "@tableSortedDescending": {
+    "placeholders": {
+      "column": {
+        "type": "String"
+      }
+    }
+  },
+  "tableNumberColumn": "Nummer",
+  "viewDensity": "Rasterdichte",
+  "densitySmall": "klein",
+  "densityMedium": "mittel",
+  "densityLarge": "groß"
 }

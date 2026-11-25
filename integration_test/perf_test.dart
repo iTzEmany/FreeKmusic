@@ -1,7 +1,5 @@
 import 'package:codecore/core/frame_stats.dart';
 import 'package:codecore/data/db/app_database.dart';
-import 'package:codecore/data/repositories/library_entries.dart';
-import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
@@ -84,7 +82,7 @@ void main() {
 
     // Library tab switches (the library is on the Album tab here): the cost of rebuilding the list.
     Finder block(String label) => find.descendant(
-        of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text(label));
+        of: find.byKey(const ValueKey('library-tabs')), matching: find.text(label));
     await measure('Libreria Tutto→Playlist→Album→Artisti', () async {
       for (var round = 0; round < 3; round++) {
         for (final label in const ['Tutto', 'Playlist', 'Album', 'Artisti']) {

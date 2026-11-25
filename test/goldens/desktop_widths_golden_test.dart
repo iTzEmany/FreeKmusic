@@ -21,8 +21,6 @@ import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
 import 'package:codecore/ui/widgets/cover_image.dart';
-import 'package:codecore/ui/widgets/segmented_blocks.dart';
-import 'package:codecore/data/repositories/library_entries.dart' show LibraryKind;
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,7 +63,7 @@ Future<void> _libraryTab(Shot s, WidgetTester tester, String file, [String? labe
   await s.show(const AppShell(), extra: [navIndexProvider.overrideWith(_LibraryTab.new)]);
   if (label != null) {
     await tester.tap(find.descendant(
-        of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text(label)));
+        of: find.byKey(const ValueKey('library-tabs')), matching: find.text(label)));
     await s.settle();
   }
   await s.expectGolden(file);

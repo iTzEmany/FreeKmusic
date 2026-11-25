@@ -7,6 +7,7 @@ import '../../theme/tokens.dart';
 import '../../widgets/dislike_sheet.dart' show BlockedArtistMark;
 import '../../widgets/net_thumbnail.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/shelf_scroller.dart';
 import '../online/artist_page_sections.dart' show releaseLine, thumbAt;
 
 const _gap = 12.0;
@@ -132,15 +133,18 @@ class _Shelf extends StatelessWidget {
         SectionHeader(title),
         SizedBox(
           height: width + CcDims.gap8 + (44 + 28 * lines) * scale,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
-            // One fixed step: sideways scrolling needs no measuring.
-            itemExtent: width + _gap,
-            itemCount: count,
-            itemBuilder: (context, i) => Padding(
-              padding: const EdgeInsets.only(right: _gap),
-              child: tile(context, i),
+          child: ShelfScroller(
+            builder: (context, controller) => ListView.builder(
+              controller: controller,
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+              // One fixed step: sideways scrolling needs no measuring.
+              itemExtent: width + _gap,
+              itemCount: count,
+              itemBuilder: (context, i) => Padding(
+                padding: const EdgeInsets.only(right: _gap),
+                child: tile(context, i),
+              ),
             ),
           ),
         ),

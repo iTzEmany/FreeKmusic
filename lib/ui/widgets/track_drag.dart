@@ -51,6 +51,7 @@ class TrackDropTarget extends StatelessWidget {
       onWillAcceptWithDetails: (_) => true,
       onAcceptWithDetails: (d) => onDrop(d.data.resolve()),
       builder: (context, over, _) => DecoratedBox(
+        key: over.isEmpty ? null : const ValueKey('drop-target-over'),
         decoration: BoxDecoration(
           color: over.isEmpty ? null : cc.accent.withValues(alpha: 0.2),
           border: over.isEmpty

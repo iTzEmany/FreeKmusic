@@ -24,7 +24,10 @@ import 'package:codecore/ui/screens/youtube/online_results.dart';
 import 'package:codecore/ui/screens/youtube/online_results_sections.dart' show SourceFilter;
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:codecore/providers/selection_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
@@ -176,6 +179,48 @@ void main() {
     engine.add(s);
     await _settle(tester);
   }
+
+  testWidgets('Ctrl+click on a result picks it instead of playing (156.6)', (tester) async {
+    final h = await open(tester);
+    await emit(tester, _state(best: [_song('s0', 'Song 0'), _song('s1', 'Song 1')]));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(find.text('Song 0'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(tester);
+    expect(h.handler.queueIds, isEmpty);
+    // A picked list: a plain click picks the next one too, still no play.
+    await tester.tap(find.text('Song 1'));
+    await _settle(tester);
+    expect(h.handler.queueIds, isEmpty);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Shift+click picks only the shown rows between the anchor and the row', (tester) async {
+    final h = await open(tester);
+    await emit(
+      tester,
+      _state(best: [
+        _song('s0', 'Song 0'),
+        _video('v1', 'Clip 1'),
+        _song('s2', 'Song 2'),
+        _video('v3', 'Clip 3'),
+        _song('s4', 'Song 4'),
+      ]),
+    );
+    await tester.tap(_filter('YouTube Music'));
+    await _settle(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(find.text('Song 0'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(tester);
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+    await tester.tap(find.text('Song 4'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+    await _settle(tester);
+    final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
+    expect(c.read(selectionProvider(SelectionKey.online.key)).orderedIds, [0, 2, 4]);
+    await h.dispose(tester);
+  });
 
   testWidgets('the last row scrolls above the dock and can be tapped', (tester) async {
     final h = await open(

@@ -17,6 +17,8 @@ class LibraryToolbar extends StatelessWidget {
     required this.grid,
     required this.onSort,
     required this.onToggleGrid,
+    this.density = 1,
+    this.onDensity,
   });
 
   final String countLabel;
@@ -28,6 +30,11 @@ class LibraryToolbar extends StatelessWidget {
   final bool grid;
   final void Function(LibrarySort sort, bool ascending) onSort;
   final VoidCallback onToggleGrid;
+
+  /// Grid density 0..2 (S, M, L); the control shows only on a wide screen with
+  /// the grid on and an [onDensity] given.
+  final int density;
+  final ValueChanged<int>? onDensity;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +123,30 @@ class LibraryToolbar extends StatelessWidget {
               ),
             ),
           ),
+          if (grid &&
+              onDensity != null &&
+              MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint)
+            SegmentedButton<int>(
+              key: const ValueKey('library-density'),
+              showSelectedIcon: false,
+              style: const ButtonStyle(
+                minimumSize: WidgetStatePropertyAll(Size(48, 48)),
+              ),
+              segments: [
+                for (final (i, t, name) in [
+                  (0, 'S', l.densitySmall),
+                  (1, 'M', l.densityMedium),
+                  (2, 'L', l.densityLarge),
+                ])
+                  ButtonSegment(
+                    value: i,
+                    label: Semantics(label: name, excludeSemantics: true, child: Text(t)),
+                    tooltip: l.viewDensity,
+                  ),
+              ],
+              selected: {density},
+              onSelectionChanged: (v) => onDensity!(v.first),
+            ),
           IconButton(
             tooltip: grid ? l.viewAsList : l.viewAsGrid,
             icon: Icon(

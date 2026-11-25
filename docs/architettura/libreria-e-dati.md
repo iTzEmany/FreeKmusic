@@ -125,6 +125,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - `SettingsStore` avvolge `SharedPreferences`; `AppSettings` è immutabile con `copyWith`. `settingsProvider` scrive con debounce di 400 ms; `karaokeOn` si scrive subito (D-664).
 - Chiavi di sessione (`PlaybackPersistence`): `lastQueueIds`, `lastContextKind`, `lastContextName`, `lastQueueUser`, `lastIndex`, `lastPositionMs`. Altre: `volume`, `shuffle`, `repeat`, `transition`, `crossfadeSeconds`, `playbackSpeed`, `streamCacheMb`, `playlistSorts`, `trustedDevices`, `recordHistory`, ...
 - Di partenza `autoEnrich`, `autoLyrics`, `autoCuriosities`, `creditsDetails` sono veri (D-561); le preferenze già salvate non cambiano. L'onboarding non si salta; all'avvio, se la tabella `folders` è vuota, `ensureDefaultFolder` aggiunge la cartella predefinita (`resolveDefaultFolders`) e la scansiona (D-562).
+- Libreria (fase 156): `libraryGrid` è nullabile (null = mai scelto: griglia sul desktop largo, lista sul telefono) e `libraryDensity` è 0, 1 o 2 (S, M, L). Entrambe stanno in `kDeviceBoundKeys`: restano su questo dispositivo, fuori da backup e sync (D-739).
 - Fuori da `AppSettings`: `releases*`, `radioDataNoticeSeen`, `radioRefreshedAt`, `genreRereadAfter/Done`.
 - Segreti Jam: `PrefsJamSecretStore` (Android), `FileJamSecretStore` (desktop, `jam_secrets.json`), `MemoryJamSecretStore` (test).
 

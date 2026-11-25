@@ -309,4 +309,27 @@ void main() {
       });
     });
   });
+
+  testWidgets('wide window: actions sit beside the cover, genre line shown (D-721)', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(
+      theme: _theme(AppThemeId.notte),
+      home: Scaffold(
+        body: CollectionHeader(
+          cover: (s) => SizedBox(key: const ValueKey('cv'), width: s, height: s),
+          name: 'Album',
+          meta: '2004',
+          extra: 'Rock · Label',
+          actions: const [SizedBox(key: ValueKey('act'), width: 48, height: 48)],
+        ),
+      ),
+    ));
+    expect(find.text('Rock · Label'), findsOneWidget);
+    final cover = tester.getRect(find.byKey(const ValueKey('cv')));
+    final act = tester.getRect(find.byKey(const ValueKey('act')));
+    expect(act.left, greaterThanOrEqualTo(cover.right));
+    expect(act.bottom, lessThanOrEqualTo(cover.bottom));
+  });
 }

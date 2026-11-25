@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../providers/selection_providers.dart';
@@ -41,32 +42,57 @@ class OnlineSelectionScope extends ConsumerWidget {
     return SelectionScope(
       listKey: selectionKey,
       visibleIds: ids,
-      child: overlay
+      child: _VisibleIds(ids, child: overlay
           ? Stack(children: [
               Positioned.fill(child: child),
               if (bar != null) Positioned(top: 0, left: 0, right: 0, child: bar),
             ])
-          : Column(children: [?bar, Expanded(child: child)]),
+          : Column(children: [?bar, Expanded(child: child)])),
     );
   }
 }
 
+/// The ids shown now, in order, for the rows' Shift + click ranges.
+class _VisibleIds extends InheritedWidget {
+  const _VisibleIds(this.ids, {required super.child});
+  final List<int> ids;
+
+  @override
+  bool updateShouldNotify(_VisibleIds old) => old.ids != ids;
+}
+
 /// How one online song row reads the picks of list [selectionKey]: the song
-/// is id [index] of it.
+/// is id [index] of it. With [play] (what a plain tap does) [onTap] is always
+/// set and also takes Ctrl and Shift + click, as the local rows do.
 ({
   bool selecting,
   bool selected,
   int? position,
   VoidCallback? onTap,
   VoidCallback onLongPress,
-}) watchOnlinePick(WidgetRef ref, String selectionKey, int index) {
+}) watchOnlinePick(
+  WidgetRef ref,
+  String selectionKey,
+  int index, {
+  VoidCallback? play,
+}) {
   final picked = ref.watch(selectionProvider(selectionKey));
   final notifier = ref.read(selectionProvider(selectionKey).notifier);
+  void tap() {
+    final keys = HardwareKeyboard.instance;
+    final shift = keys.isShiftPressed;
+    if (!picked.active && !shift && !keys.isControlPressed && !keys.isMetaPressed) {
+      return play?.call();
+    }
+    final visible = ref.context.dependOnInheritedWidgetOfExactType<_VisibleIds>()?.ids ?? const <int>[];
+    shift ? notifier.selectRange(visible, index) : notifier.toggle(index);
+  }
+
   return (
     selecting: picked.active,
     selected: picked.contains(index),
     position: picked.contains(index) ? picked.positionOf(index) + 1 : null,
-    onTap: picked.active ? () => notifier.toggle(index) : null,
+    onTap: picked.active || play != null ? tap : null,
     onLongPress: () => notifier.toggle(index),
   );
 }

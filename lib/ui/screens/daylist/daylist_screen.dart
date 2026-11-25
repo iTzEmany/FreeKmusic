@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/daylist_providers.dart';
+import '../../../services/daylist/daylist_builder.dart' show DaylistItem;
 import '../../../data/db/app_database.dart' show Track;
 import '../../../services/online/youtube_service.dart' show YtResult;
 import '../../shell/shell_nav.dart';
@@ -20,13 +21,20 @@ import '../../../providers/player_providers.dart' show playerControllerProvider;
 import '../../widgets/show_msg.dart' show showQueued;
 import '../../widgets/track_actions.dart' show showTrackActions;
 import '../online/online_song_row.dart' show queueOnline;
-import '../../widgets/track_row.dart' show SwipeToQueue;
+import '../../theme/app_theme.dart' show trackRowExtentOf;
+import '../../widgets/selection_bar.dart';
+import '../../widgets/track_row.dart' show LiveTrackRow, SwipeToQueue, trackRowWide;
+import '../../widgets/track_row_selection.dart';
+import '../../widgets/track_table.dart';
+import '../../../providers/settings_providers.dart' show settingsProvider;
 import '../settings/settings_screen.dart';
 import 'daylist_labels.dart';
 import '../../widgets/action_catalog.dart';
 
 /// The daylist of the current slot: title, genres, Play and Shuffle, when it
 /// changes next, and the songs (suggested ones marked as elsewhere).
+const _selectionKey = 'daylist';
+
 class DaylistScreen extends ConsumerWidget {
   const DaylistScreen({super.key});
 
@@ -37,8 +45,24 @@ class DaylistScreen extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     final d = ref.watch(daylistVisibleProvider);
     final actions = ref.read(daylistActionsProvider);
-    return Scaffold(
-      appBar: CcAppBar(
+    // A wide window lists the own songs as the table does (Ctrl / Shift + click pick them);
+    // the order is the daylist's own, so the headers do not sort.
+    final compact = ref.watch(settingsProvider).compactMode;
+    final own = <Track>[
+      for (final i in d?.result.items ?? const <DaylistItem>[]) ?i.track,
+    ];
+    final selection = RowSelection(
+      listKey: _selectionKey,
+      visibleIds: [for (final t in own) t.id],
+    );
+    return SelectionScope(
+      listKey: _selectionKey,
+      visibleIds: selection.visibleIds,
+      child: Scaffold(
+      appBar: SelectableAppBar(
+        listKey: _selectionKey,
+        tracks: own,
+        normal: CcAppBar(
         title: l.daylistTitle,
         actions: [
           IconButton(
@@ -53,6 +77,7 @@ class DaylistScreen extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
       body: d == null || d.result.tooFew
           ? Center(
@@ -61,7 +86,9 @@ class DaylistScreen extends ConsumerWidget {
                 style: text.bodyLarge?.copyWith(color: cc.textMuted),
               ),
             )
-          : ListView(
+          : LayoutBuilder(builder: (context, box) {
+              final wide = trackRowWide(context, box.maxWidth);
+              return ListView(
               padding: const EdgeInsets.only(bottom: CcDims.gap24)
                   .withDock(context),
               children: [
@@ -132,15 +159,30 @@ class DaylistScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
+                if (wide) TrackTableHeader(compact: compact),
                 for (final (i, item) in d.result.items.indexed)
-                  item.track != null
-                      ? _OwnRow(item.track!, () => actions.play(startIndex: i))
-                      : _SuggestedRow(
+                  item.track == null
+                      ? _SuggestedRow(
                           item.suggestion!.result,
                           () => actions.play(startIndex: i),
-                        ),
+                        )
+                      : wide
+                      ? SizedBox(
+                          height: trackRowExtentOf(context, compact),
+                          child: LiveTrackRow(
+                            track: item.track!,
+                            compact: compact,
+                            selection: selection,
+                            index: i + 1,
+                            artistColumn: true,
+                            onTap: () => actions.play(startIndex: i),
+                          ),
+                        )
+                      : _OwnRow(item.track!, () => actions.play(startIndex: i)),
               ],
-            ),
+            );
+            }),
+      ),
     );
   }
 

@@ -318,7 +318,7 @@ class SmartRow extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final r = row.primary;
-    final pick = watchOnlinePick(ref, selectionKey, index);
+    final pick = watchOnlinePick(ref, selectionKey, index, play: () => tapOnline(context, ref, r));
     final ids = row.ids.toSet();
     final inLibrary = ids.any((id) => ref.watch(trackStateProvider(downloadIndexKey(r.source, id))) != TrackState.online);
     final item = ref.watch(
@@ -339,7 +339,7 @@ class SmartRow extends ConsumerWidget {
       selecting: pick.selecting,
       selected: pick.selected,
       position: pick.position,
-      onTap: pick.onTap ?? () => tapOnline(context, ref, r),
+      onTap: pick.onTap!,
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, r),
       onMore: () => showOnlineActions(context, ref, r),

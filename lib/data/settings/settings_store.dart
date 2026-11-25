@@ -65,7 +65,8 @@ class AppSettings {
     this.librarySort = 'recent',
     this.librarySortAscending,
     this.playlistSorts = const {},
-    this.libraryGrid = false,
+    this.libraryGrid,
+    this.libraryDensity = 1,
     this.recentSearches = const [],
     this.ytNoticeSeen = false,
     this.onboardingDone = false,
@@ -158,8 +159,12 @@ class AppSettings {
   /// A missing id means the personal order.
   final Map<String, String> playlistSorts;
 
-  /// Library as a grid instead of a list.
-  final bool libraryGrid;
+  /// Library as a grid (true) or a list (false); null = never chosen, the
+  /// screen picks by width. Stays on this device, out of backups (D-739).
+  final bool? libraryGrid;
+
+  /// Grid density: 0 small, 1 medium, 2 large. Stays on this device (D-739).
+  final int libraryDensity;
 
   /// Latest library searches, newest first (max 10).
   final List<String> recentSearches;
@@ -281,6 +286,7 @@ class AppSettings {
     bool? librarySortAscending,
     Map<String, String>? playlistSorts,
     bool? libraryGrid,
+    int? libraryDensity,
     List<String>? recentSearches,
     bool? ytNoticeSeen,
     bool? onboardingDone,
@@ -346,6 +352,7 @@ class AppSettings {
     librarySortAscending: librarySortAscending ?? this.librarySortAscending,
     playlistSorts: playlistSorts ?? this.playlistSorts,
     libraryGrid: libraryGrid ?? this.libraryGrid,
+    libraryDensity: libraryDensity ?? this.libraryDensity,
     recentSearches: recentSearches ?? this.recentSearches,
     ytNoticeSeen: ytNoticeSeen ?? this.ytNoticeSeen,
     onboardingDone: onboardingDone ?? this.onboardingDone,
@@ -526,7 +533,9 @@ class SettingsStore {
     librarySort: _prefs.getString('librarySort') ?? 'recent',
     librarySortAscending: _readSortAscending(),
     playlistSorts: _readPlaylistSorts(),
-    libraryGrid: _prefs.getBool('libraryGrid') ?? false,
+    // Older versions always saved the key, so only a saved choice counts.
+    libraryGrid: _prefs.getBool('libraryGridChosen') == true ? _prefs.getBool('libraryGrid') : null,
+    libraryDensity: (_prefs.getInt('libraryDensity') ?? 1).clamp(0, 2),
     recentSearches: _prefs.getStringList('recentSearches') ?? const [],
     ytNoticeSeen: _prefs.getBool('ytNoticeSeen') ?? false,
     onboardingDone: _prefs.getBool('onboardingFinished') ?? false,
@@ -639,7 +648,12 @@ class SettingsStore {
       await _prefs.setBool('librarySortAscending', asc);
     }
     await _prefs.setString('playlistSorts', jsonEncode(s.playlistSorts));
-    await _prefs.setBool('libraryGrid', s.libraryGrid);
+    final grid = s.libraryGrid;
+    if (grid != null) {
+      await _prefs.setBool('libraryGrid', grid);
+      await _prefs.setBool('libraryGridChosen', true);
+    }
+    await _prefs.setInt('libraryDensity', s.libraryDensity);
     await _prefs.setStringList('recentSearches', s.recentSearches);
     await _prefs.setBool('ytNoticeSeen', s.ytNoticeSeen);
     await _prefs.setBool('onboardingFinished', s.onboardingDone);

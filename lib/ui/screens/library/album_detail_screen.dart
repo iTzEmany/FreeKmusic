@@ -33,6 +33,7 @@ import '../../widgets/selection_bar.dart';
 import '../../widgets/share_collection.dart';
 import '../../widgets/show_msg.dart';
 import '../../widgets/track_row.dart';
+import '../../widgets/track_table.dart';
 import '../../widgets/track_row_selection.dart';
 import '../cleanup/album_merge_dialog.dart';
 import '../devices/devices_sheet.dart';
@@ -118,8 +119,16 @@ class AlbumDetailScreen extends ConsumerWidget {
       visibleIds: [for (final t in list) t.id],
     );
 
-    final rows =
-EntranceScope(
+    // Wide window: the table of the tracks (a multi-disc album keeps its disc headers).
+    final table = !multiDisc && MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
+    final rows = table
+        ? TrackTable(
+            tracks: list,
+            compact: compact,
+            selection: selection,
+            onPlay: (_, i) => ctrl.playFromList(list, i, context: playCtx),
+          )
+        : EntranceScope(
               child: SliverList.builder(
               itemCount: items.length,
               itemBuilder: (_, i) {
@@ -146,6 +155,9 @@ EntranceScope(
             ),
             );
 
+    final extra = [
+      ...{for (final t in list) ?t.genre}.take(2),
+    ];
     // One key for the pill and Play: they must be the same list (D-534).
 
     final shuffleKey = listKeyOf([for (final t in list) t.id]);
@@ -164,6 +176,7 @@ EntranceScope(
             CoverImage(coverKey: coverKey, size: s, radius: CcDims.rGrid),
         subtitle: _AlbumSubtitle(album: album),
         meta: meta,
+        extra: extra.isEmpty ? null : extra.join(', '),
         onPlay: list.isEmpty
             ? null
             : () => ctrl.playAll(

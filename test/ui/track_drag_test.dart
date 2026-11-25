@@ -73,6 +73,27 @@ void main() {
     await h.dispose(tester);
   });
 
+  testWidgets('the playlist under the pointer lights up while tracks are dragged, and only that one', (tester) async {
+    await open(tester);
+    await tester.runAsync(() => playlists.create('Other'));
+    await tester.pump();
+    await _settle(tester);
+    final gesture = await tester.startGesture(tester.getCenter(find.text('Song 2')), kind: PointerDeviceKind.mouse);
+    await gesture.moveBy(const Offset(-30, 0));
+    await tester.pump();
+    int lit() => find.byKey(const ValueKey('drop-target-over')).evaluate().length;
+    expect(lit(), 0);
+    await gesture.moveTo(tester.getCenter(find.text('Mix')));
+    await tester.pump();
+    expect(lit(), 1);
+    await gesture.moveTo(tester.getCenter(find.text('Other')));
+    await tester.pump();
+    expect(lit(), 1, reason: 'the first one is dark again');
+    await gesture.up();
+    await _settle(tester);
+    await h.dispose(tester);
+  });
+
   testWidgets('dragging a picked row takes the whole selection, in the order of the picks', (tester) async {
     await open(tester);
     await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
