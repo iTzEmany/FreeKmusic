@@ -2,6 +2,16 @@
 
 Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](architettura/00-panoramica.md)). Le voci fatte o chiuse sono nella storia (`storico/`, `storico/PROGRESS.md`). Una voce che diventa lavoro vero diventa una fase in `docs/fasi/`.
 
+## Dopo il refactor «desktop-e-coerenza» (chiuso il 25/11, D-748)
+- **RSS della griglia**: dopo il giro della libreria (2263 album) 778 MB contro la soglia di 680 (partenza 618). Dalla 156 la Libreria desktop parte in griglia: limitare `imageCache` sul desktop o decodificare le copertine della griglia a dimensione ridotta (`cacheWidth`), poi rimisurare (161.1).
+- **Menu al clic destro più ricco**: il mockup ha «Riproduci ora», «Riproduci dopo», le scorciatoie a destra e il sottomenu di «Aggiungi a playlist»; oggi il menu ha le voci del foglio (155). Album e playlist hanno menu minimi.
+- **Daylist desktop**: i brani suggeriti online restano righe senza colonne; mancano l'intestazione a mosaico e i chip delle fasce del mockup (157.5).
+- **Statistiche desktop**: i quattro numeri del mockup richiedono dati per periodo che l'app non ha (157.5).
+- **Player a tutto schermo**: confermare a vista il layout senza barra laterale né barra del player (161.3).
+- **Test instabili sotto carico**: `performance_lists_test` («in a background isolate…») e `daylist_provider_test` («the slot changes while the app runs…»).
+- **Golden sensibile al tempo**: `desktop_100_home.png` e `desktop_w1000_home.png` possono cambiare per il tempo del player (0:00/0:01).
+- **CI**: il job `check` dura ~21 min di test più i test JVM Android; `timeout-minutes` portato a 45 (#247).
+
 ## Da fare subito (richieste dell'11/11)
 - Fasi 117–121 chiuse (117 «Ripristino completo», 118 «Guardrail e correzioni», 119 «Ritocchi e 1.6.0», 120 «CI Windows», 121 «Test di sistema») e fase 122 «CI di tutti i sistemi» fatta; versione 1.6.0 rilasciata (tag e Release dopo il merge). Prossimi: le voci aperte qui sotto per area, in particolare «Qualità e rilascio».
 - **Feature «Libreria leggera, karaoke, Cerca con le classifiche, comandi multimediali»** (kickoff del 15/11): fasi 123–129 in [`fasi/`](fasi/README.md), specifica in [`storico/feature/feature-libreria-leggera-karaoke-cerca.md`](storico/feature/feature-libreria-leggera-karaoke-cerca.md). La voce «`KEYCODE_MEDIA_PAUSE` a musica in pausa la fa ripartire» è passata nella fase 123 (R-227).
