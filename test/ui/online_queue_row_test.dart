@@ -135,7 +135,7 @@ void main() {
       expect(find.text('Non mi piace'), findsOneWidget);
       expect(find.text('Rimuovi dalla coda'), findsOneWidget);
       for (final library in [
-        'Preferito',
+        'Aggiungi ai preferiti',
         'Modifica…',
         'Elimina',
         'Aggiungi alla coda',

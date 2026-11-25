@@ -580,7 +580,7 @@ void main() {
     }))!;
     await tester.runAsync(() => h.handler.playQueue([row.id], 0));
     await h.pump(tester, const NowPlayingScreen());
-    await tester.tap(find.byTooltip('Preferito'));
+    await tester.tap(find.byTooltip('Aggiungi ai preferiti'));
     await _settle(tester);
     final after = await tester.runAsync(
       () => (h.db.select(h.db.tracks)..where((t) => t.id.equals(row.id))).getSingle(),
@@ -740,14 +740,14 @@ void main() {
     Future<bool> favorite() async => (await tester.runAsync(
       () => (h.db.select(h.db.tracks)..where((r) => r.id.equals(rows!.first.id))).getSingle(),
     ))!.isFavorite;
-    await tester.tap(find.byTooltip('Preferito'));
+    await tester.tap(find.byTooltip('Aggiungi ai preferiti'));
     await _settle(tester);
     expect(await favorite(), isTrue);
     expect(find.text('Aggiunto ai preferiti'), findsOneWidget);
     await tester.tap(find.text('Annulla'));
     await _settle(tester);
     expect(await favorite(), isFalse);
-    expect(find.byTooltip('Preferito'), findsOneWidget);
+    expect(find.byTooltip('Aggiungi ai preferiti'), findsOneWidget);
     await h.dispose(tester);
   });
 

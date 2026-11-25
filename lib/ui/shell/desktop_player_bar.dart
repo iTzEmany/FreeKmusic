@@ -183,7 +183,7 @@ class _TrackInfo extends ConsumerWidget {
           RadioStarButton(station: radio, color: cc.textMuted)
         else
           IconButton(
-            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.favorite,
+            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.bulkAddToFavorites,
             // Disabled until a stream is bound to its library row.
             onPressed: fav == null ? null : () => toggleFavorite(context, ref, fav),
             icon: HeartIcon(

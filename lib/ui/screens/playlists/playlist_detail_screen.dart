@@ -388,8 +388,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           tracks: shown, // «select all» takes what the search shows
           bulk: BulkContext(playlistId: id),
         ),
-        title: _name,
-        name: _name,
+        title: l.playlistLabel(_name),
+        name: l.playlistLabel(_name),
         coverKey: coverKeys.firstOrNull,
         cover: (s) =>
             PlaylistCover(size: s, coverKeys: coverKeys, radius: CcDims.rGrid),

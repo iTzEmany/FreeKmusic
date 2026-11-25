@@ -15,6 +15,7 @@ import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cover_image.dart';
 import '../../widgets/format_utils.dart';
+import '../../widgets/marquee_text.dart';
 import '../../widgets/playlist_cover.dart';
 import '../../widgets/radio_art.dart';
 import '../../widgets/section_header.dart';
@@ -144,6 +145,8 @@ class ResumeList extends ConsumerWidget {
     final core = slots.first;
     final ring = slots.skip(1).toList();
     final text = Theme.of(context).textTheme;
+    // The ring items name themselves below the cover: room for one line at this text scale.
+    final labelH = MediaQuery.textScalerOf(context).scale(_labelLine);
     return HomeBlock(
       header: SectionHeader(l.homeResume),
       children: [
@@ -163,7 +166,7 @@ class ResumeList extends ConsumerWidget {
                   children: [
                     SizedBox(
                       width: _ringW,
-                      height: ring.isEmpty ? _coreSize + 12 : _ringH,
+                      height: ring.isEmpty ? _coreSize + 12 : _ringH + labelH,
                       child: Stack(
                         children: [
                           for (var i = 0; i < ring.length; i++)
@@ -218,6 +221,7 @@ class ResumeList extends ConsumerWidget {
         slot: s,
         size: _itemSize,
         radius: s.radio ? _itemSize / 2 : CcDims.rList,
+        named: true,
       ),
     );
   }
@@ -284,7 +288,7 @@ class ResumeList extends ConsumerWidget {
 }
 
 const _ringW = 328.0, _ringH = 250.0, _cy = 140.0, _r = 108.0;
-const _coreSize = 96.0, _itemSize = 56.0;
+const _coreSize = 96.0, _itemSize = 56.0, _labelLine = 18.0;
 
 /// What one item of the ring needs: its texts, cover and tap.
 class _Slot {
@@ -313,15 +317,19 @@ class _SlotButton extends StatelessWidget {
     required this.size,
     required this.radius,
     this.lead,
+    this.named = false,
   });
 
   final _Slot slot;
   final double size, radius;
   final String? lead;
 
+  /// Shows the title as a scrolling line under the cover (the core has its own below).
+  final bool named;
+
   @override
   Widget build(BuildContext context) {
-    return Semantics(
+    final button = Semantics(
       key: ValueKey(slot.key),
       container: true,
       button: slot.onTap != null,
@@ -340,6 +348,26 @@ class _SlotButton extends StatelessWidget {
             child: slot.cover(size, radius),
           ),
         ),
+      ),
+    );
+    if (!named) return button;
+    return SizedBox(
+      width: size,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button,
+          // The Semantics above is the only reading of the title.
+          ExcludeSemantics(
+            child: Center(
+              child: MarqueeText(
+                slot.title,
+                style: Theme.of(context).textTheme.labelSmall
+                    ?.copyWith(color: context.cc.textMuted),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -84,7 +84,7 @@ class _CarPlaylistsSheet extends ConsumerWidget {
               }
             }),
             for (final p in lists)
-              row(Icons.queue_music_rounded, p.playlist.name, () async {
+              row(Icons.queue_music_rounded, context.l10n.playlistLabel(p.playlist.name), () async {
                 final tracks = await ref.read(playlistOpsProvider).tracksOf(p.playlist.id);
                 if (context.mounted) {
                   await _play(

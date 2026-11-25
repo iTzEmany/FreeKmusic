@@ -709,7 +709,7 @@ class _TitleRow extends ConsumerWidget {
           RadioStarButton(station: radio)
         else
           IconButton(
-            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.favorite,
+            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.bulkAddToFavorites,
             // A stream not yet bound to its library row has nothing to favourite: disabled until it is.
             onPressed: fav == null ? null : () => toggleFavorite(context, ref, fav),
             icon: HeartIcon(
