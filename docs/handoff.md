@@ -1,19 +1,24 @@
 # Handoff
-Aggiornato: 2026-11-24 · Stato: le fasi 135-147 della grande revisione sono chiuse (la 147 nella parte documentale e nelle misure); schema DB v24; pianificato il refactor «desktop-e-coerenza» (fasi 150-161), ultima decisione D-740.
+Aggiornato: 2026-11-25 · Stato: refactor «desktop-e-coerenza» **chiuso** (fasi 150-161, PR #234-#247, D-748), archiviato in `storico/refactor/desktop-e-coerenza/`; Flutter 3.47.9; schema DB invariato (v24); ultima decisione D-748.
 
 ## Prossima sessione
-Release 1.7.0 uscita il 24/11 (tag `v1.7.0`, con la fase 148 «video karaoke nella Jam»). Worker pubblicato e `kReportEndpoint` impostato (24/11). Dopo il tag restano le prove su telefono della fase 147 (147.3-147.6) e la lista «Tocca a te» di quella fase. Fase 149 «Novità dell'aggiornamento e scheda di condivisione» chiusa (PR #233, `storico/fasi/fase-149-novita-e-scheda-di-condivisione.md`; restano le prove sul Redmi e la lettura del QR nel suo «Tocca a te»; prima del prossimo tag va scritto `release-notes/<versione>.md`). Prossimo: refactor «desktop-e-coerenza», fasi 150-161 in ordine (D-735), prompt `/obiettivo fase 150`.
+Prossimo obiettivo consigliato: **fase 162 «memoria della griglia e prove a mano del refactor»**: RSS dopo il giro della libreria a 778 MB contro la soglia di 680 (dalla 156 la Libreria desktop parte in griglia e decodifica molte più copertine: provare a limitare `imageCache` sul desktop o `cacheWidth` delle copertine della griglia, poi rimisurare), più le prove a mano rimaste aperte. Prompt: `/kickoff fase 162 memoria della griglia` oppure `/obiettivo` dopo aver scritto la fase in `docs/fasi/`.
 
-## Cosa resta
-- Rinvii di codice delle review 142-146: [`prossimi-lavori.md`](prossimi-lavori.md), sezione «Dalla grande revisione (fasi 135-147)».
-- Prese in autonomia: D-707 (review 144), D-708 e D-709 (review 146); vedi [`decisioni.md`](decisioni.md).
+Altri obiettivi possibili:
+1. Release 1.8.0 con il refactor (alzare la versione, `release-notes/<versione>.md`, `python3 scripts/fdroid_version.py`, tag).
+2. Rendere `integration-linux` obbligatorio dal **9/12** se resta verde e stabile (D-733).
+3. Stabilizzare i test instabili sotto carico `performance_lists_test` e `daylist_provider_test`.
 
 ## Tocca a te
-- [ ] Dopo il merge: tag `v1.7.0` (versione già alzata) e Release dalla CI; poi l'aggiornamento dall'app sul Motorola.
-- [ ] Prove su telefono, account e pubblicazioni: elenco completo in «Tocca a te» di [`fasi/fase-147-verifica-finale.md`](fasi/fase-147-verifica-finale.md); resta aperto il deploy del Worker Cloudflare con il token (D-669).
+- [ ] **Mi A3**: riavviarlo a mano (è bloccato in un ciclo di crash del servizio fotocamera di Android dopo la prova monkey; nessun crash dell'app). Poi la prova 161.2 (home con il Riprendi ad anello, player, collezioni, gesti D-721), volume 0.
+- [ ] **Flatpak** (161.4): `flatpak install --user` del bundle della prossima release (runtime 25.08 con `codecs-extra`), avvio, brano AAC, istanza unica, «Apri con», avviso di primo avvio, comando di aggiornamento.
+- [ ] **Windows**: compilare il runner (istanza unica, `WM_COPYDATA`, classe `FREEKMUSIC_RUNNER_WIN32_WINDOW`), tray e clic sull'icona, finestra nascosta rimostrata da un secondo avvio, «Chiudi nella barra di sistema» acceso di default.
+- [ ] **GNOME** con e senza l'estensione AppIndicator: con l'estensione la tray compare, senza la X chiude l'app.
+- [ ] Posizione della finestra ripristinata su un desktop vero (sotto Xvfb torna solo la dimensione).
 
 ## Da sapere
-- Refactor «desktop-e-coerenza» (D-714..D-740): analisi e rilievi in `storico/refactor/desktop-e-coerenza/analisi.md`, rete di test e metriche in `storico/refactor/desktop-e-coerenza/rete.md`, specifica visiva approvata in `storico/refactor/desktop-e-coerenza/mockup/index.html` (17 pagine), pacchetti nuovi decisi in `storico/refactor/desktop-e-coerenza/ricerca-pacchetti.md` (solo `window_manager`, `tray_manager ^0.8.3`, `desktop_drop`). PR #231 ha già chiuso F-201, F-203, F-212, F-216 (flatpak).
-- Analisi e rilievi F-01..F-41, rete di test, scansioni e mockup della grande revisione sono archiviati in `docs/storico/refactor/grande-revisione/`. Decisioni D-662..D-699 vincolanti.
-- Il Motorola edge 40 (ZY22HKD85K) è il telefono dell'utente, non di prova: niente disinstallazioni, nessun file toccato, firma di release. Il log si esporta da Impostazioni › Avanzate › Esporta log. Il permesso `READ_MEDIA_AUDIO` lo concede solo l'utente. Mi A3 e Redmi sono i telefoni di test (volume 0, ripulire a fine prova).
+- Fasi del refactor e note di deviazione: `storico/fasi/fase-150-*.md` … `fase-161-*.md`; decisioni D-714..D-748.
+- Avvii di prova su Linux: sempre Xvfb, HOME finto **vuoto e nuovo**, `FREEKMUSIC_NON_UNIQUE=1` (istanza unica dalla 158); vedi `.claude/obiettivo.md`.
+- Pacchetti desktop: window_manager 0.6, tray_manager 0.8.3 su `nativeapi` (FFI con hook di build: in CI servono `libgtk-3-dev libx11-dev libxi-dev`), desktop_drop 0.8 (D-747).
+- Il Motorola edge 40 (ZY22HKD85K) è il telefono dell'utente, non di prova. Mi A3 e Redmi sono i telefoni di test (volume 0, ripulire a fine prova).
 - Stringhe nuove nelle 6 lingue con `scripts/arb_add.py`, poi `flutter gen-l10n`.

@@ -165,6 +165,11 @@ Le metriche di `rete.md` (storico, fasi 135-146) sono tutte rispettate: 258 test
 
 ## Trappole
 
+- **Conflitti degli ARB fra rami paralleli**: quando due rami aggiungono chiavi in coda agli ARB, il merge dà conflitti intrecciati (anche dentro i placeholder). Si risolve ricostruendo ogni ARB come i blocchi di una parte più i blocchi delle chiavi presenti solo nell'altra, copiati com'erano, poi `flutter gen-l10n` per i generati (mai a mano); `app_fr.arb` ha chiavi doppie preesistenti (JSON tiene l'ultima). Una catena di comandi con `;` dopo un passo fallito può committare i marcatori: usare `&&` e controllare `grep -rlE '^(<<<<<<<|>>>>>>>)'` prima di `git add` (fasi 153-160).
+- **HOME finto sporco**: un file musicale rimasto nel HOME finto di una prova entra nella scansione predefinita di `~/Music` e fa fallire `desktop_flow_test`, che conta le righe esatte. Ogni prova con un HOME finto nuovo (158).
+- **Pacchetti su `nativeapi`**: window_manager 0.6 e tray_manager 0.8.3 compilano `cnativeapi` con un hook di build anche dentro `flutter test`: il job `check` e la notturna installano `libgtk-3-dev libx11-dev libxi-dev pkg-config clang`; la libreria finisce anche negli APK (~2,4 MB per arm64) (159).
+- **APK a 4 ABI in locale**: `flutter build apk --debug` con tutte le ABI può andare in OOM in `packageDebug` (Gradle `-Xmx8G` su 14 GB) e lasciare un `.hprof` da 2 GB in `android/`: in locale `--target-platform android-arm64` (161).
+- **`flutter pub add`** risolve le versioni compatibili con l'SDK in uso, che possono essere più vecchie di quelle lette sul sito (159: window_manager 0.6.0 invece di 0.7.1, desktop_drop 0.8.0 invece di 0.9.2).
 - `perf_device.py --only`: «Album» e «Apri album» vogliono anche «Tutti i brani» nell'elenco (è lo scenario che apre la scheda), altrimenti esce con `nothing on screen matches '^Album$'`.
 - `perf_test.dart` al secondo giro: `Bad state: No element` su «Tutti i brani» se la libreria da 3000 brani è ancora in caricamento; serve un `waitFor` prima del tap.
 - `latestIs(x)` in `watch_with_countries_test.dart` ritorna subito se l'ultimo valore è già `x`: dopo una scrittura che deve dare lo stesso risultato, aspetta davvero la riesecuzione (contatore dello `_Spy` o attesa oltre i 300 ms).
