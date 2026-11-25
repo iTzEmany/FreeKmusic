@@ -24,6 +24,7 @@ import 'package:codecore/ui/screens/youtube/online_results.dart';
 import 'package:codecore/ui/screens/youtube/online_results_sections.dart' show SourceFilter;
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
@@ -176,6 +177,21 @@ void main() {
     engine.add(s);
     await _settle(tester);
   }
+
+  testWidgets('Ctrl+click on a result picks it instead of playing (156.6)', (tester) async {
+    final h = await open(tester);
+    await emit(tester, _state(best: [_song('s0', 'Song 0'), _song('s1', 'Song 1')]));
+    await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+    await tester.tap(find.text('Song 0'));
+    await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+    await _settle(tester);
+    expect(h.handler.queueIds, isEmpty);
+    // A picked list: a plain click picks the next one too, still no play.
+    await tester.tap(find.text('Song 1'));
+    await _settle(tester);
+    expect(h.handler.queueIds, isEmpty);
+    await h.dispose(tester);
+  });
 
   testWidgets('the last row scrolls above the dock and can be tapped', (tester) async {
     final h = await open(

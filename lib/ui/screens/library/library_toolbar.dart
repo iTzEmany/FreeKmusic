@@ -130,13 +130,11 @@ class LibraryToolbar extends StatelessWidget {
               key: const ValueKey('library-density'),
               showSelectedIcon: false,
               style: const ButtonStyle(
-                visualDensity: VisualDensity.compact,
-                minimumSize: WidgetStatePropertyAll(Size(32, 32)),
+                minimumSize: WidgetStatePropertyAll(Size(48, 48)),
               ),
               segments: [
                 for (final (i, t) in const ['S', 'M', 'L'].indexed)
-                  // shortcut: tooltip reuses «Griglia» until an ARB key for «Densità» exists.
-                  ButtonSegment(value: i, label: Text(t), tooltip: l.viewAsGrid),
+                  ButtonSegment(value: i, label: Text(t), tooltip: l.viewDensity),
               ],
               selected: {density},
               onSelectionChanged: (v) => onDensity!(v.first),

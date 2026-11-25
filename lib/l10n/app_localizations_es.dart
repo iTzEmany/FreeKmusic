@@ -8666,4 +8666,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tableNumberColumn => 'Número';
+
+  @override
+  String get viewDensity => 'Densidad de la cuadrícula';
 }

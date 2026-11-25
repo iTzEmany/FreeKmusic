@@ -6,7 +6,7 @@ import '../../providers/activity_providers.dart';
 import '../screens/activity/activity_sheet.dart';
 import '../theme/tokens.dart';
 
-/// Small spinner with the number of running activities; hidden when idle.
+/// Small spinner with the number of running activities; hidden when idle (its place kept on a wide window).
 class ActivityButton extends ConsumerWidget {
   const ActivityButton({super.key});
 
@@ -15,7 +15,10 @@ class ActivityButton extends ConsumerWidget {
     final n = ref.watch(activityProvider.select((a) => a.running.length));
     // Only waiting or paused lines: a still ring, an endless one repaints at 120 fps for nothing.
     final working = ref.watch(activityProvider.select((a) => a.running.any((i) => !i.waiting && !i.paused)));
-    if (n == 0) return const SizedBox.shrink();
+    if (n == 0) {
+      // F-118: on a wide window the place stays reserved, so the icons beside it do not jump.
+      return SizedBox(width: MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint ? 64 : 0);
+    }
     final cc = context.cc;
     final label = context.l10n.activityRunning(n);
     // A node of its own (never merged into a header title), named by the tooltip.

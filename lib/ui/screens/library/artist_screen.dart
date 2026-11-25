@@ -25,6 +25,8 @@ import '../../widgets/error_state.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
+import '../../widgets/track_table.dart';
+import '../../theme/tokens.dart';
 import '../../widgets/track_row_selection.dart';
 import '../online/artist_picker_sheet.dart';
 import '../releases/follow_button.dart';
@@ -117,19 +119,27 @@ class ArtistDetailScreen extends ConsumerWidget {
             ),
           if (top.isNotEmpty) ...[
             SliverToBoxAdapter(child: SectionHeader(l.mostPlayed)),
-            SliverList.builder(
-              itemCount: top.length,
-              itemBuilder: (_, i) => SizedBox(
-                height: extent,
-                child: LiveTrackRow(
-                  track: top[i],
-                  compact: compact,
-                  selection: selection,
-                  albumAsSubtitle: true,
-                  onTap: () => ctrl.playFromList(top, i, context: playCtx),
+            if (MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint)
+              TrackTable(
+                tracks: top,
+                compact: compact,
+                selection: selection,
+                onPlay: (_, i) => ctrl.playFromList(top, i, context: playCtx),
+              )
+            else
+              SliverList.builder(
+                itemCount: top.length,
+                itemBuilder: (_, i) => SizedBox(
+                  height: extent,
+                  child: LiveTrackRow(
+                    track: top[i],
+                    compact: compact,
+                    selection: selection,
+                    albumAsSubtitle: true,
+                    onTap: () => ctrl.playFromList(top, i, context: playCtx),
+                  ),
                 ),
               ),
-            ),
           ],
           if (albumList.isNotEmpty) ...[
             SliverToBoxAdapter(child: SectionHeader(l.albumsSection)),

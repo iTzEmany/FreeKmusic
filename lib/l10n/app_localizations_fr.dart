@@ -8710,4 +8710,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tableNumberColumn => 'Numéro';
+
+  @override
+  String get viewDensity => 'Densité de la grille';
 }

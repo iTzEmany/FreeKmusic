@@ -8612,4 +8612,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tableNumberColumn => 'Number';
+
+  @override
+  String get viewDensity => 'Grid density';
 }

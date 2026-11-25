@@ -8676,4 +8676,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tableNumberColumn => 'Nummer';
+
+  @override
+  String get viewDensity => 'Rasterdichte';
 }

@@ -4431,5 +4431,6 @@
       }
     }
   },
-  "tableNumberColumn": "Número"
+  "tableNumberColumn": "Número",
+  "viewDensity": "Densidade da grelha"
 }

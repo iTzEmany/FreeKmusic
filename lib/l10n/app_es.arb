@@ -4245,5 +4245,6 @@
       }
     }
   },
-  "tableNumberColumn": "Número"
+  "tableNumberColumn": "Número",
+  "viewDensity": "Densidad de la cuadrícula"
 }

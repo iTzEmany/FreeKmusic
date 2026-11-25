@@ -92,7 +92,7 @@ class GenreGrid extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: fontSize,
-                          color: on ? cc.onAccent : cc.textMuted,
+                          color: on ? cc.onAccent : (g.color != null ? _textOn(g.color!) : cc.textMuted),
                         ),
                       ),
                   ],

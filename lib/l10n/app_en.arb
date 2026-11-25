@@ -4245,5 +4245,6 @@
       }
     }
   },
-  "tableNumberColumn": "Number"
+  "tableNumberColumn": "Number",
+  "viewDensity": "Grid density"
 }

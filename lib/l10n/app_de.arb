@@ -4245,5 +4245,6 @@
       }
     }
   },
-  "tableNumberColumn": "Nummer"
+  "tableNumberColumn": "Nummer",
+  "viewDensity": "Rasterdichte"
 }

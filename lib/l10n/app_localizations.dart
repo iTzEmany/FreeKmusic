@@ -13458,6 +13458,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Numero'**
   String get tableNumberColumn;
+
+  /// No description provided for @viewDensity.
+  ///
+  /// In it, this message translates to:
+  /// **'Densità della griglia'**
+  String get viewDensity;
 }
 
 class _AppLocalizationsDelegate

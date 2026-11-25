@@ -11,12 +11,50 @@ import 'package:codecore/providers/keep_offline_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart' show albumMissingTracksProvider;
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/online/ytm_artist.dart' show YtmAlbumTrack;
+import 'package:codecore/ui/widgets/track_row.dart' show LiveTrackRow;
+import 'package:codecore/ui/widgets/track_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
 
 void main() {
+  testWidgets('wide window: the album is a table and a click plays the list as shown (156.6)', (tester) async {
+    tester.view.physicalSize = const Size(1280, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(
+      tester,
+      const AlbumDetailScreen(
+        album: AlbumSummary(
+          albumKey: 'artist|album 0',
+          title: 'Album 0',
+          artist: 'Artist',
+          variousArtists: false,
+          trackCount: 2,
+          durationMs: 370000,
+          year: 2019,
+          coverKey: null,
+        ),
+      ),
+    );
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 150)));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(TrackTable), findsOneWidget);
+    expect(find.text('Durata'), findsOneWidget);
+    await tester.tap(find.byType(LiveTrackRow).last);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+    final shown = await tester.runAsync(
+      () => h.db.select(h.db.tracks).get().then((r) => r.where((t) => t.albumKey == 'artist|album 0').map((t) => t.id).toList()..sort()),
+    );
+    expect(h.handler.queueIds.toList()..sort(), shown, reason: 'the queue is the album list');
+    expect(h.handler.currentIndex, 1);
+    await h.dispose(tester);
+  });
+
   testWidgets('album rows show the duration on a 360 px phone', (tester) async {
     tester.view.physicalSize = const Size(360, 780);
     tester.view.devicePixelRatio = 1;
