@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../core/app_log.dart';
 import '../../l10n/l10n_ext.dart';
 import '../../services/platform/open_files.dart';
+import '../theme/tokens.dart';
 import '../widgets/show_msg.dart';
 
 /// Desktop drag-and-drop of files onto the app (F-208): a veil while dragging, then the audio
@@ -62,11 +63,11 @@ class _DropOverlayState extends State<DropOverlay> {
             Positioned.fill(
               child: IgnorePointer(
                 child: ColoredBox(
-                  color: Colors.black54,
+                  color: context.cc.bg.withValues(alpha: 0.7),
                   child: Center(
                     child: Text(
                       context.l10n.dropHint,
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: context.cc.text),
                     ),
                   ),
                 ),

@@ -72,7 +72,7 @@ void main() {
     final d = DropEventDetails(localPosition: Offset.zero, globalPosition: Offset.zero);
     target.onDragEntered!(d);
     await t.pump();
-    final veil = find.byWidgetPredicate((w) => w is ColoredBox && w.color == Colors.black54);
+    final veil = find.byWidgetPredicate((w) => w is ColoredBox && (w.color.a - 0.7).abs() < 0.01);
     expect(veil, findsOneWidget);
     target.onDragExited!(d);
     await t.pump();
