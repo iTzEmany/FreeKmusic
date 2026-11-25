@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../core/app_log.dart';
+import '../../core/platform.dart';
 
 import '../../l10n/l10n_ext.dart';
 import '../theme/tokens.dart';
@@ -18,6 +19,32 @@ Future<T?> showCcSheet<T>({
   String? barrierLabel,
 }) {
   final d = ccDuration(context, CcMotion.sheet);
+  // Wide desktop windows get a centred dialog as tall as its content (F-103): same
+  // signature and result, no handle. Phones and narrow windows keep the bottom sheet.
+  if (isDesktop && MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint) {
+    return showDialog<T>(
+      context: context,
+      useRootNavigator: true,
+      barrierLabel: barrierLabel ?? MaterialLocalizations.of(context).closeButtonLabel,
+      builder: (dc) => Dialog(
+        clipBehavior: Clip.antiAlias,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: CcDims.sheetMaxWidth,
+            maxHeight: MediaQuery.sizeOf(dc).height * 0.8,
+          ),
+          // Focus starts on the first control; Esc and the focus return come from the route.
+          // The handle's room stays when the caller asked for one: content does not touch the edge.
+          child: _FirstFocus(
+            child: Padding(
+              padding: EdgeInsets.only(top: showDragHandle == true ? CcDims.gap24 : 0),
+              child: Builder(builder: builder),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
   return showModalBottomSheet<T>(
     context: context,
     builder: builder,
@@ -175,4 +202,29 @@ Future<T?> showCcActionSheet<T>({
       );
     },
   );
+}
+
+/// Moves focus to the first focusable control once the dialog is on screen.
+class _FirstFocus extends StatefulWidget {
+  const _FirstFocus({required this.child});
+  final Widget child;
+
+  @override
+  State<_FirstFocus> createState() => _FirstFocusState();
+}
+
+class _FirstFocusState extends State<_FirstFocus> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final scope = FocusScope.of(context);
+      final f = scope.focusedChild;
+      if (f == null || f == scope) scope.nextFocus();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }

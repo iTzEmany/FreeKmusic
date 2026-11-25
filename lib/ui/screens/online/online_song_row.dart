@@ -26,6 +26,8 @@ import 'online_selection_scope.dart';
 import '../../../services/jam/jam_models.dart' show jamFullResult;
 import '../../widgets/show_msg.dart';
 import '../../widgets/action_catalog.dart';
+import '../../widgets/context_menu.dart' show ContextMenuKey;
+import '../../../core/platform.dart' show isDesktop;
 
 const kOnlineRowHeight = 72.0;
 
@@ -44,7 +46,8 @@ void startOnlineDownloads(
 ) {
   final l = context.l10n;
   final adder = ref.read(libraryAdderProvider);
-  final streaming = ref.read(settingsProvider).storageMode == StorageMode.stream;
+  final streaming =
+      ref.read(settingsProvider).storageMode == StorageMode.stream;
   final busy = {
     for (final d in ref.read(downloadsProvider))
       if (d.status == DownloadStatus.queued ||
@@ -66,7 +69,9 @@ void startOnlineDownloads(
     started == 0
         ? l.ytNothingToDownload
         : streaming
-        ? (skipped == 0 ? l.libraryAddedMany(started) : l.libraryAddedSkipped(started, skipped))
+        ? (skipped == 0
+              ? l.libraryAddedMany(started)
+              : l.libraryAddedSkipped(started, skipped))
         : skipped == 0
         ? l.ytDownloadsStarted(started)
         : l.ytDownloadsSkipped(started, skipped),
@@ -126,7 +131,9 @@ class OnlineSongTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pick = watchOnlinePick(ref, selectionKey, index);
-    final inLibrary = ownedLocally || ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
+    final inLibrary =
+        ownedLocally ||
+        ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => x.result.id == result.id).lastOrNull,
@@ -145,6 +152,7 @@ class OnlineSongTile extends ConsumerWidget {
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, result),
       onMore: () => showOnlineActions(context, ref, result),
+      onMoreAt: (at) => showOnlineActions(context, ref, result, at: at),
       onDownload: () => ref.read(libraryAdderProvider).add(result),
     );
   }
@@ -167,6 +175,7 @@ class OnlineSongRow extends StatelessWidget {
     this.onLongPress,
     this.onQueue,
     this.onMore,
+    this.onMoreAt,
     this.onArtistTap,
     this.square = false,
     this.number,
@@ -192,6 +201,9 @@ class OnlineSongRow extends StatelessWidget {
   /// Swipe to the right (not from the edge, D-59) and the ⋮ menu; neither
   /// while picking.
   final VoidCallback? onQueue, onMore;
+
+  /// Desktop: right click on the row and the ⋮ open a menu at that global point; [onMore] is the phone's sheet.
+  final void Function(Offset position)? onMoreAt;
 
   /// Makes the artist's name a button that opens the artist.
   final VoidCallback? onArtistTap;
@@ -223,84 +235,107 @@ class OnlineSongRow extends StatelessWidget {
         color: selected
             ? cc.accentSoft.withValues(alpha: 0.16)
             : Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: SizedBox(
-            height: onlineRowExtentOf(context),
-            child: Row(
-              children: [
-                const SizedBox(width: CcDims.margin),
-                if (number != null && !selecting)
-                  SizedBox(
-                    width: 32,
-                    child: Text(
-                      '$number',
-                      textAlign: TextAlign.center,
-                      style: theme.bodyMedium?.copyWith(color: cc.textMuted),
-                    ),
-                  )
-                else
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (square)
-                        NetThumbnail(
-                          url: result.thumbnailUrl,
-                          width: 48,
-                          height: 48,
-                          icon: Icons.music_note,
-                        )
-                      else
-                        NetThumbnail(
-                          url: result.thumbnailUrl,
-                          width: 80,
-                          height: 45,
-                          icon: Icons.music_video,
-                        ),
-                      if (selecting) ...[
-                        Container(
-                          width: square ? 48 : 80,
-                          height: square ? 48 : 45,
-                          decoration: BoxDecoration(
-                            color: cc.bg.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(CcDims.rList),
+        child: ContextMenuKey(
+          onOpen: (p) => selecting ? null : onMoreAt?.call(p),
+          child: GestureDetector(
+            excludeFromSemantics: true,
+            onSecondaryTapDown: onMoreAt == null || selecting
+                ? null
+                : (d) => onMoreAt!(d.globalPosition),
+            child: InkWell(
+              onTap: onTap,
+              onLongPress: onLongPress,
+              child: SizedBox(
+                height: onlineRowExtentOf(context),
+                child: Row(
+                  children: [
+                    const SizedBox(width: CcDims.margin),
+                    if (number != null && !selecting)
+                      SizedBox(
+                        width: 32,
+                        child: Text(
+                          '$number',
+                          textAlign: TextAlign.center,
+                          style: theme.bodyMedium?.copyWith(
+                            color: cc.textMuted,
                           ),
                         ),
-                        SelectionBox(
-                          selected: selected,
-                          position: position,
-                          size: square ? 40 : 36,
+                      )
+                    else
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (square)
+                            NetThumbnail(
+                              url: result.thumbnailUrl,
+                              width: 48,
+                              height: 48,
+                              icon: Icons.music_note,
+                            )
+                          else
+                            NetThumbnail(
+                              url: result.thumbnailUrl,
+                              width: 80,
+                              height: 45,
+                              icon: Icons.music_video,
+                            ),
+                          if (selecting) ...[
+                            Container(
+                              width: square ? 48 : 80,
+                              height: square ? 48 : 45,
+                              decoration: BoxDecoration(
+                                color: cc.bg.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(
+                                  CcDims.rList,
+                                ),
+                              ),
+                            ),
+                            SelectionBox(
+                              selected: selected,
+                              position: position,
+                              size: square ? 40 : 36,
+                            ),
+                          ],
+                        ],
+                      ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SongText(
+                        result: result,
+                        inLibrary: inLibrary,
+                        onArtistTap: onArtistTap,
+                        note: note,
+                        tagLine: tagLine,
+                      ),
+                    ),
+                    ?listen,
+                    _DownloadState(
+                      entryKey: item?.result.indexKey ?? result.indexKey,
+                      item: item,
+                      inLibrary: inLibrary,
+                      onDownload: onDownload,
+                    ),
+                    if (onMore != null && !selecting)
+                      Builder(
+                        builder: (context) => IconButton(
+                          tooltip: CatalogAction.more.label(l),
+                          icon: Icon(CatalogAction.more.icon),
+                          onPressed: onMoreAt != null && isDesktop
+                              ? () {
+                                  final b =
+                                      context.findRenderObject()! as RenderBox;
+                                  onMoreAt!(
+                                    b.localToGlobal(Offset(0, b.size.height)),
+                                  );
+                                }
+                              : onMore,
                         ),
-                      ],
-                    ],
-                  ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SongText(
-                    result: result,
-                    inLibrary: inLibrary,
-                    onArtistTap: onArtistTap,
-                    note: note,
-                    tagLine: tagLine,
-                  ),
+                      )
+                    else
+                      const SizedBox(width: 8),
+                  ],
                 ),
-                ?listen,
-                _DownloadState(
-                  entryKey: item?.result.indexKey ?? result.indexKey,
-                  item: item,
-                  inLibrary: inLibrary,
-                  onDownload: onDownload,
-                ),
-                if (onMore != null && !selecting)
-                  IconButton(
-                    tooltip: CatalogAction.more.label(l),
-                    icon: Icon(CatalogAction.more.icon),
-                    onPressed: onMore,
-                  )
-                else
-                  const SizedBox(width: 8),
-              ],
+              ),
             ),
           ),
         ),

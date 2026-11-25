@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'dart:async';
 
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/data/db/app_database.dart' show Track, TracksCompanion;
+import 'package:codecore/data/repositories/playlist_repository.dart' show PlaylistRepository;
 import 'package:codecore/providers/external_share_provider.dart';
 import 'package:codecore/ui/widgets/download_bar.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
@@ -322,6 +324,40 @@ void main() {
     await tester.tap(find.text('open'));
     if (settle) await _settle(tester);
     return h;
+  }
+
+  // 155.1: «Aggiungi a playlist…» from the sheet, in both modes: same entries, same result.
+  for (final desktop in [false, true]) {
+    testWidgets('«Aggiungi a playlist…» picks an existing playlist, desktop: $desktop', (tester) async {
+      debugIsDesktopOverride = desktop;
+      addTearDown(() => debugIsDesktopOverride = null);
+      final h = await openSheet(tester, (t) => t);
+      final id = (await tester.runAsync(() => PlaylistRepository(h.db).create('Notte')))!;
+      await tester.tap(find.text('Aggiungi a playlist…'));
+      await _settle(tester);
+      await tester.tap(find.text('Notte'));
+      await _settle(tester);
+      final ids = (await tester.runAsync(() => PlaylistRepository(h.db).watchTracks(id).first))!;
+      expect([for (final t in ids) t.id], [1]);
+      await h.dispose(tester);
+    });
+
+    testWidgets('«Nuova playlist» from the sheet creates it with the song, desktop: $desktop', (tester) async {
+      debugIsDesktopOverride = desktop;
+      addTearDown(() => debugIsDesktopOverride = null);
+      final h = await openSheet(tester, (t) => t);
+      await tester.tap(find.text('Aggiungi a playlist…'));
+      await _settle(tester);
+      await tester.enterText(find.byType(TextField), 'Nuova');
+      await tester.pump();
+      await tester.tap(find.text('Crea'));
+      await _settle(tester);
+      final made = (await tester.runAsync(() => h.db.select(h.db.playlists).get()))!.single;
+      expect(made.name, 'Nuova');
+      final ids = (await tester.runAsync(() => PlaylistRepository(h.db).watchTracks(made.id).first))!;
+      expect([for (final t in ids) t.id], [1]);
+      await h.dispose(tester);
+    });
   }
 
   testWidgets('sheet header has title, artist, album on three lines', (

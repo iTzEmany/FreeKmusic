@@ -214,10 +214,11 @@ void main() {
   testWidgets('desktop: «Come risolvere» opens the guide even on the row already picked', (tester) async {
     await pump(tester, size: const Size(1200, 800));
     await tapFilter(tester, 'Errori 1');
-    expect(find.byType(BottomSheet), findsNothing);
+    // From 155 on, wide desktop opens sheets as a centred dialog.
+    expect(find.byType(Dialog), findsNothing);
     await tester.tap(find.widgetWithText(TextButton, 'Come risolvere'));
     await tester.pump(const Duration(milliseconds: 500));
-    expect(find.byType(BottomSheet), findsOneWidget);
+    expect(find.byType(Dialog), findsOneWidget);
   });
 
   testWidgets('«Pulisci registro» asks first; Annulla keeps the lines', (tester) async {

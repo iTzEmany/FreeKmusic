@@ -13,6 +13,7 @@ import '../../providers/ui_providers.dart';
 import '../../providers/track_ops.dart';
 import '../screens/library/favorites_screen.dart';
 import '../screens/playlists/playlist_detail_screen.dart';
+import '../screens/playlists/playlists_screen.dart' show showPlaylistMenu;
 import '../screens/playlists/playlist_dialogs.dart';
 import '../screens/smart/smart_playlist_editor.dart';
 import '../theme/tokens.dart';
@@ -144,7 +145,9 @@ class _SidebarPlaylists extends ConsumerWidget {
       String subtitle,
       VoidCallback onTap, {
       required void Function(List<int> ids) onDrop,
+      void Function(Offset at)? onMenu,
     }) => _CoverRow(
+      onMenu: onMenu,
       collapsed: collapsed,
       cover: cover,
       title: title,
@@ -179,6 +182,7 @@ class _SidebarPlaylists extends ConsumerWidget {
             ),
             onDrop: (ids) =>
                 dropOnPlaylist(p.playlist.id, p.playlist.name, ids),
+            onMenu: (at) => showPlaylistMenu(context, ref, p.playlist, at),
           ),
       ],
     );
@@ -264,8 +268,10 @@ class _CoverRow extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     required this.onDrop,
+    this.onMenu,
   });
 
+  final void Function(Offset at)? onMenu;
   final bool collapsed;
   final Widget cover;
   final String title;
@@ -282,6 +288,7 @@ class _CoverRow extends StatelessWidget {
         message: title,
         child: InkWell(
           onTap: onTap,
+          onSecondaryTapDown: onMenu == null ? null : (d) => onMenu!(d.globalPosition),
           // Grows with the text size: two lines at 150 % no longer fit in 56.
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 56),

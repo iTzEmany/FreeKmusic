@@ -64,6 +64,7 @@ import '../../services/jam/jam_models.dart' show jamFullResult;
 import 'share_collection.dart';
 import 'show_msg.dart';
 import 'action_catalog.dart';
+import 'context_menu.dart';
 
 /// One entry of the track menu.
 class TrackAction {
@@ -531,10 +532,14 @@ class _TrackMenuHostState extends ConsumerState<TrackMenuHost> {
 /// The track sheet; [lead] goes first (e.g. «Rimuovi dalla playlist»). Also the
 /// desktop right click, and the ⋮ of a selection through [showTrackActionGroups].
 /// [context] is the row: its rectangle anchors a share sheet (iPad, desktop); the rest runs on [TrackMenuHost].
+///
+/// With [at] (a global point: right click, or the ⋮) a desktop shows the same entries as a menu there
+/// ([showContextMenu]); a phone keeps the sheet.
 Future<void> showTrackActions(
   BuildContext context,
   Track track, {
   TrackAction? lead,
+  Offset? at,
 }) async {
   final host = _host;
   assert(host != null, 'showTrackActions needs a TrackMenuHost above the app');
@@ -583,6 +588,11 @@ Future<void> showTrackActions(
     if (lead != null) TrackActionGroup('', [lead]),
     ...trackActions(host.context, host.ref, live, row: liveRow, isDownloadedFile: isDownloadedFile, anchor: anchor),
   ];
+
+  if (at != null && isDesktop && sheetContext.mounted) {
+    // shortcut: the pointer menu does not follow a download that finishes while it is open.
+    return showContextMenu(sheetContext, at, menuGroups(build()));
+  }
 
   final changed = ValueNotifier(0);
   var closed = false;
@@ -639,6 +649,12 @@ Future<void> showTrackActions(
     changed.dispose();
   }
 }
+
+/// [groups] as the entries of a pointer menu.
+List<List<MenuAction>> menuGroups(List<TrackActionGroup> groups) => [
+  for (final g in groups)
+    [for (final a in g.actions) MenuAction(a.icon, a.label, a.run, destructive: a.destructive)],
+];
 
 /// «Scarica» of an online song: «already in the library», or [start] (null: no
 /// such entry; true: joined the library at once) and the matching message.
@@ -867,9 +883,13 @@ List<TrackAction> onlineResultActions(
 Future<void> showOnlineActions(
   BuildContext context,
   WidgetRef ref,
-  YtResult r,
-) {
+  YtResult r, {
+  Offset? at,
+}) {
   final actions = onlineResultActions(context, ref, r);
+  if (at != null && isDesktop) {
+    return showContextMenu(context, at, menuGroups([TrackActionGroup('', actions)]));
+  }
   return showCcSheet<void>(
     context: context,
     isScrollControlled: true,

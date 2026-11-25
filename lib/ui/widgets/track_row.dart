@@ -28,6 +28,7 @@ import 'track_row_selection.dart';
 import 'motion.dart';
 import 'show_msg.dart';
 import 'action_catalog.dart';
+import 'context_menu.dart';
 
 enum TrackRowVariant {
   /// Cover, title, «artist · album».
@@ -55,6 +56,7 @@ class TrackRow extends StatefulWidget {
     this.isPlaying = false,
     this.compact = false,
     this.onMore,
+    this.onMoreAt,
     this.onFavorite,
     this.onLongPress,
     this.onSecondaryTap,
@@ -92,6 +94,9 @@ class TrackRow extends StatefulWidget {
   final bool albumAsSubtitle;
 
   final VoidCallback? onMore, onFavorite, onLongPress;
+
+  /// The ⋮ of a desktop, with the global point under the button (the menu opens there); else [onMore].
+  final void Function(Offset position)? onMoreAt;
 
   /// Right click on desktop; receives the global pointer position.
   final void Function(Offset position)? onSecondaryTap;
@@ -294,11 +299,18 @@ class _TrackRowState extends State<TrackRow> {
   /// The ⋮; hidden it is out of semantics and focus, and always >= 48 dp to hit.
   Widget _moreButton(BuildContext context, {required bool visible}) {
     if (!visible) return const SizedBox(width: 48, height: 48);
-    return IconButton(
-      tooltip: CatalogAction.more.label(context.l10n),
-      onPressed: widget.onMore,
-      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-      icon: Icon(CatalogAction.more.icon, color: context.cc.textMuted),
+    return Builder(
+      builder: (context) => IconButton(
+        tooltip: CatalogAction.more.label(context.l10n),
+        onPressed: widget.onMoreAt != null && isDesktop
+            ? () {
+                final b = context.findRenderObject()! as RenderBox;
+                widget.onMoreAt!(b.localToGlobal(Offset(0, b.size.height)));
+              }
+            : widget.onMore,
+        constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+        icon: Icon(CatalogAction.more.icon, color: context.cc.textMuted),
+      ),
     );
   }
 
@@ -409,7 +421,12 @@ class _TrackRowState extends State<TrackRow> {
           Row(
             children: [
               Flexible(
-                child: Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: titleStyle),
+                child: Text(
+                  t.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: titleStyle,
+                ),
               ),
               if (saved) ...[
                 const SizedBox(width: CcDims.gap4),
@@ -437,7 +454,8 @@ class _TrackRowState extends State<TrackRow> {
         children: [
           SizedBox(
             width: 40,
-            child: widget.selectionMode && widget.variant == TrackRowVariant.album
+            child:
+                widget.selectionMode && widget.variant == TrackRowVariant.album
                 ? SelectionBox(
                     selected: widget.selected,
                     position: widget.selectedPosition,
@@ -509,8 +527,14 @@ class _TrackRowState extends State<TrackRow> {
         child: Semantics(
           // One node named by title and artist (no empty twin: the cover's long press used to split it).
           button: true,
-          label: [t.title, if (subtitle.isNotEmpty) subtitle, if (saved) context.l10n.storageModeStream].join(', '),
-          hint: widget.variant == TrackRowVariant.queue && widget.reorderIndex != null
+          label: [
+            t.title,
+            if (subtitle.isNotEmpty) subtitle,
+            if (saved) context.l10n.storageModeStream,
+          ].join(', '),
+          hint:
+              widget.variant == TrackRowVariant.queue &&
+                  widget.reorderIndex != null
               ? context.l10n.queueReorderHandle
               : null,
           onTap: widget.onTap,
@@ -521,41 +545,44 @@ class _TrackRowState extends State<TrackRow> {
                     ? context.l10n.selectedRow
                     : context.l10n.selectedRowAt(widget.selectedPosition!))
               : null,
-          child: GestureDetector(
-            // Right click only: its empty semantics tap would be TalkBack's.
-            excludeFromSemantics: true,
-            behavior: HitTestBehavior.opaque,
-            onSecondaryTapDown: widget.onSecondaryTap == null
-                ? null
-                : (d) => widget.onSecondaryTap!(d.globalPosition),
-            child: Material(
-              color: tint,
-              child: InkWell(
-                excludeFromSemantics: true,
-                onTap: widget.onTap,
-                onLongPress: widget.onLongPress,
-                child: Stack(
-                  fit: StackFit.passthrough,
-                  children: [
-                    // «Quaderno» row: 1 dp hairline in surface2 from the text on.
-                    Positioned(
-                      left:
-                          CcDims.margin +
-                          (wide || widget.variant == TrackRowVariant.album
-                              ? 0
-                              : cover + 12),
-                      right: CcDims.margin,
-                      bottom: 0,
-                      height: 1,
-                      child: ColoredBox(color: cc.separator),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: CcDims.margin,
+          child: ContextMenuKey(
+            onOpen: (p) => widget.onSecondaryTap?.call(p),
+            child: GestureDetector(
+              // Right click only: its empty semantics tap would be TalkBack's.
+              excludeFromSemantics: true,
+              behavior: HitTestBehavior.opaque,
+              onSecondaryTapDown: widget.onSecondaryTap == null
+                  ? null
+                  : (d) => widget.onSecondaryTap!(d.globalPosition),
+              child: Material(
+                color: tint,
+                child: InkWell(
+                  excludeFromSemantics: true,
+                  onTap: widget.onTap,
+                  onLongPress: widget.onLongPress,
+                  child: Stack(
+                    fit: StackFit.passthrough,
+                    children: [
+                      // «Quaderno» row: 1 dp hairline in surface2 from the text on.
+                      Positioned(
+                        left:
+                            CcDims.margin +
+                            (wide || widget.variant == TrackRowVariant.album
+                                ? 0
+                                : cover + 12),
+                        right: CcDims.margin,
+                        bottom: 0,
+                        height: 1,
+                        child: ColoredBox(color: cc.separator),
                       ),
-                      child: row,
-                    ),
-                  ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: CcDims.margin,
+                        ),
+                        child: row,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -639,7 +666,8 @@ class LiveTrackRow extends ConsumerWidget {
     );
     final isCurrent = current ?? byId;
     final playing = isCurrent && (ref.watch(isPlayingProvider).value ?? false);
-    void actions() => showTrackActions(context, track, lead: lead);
+    void actions([Offset? at]) =>
+        showTrackActions(context, track, lead: lead, at: at);
     final sel = selection;
     final (active, position) = sel == null
         ? (false, -1)
@@ -681,6 +709,7 @@ class LiveTrackRow extends ConsumerWidget {
       isPlaying: playing,
       onTap: tap,
       onMore: onMore ?? actions,
+      onMoreAt: onMore == null ? actions : null,
       onLongPress: longPress,
       selectionMode: active,
       selected: picked,
@@ -688,7 +717,7 @@ class LiveTrackRow extends ConsumerWidget {
       subtitleSuffix: subtitleSuffix,
       albumAsSubtitle: albumAsSubtitle,
       inLibrary: inLibrary,
-      onSecondaryTap: (_) => actions(),
+      onSecondaryTap: actions,
       onFavorite: () => toggleFavorite(context, ref, track),
       compact: compact,
       index: index,
@@ -780,28 +809,28 @@ class _SwipeToQueueState extends State<SwipeToQueue> {
                     widget.onQueue,
               },
               child: Stack(
-              children: [
-                if (_dx > 0)
-                  Positioned.fill(
-                    child: Container(
-                      alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(left: CcDims.gap24),
-                      color: context.cc.surface2,
-                      child: Icon(
-                        CatalogAction.queue.icon,
-                        color: context.cc.accentSoft,
+                children: [
+                  if (_dx > 0)
+                    Positioned.fill(
+                      child: Container(
+                        alignment: Alignment.centerLeft,
+                        padding: const EdgeInsets.only(left: CcDims.gap24),
+                        color: context.cc.surface2,
+                        child: Icon(
+                          CatalogAction.queue.icon,
+                          color: context.cc.accentSoft,
+                        ),
                       ),
                     ),
+                  AnimatedContainer(
+                    duration: _dragging
+                        ? Duration.zero
+                        : const Duration(milliseconds: 150),
+                    transform: Matrix4.translationValues(_dx, 0, 0),
+                    child: widget.child,
                   ),
-                AnimatedContainer(
-                  duration: _dragging
-                      ? Duration.zero
-                      : const Duration(milliseconds: 150),
-                  transform: Matrix4.translationValues(_dx, 0, 0),
-                  child: widget.child,
-                ),
-              ],
-            ),
+                ],
+              ),
             ),
           ),
         );
@@ -821,4 +850,3 @@ class _SwipeToQueueState extends State<SwipeToQueue> {
 
 /// How far a row follows the swipe, as a share of its width.
 const _maxSwipe = 0.6;
-
