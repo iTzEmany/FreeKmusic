@@ -6,6 +6,7 @@ import 'package:codecore/providers/online_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/services/online/curiosity_finder.dart';
 import 'package:codecore/services/online/http_client.dart';
+import 'package:codecore/services/online/musicbrainz_client.dart';
 import 'package:codecore/services/online/wikipedia_client.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
@@ -110,27 +111,29 @@ void main() {
     expect(await savedSong(), 'old\nhttps://x');
   });
 
-  test('today: MusicBrainz resting is a failed search, the saved text stays and the second try asks nobody', () async {
-    // Characterization: F-215 (a later phase) will change what a resting MusicBrainz does here.
+  test('MusicBrainz resting is a limited search: no request while it rests, one when the rest is over', () async {
     await setUpWith(const CuriosityPair());
     c.dispose();
     final web = _Web();
+    var now = DateTime(2026, 1, 1);
     c = ProviderContainer(overrides: [
       databaseProvider.overrideWithValue(db),
       webClientProvider.overrideWithValue(web),
+      musicBrainzClientProvider.overrideWithValue(MusicBrainzClient(web, now: () => now, pause: (_) async {})),
       settingsStoreProvider.overrideWithValue(SettingsStore(await SharedPreferences.getInstance())),
     ]);
     await (db.update(db.tracks)..where((t) => t.id.equals(track.id)))
         .write(const TracksCompanion(curiosities: Value('old\nhttps://x')));
     final first = await c.read(curiosityProvider(track.id).notifier).fetch(track);
-    expect(first.failed, isTrue);
-    expect(first.songLimited || first.artistLimited, isFalse);
-    expect(first.nothing, isTrue);
+    expect(first.limited, isTrue, reason: 'cannot ask now: the chain waits, it is not a failure');
+    expect(first.failed, isFalse);
     expect(await savedSong(), 'old\nhttps://x');
     final asked = web.urls.length;
     expect(web.urls.where((u) => u.contains('wikipedia')), isEmpty);
-    final second = await c.read(curiosityProvider(track.id).notifier).fetch(track);
-    expect(second.failed, isTrue);
+    await c.read(curiosityProvider(track.id).notifier).fetch(track);
     expect(web.urls, hasLength(asked), reason: 'the client rests: no new request of any kind');
+    now = now.add(const Duration(minutes: 2));
+    await c.read(curiosityProvider(track.id).notifier).fetch(track);
+    expect(web.urls, hasLength(asked + 1), reason: 'the rest is over: one request, then it rests again');
   });
 }

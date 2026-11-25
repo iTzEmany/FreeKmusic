@@ -8613,6 +8613,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareUntitled => 'Ohne Titel';
 
   @override
+  String get flatpakDataTitle => 'Daten einer anderen Version?';
+
+  @override
+  String flatpakDataBody(String oldDir, String newDir) {
+    return 'Diese Flatpak-App nutzt einen eigenen, leeren Datenordner. Wenn du vorher AppImage oder deb benutzt hast, liegt deine Bibliothek in $oldDir. Schließe die App, füge diesen Befehl in einem Terminal (außerhalb von Flatpak) ein und öffne die App danach neu: Daten und Einstellungen landen in $newDir. Die App kopiert nichts von selbst.';
+  }
+
+  @override
+  String get flatpakDataCopy => 'Befehl kopieren';
+
+  @override
+  String get updateFlatpakHint =>
+      'Ich lade die Datei herunter; schließe dann die App und füge den Befehl in einem Terminal ein.';
+
+  @override
   String openOutsideLibrary(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

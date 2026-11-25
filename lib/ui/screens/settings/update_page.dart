@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/app_info.dart';
@@ -202,6 +203,7 @@ class _UpdateFooter extends ConsumerWidget {
     final target = ref.watch(updateTargetProvider).value;
     final asset = s.asset ?? (target == null ? null : pickUpdateAsset(info.assets, target));
     final self = target != null && selfInstalls(target.kind);
+    final flatpak = target?.kind == UpdateKind.flatpak;
     final mb = _mb(asset?.size ?? 0);
     final err = Theme.of(context).colorScheme.error;
     Widget title(String t, {bool bad = false}) =>
@@ -209,10 +211,14 @@ class _UpdateFooter extends ConsumerWidget {
     Widget main(String label, VoidCallback? onPressed) => FilledButton(onPressed: onPressed, child: Text(label));
     final children = switch (s.phase) {
       UpdatePhase.idle => [
-        Text(self ? l.updateSelfHint : l.updateBrowserHint),
+        Text(flatpak ? l.updateFlatpakHint : self ? l.updateSelfHint : l.updateBrowserHint),
         const SizedBox(height: 12),
         main(
-          self ? (mb > 0 ? l.updateWithSize(mb) : l.updateDo) : l.updateFromBrowser,
+          flatpak
+              ? l.updateDownload
+              : self
+              ? (mb > 0 ? l.updateWithSize(mb) : l.updateDo)
+              : l.updateFromBrowser,
           target == null ? null : () => n.start(info),
         ),
       ],
@@ -243,6 +249,17 @@ class _UpdateFooter extends ConsumerWidget {
         ),
         Text(l.updateKeepListening),
         TextButton(onPressed: n.cancel, child: Text(l.cancel)),
+      ],
+      UpdatePhase.ready when flatpak && s.path != null => [
+        Text(l.updateFlatpakHint),
+        const SizedBox(height: 8),
+        SelectableText(flatpakInstallCommand(s.path!), style: const TextStyle(fontFamily: 'monospace')),
+        const SizedBox(height: 12),
+        main(l.copy, () async {
+          final messenger = ScaffoldMessenger.of(context);
+          await Clipboard.setData(ClipboardData(text: flatpakInstallCommand(s.path!)));
+          messenger.showSnackBar(SnackBar(content: Text(l.copied)));
+        }),
       ],
       UpdatePhase.ready => [Text(l.updateInstalling), main(l.updateDo, n.retry)],
       // Whoever cancels the system installer, or comes back with the page closed, can start again.

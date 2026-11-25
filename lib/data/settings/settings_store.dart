@@ -443,6 +443,9 @@ const storageModeD665Key = 'storageModeD665';
 /// Last version whose «Aggiornata alla X» page was decided on. Device-bound: a restore must not show the page nor hide it.
 const lastSeenVersionKey = 'lastSeenVersion';
 
+/// F-214: the flatpak data-folder notice was shown. Device-bound: a restore must not repeat or hide it.
+const flatpakNoticeShownKey = 'flatpakNoticeShown';
+
 class SettingsStore {
   SettingsStore(this._prefs);
 
@@ -740,6 +743,10 @@ class SettingsStore {
 
   Future<void> writeLastUpdateCheckDay(int day) =>
       _prefs.setInt('lastUpdateCheckDay', day);
+
+  bool get flatpakNoticeShown => _prefs.getBool(flatpakNoticeShownKey) ?? false;
+
+  Future<void> markFlatpakNoticeShown() => _prefs.setBool(flatpakNoticeShownKey, true);
 
   String? readLastSeenVersion() => _prefs.getString(lastSeenVersionKey);
 

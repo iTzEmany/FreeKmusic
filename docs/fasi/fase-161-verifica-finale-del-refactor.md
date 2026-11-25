@@ -20,7 +20,7 @@ D-731, D-733, D-734. Refactor: [`rete.md`](../refactor/desktop-e-coerenza/rete.m
   - Comando mirato: `scripts/shots.sh`
   - Fatto quando: per ogni schermata una riga «uguale / differenze accettate / differenza da correggere»; nessuna eccezione nel log (`AppLog`).
 - [ ] 161.4 Flatpak: installazione del bundle nuovo
-  - Passi: installare il bundle dell'ultima release con `flatpak install --user`, con e senza `ffmpeg-full`; `flatpak info` mostra la versione del pubspec; l'app parte, suona un brano AAC, istanza unica e «Apri con» funzionano nel sandbox, avviso di primo avvio e comando dell'aggiornamento (160.3, 160.4), tray e drop (159) se il permesso c'è.
+  - Passi: installare il bundle dell'ultima release con `flatpak install --user`, con `codecs-extra` (ffmpeg-full non esiste per il 25.08, nota della 160); `flatpak info` mostra la versione del pubspec; l'app parte, suona un brano AAC, istanza unica e «Apri con» funzionano nel sandbox, avviso di primo avvio e comando dell'aggiornamento (160.3, 160.4), tray e drop (159) se il permesso c'è.
   - Fatto quando: esito scritto per voce.
 - [ ] 161.5 Chiusura e archivio
   - File: `docs/refactor/desktop-e-coerenza/` → `docs/storico/refactor/desktop-e-coerenza/` (con `git mv`), `docs/storico/README.md`, `docs/00-INDICE.md`, documenti d'area in `../architettura/`, `docs/decisioni.md` (decisione di chiusura), `scripts/check_docs_links.py`.

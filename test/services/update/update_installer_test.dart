@@ -88,6 +88,14 @@ void main() {
     expect(File('${tmp.path}/updates/a.apk').existsSync(), isFalse);
   });
 
+  test('updatesDir: the cache folder in the Flatpak sandbox, the temporary one otherwise', () async {
+    Future<Directory> t() async => Directory('/t');
+    Future<Directory> c() async => Directory('/c');
+    expect((await updatesDir(env: {'FLATPAK_ID': 'x'}, tmp: t, cache: c)).path, '/c/updates');
+    expect((await updatesDir(env: {'FLATPAK_ID': ''}, tmp: t, cache: c)).path, '/t/updates');
+    expect((await updatesDir(env: {}, tmp: t, cache: c)).path, '/t/updates');
+  });
+
   test('clearUpdatesDir empties the folder', () async {
     final d = Directory('${tmp.path}/updates')..createSync();
     File('${d.path}/x').writeAsStringSync('1');
