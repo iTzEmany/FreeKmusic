@@ -53,12 +53,20 @@ class ReloadRequestNotifier extends Notifier<int> {
 final reloadRequestProvider =
     NotifierProvider<ReloadRequestNotifier, int>(ReloadRequestNotifier.new);
 
+final _reloading = Expando<bool>('reloading');
+
 /// Call from `build`: runs [onReload] on F5 when this page is the one shown
-/// (not a page under another one, nor one of a hidden tab).
+/// (not a page under another one, nor one of a hidden tab). A second F5 while
+/// the first reload runs is dropped.
 void listenReload(BuildContext context, WidgetRef ref, FutureOr<void> Function()? onReload) {
-  ref.listen(reloadRequestProvider, (_, _) {
-    if (onReload == null || !context.mounted) return;
+  ref.listen(reloadRequestProvider, (_, _) async {
+    if (onReload == null || !context.mounted || _reloading[context] == true) return;
     if (!(ModalRoute.of(context)?.isCurrent ?? true) || !TickerMode.valuesOf(context).enabled) return;
-    unawaited(Future.sync(onReload));
+    _reloading[context] = true;
+    try {
+      await onReload();
+    } finally {
+      _reloading[context] = false;
+    }
   });
 }

@@ -9,6 +9,7 @@ import 'package:flutter/gestures.dart' show kBackMouseButton, kForwardMouseButto
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_log.dart';
 import '../../core/constants.dart' show kEnableYoutube;
 import '../../core/platform.dart';
 import '../../providers/library_providers.dart';
@@ -71,7 +72,12 @@ class AppShell extends ConsumerWidget {
   const AppShell({super.key});
 
   /// One handler per [ShortcutAction]; the keys come from the table.
-  ({Map<ShortcutActivator, VoidCallback> bindings, Set<ShortcutActivator> textOnly}) _shortcuts(
+  ({
+    Map<ShortcutActivator, VoidCallback> bindings,
+    Set<ShortcutActivator> textOnly,
+    Set<ShortcutActivator> repeatable,
+  })
+  _shortcuts(
     BuildContext context,
     WidgetRef ref, {
     required bool preview,
@@ -115,11 +121,23 @@ class AppShell extends ConsumerWidget {
       );
     }
 
-    // D-732: Search with the link on the clipboard.
+    // D-732: Search with the link on the clipboard; anything else opens Search empty.
     Future<void> pasteLink() async {
-      final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim() ?? '';
+      var text = '';
+      try {
+        text = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim() ?? '';
+      } on Object catch (e, st) {
+        AppLog.w('clipboard unreadable', e, st);
+      }
       goSearch();
-      if (text.isNotEmpty) ref.read(searchPrefillProvider.notifier).set(text);
+      final uri = Uri.tryParse(text);
+      if (uri != null && uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https')) {
+        ref.read(searchPrefillProvider.notifier).set(text);
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => ref.read(searchFocusProvider).requestFocus(),
+        );
+      }
     }
 
     final k = shortcutBindings({
@@ -146,6 +164,7 @@ class AppShell extends ConsumerWidget {
     });
     return (
       textOnly: k.textOnly,
+      repeatable: k.repeatable,
       bindings: {
       ...k.bindings,
       // Hardware media keys (delivered to the focused window).
@@ -306,6 +325,7 @@ class AppShell extends ConsumerWidget {
       content = ShellKeys(
         bindings: sk.bindings,
         textOnly: sk.textOnly,
+        repeatable: sk.repeatable,
         // Any click ends a preview started from the menu.
         child: Listener(
           behavior: HitTestBehavior.translucent,
