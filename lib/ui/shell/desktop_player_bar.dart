@@ -7,6 +7,7 @@ import '../../providers/jam_providers.dart';
 import '../../providers/nav_providers.dart';
 import '../../providers/player_providers.dart';
 import '../../providers/track_ops.dart' show trackOpsProvider;
+import '../../services/audio/online_entries.dart' show isOnlineId;
 import '../../services/audio/play_queue.dart';
 import '../../services/jam/jam_models.dart';
 import '../screens/devices/devices_sheet.dart';
@@ -129,6 +130,7 @@ class _TrackInfo extends ConsumerWidget {
     final l = context.l10n;
     final theme = Theme.of(context).textTheme;
     final radio = radioOfTrack(ref, track);
+    final fav = isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
     final onAir = radio == null ? null : ref.watch(onAirProvider).value;
     final texts = radio == null ? null : radioTexts(l, radio, onAir);
     void openPlayer() => Navigator.of(context, rootNavigator: true).push(
@@ -181,11 +183,12 @@ class _TrackInfo extends ConsumerWidget {
           RadioStarButton(station: radio, color: cc.textMuted)
         else
           IconButton(
-            tooltip: track.isFavorite ? l.removeFromFavorites : l.favorite,
-            onPressed: () => toggleFavorite(context, ref, track),
+            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.favorite,
+            // Disabled until a stream is bound to its library row.
+            onPressed: fav == null ? null : () => toggleFavorite(context, ref, fav),
             icon: HeartIcon(
-              favorite: track.isFavorite,
-              color: track.isFavorite ? cc.accent : cc.textMuted,
+              favorite: fav?.isFavorite ?? false,
+              color: fav?.isFavorite ?? false ? cc.accent : cc.textMuted,
             ),
           ),
       ],

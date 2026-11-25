@@ -13,6 +13,7 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/now_playing/credits_card.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_cards.dart' show InfoCard, LyricsCard, NpCard, StreamCardsWait, UpNextCard;
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
+import 'package:codecore/ui/shell/desktop_player_bar.dart';
 import 'package:codecore/ui/screens/now_playing/proposal_card.dart';
 import 'package:codecore/providers/nav_providers.dart' show SidePanel;
 import 'package:codecore/services/radio/radio_station.dart';
@@ -90,6 +91,29 @@ Future<(Harness, Directory, FakeStreamPreparer, WidgetRef Function())> _open(Wid
 }
 
 void main() {
+  for (final bar in [false, true]) {
+    testWidgets('the heart of a stream is disabled until it has its row, then favourites it (${bar ? 'bar' : 'player'})', (t) async {
+      final (h, _, preparer, ref) = await _open(t, panel: bar ? const DesktopPlayerBar() : const NowPlayingScreen());
+      final gate = preparer.gates['youtube:v1'] = Completer<void>();
+      await t.tap(find.text('go'));
+      await _wait(t);
+      IconButton heart() => t.widget<IconButton>(find.widgetWithIcon(IconButton, Icons.favorite_border_rounded));
+      expect(heart().onPressed, isNull);
+
+      gate.complete();
+      await _wait(t);
+      expect(heart().onPressed, isNotNull);
+      await t.tap(find.byTooltip('Preferito'));
+      await _wait(t);
+      final row = await t.runAsync(() => (h.db.select(h.db.tracks)..where((r) => r.kind.equals(kStreamKind))).getSingle());
+      expect(row!.isFavorite, isTrue);
+      expect(find.byTooltip('Rimuovi dai preferiti'), findsOneWidget);
+
+      await t.pumpWidget(const SizedBox());
+      await h.dispose(t);
+    });
+  }
+
   testWidgets('a streamed track shows lyrics, trivia and credits of its row, no proposal; before the row a placeholder', (t) async {
     final (h, _, preparer, ref) = await _open(t);
     final gate = preparer.gates['youtube:v1'] = Completer<void>();

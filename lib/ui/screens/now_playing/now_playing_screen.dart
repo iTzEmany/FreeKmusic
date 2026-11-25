@@ -628,8 +628,8 @@ class _TitleRow extends ConsumerWidget {
     final l = context.l10n;
     final cc = context.cc;
     final theme = Theme.of(context).textTheme;
-    final online = track.trackKind == TrackKind.online;
     final radio = this.radio;
+    final fav = isOnlineId(track.id) ? ref.watch(currentShadowRowProvider) : track;
     final texts = radio == null ? null : radioTexts(l, radio, onAir);
     return Row(
       children: [
@@ -638,7 +638,7 @@ class _TitleRow extends ConsumerWidget {
             // The heart's glyph ends at npEdge: the title mirrors it.
             padding: EdgeInsetsDirectional.only(
               start: npEdge,
-              end: radio == null && online ? npEdge : 0,
+              end: 0,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -668,11 +668,12 @@ class _TitleRow extends ConsumerWidget {
           RadioStarButton(station: radio)
         else
           IconButton(
-            tooltip: track.isFavorite ? l.removeFromFavorites : l.favorite,
-            onPressed: () => toggleFavorite(context, ref, track),
+            tooltip: fav?.isFavorite ?? false ? l.removeFromFavorites : l.favorite,
+            // A stream not yet bound to its library row has nothing to favourite: disabled until it is.
+            onPressed: fav == null ? null : () => toggleFavorite(context, ref, fav),
             icon: HeartIcon(
-              favorite: track.isFavorite,
-              color: track.isFavorite ? cc.accent : cc.text,
+              favorite: fav?.isFavorite ?? false,
+              color: fav?.isFavorite ?? false ? cc.accent : cc.text,
             ),
           ),
       ],

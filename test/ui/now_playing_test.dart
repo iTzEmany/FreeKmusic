@@ -20,6 +20,7 @@ import 'package:codecore/providers/theme_providers.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:codecore/ui/widgets/marquee_text.dart';
 import 'package:codecore/data/repositories/track_kinds.dart' show kStreamKind;
+import 'package:codecore/ui/screens/car/car_mode_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -508,6 +509,9 @@ void main() {
     await tester.tap(find.byTooltip('Altre azioni'));
     await _settle(tester);
     expect(find.text('Modalità in auto'), findsOneWidget);
+    await tester.tap(find.text('Modalità in auto'));
+    await _settle(tester);
+    expect(find.byType(CarModeScreen), findsOneWidget);
     await h.dispose(tester);
   });
 
