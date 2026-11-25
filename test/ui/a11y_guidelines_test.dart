@@ -3,6 +3,7 @@
 // and goes red when a NEW failure appears; phase 40 shrinks the maps.
 import 'package:codecore/ui/screens/home/home_screen.dart' show clockProvider;
 import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
+import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
@@ -48,7 +49,17 @@ const _known = <(String, String), Map<String, int>>{
     'Timer di spegnimento': 1,
     'Velocità di riproduzione': 1,
   },
-  // Row nodes without a label: the preview cover (custom action) and the swipe area.
+  // 150.5: the desktop player bar's dense controls (and the artist link) are
+  // under 48 px by design (D-14); phase 152 / 157 close them with the bar rework.
+  ('desktop shell (home, sidebar, player bar)', 'androidTapTarget'): {
+    'Artist': 1,
+    'Casuale: spenta': 1,
+    'Brano precedente': 1,
+    'Pausa': 1,
+    'Brano successivo': 1,
+    'Ripeti': 1,
+    'Velocità di riproduzione': 1,
+  },
 };
 
 void main() {
@@ -63,15 +74,25 @@ void main() {
     'labeledTapTarget': labeledTapTargetGuideline,
     'textContrast': textContrastGuideline,
   };
-  for (final s in screens.entries) {
+  // 150.5: the desktop shell (home, library) at 1280 px, before the refactor.
+  final desktopScreens = <String, Widget>{
+    'desktop shell (home, sidebar, player bar)': const AppShell(),
+    'desktop library': const Scaffold(body: LibraryScreen()),
+  };
+  final all = [
+    for (final s in screens.entries) (s.key, s.value, false),
+    for (final s in desktopScreens.entries) (s.key, s.value, true),
+  ];
+  for (final (name, screen, desktop) in all) {
     for (final g in guidelines.entries) {
-      testWidgets('${s.key}: ${g.key}', (tester) async {
-        debugIsDesktopOverride = false; // phone targets (48 dp), not the desktop's dense ones
+      testWidgets('$name: ${g.key}', (tester) async {
+        // Phone: 48 dp targets; desktop: the dense ones, as the app shows them.
+        debugIsDesktopOverride = desktop;
         addTearDown(() => debugIsDesktopOverride = null);
         final sem = tester.ensureSemantics();
         // A tear-down would run after the handle check, so dispose in finally.
         try {
-          tester.view.physicalSize = const Size(400, 800);
+          tester.view.physicalSize = desktop ? const Size(1280, 800) : const Size(400, 800);
           tester.view.devicePixelRatio = 1;
           addTearDown(tester.view.reset);
           final h = await Harness.create(tester, tracks: 3);
@@ -81,7 +102,7 @@ void main() {
           await tester.runAsync(() => h.handler.playQueue(ids, 0));
           await h.pump(
             tester,
-            s.value,
+            screen,
             extraOverrides: [
               clockProvider.overrideWithValue(() => DateTime(2026, 1, 1, 14)),
             ],
@@ -94,7 +115,7 @@ void main() {
           final found = _failures(e);
           expect(
             found,
-            _known[(s.key, g.key)] ?? <String, int>{},
+            _known[(name, g.key)] ?? <String, int>{},
             reason: 'a new failure, or one fixed: update the exception list',
           );
           await h.dispose(tester);

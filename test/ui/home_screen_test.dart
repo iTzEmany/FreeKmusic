@@ -1,10 +1,18 @@
+import 'package:codecore/services/radio/radio_catalog.dart' show RadioList;
+import 'package:codecore/data/repositories/track_repository.dart' show SortOption;
 import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
+import 'package:codecore/ui/screens/home/home_blocks.dart' show ShortcutsRow;
 import 'package:codecore/ui/screens/home/home_row.dart';
 import 'package:codecore/ui/screens/home/home_screen.dart';
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
+import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
+import 'package:codecore/ui/screens/library/favorites_screen.dart';
+import 'package:codecore/ui/screens/playlists/playlists_screen.dart';
+import 'package:codecore/ui/screens/radio/radio_screen.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/radio_providers.dart';
 import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' show Value;
@@ -21,6 +29,9 @@ Future<void> _settle(WidgetTester tester) async {
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(const Duration(milliseconds: 300));
 }
+
+Finder _inShortcuts(String label) =>
+    find.descendant(of: find.byType(ShortcutsRow), matching: find.text(label));
 
 void main() {
   testWidgets('home without music: empty state with add folder', (
@@ -409,6 +420,90 @@ void main() {
       findsOneWidget,
     );
     expect(tester.getSize(cover).width, 84);
+    await h.dispose(tester);
+  });
+
+  for (final (label, page) in <(String, Type)>[
+    ('Preferiti', FavoritesScreen),
+    ('Playlist', PlaylistsScreen),
+  ]) {
+    testWidgets('the «$label» shortcut opens its page', (tester) async {
+      final h = await openHome(tester);
+      await tester.tap(_inShortcuts(label));
+      await _settle(tester);
+      expect(
+        find.byWidgetPredicate((w) => w.runtimeType == page),
+        findsOneWidget,
+      );
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('the «Radio» shortcut opens its page', (tester) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4, radio: true);
+    await h.store.writeSettings(
+      h.store.readSettings().copyWith(radioCountry: 'IT', radioRegion: 'lombardia'),
+    );
+    await h.pump(
+      tester,
+      const HomeScreen(),
+      extraOverrides: [
+        radioRefreshProvider.overrideWithValue(() async => false),
+        radioCountriesProvider.overrideWith((ref) async => const []),
+        nearYouProvider.overrideWith((ref) async => null),
+        radioCountryStationsProvider.overrideWith((ref) async => RadioList(const [])),
+      ],
+    );
+    await _settle(tester);
+    await tester.tap(_inShortcuts('Radio'));
+    await _settle(tester);
+    expect(find.byType(RadioScreen), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('«Tutti» in «Aggiunti da poco» opens all tracks by date', (
+    tester,
+  ) async {
+    final h = await openHome(tester);
+    await tester.tap(
+      find.descendant(
+        of: find.ancestor(
+          of: find.text('Aggiunti da poco'),
+          matching: find.byType(HomeBlock),
+        ),
+        matching: find.text('Tutti'),
+      ),
+    );
+    await _settle(tester);
+    final screen = tester.widget<AllTracksScreen>(find.byType(AllTracksScreen));
+    expect(screen.initialSort, SortOption.addedAt);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a «I più ascoltati» row plays the ranked list from that row', (
+    tester,
+  ) async {
+    final h = await openRanked(tester);
+    final song1 = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!
+        .firstWhere((t) => t.title == 'Song 1')
+        .id;
+    await tester.tap(
+      find.descendant(of: find.byType(HomeRow), matching: find.text('Song 1')),
+    );
+    await _settle(tester);
+    expect(h.handler.queueIds, hasLength(4));
+    expect(h.handler.queueIds[h.handler.currentIndex], song1);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a «Da riscoprire» row opens that album', (tester) async {
+    final h = await openRanked(tester);
+    await tester.tap(find.text('Album 1').last);
+    await _settle(tester);
+    expect(find.byType(AlbumDetailScreen), findsOneWidget);
     await h.dispose(tester);
   });
 }

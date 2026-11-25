@@ -9,9 +9,25 @@ import 'package:codecore/services/online/http_client.dart';
 import 'package:codecore/services/online/wikipedia_client.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
+import 'package:dio/dio.dart' show CancelToken;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+/// Every request is counted; MusicBrainz answers 503, so the client rests.
+class _Web implements WebClient {
+  final urls = <String>[];
+
+  @override
+  Future<Object?> getJson(String url, {Map<String, String>? query, CancelToken? cancel, bool strict = false}) async {
+    urls.add(url);
+    if (url.contains('musicbrainz.org')) throw WebUnavailableException(url, 503);
+    return null;
+  }
+
+  @override
+  Future<List<int>?> getBytes(String url, {int maxBytes = 0, CancelToken? cancel}) async => null;
+}
 
 class _Finder implements CuriosityFinder {
   _Finder(this.pair);
@@ -92,5 +108,29 @@ void main() {
     final out = await c.read(curiosityProvider(track.id).notifier).fetch(track);
     expect(out.failed, isTrue);
     expect(await savedSong(), 'old\nhttps://x');
+  });
+
+  test('today: MusicBrainz resting is a failed search, the saved text stays and the second try asks nobody', () async {
+    // Characterization: F-215 (a later phase) will change what a resting MusicBrainz does here.
+    await setUpWith(const CuriosityPair());
+    c.dispose();
+    final web = _Web();
+    c = ProviderContainer(overrides: [
+      databaseProvider.overrideWithValue(db),
+      webClientProvider.overrideWithValue(web),
+      settingsStoreProvider.overrideWithValue(SettingsStore(await SharedPreferences.getInstance())),
+    ]);
+    await (db.update(db.tracks)..where((t) => t.id.equals(track.id)))
+        .write(const TracksCompanion(curiosities: Value('old\nhttps://x')));
+    final first = await c.read(curiosityProvider(track.id).notifier).fetch(track);
+    expect(first.failed, isTrue);
+    expect(first.songLimited || first.artistLimited, isFalse);
+    expect(first.nothing, isTrue);
+    expect(await savedSong(), 'old\nhttps://x');
+    final asked = web.urls.length;
+    expect(web.urls.where((u) => u.contains('wikipedia')), isEmpty);
+    final second = await c.read(curiosityProvider(track.id).notifier).fetch(track);
+    expect(second.failed, isTrue);
+    expect(web.urls, hasLength(asked), reason: 'the client rests: no new request of any kind');
   });
 }

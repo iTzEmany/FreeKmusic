@@ -13,13 +13,23 @@ import '../../test/support/app_harness.dart';
 import 'seed.dart';
 
 /// Phone and desktop sizes used by every shot (logical size, pixel ratio).
-enum ShotSize {
-  phone(Size(360, 800), 2),
-  desktop(Size(1280, 800), 1);
+/// A class, not an enum: `values` stays phone + desktop, so the loops over it
+/// (and their PNG names) do not grow with the extra desktop widths.
+class ShotSize {
+  const ShotSize._(this.name, this.size, this.dpr, {this.isDesktop = true});
 
-  const ShotSize(this.size, this.dpr);
+  static const phone = ShotSize._('phone', Size(360, 800), 2, isDesktop: false);
+  static const desktop = ShotSize._('desktop', Size(1280, 800), 1);
+  // Desktop widths of the refactor net (desktop_widths_golden_test).
+  static const desktop1000 = ShotSize._('desktop1000', Size(1000, 900), 1);
+  static const desktop1440 = ShotSize._('desktop1440', Size(1440, 900), 1);
+  static const desktop1920 = ShotSize._('desktop1920', Size(1920, 900), 1);
+  static const values = [phone, desktop];
+
+  final String name;
   final Size size;
   final double dpr;
+  final bool isDesktop;
 }
 
 bool _fontsLoaded = false;

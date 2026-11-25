@@ -43,7 +43,7 @@ Un comportamento per test. Si scrivono nella prima fase di ogni area e devono es
 | Metrica | Partenza | Soglia | Comando |
 |---|---|---|---|
 | Analisi statica | 0 problemi | 0 | `flutter analyze` |
-| Eccezioni di accessibilità | `_known` con 2 voci | non cresce; home e libreria desktop dentro | `flutter test test/ui/a11y_guidelines_test.dart` |
+| Eccezioni di accessibilità | `_known` con 3 voci dopo la 150 (2 + i comandi densi della barra desktop) | non cresce oltre 3; 152 e 157 chiudono la voce della barra | `flutter test test/ui/a11y_guidelines_test.dart` |
 | Goldens desktop a 1000/1440/1920 | 0 | ≥ 27 | `ls test/goldens/desktop_w*.png \| wc -l` |
 | Avvio a freddo Linux (release, Xvfb) | 4,4 s prima volta, 2,3 s dopo | non peggiora oltre il 10 % | `xvfb-run` + tempo alla finestra (locale o notturno) |
 | RSS dopo la libreria (2263 album) | 618 MB | ≤ 680 MB | `ps -o rss= -p <pid>` dopo il giro della libreria |
