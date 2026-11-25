@@ -59,6 +59,22 @@ Future<void> _insertSaved(Harness h) => h.db.into(h.db.tracks).insert(
   ),
 );
 
+/// Titles of the rows on screen, top to bottom.
+List<String> _visibleTitles(WidgetTester t) {
+  final rows = find.byType(TrackRow).evaluate().map((e) => e.widget as TrackRow).toList();
+  final tops = {
+    for (final f in find.textContaining('Song ').evaluate()) (f.widget as Text).data!: t.getTopLeft(find.byWidget(f.widget)).dy,
+  };
+  expect(tops, hasLength(rows.length));
+  return (tops.keys.toList()..sort((a, b) => tops[a]!.compareTo(tops[b]!)));
+}
+
+Future<List<String>> _queueTitles(WidgetTester t, Harness h) async {
+  final all = await t.runAsync(() => h.db.select(h.db.tracks).get());
+  final byId = {for (final r in all!) r.id: r.title};
+  return [for (final id in h.handler.queueIds) byId[id]!];
+}
+
 void main() {
   testWidgets('the filter keeps the files or the saved streams; the cloud and the filter have their words', (tester) async {
     final sem = tester.ensureSemantics();
@@ -189,6 +205,17 @@ void main() {
     expect(h.handler.queueIds, hasLength(4));
     // Default order: latest added first, so Song 2 is the second row.
     expect(h.handler.currentIndex, 1);
+    await h.dispose(tester);
+  });
+
+  testWidgets('a row tap queues exactly the visible list, in order, at the tapped row', (tester) async {
+    final h = await _open(tester);
+    final visible = _visibleTitles(tester);
+    expect(visible, hasLength(4));
+    await tester.tap(find.text(visible[2]));
+    await _settle(tester);
+    expect(await _queueTitles(tester, h), visible);
+    expect(h.handler.currentIndex, 2);
     await h.dispose(tester);
   });
 

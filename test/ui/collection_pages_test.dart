@@ -13,6 +13,7 @@ import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/cover_backdrop.dart';
+import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
@@ -32,6 +33,22 @@ void _phone(WidgetTester tester) {
   tester.view.physicalSize = const Size(400, 900);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+}
+
+/// Titles of the rows on screen, top to bottom.
+List<String> _visibleTitles(WidgetTester t) {
+  final rows = find.byType(TrackRow).evaluate().map((e) => e.widget as TrackRow).toList();
+  final tops = {
+    for (final f in find.textContaining('Song ').evaluate()) (f.widget as Text).data!: t.getTopLeft(find.byWidget(f.widget)).dy,
+  };
+  expect(tops, hasLength(rows.length));
+  return (tops.keys.toList()..sort((a, b) => tops[a]!.compareTo(tops[b]!)));
+}
+
+Future<List<String>> _queueTitles(WidgetTester t, Harness h) async {
+  final all = await t.runAsync(() => h.db.select(h.db.tracks).get());
+  final byId = {for (final r in all!) r.id: r.title};
+  return [for (final id in h.handler.queueIds) byId[id]!];
 }
 
 void main() {
@@ -125,6 +142,22 @@ void main() {
         year: 2019,
         coverKey: null,
       );
+
+  testWidgets('album page: a row tap queues the visible list, in order, at the tapped row', (tester) async {
+    _phone(tester);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, AlbumDetailScreen(album: album('Album 0')));
+    await _settle(tester);
+    final visible = _visibleTitles(tester);
+    expect(visible, hasLength(2));
+    await tester.runAsync(() async {
+      await tester.tap(find.text(visible[1]));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+    });
+    expect(await _queueTitles(tester, h), visible);
+    expect(h.handler.currentIndex, 1);
+    await h.dispose(tester);
+  });
 
   testWidgets('header: cover left of the name, no backdrop', (tester) async {
     _phone(tester);
@@ -249,6 +282,19 @@ void main() {
       });
       expect(h.handler.currentTrack?.title, 'Song 2');
       expect(h.handler.queueIds, hasLength(4));
+      await h.dispose(tester);
+    });
+
+    testWidgets('a row tap queues the visible playlist, in order, at the tapped row', (tester) async {
+      final (h, _) = await open(tester, search: false);
+      final visible = _visibleTitles(tester);
+      expect(visible, hasLength(4));
+      await tester.runAsync(() async {
+        await tester.tap(find.text(visible[2]));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+      });
+      expect(await _queueTitles(tester, h), visible);
+      expect(h.handler.currentIndex, 2);
       await h.dispose(tester);
     });
 

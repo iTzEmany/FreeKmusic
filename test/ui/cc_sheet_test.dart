@@ -21,4 +21,35 @@ void main() {
       expect(t.getSize(find.descendant(of: find.byType(BottomSheet), matching: find.byType(Material)).first).width, w < 560 ? w : 560);
     });
   }
+
+  Future<BuildContext> host(WidgetTester t) async {
+    late BuildContext ctx;
+    await t.pumpWidget(MaterialApp(home: Builder(builder: (c) {
+      ctx = c;
+      return const SizedBox();
+    })));
+    return ctx;
+  }
+
+  testWidgets('showCcSheet returns the value the sheet pops with', (t) async {
+    final ctx = await host(t);
+    final result = showCcSheet<String>(
+      context: ctx,
+      builder: (c) => ListTile(key: const Key('pick'), title: const Text('x'), onTap: () => Navigator.pop(c, 'picked')),
+    );
+    await t.pumpAndSettle();
+    await t.tap(find.byKey(const Key('pick')));
+    await t.pumpAndSettle();
+    expect(await result, 'picked');
+  });
+
+  testWidgets('showCcSheet returns null when dismissed without choosing', (t) async {
+    final ctx = await host(t);
+    final result = showCcSheet<String>(context: ctx, builder: (_) => const SizedBox(height: 100, child: Text('x')));
+    await t.pumpAndSettle();
+    await t.tapAt(const Offset(10, 10)); // the barrier
+    await t.pumpAndSettle();
+    expect(find.text('x'), findsNothing);
+    expect(await result, isNull);
+  });
 }
