@@ -4917,24 +4917,23 @@
   "updateNew": "nuova",
   "shareKindTrack": "Brano",
   "shareUntitled": "Senza titolo",
-<<<<<<< HEAD
   "libraryHistorySub": "Ultimi ascolti",
   "genresCount": "{count, plural, one{1 genere} other{{count} generi}}",
   "@genresCount": {
-=======
-  "openOutsideLibrary": "{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}",
-  "@openOutsideLibrary": {
->>>>>>> origin/master
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
-<<<<<<< HEAD
-  }
-=======
+  },
+  "openOutsideLibrary": "{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "openAddToLibrary": "Aggiungi alla libreria",
   "openPortalFile": "Il file è fuori dalle cartelle che l'app può leggere: aggiungi la sua cartella dalla Libreria"
->>>>>>> origin/master
 }

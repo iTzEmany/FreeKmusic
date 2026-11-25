@@ -4188,24 +4188,23 @@
   "updateNew": "nueva",
   "shareKindTrack": "Canción",
   "shareUntitled": "Sin título",
-<<<<<<< HEAD
   "libraryHistorySub": "Escuchado hace poco",
   "genresCount": "{count, plural, one{1 género} other{{count} géneros}}",
   "@genresCount": {
-=======
-  "openOutsideLibrary": "{count, plural, one{El archivo está fuera de las carpetas de la biblioteca} other{{count} archivos están fuera de las carpetas de la biblioteca}}",
-  "@openOutsideLibrary": {
->>>>>>> origin/master
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
-<<<<<<< HEAD
-  }
-=======
+  },
+  "openOutsideLibrary": "{count, plural, one{El archivo está fuera de las carpetas de la biblioteca} other{{count} archivos están fuera de las carpetas de la biblioteca}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "openAddToLibrary": "Añadir a la biblioteca",
   "openPortalFile": "El archivo está fuera de las carpetas que la app puede leer: añade su carpeta desde la Biblioteca"
->>>>>>> origin/master
 }

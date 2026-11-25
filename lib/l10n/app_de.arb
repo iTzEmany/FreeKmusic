@@ -4188,24 +4188,23 @@
   "updateNew": "neu",
   "shareKindTrack": "Titel",
   "shareUntitled": "Ohne Titel",
-<<<<<<< HEAD
   "libraryHistorySub": "Zuletzt gehört",
   "genresCount": "{count, plural, one{1 Genre} other{{count} Genres}}",
   "@genresCount": {
-=======
-  "openOutsideLibrary": "{count, plural, one{Die Datei liegt außerhalb der Bibliotheksordner} other{{count} Dateien liegen außerhalb der Bibliotheksordner}}",
-  "@openOutsideLibrary": {
->>>>>>> origin/master
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
-<<<<<<< HEAD
-  }
-=======
+  },
+  "openOutsideLibrary": "{count, plural, one{Die Datei liegt außerhalb der Bibliotheksordner} other{{count} Dateien liegen außerhalb der Bibliotheksordner}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "openAddToLibrary": "Zur Bibliothek hinzufügen",
   "openPortalFile": "Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen"
->>>>>>> origin/master
 }

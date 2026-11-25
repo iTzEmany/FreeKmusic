@@ -8613,7 +8613,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get shareUntitled => 'Ohne Titel';
 
   @override
-<<<<<<< HEAD
   String get libraryHistorySub => 'Zuletzt gehört';
 
   @override
@@ -8626,7 +8625,8 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
-=======
+
+  @override
   String openOutsideLibrary(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -8643,5 +8643,4 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get openPortalFile =>
       'Die Datei liegt außerhalb der Ordner, die die App lesen kann: Ordner über die Bibliothek hinzufügen';
->>>>>>> origin/master
 }

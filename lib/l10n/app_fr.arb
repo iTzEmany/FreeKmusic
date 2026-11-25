@@ -4409,24 +4409,23 @@
   "updateNew": "nouvelle",
   "shareKindTrack": "Titre",
   "shareUntitled": "Sans titre",
-<<<<<<< HEAD
   "libraryHistorySub": "Écoutés récemment",
   "genresCount": "{count, plural, one{1 genre} other{{count} genres}}",
   "@genresCount": {
-=======
-  "openOutsideLibrary": "{count, plural, one{Le fichier est hors des dossiers de la bibliothèque} other{{count} fichiers sont hors des dossiers de la bibliothèque}}",
-  "@openOutsideLibrary": {
->>>>>>> origin/master
     "placeholders": {
       "count": {
         "type": "int"
       }
     }
-<<<<<<< HEAD
-  }
-=======
+  },
+  "openOutsideLibrary": "{count, plural, one{Le fichier est hors des dossiers de la bibliothèque} other{{count} fichiers sont hors des dossiers de la bibliothèque}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "openAddToLibrary": "Ajouter à la bibliothèque",
   "openPortalFile": "Le fichier est hors des dossiers que l’app peut lire : ajoutez son dossier depuis la Bibliothèque"
->>>>>>> origin/master
 }
