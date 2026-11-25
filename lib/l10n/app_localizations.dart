@@ -13381,6 +13381,36 @@ abstract class AppLocalizations {
   /// **'Senza titolo'**
   String get shareUntitled;
 
+  /// No description provided for @libraryHistorySub.
+  ///
+  /// In it, this message translates to:
+  /// **'Ultimi ascolti'**
+  String get libraryHistorySub;
+
+  /// No description provided for @genresCount.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 genere} other{{count} generi}}'**
+  String genresCount(int count);
+
+  /// No description provided for @openOutsideLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}'**
+  String openOutsideLibrary(int count);
+
+  /// No description provided for @openAddToLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi alla libreria'**
+  String get openAddToLibrary;
+
+  /// No description provided for @openPortalFile.
+  ///
+  /// In it, this message translates to:
+  /// **'Il file è fuori dalle cartelle che l\'app può leggere: aggiungi la sua cartella dalla Libreria'**
+  String get openPortalFile;
+
   /// No description provided for @flatpakDataTitle.
   ///
   /// In it, this message translates to:
@@ -13404,24 +13434,6 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Scarico il file; poi chiudi l\'app e incolla il comando in un terminale.'**
   String get updateFlatpakHint;
-
-  /// No description provided for @openOutsideLibrary.
-  ///
-  /// In it, this message translates to:
-  /// **'{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}'**
-  String openOutsideLibrary(int count);
-
-  /// No description provided for @openAddToLibrary.
-  ///
-  /// In it, this message translates to:
-  /// **'Aggiungi alla libreria'**
-  String get openAddToLibrary;
-
-  /// No description provided for @openPortalFile.
-  ///
-  /// In it, this message translates to:
-  /// **'Il file è fuori dalle cartelle che l\'app può leggere: aggiungi la sua cartella dalla Libreria'**
-  String get openPortalFile;
 }
 
 class _AppLocalizationsDelegate

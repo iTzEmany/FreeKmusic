@@ -8576,19 +8576,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get shareUntitled => 'Senza titolo';
 
   @override
-  String get flatpakDataTitle => 'Dati di una versione precedente?';
+  String get libraryHistorySub => 'Ultimi ascolti';
 
   @override
-  String flatpakDataBody(String oldDir, String newDir) {
-    return 'Questa app Flatpak usa una cartella dati sua, vuota. Se prima usavi AppImage o deb, la tua libreria è in $oldDir. Per portarla qui chiudi l\'app, incolla in un terminale (fuori dal Flatpak) questo comando e poi riapri l\'app: i dati e le impostazioni finiranno in $newDir. L\'app non copia nulla da sola.';
+  String genresCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count generi',
+      one: '1 genere',
+    );
+    return '$_temp0';
   }
-
-  @override
-  String get flatpakDataCopy => 'Copia comando';
-
-  @override
-  String get updateFlatpakHint =>
-      'Scarico il file; poi chiudi l\'app e incolla il comando in un terminale.';
 
   @override
   String openOutsideLibrary(int count) {
@@ -8607,4 +8606,19 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get openPortalFile =>
       'Il file è fuori dalle cartelle che l\'app può leggere: aggiungi la sua cartella dalla Libreria';
+
+  @override
+  String get flatpakDataTitle => 'Dati di una versione precedente?';
+
+  @override
+  String flatpakDataBody(String oldDir, String newDir) {
+    return 'Questa app Flatpak usa una cartella dati sua, vuota. Se prima usavi AppImage o deb, la tua libreria è in $oldDir. Per portarla qui chiudi l\'app, incolla in un terminale (fuori dal Flatpak) questo comando e poi riapri l\'app: i dati e le impostazioni finiranno in $newDir. L\'app non copia nulla da sola.';
+  }
+
+  @override
+  String get flatpakDataCopy => 'Copia comando';
+
+  @override
+  String get updateFlatpakHint =>
+      'Scarico il file; poi chiudi l\'app e incolla il comando in un terminale.';
 }

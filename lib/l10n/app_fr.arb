@@ -4409,7 +4409,6 @@
   "updateNew": "nouvelle",
   "shareKindTrack": "Titre",
   "shareUntitled": "Sans titre",
-<<<<<<< HEAD
   "libraryHistorySub": "Écoutés récemment",
   "genresCount": "{count, plural, one{1 genre} other{{count} genres}}",
   "@genresCount": {
@@ -4419,7 +4418,16 @@
       }
     }
   },
-=======
+  "openOutsideLibrary": "{count, plural, one{Le fichier est hors des dossiers de la bibliothèque} other{{count} fichiers sont hors des dossiers de la bibliothèque}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Ajouter à la bibliothèque",
+  "openPortalFile": "Le fichier est hors des dossiers que l’app peut lire : ajoutez son dossier depuis la Bibliothèque",
   "flatpakDataTitle": "Données d’une autre version ?",
   "flatpakDataBody": "Cette app Flatpak utilise son propre dossier de données, vide. Si vous utilisiez AppImage ou deb, votre bibliothèque est dans {oldDir}. Pour l’amener ici, fermez l’app, collez cette commande dans un terminal (hors Flatpak), puis rouvrez l’app : données et réglages iront dans {newDir}. L’app ne copie rien toute seule.",
   "@flatpakDataBody": {
@@ -4433,16 +4441,5 @@
     }
   },
   "flatpakDataCopy": "Copier la commande",
-  "updateFlatpakHint": "Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal.",
->>>>>>> origin/master
-  "openOutsideLibrary": "{count, plural, one{Le fichier est hors des dossiers de la bibliothèque} other{{count} fichiers sont hors des dossiers de la bibliothèque}}",
-  "@openOutsideLibrary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "openAddToLibrary": "Ajouter à la bibliothèque",
-  "openPortalFile": "Le fichier est hors des dossiers que l’app peut lire : ajoutez son dossier depuis la Bibliothèque"
+  "updateFlatpakHint": "Je télécharge le fichier ; fermez ensuite l’app et collez la commande dans un terminal."
 }
