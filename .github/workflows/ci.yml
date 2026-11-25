@@ -222,15 +222,28 @@ jobs:
       - name: System packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev mpv libsqlite3-dev zip dpkg-dev xvfb
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev mpv libsqlite3-dev zip dpkg-dev xvfb pulseaudio libpulse0 libasound2t64
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: linux-cargo-${{ runner.os }}-${{ hashFiles('third_party/metadata_god/**/Cargo.lock') }}
+          restore-keys: linux-cargo-${{ runner.os }}-
       - run: flutter config --enable-linux-desktop
       - run: flutter pub get
-      - run: xvfb-run -a -s "-screen 0 1920x1080x24" flutter test integration_test/desktop_flow_test.dart -d linux
+      # The runner has no sound card: a null sink lets libmpv play.
+      - name: Silent audio device
+        run: |
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=dummy
+          pactl set-default-sink dummy
+      - run: xvfb-run -a -s "-screen 0 1920x1080x24" flutter test --reporter expanded integration_test/desktop_flow_test.dart -d linux
 
   build-windows:
     name: Windows

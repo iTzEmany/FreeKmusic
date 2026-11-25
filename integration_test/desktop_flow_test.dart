@@ -50,18 +50,20 @@ void main() {
     await tester.runAsync(() => app.addMusicFolder(tester));
     await settle(tester);
     await tester.tap(find.text(l.allTracks));
-    await settle(tester);
-    expect(find.byType(TrackRow), findsNWidgets(AppUnderTest.names.length));
+    await waitFor(tester, () => find.byType(TrackRow).evaluate().length == AppUnderTest.names.length,
+        within: const Duration(seconds: 10), reason: 'the scanned tracks are listed');
 
     // Play the first row: the bar shows its title and the pause button.
-    await tester.tap(find.byType(TrackRow).first);
-    await waitFor(tester, () => app.handler.isPlaying, within: const Duration(seconds: 5), reason: 'playing');
     await app.handler.setVolume(0.05);
+    await tester.tap(find.byType(TrackRow).first);
+    await waitFor(tester, () => app.handler.isPlaying, within: const Duration(seconds: 10), reason: 'playing');
+    await settle(tester);
     final title = app.handler.currentTrack!.title;
     expect(find.text(title), findsWidgets);
     expect(find.byIcon(Icons.pause_rounded), findsWidgets);
 
     // Space pauses, then plays.
+    await settle(tester);
     await press(LogicalKeyboardKey.space);
     await waitFor(tester, () => !app.handler.isPlaying, reason: 'Space pauses');
     expect(find.byIcon(Icons.play_arrow_rounded), findsWidgets);
@@ -72,6 +74,8 @@ void main() {
     final first = app.handler.currentTrack!.id;
     await press(LogicalKeyboardKey.arrowRight, ctrl: true);
     await waitFor(tester, () => app.handler.currentTrack?.id != first, reason: 'Ctrl+Right is next');
+    // Previous restarts the track when it is past 3 s: keep the position at zero on a slow runner.
+    await tester.runAsync(() => app.handler.seek(Duration.zero));
     await press(LogicalKeyboardKey.arrowLeft, ctrl: true);
     await waitFor(tester, () => app.handler.currentTrack?.id == first, reason: 'Ctrl+Left is previous');
 
@@ -79,9 +83,10 @@ void main() {
     final barriers = find.byType(ModalBarrier).evaluate().length;
     await tester.tap(find.byType(TrackRow).at(1), buttons: kSecondaryButton);
     await settle(tester);
-    expect(find.byType(ModalBarrier).evaluate().length, greaterThan(barriers), reason: 'a menu opened');
+    await waitFor(tester, () => find.text(l.addToQueue).evaluate().length == 1, reason: 'the track menu opened');
+    expect(find.byType(ModalBarrier).evaluate().length, greaterThan(barriers));
     await press(LogicalKeyboardKey.escape);
-    await settle(tester);
+    await waitFor(tester, () => find.text(l.addToQueue).evaluate().isEmpty, reason: 'Esc closed the menu');
     expect(find.byType(ModalBarrier).evaluate().length, barriers, reason: 'Esc closed it');
 
     // Ctrl+click picks one by one, Shift+click extends the range.
@@ -102,13 +107,20 @@ void main() {
     await settle(tester);
     expect(picked(), hasLength(4), reason: 'Shift+click selects the range');
     c.read(selectionProvider(SelectionKey.all.key).notifier).clear();
+    await settle(tester); // the page's back guard follows the selection
 
-    // Ctrl+F from Home opens Search; Alt+Left must not throw.
+    // Alt+Left closes the inner page («Tutti i brani») of the Library tab.
+    final libNav = c.read(tabNavigatorKeysProvider)[NavTab.library.index];
+    expect(libNav.currentState!.canPop(), isTrue);
+    await press(LogicalKeyboardKey.arrowLeft, alt: true);
+    await waitFor(tester, () => !libNav.currentState!.canPop(),
+        reason: 'Alt+Left closed the page');
+
+    // Ctrl+F from Home opens Search.
     await tester.tap(find.descendant(of: find.byType(DesktopSidebar), matching: find.text(l.navHome)));
     await settle(tester);
     await press(LogicalKeyboardKey.keyF, ctrl: true);
     expect(c.read(navIndexProvider), NavTab.search.index, reason: 'Ctrl+F from Home opens Search');
-    await press(LogicalKeyboardKey.arrowLeft, alt: true);
 
     // Resize: no layout exception at 1000 and 1920.
     for (final w in [1000.0, 1920.0]) {
