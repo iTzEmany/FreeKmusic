@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  FLUTTER_VERSION: '3.47.1'
+  FLUTTER_VERSION: '3.47.9'
   # Pinned release of the official standalone yt-dlp and its published SHA-256.
   YTDLP_VERSION: '2026.08.19'
   YTDLP_SHA256: '58162f9bfdc27458ea47bfcb311cf47028f17d8154a8bf7d689861d46399230a'
