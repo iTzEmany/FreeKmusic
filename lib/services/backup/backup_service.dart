@@ -56,6 +56,9 @@ const kDeviceBoundKeys = {
   'backupFolder',
   'backupLastAt',
   'streamCacheVolume',
+  // Layout of this screen (D-739): list/grid and its density stay on the PC.
+  'libraryGrid',
+  'libraryDensity',
 };
 
 bool _staysOnDevice(String k) => kDeviceBoundKeys.contains(k) || k.startsWith(importDownloadTooPrefix) || k.startsWith(savedOnlinePlaylistPrefix);

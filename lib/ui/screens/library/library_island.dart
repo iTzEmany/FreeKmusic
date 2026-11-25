@@ -68,6 +68,8 @@ class LibraryIsland extends StatelessWidget {
     required this.onSort,
     required this.onToggleGrid,
     required this.onTabsHeight,
+    this.density = 1,
+    this.onDensity,
   });
 
   final ValueListenable<double> shrink;
@@ -82,6 +84,8 @@ class LibraryIsland extends StatelessWidget {
   final bool grid;
   final void Function(LibrarySort sort, bool ascending) onSort;
   final VoidCallback onToggleGrid;
+  final int density;
+  final ValueChanged<int>? onDensity;
 
   /// Height of the scan status plus the tabs; reported only when it changes.
   final ValueChanged<double> onTabsHeight;
@@ -121,6 +125,8 @@ class LibraryIsland extends StatelessWidget {
                 grid: grid,
                 onSort: onSort,
                 onToggleGrid: onToggleGrid,
+                density: density,
+                onDensity: onDensity,
               ),
             );
             return Padding(
@@ -410,13 +416,62 @@ class _KindTabs extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
+    final items = [
+      BlockItem<LibraryKind?>(value: null, label: l.libraryAll),
+      BlockItem(value: LibraryKind.playlist, label: l.navPlaylists),
+      BlockItem(value: LibraryKind.album, label: l.albums),
+      BlockItem(value: LibraryKind.artist, label: l.artists),
+    ];
+    // Wide: tabs as wide as their text, flush with the margin (F-108).
+    if (MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint) {
+      final cc = context.cc;
+      return Align(
+        key: const ValueKey('library-tabs'),
+        alignment: AlignmentDirectional.centerStart,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final it in items)
+              Semantics(
+                button: true,
+                selected: it.value == selected,
+                label: it.label,
+                excludeSemantics: true,
+                onTap: () => onChanged(it.value),
+                child: InkWell(
+                  onTap: () => onChanged(it.value),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 48),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: CcDims.gap12,
+                    ),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          width: 2,
+                          color: it.value == selected
+                              ? cc.accent
+                              : Colors.transparent,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      it.label,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: it.value == selected ? cc.text : cc.textMuted,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
     return SegmentedBlocks<LibraryKind?>(
-      items: [
-        BlockItem(value: null, label: l.libraryAll),
-        BlockItem(value: LibraryKind.playlist, label: l.navPlaylists),
-        BlockItem(value: LibraryKind.album, label: l.albums),
-        BlockItem(value: LibraryKind.artist, label: l.artists),
-      ],
+      key: const ValueKey('library-tabs'),
+      items: items,
       selected: selected,
       onChanged: onChanged,
     );

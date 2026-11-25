@@ -9,6 +9,7 @@ import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/providers/ytm_catalog_providers.dart';
 import 'package:codecore/ui/screens/search/search_screen.dart';
 import 'package:codecore/ui/shell/bottom_bar.dart';
+import 'package:codecore/ui/theme/palette.dart' show chartGenreColors, contrastRatio;
 import 'package:codecore/ui/widgets/segmented_blocks.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:flutter/material.dart';
@@ -46,6 +47,18 @@ class _SlowYoutube extends FakeYoutube {
 }
 
 void main() {
+  testWidgets('wide: the genre chips use 13 px text with at least 4.5:1 on their colour', (tester) async {
+    _size(tester, const Size(1440, 900));
+    final h = await Harness.create(tester, tracks: 1);
+    await h.pump(tester, const SearchScreen());
+    await _settle(tester);
+    final popColor = chartGenreColors['pop']!;
+    final text = tester.widget<Text>(find.descendant(of: find.byKey(const ValueKey('genre-pop')), matching: find.byType(Text)).first);
+    expect(text.style!.fontSize, 13);
+    expect(contrastRatio(text.style!.color!, popColor), greaterThanOrEqualTo(4.5));
+    await h.dispose(tester);
+  });
+
   testWidgets('typing shows no library result and asks nothing online', (
     tester,
   ) async {

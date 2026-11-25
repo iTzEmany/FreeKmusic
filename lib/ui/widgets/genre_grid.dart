@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/palette.dart' show chartGenreText;
+import '../theme/palette.dart' show contrastRatio;
 import '../theme/tokens.dart';
 import 'cc_tile.dart';
 
@@ -46,7 +46,9 @@ class GenreGrid extends StatelessWidget {
     // Two lines of 12 sp text (three with a subtitle) plus padding, never
     // under 56 dp.
     final lines = items.any((g) => g.subtitle != null) ? 3 : 2;
-    final cell = (scaler.scale(12) * lines * 1.4 + 16).clamp(56.0, 200.0);
+    // 13 px on the desktop (F-117).
+    final fontSize = wide ? 13.0 : 12.0;
+    final cell = (scaler.scale(fontSize) * lines * 1.4 + 16).clamp(56.0, 200.0);
     return SliverPadding(
       padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
       sliver: SliverGrid(
@@ -79,8 +81,8 @@ class GenreGrid extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 12,
-                        color: on ? cc.onAccent : (g.color != null ? chartGenreText : cc.text),
+                        fontSize: fontSize,
+                        color: on ? cc.onAccent : (g.color != null ? _textOn(g.color!) : cc.text),
                       ),
                     ),
                     if (g.subtitle != null)
@@ -89,7 +91,7 @@ class GenreGrid extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: fontSize,
                           color: on ? cc.onAccent : cc.textMuted,
                         ),
                       ),
@@ -103,3 +105,9 @@ class GenreGrid extends StatelessWidget {
     );
   }
 }
+
+/// White or black, whichever reads better on [bg] (≥ 4.5:1 on the genre tiles).
+Color _textOn(Color bg) =>
+    contrastRatio(Colors.white, bg) >= contrastRatio(Colors.black, bg)
+    ? Colors.white
+    : Colors.black;

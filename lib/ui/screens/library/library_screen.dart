@@ -114,7 +114,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  void _setSettings({LibrarySort? sort, bool? ascending, bool? grid}) {
+  void _setSettings({
+    LibrarySort? sort,
+    bool? ascending,
+    bool? grid,
+    int? density,
+  }) {
     ref
         .read(settingsProvider.notifier)
         .update(
@@ -122,6 +127,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             librarySort: sort?.name,
             librarySortAscending: ascending,
             libraryGrid: grid,
+            libraryDensity: density,
           ),
         );
   }
@@ -159,6 +165,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final settings = ref.watch(settingsProvider);
+    // Never chosen: a grid on a wide screen, a list on the phone (F-109).
+    final grid =
+        settings.libraryGrid ??
+        MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     var sort = LibrarySort.values.firstWhere(
       (s) => s.name == settings.librarySort,
       orElse: () => LibrarySort.recent,
@@ -237,13 +247,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           ? const LibraryFilterBar()
           : null;
       isList = true;
-      body = settings.libraryGrid
+      body = grid
           ? _LibraryGrid(
               key: ValueKey<LibraryKind?>(_kind),
               header: shortcuts,
               topInset: inset,
               entries: entries,
               onOpen: _open,
+              density: settings.libraryDensity,
             )
           : _LibraryList(
               key: ValueKey<LibraryKind?>(_kind),
@@ -356,7 +367,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   countLabel: count,
                   sort: sort,
                   ascending: ascending,
-                  grid: settings.libraryGrid,
+                  grid: grid,
+                  density: settings.libraryDensity,
+                  onDensity: (d) => _setSettings(density: d),
                   onSort: (s, asc) {
                     if (fallback && s == LibrarySort.alpha) {
                       setState(() => _fallbackAscending = asc);
@@ -368,7 +381,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   onToggleGrid: () {
                     // The new list starts at the top, so the island is whole.
                     _shrink.value = 0;
-                    _setSettings(grid: !settings.libraryGrid);
+                    _setSettings(grid: !grid);
                   },
                   onTabsHeight: (h) {
                     if ((h - _tabsHeight).abs() > 0.5) {
@@ -664,12 +677,14 @@ class _LibraryGrid extends StatelessWidget {
     required this.topInset,
     required this.entries,
     required this.onOpen,
+    required this.density,
   });
 
   final Widget? header;
   final double topInset;
   final List<LibraryEntry> entries;
   final void Function(LibraryEntry) onOpen;
+  final int density;
 
   @override
   Widget build(BuildContext context) {
@@ -721,8 +736,9 @@ class _LibraryGrid extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.all(CcDims.margin - 6),
             sliver: SliverGrid.builder(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 180,
+              gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                // S, M, L; M is the size the grid always had.
+                maxCrossAxisExtent: const [140.0, 180.0, 240.0][density.clamp(0, 2)],
                 childAspectRatio: 0.8,
               ),
               itemCount: entries.length,
