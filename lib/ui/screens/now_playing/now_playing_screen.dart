@@ -488,20 +488,26 @@ class _PlayerHeader extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  if (!desktop)
-                    IconButton(
-                      tooltip: l.carMode,
-                      icon: const Icon(Icons.directions_car_outlined),
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const CarModeScreen(),
-                        ),
-                      ),
-                    ),
                   IconButton(
                     tooltip: l.moreActions,
                     icon: Icon(CatalogAction.more.icon),
-                    onPressed: () => showTrackActions(context, track),
+                    onPressed: () {
+                      final nav = Navigator.of(context);
+                      showTrackActions(
+                        context,
+                        track,
+                        // D-732: car mode lives in ⋮, not as a button of its own.
+                        lead: desktop
+                            ? null
+                            : TrackAction(
+                                Icons.directions_car_outlined,
+                                l.carMode,
+                                () async => nav.push(
+                                  MaterialPageRoute<void>(builder: (_) => const CarModeScreen()),
+                                ),
+                              ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -660,7 +666,7 @@ class _TitleRow extends ConsumerWidget {
         ),
         if (radio != null)
           RadioStarButton(station: radio)
-        else if (!online)
+        else
           IconButton(
             tooltip: track.isFavorite ? l.removeFromFavorites : l.favorite,
             onPressed: () => toggleFavorite(context, ref, track),
