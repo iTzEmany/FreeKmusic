@@ -88,7 +88,7 @@ void main() {
     (tester) async {
       await open(tester, const LibraryScreen(), saved: [_a, _b]);
       expect(find.text('Radio'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
+      expect(find.text('2 stazioni salvate'), findsOneWidget);
       await tester.tap(find.text('Radio'));
       await _settle(tester);
       expect(find.byType(RadioScreen), findsOneWidget);
