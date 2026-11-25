@@ -12,6 +12,7 @@ import '../../theme/app_theme.dart';
 import '../../shell/shell_nav.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
+import '../library/all_tracks_screen.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/track_row.dart';
 import '../settings/settings_screen.dart';
@@ -117,9 +118,9 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
                 return EmptyState(
                   icon: Icons.history_rounded,
                   message: on ? l.historyEmpty : l.historyOff,
-                  actionLabel: on ? null : l.openPlaybackSettings,
+                  actionLabel: on ? l.openAllTracks : l.openPlaybackSettings,
                   onAction: on
-                      ? null
+                      ? () => ShellNav.open<void>(context, const AllTracksScreen())
                       : () => ShellNav.open<void>(
                           context,
                           Scaffold(

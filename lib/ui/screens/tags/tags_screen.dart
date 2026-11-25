@@ -11,6 +11,7 @@ import '../../../providers/tag_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/empty_state.dart';
+import '../library/all_tracks_screen.dart';
 import '../../widgets/collection_header.dart';
 import '../../widgets/selection_bar.dart';
 import '../../widgets/track_row.dart';
@@ -49,6 +50,8 @@ class TagsScreen extends ConsumerWidget {
               ? EmptyState(
                   icon: Icons.label_outline_rounded,
                   message: l.tagsEmpty,
+                  actionLabel: l.openAllTracks,
+                  onAction: () => ShellNav.open<void>(context, const AllTracksScreen()),
                 )
               : ListView(
                   padding: EdgeInsets.zero.withDock(context),

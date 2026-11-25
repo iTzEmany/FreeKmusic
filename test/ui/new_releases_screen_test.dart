@@ -57,6 +57,9 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('followed-artists-link')));
     await _settle(tester);
     expect(find.byType(FollowedArtistsScreen), findsOneWidget);
+    expect(find.byIcon(Icons.notifications_none_rounded), findsOneWidget);
+    expect(find.textContaining('Non segui ancora nessun artista'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Cerca'), findsOneWidget);
     await close(tester);
   });
 

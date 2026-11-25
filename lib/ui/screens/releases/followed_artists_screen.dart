@@ -16,6 +16,7 @@ import '../../shell/shell_nav.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
+import '../search/search_screen.dart';
 import '../../widgets/net_thumbnail.dart';
 import '../online/artist_page_sections.dart' show thumbAt;
 import '../online/artist_picker_sheet.dart' show ArtistPickerSheet;
@@ -64,6 +65,8 @@ class FollowedArtistsScreen extends ConsumerWidget {
                     ? EmptyState(
                         icon: Icons.notifications_none_rounded,
                         message: l.followedEmpty,
+                        actionLabel: l.navSearch,
+                        onAction: () => ShellNav.open<void>(context, const SearchScreen()),
                       )
                     : ListView.builder(
                         padding: EdgeInsets.zero.withDock(context),

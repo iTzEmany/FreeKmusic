@@ -145,6 +145,8 @@ void main() {
   testWidgets('the tags page: counts, the tracks of a tag, rename and delete', (tester) async {
     await open(tester, const TagsScreen());
     expect(find.text('Nessuna etichetta: creane una dal menu di un brano.'), findsOneWidget);
+    expect(find.byIcon(Icons.label_outline_rounded), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Apri tutti i brani'), findsOneWidget);
     await h.dispose(tester);
 
     await open(tester, const TagsScreen());

@@ -95,6 +95,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Cancella cronologia'));
     await _settle(tester);
     expect(find.text('Qui comparirà quello che ascolti.'), findsOneWidget);
+    expect(find.byIcon(Icons.history_rounded), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Apri tutti i brani'), findsOneWidget);
     expect(find.text('Cronologia cancellata'), findsOneWidget);
     final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
     expect(rows.map((t) => t.playCount), [4, 4, 4]);

@@ -423,6 +423,8 @@ void main() {
     await _settle(tester);
     expect(find.text('Preferiti'), findsWidgets);
     expect(find.text('Nessun preferito, per ora'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Apri tutti i brani'), findsOneWidget);
     expect(find.byTooltip('Riproduci'), findsNothing);
     expect(tester.takeException(), isNull);
     await h.dispose(tester);
