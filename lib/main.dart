@@ -40,6 +40,11 @@ import 'providers/library_providers.dart';
 import 'providers/open_files_providers.dart' show openFilesProvider;
 import 'providers/player_providers.dart';
 import 'services/platform/window_title.dart';
+import 'services/window/tray_service.dart';
+import 'services/window/window_host.dart';
+import 'services/window/window_state.dart';
+import 'providers/app_restart_provider.dart' show quitAppProvider;
+import 'providers/tray_providers.dart';
 import 'providers/stream_providers.dart';
 import 'providers/vanished_providers.dart';
 import 'services/stream/stream_cache.dart';
@@ -278,8 +283,39 @@ Future<void> main(List<String> args) async {
     streamCache = await StreamCache.inAppSupport();
     (cacheVolume, cacheOpened) = ('', false);
   }
-  final container = ProviderContainer(
+  // Desktop: the window comes back as it was (F-206) and the tray (D-729); the host is shared.
+  final windowHost = Platform.isLinux || Platform.isWindows ? PlatformWindowHost() : null;
+  if (windowHost != null) {
+    await WindowState(
+      host: windowHost,
+      read: settingsStore.readWindowBounds,
+      write: settingsStore.writeWindowBounds,
+      wayland: Platform.isLinux && isWayland(Platform.environment),
+    ).start();
+  }
+  late final ProviderContainer container; // the tray's «Esci» needs it once the app runs
+  TrayService? trayService;
+  if (windowHost != null) {
+    final l = lookupAppLocalizations(Locale(settingsStore.readSettings().language));
+    trayService = TrayService(
+      host: windowHost,
+      adapter: NativeTrayAdapter(),
+      labels: {
+        TrayCommand.playPause: l.trayPlayPause,
+        TrayCommand.next: l.trayNext,
+        TrayCommand.toggleWindow: l.trayShowHide,
+        TrayCommand.quit: l.trayQuit,
+      },
+      closeToTray: () => settingsStore.readSettings().closeToTray,
+      playPause: () => handler.togglePlayPause(),
+      next: () => handler.skipToNext(),
+      quit: () => container.read(quitAppProvider)(),
+    );
+    await trayService.start();
+  }
+  container = ProviderContainer(
     overrides: [
+      trayAvailableProvider.overrideWithValue(trayService?.available ?? false),
       systemDeviceNameProvider.overrideWithValue(systemName),
       systemDeviceModelProvider.overrideWithValue(systemModel),
       databaseProvider.overrideWithValue(db),

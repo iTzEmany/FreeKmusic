@@ -8779,4 +8779,34 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get shortcutKeySpace => 'Espace';
+
+  @override
+  String get trayPlayPause => 'Lecture/Pause';
+
+  @override
+  String get trayNext => 'Suivant';
+
+  @override
+  String get trayShowHide => 'Afficher/Masquer';
+
+  @override
+  String get trayQuit => 'Quitter';
+
+  @override
+  String get closeToTray => 'Fermer dans la zone de notification';
+
+  @override
+  String get closeToTrayHint =>
+      'Fermer la fenêtre laisse la musique en arrière-plan, avec le menu dans la zone de notification. Désactivé sous Linux : GNOME n’affiche la zone qu’avec l’extension AppIndicator.';
+
+  @override
+  String get closeToTrayUnavailable =>
+      'Ce bureau n’a pas de zone de notification : la fenêtre se ferme toujours.';
+
+  @override
+  String get dropHint => 'Déposez pour écouter';
+
+  @override
+  String get dropRejected =>
+      'Déposez uniquement des fichiers audio, pas des dossiers';
 }

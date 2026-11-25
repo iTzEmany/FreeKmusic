@@ -4997,5 +4997,14 @@
   "shortcutPasteLink": "Cerca e incolla un link",
   "shortcutShowList": "Mostra l'elenco delle scorciatoie",
   "shortcutQuit": "Chiudi FreeKmusic",
-  "shortcutKeySpace": "Spazio"
+  "shortcutKeySpace": "Spazio",
+  "trayPlayPause": "Riproduci/Pausa",
+  "trayNext": "Successivo",
+  "trayShowHide": "Mostra/Nascondi",
+  "trayQuit": "Esci",
+  "closeToTray": "Chiudi nella barra di sistema",
+  "closeToTrayHint": "Chiudere la finestra lascia la musica in sottofondo, con il menu nella barra di sistema. Spento su Linux: GNOME mostra la barra solo con l'estensione AppIndicator.",
+  "closeToTrayUnavailable": "Questo desktop non ha una barra di sistema: la finestra si chiude sempre.",
+  "dropHint": "Rilascia per ascoltare",
+  "dropRejected": "Trascina solo file audio, non cartelle"
 }

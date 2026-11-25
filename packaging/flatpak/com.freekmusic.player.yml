@@ -14,6 +14,7 @@ finish-args:
   - --filesystem=xdg-download
   - --talk-name=org.freedesktop.Notifications
   - --own-name=org.mpris.MediaPlayer2.freekmusic   # media keys and the desktop's player widget
+  - --talk-name=org.kde.StatusNotifierWatcher   # tray icon (D-729); deduced, to be verified in a real flatpak
 modules:
   # mpv 0.38 needs libplacebo >= 6.338.2, which the 25.08 runtime still does not ship (checked: no libplacebo.pc in the SDK).
   - name: libplacebo

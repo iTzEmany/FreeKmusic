@@ -44,8 +44,7 @@ class _DropOverlayState extends State<DropOverlay> {
       }
     }
     if (!mounted) return;
-    // shortcut: one message for every refusal; a dedicated text (6 languages) is proposed in the report.
-    if (rejected) showMsg(context, context.l10n.podcastErrUnsupportedFormat);
+    if (rejected) showMsg(context, context.l10n.dropRejected);
     if (audio.isNotEmpty) await widget.onAudio(audio);
   }
 
@@ -65,9 +64,8 @@ class _DropOverlayState extends State<DropOverlay> {
                 child: ColoredBox(
                   color: Colors.black54,
                   child: Center(
-                    // shortcut: provisional text, replaced by «Rilascia per ascoltare».
                     child: Text(
-                      context.l10n.openAllTracks,
+                      context.l10n.dropHint,
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
                     ),
                   ),

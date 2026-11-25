@@ -4,6 +4,7 @@ import 'package:codecore/providers/library_providers.dart';
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/share_providers.dart';
 import 'package:codecore/providers/theme_providers.dart';
+import 'package:codecore/providers/tray_providers.dart';
 import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/screens/stats/stats_screen.dart';
 import 'package:codecore/ui/shell/shell_keys.dart' show ShortcutAction;
@@ -40,6 +41,37 @@ ProviderContainer _container(WidgetTester t) =>
     ProviderScope.containerOf(t.element(find.byType(SettingsScreen)));
 
 void main() {
+  testWidgets('desktop: Avanzate e info holds the import thresholds and the About group', (t) async {
+    _size(t, 1280, 1600);
+    final h = await Harness.create(t);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    await t.tap(find.text('Avanzate e info'));
+    await t.pumpAndSettle();
+    expect(find.textContaining('Ripristina i valori predefiniti'), findsOneWidget);
+    expect(find.text('Info'), findsOneWidget);
+    await h.dispose(t);
+  });
+
+  testWidgets('desktop: Chiudi nella barra di sistema follows the tray; phone has no such option', (t) async {
+    _size(t, 1280, 1600);
+    final h = await Harness.create(t);
+    await h.pump(t, const Scaffold(body: SettingsScreen()));
+    await t.tap(find.text('Avanzate e info'));
+    await t.pumpAndSettle();
+    final tile = find.byKey(const ValueKey('close-to-tray'));
+    expect(t.widget<SwitchListTile>(tile).onChanged, isNull, reason: 'no tray in tests');
+    await h.dispose(t);
+
+    final h2 = await Harness.create(t);
+    await h2.pump(t, const Scaffold(body: SettingsScreen()), extraOverrides: [trayAvailableProvider.overrideWithValue(true)]);
+    await t.tap(find.text('Avanzate e info'));
+    await t.pumpAndSettle();
+    await t.tap(tile);
+    await t.pumpAndSettle();
+    expect(h2.store.readSettings().closeToTray, isTrue);
+    await h2.dispose(t);
+  });
+
   testWidgets('phone index shows 8 entries with summaries', (t) async {
     _size(t, 400, 800);
     final h = await Harness.create(t);

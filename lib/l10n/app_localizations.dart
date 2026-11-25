@@ -13596,6 +13596,60 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Spazio'**
   String get shortcutKeySpace;
+
+  /// No description provided for @trayPlayPause.
+  ///
+  /// In it, this message translates to:
+  /// **'Riproduci/Pausa'**
+  String get trayPlayPause;
+
+  /// No description provided for @trayNext.
+  ///
+  /// In it, this message translates to:
+  /// **'Successivo'**
+  String get trayNext;
+
+  /// No description provided for @trayShowHide.
+  ///
+  /// In it, this message translates to:
+  /// **'Mostra/Nascondi'**
+  String get trayShowHide;
+
+  /// No description provided for @trayQuit.
+  ///
+  /// In it, this message translates to:
+  /// **'Esci'**
+  String get trayQuit;
+
+  /// No description provided for @closeToTray.
+  ///
+  /// In it, this message translates to:
+  /// **'Chiudi nella barra di sistema'**
+  String get closeToTray;
+
+  /// No description provided for @closeToTrayHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Chiudere la finestra lascia la musica in sottofondo, con il menu nella barra di sistema. Spento su Linux: GNOME mostra la barra solo con l\'estensione AppIndicator.'**
+  String get closeToTrayHint;
+
+  /// No description provided for @closeToTrayUnavailable.
+  ///
+  /// In it, this message translates to:
+  /// **'Questo desktop non ha una barra di sistema: la finestra si chiude sempre.'**
+  String get closeToTrayUnavailable;
+
+  /// No description provided for @dropHint.
+  ///
+  /// In it, this message translates to:
+  /// **'Rilascia per ascoltare'**
+  String get dropHint;
+
+  /// No description provided for @dropRejected.
+  ///
+  /// In it, this message translates to:
+  /// **'Trascina solo file audio, non cartelle'**
+  String get dropRejected;
 }
 
 class _AppLocalizationsDelegate

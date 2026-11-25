@@ -4268,5 +4268,14 @@
   "shortcutPasteLink": "Link suchen und einfügen",
   "shortcutShowList": "Liste der Tastenkürzel anzeigen",
   "shortcutQuit": "FreeKmusic beenden",
-  "shortcutKeySpace": "Leertaste"
+  "shortcutKeySpace": "Leertaste",
+  "trayPlayPause": "Wiedergabe/Pause",
+  "trayNext": "Nächster",
+  "trayShowHide": "Anzeigen/Verbergen",
+  "trayQuit": "Beenden",
+  "closeToTray": "In den Infobereich schließen",
+  "closeToTrayHint": "Das Schließen des Fensters lässt die Musik im Hintergrund weiterspielen, mit dem Menü im Infobereich. Unter Linux aus: GNOME zeigt den Infobereich nur mit der AppIndicator-Erweiterung.",
+  "closeToTrayUnavailable": "Dieser Desktop hat keinen Infobereich: das Fenster wird immer geschlossen.",
+  "dropHint": "Zum Abspielen loslassen",
+  "dropRejected": "Nur Audiodateien ablegen, keine Ordner"
 }

@@ -4454,5 +4454,14 @@
   "shortcutPasteLink": "Pesquisar e colar um link",
   "shortcutShowList": "Mostrar a lista de atalhos",
   "shortcutQuit": "Sair do FreeKmusic",
-  "shortcutKeySpace": "Espaço"
+  "shortcutKeySpace": "Espaço",
+  "trayPlayPause": "Reproduzir/Pausar",
+  "trayNext": "Seguinte",
+  "trayShowHide": "Mostrar/Ocultar",
+  "trayQuit": "Sair",
+  "closeToTray": "Fechar na bandeja do sistema",
+  "closeToTrayHint": "Fechar a janela deixa a música tocando em segundo plano, com o menu na bandeja do sistema. Desligado no Linux: o GNOME só mostra a bandeja com a extensão AppIndicator.",
+  "closeToTrayUnavailable": "Este ambiente não tem bandeja do sistema: a janela sempre fecha.",
+  "dropHint": "Solte para ouvir",
+  "dropRejected": "Solte apenas arquivos de áudio, não pastas"
 }
