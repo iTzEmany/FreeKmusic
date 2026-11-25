@@ -8587,6 +8587,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get shareUntitled => 'Sem título';
 
   @override
+<<<<<<< HEAD
   String get libraryHistorySub => 'Ouvidos recentemente';
 
   @override
@@ -8599,4 +8600,22 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0';
   }
+=======
+  String openOutsideLibrary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros estão fora das pastas da biblioteca',
+      one: 'O ficheiro está fora das pastas da biblioteca',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get openAddToLibrary => 'Adicionar à biblioteca';
+
+  @override
+  String get openPortalFile =>
+      'O ficheiro está fora das pastas que a app pode ler: adicione a sua pasta a partir da Biblioteca';
+>>>>>>> origin/master
 }

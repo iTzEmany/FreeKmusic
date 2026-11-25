@@ -1,7 +1,51 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum NavTab { home, search, library, memory }
+
+/// Remembers the pages the user closed with «back» (Alt+Left, the mouse's back
+/// button) so «forward» can reopen them (the page is rebuilt, its state is not
+/// kept). Pops by the app itself (a deleted item's page) are not recorded. A
+/// new push of any other page forgets them.
+class ForwardStack extends NavigatorObserver {
+  final _popped = <WidgetBuilder>[];
+  bool _forwarding = false;
+  bool _byUser = false;
+
+  void clear() => _popped.clear();
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (_byUser && route is MaterialPageRoute) _popped.add(route.builder);
+  }
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (!_forwarding) _popped.clear();
+  }
+
+  /// A pop asked by the user: the page may refuse (its own PopScope).
+  Future<void> back() async {
+    _byUser = true;
+    try {
+      await navigator?.maybePop();
+    } finally {
+      _byUser = false;
+    }
+  }
+
+  void forward() {
+    if (_popped.isEmpty) return;
+    _forwarding = true;
+    navigator?.push(MaterialPageRoute<void>(builder: _popped.removeLast()));
+    _forwarding = false;
+  }
+}
+
+/// One per tab, in [NavTab] order.
+final forwardStacksProvider = Provider<List<ForwardStack>>(
+  (ref) => [for (final _ in NavTab.values) ForwardStack()],
+);
 
 class NavIndexNotifier extends Notifier<int> {
   @override
@@ -27,9 +71,12 @@ class TabNavigatorKeys extends Notifier<List<GlobalKey<NavigatorState>>> {
   static GlobalKey<NavigatorState> _key(int tab) =>
       GlobalKey<NavigatorState>(debugLabel: 'tab-${NavTab.values[tab].name}');
 
-  void reset(int tab) => state = [
-    for (final (i, k) in state.indexed) i == tab ? _key(i) : k,
-  ];
+  void reset(int tab) {
+    ref.read(forwardStacksProvider)[tab].clear();
+    state = [
+      for (final (i, k) in state.indexed) i == tab ? _key(i) : k,
+    ];
+  }
 }
 
 final tabNavigatorKeysProvider =

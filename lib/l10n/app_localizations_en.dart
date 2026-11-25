@@ -8549,6 +8549,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get shareUntitled => 'Untitled';
 
   @override
+<<<<<<< HEAD
   String get libraryHistorySub => 'Recently played';
 
   @override
@@ -8561,4 +8562,22 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+=======
+  String openOutsideLibrary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count files are outside the library folders',
+      one: 'The file is outside the library folders',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get openAddToLibrary => 'Add to library';
+
+  @override
+  String get openPortalFile =>
+      'The file is outside the folders the app can read: add its folder from the Library';
+>>>>>>> origin/master
 }

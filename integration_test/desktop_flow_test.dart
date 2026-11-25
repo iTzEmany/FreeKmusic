@@ -4,7 +4,7 @@ import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/selection_providers.dart';
 import 'package:codecore/ui/shell/desktop_sidebar.dart';
 import 'package:codecore/ui/widgets/track_row.dart';
-import 'package:flutter/gestures.dart' show kSecondaryButton;
+import 'package:flutter/gestures.dart' show PointerDeviceKind, kBackMouseButton, kForwardMouseButton, kSecondaryButton;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -115,6 +115,19 @@ void main() {
     await press(LogicalKeyboardKey.arrowLeft, alt: true);
     await waitFor(tester, () => !libNav.currentState!.canPop(),
         reason: 'Alt+Left closed the page');
+
+    // Mouse side buttons: forward reopens the page, back closes it again.
+    Future<void> side(int button) async {
+      final g = await tester.createGesture(kind: PointerDeviceKind.mouse, buttons: button);
+      await g.down(const Offset(700, 400));
+      await g.up();
+      await settle(tester);
+    }
+    await side(kForwardMouseButton);
+    expect(libNav.currentState!.canPop(), isTrue, reason: 'forward button reopened the page');
+    await side(kBackMouseButton);
+    await waitFor(tester, () => !libNav.currentState!.canPop(),
+        reason: 'back button closed the page');
 
     // Ctrl+F from Home opens Search.
     await tester.tap(find.descendant(of: find.byType(DesktopSidebar), matching: find.text(l.navHome)));

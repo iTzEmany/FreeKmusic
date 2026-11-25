@@ -244,6 +244,8 @@ jobs:
           pactl load-module module-null-sink sink_name=dummy
           pactl set-default-sink dummy
       - run: xvfb-run -a -s "-screen 0 1920x1080x24" flutter test --reporter expanded integration_test/desktop_flow_test.dart -d linux
+        env:
+          FREEKMUSIC_NON_UNIQUE: '1'
 
   build-windows:
     name: Windows
