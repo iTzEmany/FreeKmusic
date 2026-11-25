@@ -9,6 +9,7 @@ import '../../../providers/library_providers.dart';
 import '../../../services/tags/tag_writer.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/cover_image.dart';
+import '../../widgets/empty_state.dart';
 import '../../widgets/tag_write_ui.dart';
 
 /// «Unisci con…» on an album: pick the albums to fold into [main], name the
@@ -139,7 +140,7 @@ class _AlbumMergeDialogState extends ConsumerState<_AlbumMergeDialog> {
               child: SizedBox(
                 height: 240,
                 child: others.isEmpty
-                    ? Center(child: Text(l.albumMergeNone))
+                    ? EmptyState(icon: Icons.album_rounded, message: l.albumMergeNone)
                     : ListView(
                         children: [
                           for (final a in others)

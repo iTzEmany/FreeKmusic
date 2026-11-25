@@ -88,9 +88,10 @@ void main() {
     expect(find.byIcon(Icons.favorite_rounded), findsNothing);
   });
 
-  testWidgets('EmptyState: top left, no icon, one filled action', (
+  testWidgets('EmptyState: top left, icon, one filled action', (
     tester,
   ) async {
+    var taps = 0;
     await _pump(
       tester,
       EmptyState(
@@ -98,12 +99,21 @@ void main() {
         message: 'Niente qui',
         help: 'Aiuto',
         actionLabel: 'A',
-        onAction: () {},
+        onAction: () => taps++,
       ),
     );
-    expect(find.byIcon(Icons.favorite_border_rounded), findsNothing);
-    expect(find.widgetWithText(FilledButton, 'A'), findsOneWidget);
+    expect(find.byIcon(Icons.favorite_border_rounded), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'A'));
+    expect(taps, 1);
     expect(tester.getTopLeft(find.text('Niente qui')).dx, CcDims.margin);
+  });
+
+  testWidgets('EmptyState without action shows no button', (tester) async {
+    await _pump(
+      tester,
+      const EmptyState(icon: Icons.album_rounded, message: 'Niente'),
+    );
+    expect(find.byType(FilledButton), findsNothing);
   });
 
   testWidgets('dot only on the current row', (tester) async {

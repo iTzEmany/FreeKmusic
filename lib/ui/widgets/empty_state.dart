@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/tokens.dart';
 
-/// Quiet empty view: text at the top left, no illustration.
+/// Quiet empty view: icon, text and optional action at the top left.
 class EmptyState extends StatelessWidget {
   const EmptyState({
     super.key,
@@ -15,7 +15,6 @@ class EmptyState extends StatelessWidget {
     this.onSecondary,
   });
 
-  /// Kept for callers, not drawn; remove when unused.
   final IconData icon;
   final String message;
   final String? help;
@@ -34,6 +33,8 @@ class EmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Icon(icon, size: 32, color: context.cc.textMuted),
+            const SizedBox(height: 8),
             Text(message, style: theme.titleSmall),
             if (help != null) ...[
               const SizedBox(height: 4),

@@ -11,6 +11,7 @@ import '../../../services/lyrics/lyrics_shown.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cover_backdrop.dart';
 import '../../widgets/cover_image.dart';
+import '../../widgets/empty_state.dart';
 import 'lyrics_menu.dart';
 import 'lyrics_translate_flow.dart';
 import 'lyrics_view.dart';
@@ -35,7 +36,7 @@ class LyricsScreen extends ConsumerWidget {
       return Scaffold(
         backgroundColor: embedded ? Colors.transparent : null,
         appBar: embedded ? null : CcAppBar(title: l.lyrics),
-        body: Center(child: Text(l.nothingPlaying)),
+        body: EmptyState(icon: Icons.lyrics_rounded, message: l.nothingPlaying),
       );
     }
     if (embedded) {
