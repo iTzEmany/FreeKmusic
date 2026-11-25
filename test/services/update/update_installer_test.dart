@@ -5,6 +5,7 @@ import 'package:codecore/services/update/update_installer.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 
 void main() {
   final body = List<int>.generate(200000, (i) => i % 251);
@@ -91,9 +92,9 @@ void main() {
   test('updatesDir: the cache folder in the Flatpak sandbox, the temporary one otherwise', () async {
     Future<Directory> t() async => Directory('/t');
     Future<Directory> c() async => Directory('/c');
-    expect((await updatesDir(env: {'FLATPAK_ID': 'x'}, tmp: t, cache: c)).path, '/c/updates');
-    expect((await updatesDir(env: {'FLATPAK_ID': ''}, tmp: t, cache: c)).path, '/t/updates');
-    expect((await updatesDir(env: {}, tmp: t, cache: c)).path, '/t/updates');
+    expect((await updatesDir(env: {'FLATPAK_ID': 'x'}, tmp: t, cache: c)).path, p.join('/c', 'updates'));
+    expect((await updatesDir(env: {'FLATPAK_ID': ''}, tmp: t, cache: c)).path, p.join('/t', 'updates'));
+    expect((await updatesDir(env: {}, tmp: t, cache: c)).path, p.join('/t', 'updates'));
   });
 
   test('clearUpdatesDir empties the folder', () async {
