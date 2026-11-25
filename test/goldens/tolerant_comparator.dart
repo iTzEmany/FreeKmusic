@@ -37,7 +37,7 @@ Future<void> withGoldenShot(
   Future<void> Function(Shot s) body, {
   bool radio = false,
 }) {
-  debugIsDesktopOverride = size == ShotSize.desktop;
+  debugIsDesktopOverride = size.isDesktop;
   addTearDown(() => debugIsDesktopOverride = null);
   return withShot(tester, size, body, radio: radio);
 }

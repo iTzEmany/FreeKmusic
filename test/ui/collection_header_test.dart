@@ -7,6 +7,10 @@ import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/collection_header.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
+import 'package:codecore/providers/keep_offline_providers.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../support/app_harness.dart';
@@ -195,6 +199,68 @@ void main() {
       h = await pumpScaffold(tester, kind: kMusicKind);
       expect(find.byIcon(Icons.download_rounded), findsNothing, reason: 'files only: nothing to download');
       await h.dispose(tester);
+    });
+
+    group('actions', () {
+      Future<Harness> pumpActions(WidgetTester tester,
+          {VoidCallback? onPlay, List<Track>? downloads, List<Override> extra = const []}) async {
+        final h = await Harness.create(tester, tracks: 0);
+        await h.pump(
+          tester,
+          CollectionScaffold(
+            title: 'T',
+            name: 'Nome',
+            slivers: const [],
+            onPlay: onPlay,
+            shuffleIds: const [1, 2],
+            downloadTracks: downloads,
+          ),
+          extraOverrides: extra,
+        );
+        return h;
+      }
+
+      testWidgets('Play calls onPlay', (tester) async {
+        var played = 0;
+        final h = await pumpActions(tester, onPlay: () => played++);
+        await tester.tap(find.byType(PlayCircleButton));
+        expect(played, 1);
+        await h.dispose(tester);
+      });
+
+      testWidgets('Casuale moves the list from off to shuffle', (tester) async {
+        final h = await pumpActions(tester);
+        final c = ProviderScope.containerOf(tester.element(find.byType(CollectionScaffold)));
+        final key = listKeyOf(const [1, 2]);
+        expect(c.read(listShuffleProvider(key)), ShuffleMode.off);
+        await tester.tap(find.byIcon(Icons.shuffle_rounded));
+        for (var i = 0; i < 40 && c.read(listShuffleProvider(key)) == ShuffleMode.off; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+          await tester.pump(const Duration(milliseconds: 25));
+        }
+        expect(c.read(listShuffleProvider(key)), ShuffleMode.shuffle);
+        await h.dispose(tester);
+      });
+
+      testWidgets('Scarica hands the page tracks to «tieni offline»', (tester) async {
+        final h0 = await Harness.create(tester, tracks: 0);
+        final stream = (await tester.runAsync(() => h0.db.into(h0.db.tracks).insertReturning(TracksCompanion.insert(
+            path: 'x', title: 'x', albumKey: 'k', format: '', sizeBytes: 0, mtimeMs: 0, addedAt: 1, kind: Value(kStreamKind))))) as Track;
+        Iterable<Track>? got;
+        final h = await pumpActions(tester, downloads: [stream], extra: [
+          keepOfflineMeteredAskProvider.overrideWithValue((_) async => null),
+          keepOfflineProvider.overrideWithValue((tracks) async {
+            got = tracks;
+            return 1;
+          }),
+        ]);
+        await tester.tap(find.byTooltip('Scarica'));
+        await tester.pump();
+        expect(got?.map((t) => t.id), [stream.id]);
+        await tester.pump(const Duration(seconds: 5));
+        await h.dispose(tester);
+        await h0.dispose(tester);
+      });
     });
   });
 }
