@@ -8,7 +8,13 @@ import '../../l10n/l10n_ext.dart';
 import '../../providers/library_providers.dart';
 import '../../providers/preview_providers.dart';
 import '../../providers/player_providers.dart';
+import '../../core/platform.dart' show isDesktop;
+import '../../data/db/app_database.dart' show Track;
+import '../screens/playlists/playlist_dialogs.dart' show showAddToPlaylistSheet;
+import 'action_catalog.dart';
 import 'album_grid.dart';
+import 'context_menu.dart';
+import 'show_msg.dart';
 import 'cover_image.dart';
 import 'motion.dart';
 import 'progress_frame.dart';
@@ -19,6 +25,40 @@ Future<void> _previewAlbum(WidgetRef ref, String albumKey) async {
   if (tracks.isNotEmpty) {
     await ref.read(previewProvider.notifier).start(tracks.first);
   }
+}
+
+/// «Aggiungi alla coda» for several songs (as the ⋮ of an album page does).
+Future<void> queueTracks(BuildContext context, WidgetRef ref, List<Track> tracks) async {
+  final ctrl = ref.read(playerControllerProvider);
+  var added = 0, full = false;
+  for (final t in tracks) {
+    final r = await ctrl.addToQueue(t.id);
+    added += r?.added ?? 1;
+    if (r != null && r.full) {
+      full = true;
+      break;
+    }
+  }
+  if (context.mounted) showQueued(context, (added: added, full: full), wanted: tracks.length);
+}
+
+/// Right click on an album (desktop): queue and playlist, as in the ⋮ of its page.
+void showAlbumMenu(BuildContext context, WidgetRef ref, AlbumSummary album, Offset at) {
+  if (!isDesktop) return;
+  final l = context.l10n;
+  Future<List<Track>> tracks() => ref.read(albumTracksOnceProvider)(album.albumKey);
+  showContextMenu(context, at, [
+    [
+      MenuAction(CatalogAction.queue.icon, l.addToQueue, () async {
+        final list = await tracks();
+        if (context.mounted) await queueTracks(context, ref, list);
+      }),
+      MenuAction(CatalogAction.playlist.icon, l.addToPlaylist, () async {
+        final list = await tracks();
+        if (context.mounted) await showAddToPlaylistSheet(context, ref, list);
+      }),
+    ],
+  ]);
 }
 
 class AlbumCard extends ConsumerWidget {
@@ -37,6 +77,7 @@ class AlbumCard extends ConsumerWidget {
     return PressScale(
       child: InkWell(
         onTap: onTap,
+        onSecondaryTapDown: (d) => showAlbumMenu(context, ref, album, d.globalPosition),
         borderRadius: BorderRadius.circular(CcDims.rGrid),
         child: Padding(
           padding: const EdgeInsets.all(6),
@@ -144,6 +185,7 @@ class AlbumRow extends ConsumerWidget {
     return PressScale(
       child: InkWell(
         onTap: onTap,
+        onSecondaryTapDown: (d) => showAlbumMenu(context, ref, album, d.globalPosition),
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 72),
           child: Padding(

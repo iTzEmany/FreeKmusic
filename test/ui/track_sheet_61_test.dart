@@ -1,3 +1,4 @@
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/ui/screens/playlists/playlist_detail_screen.dart';
@@ -25,7 +26,10 @@ void _size(WidgetTester tester, Size s) {
 }
 
 void main() {
-  testWidgets('playlist row sheet: «Rimuovi dalla playlist» first, no second sheet', (tester) async {
+  for (final desktop in [false, true]) {
+  testWidgets('playlist row sheet: «Rimuovi dalla playlist» first, no second sheet, desktop: $desktop', (tester) async {
+    debugIsDesktopOverride = desktop;
+    addTearDown(() => debugIsDesktopOverride = null);
     _size(tester, const Size(400, 900));
     final h = await Harness.create(tester, tracks: 2);
     final playlist = (await tester.runAsync(() async {
@@ -52,6 +56,7 @@ void main() {
     expect(left.length, 1);
     await h.dispose(tester);
   });
+  }
 
   // The harness theme is a phone's: desktop rows need the platform said.
   Future<void> row(

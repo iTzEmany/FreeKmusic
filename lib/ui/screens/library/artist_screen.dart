@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../../core/platform.dart' show isDesktop;
+import '../../widgets/context_menu.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
@@ -215,29 +217,43 @@ class _ArtistMenu extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (kEnableYoutube && artist.name != null) _YtmButtons(name: artist.name!),
-        IconButton(
-          key: const ValueKey('artist-more'),
-          tooltip: l.moreActions,
-          icon: Icon(CatalogAction.more.icon),
-          onPressed: () async {
-            final v = await showCcActionSheet<_ArtistAction>(
-              context: context,
-              title: artist.name ?? l.unknownArtist,
-              groups: [
-                [
-                  CcAction(icon: Icons.image_outlined, label: l.coverChange, value: _ArtistAction.cover),
-                  if (picked)
-                    CcAction(icon: Icons.restore_rounded, label: l.artistImageRestore, value: _ArtistAction.restoreCover),
-                ],
-              ],
-            );
-            if (v == null || !context.mounted) return;
-            switch (v) {
-              case _ArtistAction.cover:
-                showCoverPicker(context, save: (ops, bytes, mime) => ops.setArtistCover(artist.key, bytes, mime));
-              case _ArtistAction.restoreCover:
-                ref.read(coverOpsProvider).restoreArtistCover(artist.key);
+        Builder(
+          builder: (button) {
+            void run(_ArtistAction v) {
+              if (!context.mounted) return;
+              switch (v) {
+                case _ArtistAction.cover:
+                  showCoverPicker(context, save: (ops, bytes, mime) => ops.setArtistCover(artist.key, bytes, mime));
+                case _ArtistAction.restoreCover:
+                  ref.read(coverOpsProvider).restoreArtistCover(artist.key);
+              }
             }
+
+            final items = [
+              (Icons.image_outlined, l.coverChange, _ArtistAction.cover),
+              if (picked) (Icons.restore_rounded, l.artistImageRestore, _ArtistAction.restoreCover),
+            ];
+            return IconButton(
+              key: const ValueKey('artist-more'),
+              tooltip: l.moreActions,
+              icon: Icon(CatalogAction.more.icon),
+              onPressed: () async {
+                if (isDesktop) {
+                  final b = button.findRenderObject()! as RenderBox;
+                  return showContextMenu(context, b.localToGlobal(Offset(0, b.size.height)), [
+                    [for (final (icon, label, v) in items) MenuAction(icon, label, () => run(v))],
+                  ]);
+                }
+                final v = await showCcActionSheet<_ArtistAction>(
+                  context: context,
+                  title: artist.name ?? l.unknownArtist,
+                  groups: [
+                    [for (final (icon, label, v) in items) CcAction(icon: icon, label: label, value: v)],
+                  ],
+                );
+                if (v != null) run(v);
+              },
+            );
           },
         ),
       ],

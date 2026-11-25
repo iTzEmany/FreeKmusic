@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/platform.dart' show isDesktop;
+import '../../widgets/context_menu.dart';
+
 import '../../../l10n/l10n_ext.dart';
 import '../../../services/online/google_thumb.dart';
 import '../../../services/online/ytm_artist.dart';
@@ -48,6 +51,12 @@ class ArtistCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
+          // Desktop right click: the one thing the card does, as a menu (shortcut: no follow entry, it needs the providers).
+          onSecondaryTapDown: !isDesktop
+              ? null
+              : (d) => showContextMenu(context, d.globalPosition, [
+                  [MenuAction(Icons.person_outline_rounded, l.goToArtist, onTap)],
+                ]),
           child: Padding(
             padding: EdgeInsets.all(large ? CcDims.gap16 : CcDims.gap12),
             child: Row(

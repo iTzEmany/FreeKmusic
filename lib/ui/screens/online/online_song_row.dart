@@ -26,6 +26,8 @@ import 'online_selection_scope.dart';
 import '../../../services/jam/jam_models.dart' show jamFullResult;
 import '../../widgets/show_msg.dart';
 import '../../widgets/action_catalog.dart';
+import '../../widgets/context_menu.dart' show ContextMenuKey;
+import '../../../core/platform.dart' show isDesktop;
 
 const kOnlineRowHeight = 72.0;
 
@@ -145,6 +147,7 @@ class OnlineSongTile extends ConsumerWidget {
       onLongPress: pick.onLongPress,
       onQueue: () => queueOnline(context, ref, result),
       onMore: () => showOnlineActions(context, ref, result),
+      onMoreAt: (at) => showOnlineActions(context, ref, result, at: at),
       onDownload: () => ref.read(libraryAdderProvider).add(result),
     );
   }
@@ -167,6 +170,7 @@ class OnlineSongRow extends StatelessWidget {
     this.onLongPress,
     this.onQueue,
     this.onMore,
+    this.onMoreAt,
     this.onArtistTap,
     this.square = false,
     this.number,
@@ -192,6 +196,9 @@ class OnlineSongRow extends StatelessWidget {
   /// Swipe to the right (not from the edge, D-59) and the ⋮ menu; neither
   /// while picking.
   final VoidCallback? onQueue, onMore;
+
+  /// Desktop: right click on the row and the ⋮ open a menu at that global point; [onMore] is the phone's sheet.
+  final void Function(Offset position)? onMoreAt;
 
   /// Makes the artist's name a button that opens the artist.
   final VoidCallback? onArtistTap;
@@ -223,7 +230,12 @@ class OnlineSongRow extends StatelessWidget {
         color: selected
             ? cc.accentSoft.withValues(alpha: 0.16)
             : Colors.transparent,
-        child: InkWell(
+        child: ContextMenuKey(
+          onOpen: (p) => selecting ? null : onMoreAt?.call(p),
+          child: GestureDetector(
+          excludeFromSemantics: true,
+          onSecondaryTapDown: onMoreAt == null || selecting ? null : (d) => onMoreAt!(d.globalPosition),
+          child: InkWell(
           onTap: onTap,
           onLongPress: onLongPress,
           child: SizedBox(
@@ -293,16 +305,25 @@ class OnlineSongRow extends StatelessWidget {
                   onDownload: onDownload,
                 ),
                 if (onMore != null && !selecting)
-                  IconButton(
-                    tooltip: CatalogAction.more.label(l),
-                    icon: Icon(CatalogAction.more.icon),
-                    onPressed: onMore,
+                  Builder(
+                    builder: (context) => IconButton(
+                      tooltip: CatalogAction.more.label(l),
+                      icon: Icon(CatalogAction.more.icon),
+                      onPressed: onMoreAt != null && isDesktop
+                          ? () {
+                              final b = context.findRenderObject()! as RenderBox;
+                              onMoreAt!(b.localToGlobal(Offset(0, b.size.height)));
+                            }
+                          : onMore,
+                    ),
                   )
                 else
                   const SizedBox(width: 8),
               ],
             ),
           ),
+        ),
+        ),
         ),
       ),
     );

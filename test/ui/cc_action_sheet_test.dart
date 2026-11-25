@@ -1,3 +1,4 @@
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/l10n/app_localizations.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
@@ -155,10 +156,16 @@ void main() {
     expect(tester.getSize(find.byType(ListTile).first).width, lessThanOrEqualTo(560));
   });
 
-  testWidgets('tapping a row returns its value', (tester) async {
-    await _open(tester);
-    await tester.tap(find.text('Ordina'));
-    await tester.pumpAndSettle();
-    expect(_result, 'sort');
-  });
+  // 155.1: same actions and same value whichever way the platform is said (the sheet becomes a dialog later).
+  for (final desktop in [false, true]) {
+    testWidgets('tapping a row returns its value, desktop: $desktop', (tester) async {
+      debugIsDesktopOverride = desktop;
+      addTearDown(() => debugIsDesktopOverride = null);
+      await _open(tester);
+      expect(shownMenuEntries(tester), ['add', 'sort', 'del']);
+      await tester.tap(find.text('Ordina'));
+      await tester.pumpAndSettle();
+      expect(_result, 'sort');
+    });
+  }
 }
