@@ -60,6 +60,7 @@ const kDeviceBoundKeys = {
   'libraryGrid',
   'libraryGridChosen',
   'libraryDensity',
+  'sidePanel',
 };
 
 bool _staysOnDevice(String k) => kDeviceBoundKeys.contains(k) || k.startsWith(importDownloadTooPrefix) || k.startsWith(savedOnlinePlaylistPrefix);

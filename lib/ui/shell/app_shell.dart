@@ -447,16 +447,6 @@ class _WideShell extends ConsumerWidget {
     final width = MediaQuery.sizeOf(context).width;
     final panel = ref.watch(sidePanelProvider);
     final collapsed = width < 1000;
-    // Wide windows show the queue from the first track on, until the user
-    // closes it (or picks another panel).
-    if (width >= CcDims.xlBreakpoint &&
-        panel == SidePanel.none &&
-        !ref.read(sidePanelProvider.notifier).chosen &&
-        ref.watch(currentTrackProvider.select((t) => t.value != null))) {
-      WidgetsBinding.instance.addPostFrameCallback(
-        (_) => ref.read(sidePanelProvider.notifier).autoOpen(),
-      );
-    }
     // A vertical hinge must not cut the sidebar: the content starts after it.
     final hinge = MediaQuery.displayFeaturesOf(context)
         .where(

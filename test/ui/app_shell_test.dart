@@ -1,5 +1,6 @@
 import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/activity_providers.dart';
 import 'dart:async';
 
@@ -94,6 +95,8 @@ void main() {
     final rows = await t.runAsync(() => h.db.select(h.db.tracks).get());
     await t.runAsync(() => h.handler.playQueue([for (final r in rows!) r.id], 0));
     await h.pump(t, const AppShell());
+    await _settle(t);
+    await t.tap(find.byIcon(Icons.queue_music_rounded).last); // the panel starts closed
     await _settle(t);
     await _openTabSheet(t);
     final row = find.descendant(
@@ -400,32 +403,38 @@ void main() {
       findsOneWidget,
     );
     expect(find.byKey(const Key('sidebar-dot')), findsOneWidget);
-    // From 1200 px the queue opens by itself in the right-hand panel; its
-    // button closes it and opens it again.
+    // The right-hand panel is closed by default; its button opens it and
+    // closes it again.
+    expect(find.byType(SidePanelView), findsNothing);
+    await tester.tap(find.byIcon(Icons.queue_music_rounded).last);
+    await _settle(tester);
     expect(find.byType(SidePanelView), findsOneWidget);
     await tester.tap(find.byIcon(Icons.queue_music_rounded).last);
+    await _settle(tester);
+    expect(find.byType(SidePanelView), findsNothing);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
+  testWidgets('first launch at 1440 px: panel closed; once opened it stays open after a restart', (tester) async {
+    tester.view.physicalSize = const Size(1440, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 2);
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(tester, const AppShell());
     await _settle(tester);
     expect(find.byType(SidePanelView), findsNothing);
     await tester.tap(find.byIcon(Icons.queue_music_rounded).last);
     await _settle(tester);
     expect(find.byType(SidePanelView), findsOneWidget);
-    expect(tester.takeException(), isNull);
+    // A restart: a new store on the same (fake) preferences.
+    final store = (await tester.runAsync(SettingsStore.open))!;
+    final reopened = ProviderContainer(overrides: [settingsStoreProvider.overrideWithValue(store)]);
+    addTearDown(reopened.dispose);
+    expect(reopened.read(sidePanelProvider), SidePanel.queue);
     await h.dispose(tester);
-  });
-
-  testWidgets('the right panel opens by itself at 1200 px, not at 1199', (tester) async {
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    for (final (w, open) in [(1199.0, false), (1200.0, true)]) {
-      tester.view.physicalSize = Size(w, 800);
-      final h = await Harness.create(tester, tracks: 2);
-      final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
-      await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
-      await h.pump(tester, const AppShell());
-      await _settle(tester);
-      expect(find.byType(SidePanelView), open ? findsOneWidget : findsNothing, reason: '$w');
-      await h.dispose(tester);
-    }
   });
 
   testWidgets('opening an album keeps mini-player and bar; back closes it',

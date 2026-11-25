@@ -489,6 +489,21 @@ void main() {
     return h;
   }
 
+  testWidgets('desktop window: linear bar with times and no ring (F-111); the phone keeps the ring', (tester) async {
+    final h = await openPlayer(tester, desktop: true);
+    expect(find.byType(RingProgress), findsOneWidget, reason: '400 px wide: still the phone layout');
+    await h.dispose(tester);
+    tester.view.physicalSize = const Size(1440, 900);
+    final w = await Harness.create(tester, tracks: 2);
+    final rows = await tester.runAsync(() => w.db.select(w.db.tracks).get());
+    await tester.runAsync(() => w.handler.playQueue([rows!.first.id], 0));
+    await w.pump(tester, const NowPlayingScreen(desktop: true));
+    expect(find.byType(RingProgress), findsNothing);
+    expect(find.byType(SeekBar), findsOneWidget);
+    expect(find.byType(SeekTime), findsWidgets);
+    await w.dispose(tester);
+  });
+
   testWidgets('symmetry: the top-bar title sits at the screen centre', (
     tester,
   ) async {

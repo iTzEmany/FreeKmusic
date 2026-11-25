@@ -1044,6 +1044,11 @@ class SettingsStore {
   Future<void> writeExportifyLastSyncAt(int ms) =>
       _prefs.setInt('exportifyLastSyncAt', ms);
 
+  /// Right-hand panel of the desktop shell (`SidePanel.name`); none = closed.
+  String? readSidePanel() => _prefs.getString('sidePanel');
+
+  Future<void> writeSidePanel(String name) => _prefs.setString('sidePanel', name);
+
   /// Days between sync reminders: 0 = off, else 7, 14 or 30.
   int readExportifyRemindDays() => _prefs.getInt('exportifyRemindDays') ?? 0;
 
