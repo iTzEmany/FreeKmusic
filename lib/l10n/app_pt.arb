@@ -4376,5 +4376,14 @@
   "updateNews": "Novidades",
   "updateNew": "nova",
   "shareKindTrack": "Faixa",
-  "shareUntitled": "Sem título"
+  "shareUntitled": "Sem título",
+  "openOutsideLibrary": "{count, plural, one{O ficheiro está fora das pastas da biblioteca} other{{count} ficheiros estão fora das pastas da biblioteca}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Adicionar à biblioteca"
 }

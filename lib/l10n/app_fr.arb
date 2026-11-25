@@ -4411,5 +4411,14 @@
   "updateNews": "Nouveautés",
   "updateNew": "nouvelle",
   "shareKindTrack": "Titre",
-  "shareUntitled": "Sans titre"
+  "shareUntitled": "Sans titre",
+  "openOutsideLibrary": "{count, plural, one{Le fichier est hors des dossiers de la bibliothèque} other{{count} fichiers sont hors des dossiers de la bibliothèque}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Ajouter à la bibliothèque"
 }

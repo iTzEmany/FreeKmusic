@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import 'providers/equalizer_providers.dart';
 import 'providers/karaoke_providers.dart';
 import 'providers/folder_actions.dart' show ensureDefaultFolder, scanWithPermission;
 import 'providers/jam_providers.dart' show jamOnlineFailuresProvider;
+import 'providers/open_files_providers.dart';
 import 'providers/player_providers.dart';
 import 'providers/volume_zero_pause_provider.dart';
 import 'providers/podcast_providers.dart' show podcastOrphansStartProvider;
@@ -111,6 +114,20 @@ class CodecoreApp extends ConsumerWidget {
           ),
         );
       }
+    });
+    ref.listen(openOutsideProvider, (_, next) {
+      final paths = next.value;
+      final c = _navigatorKey.currentState?.overlay?.context;
+      if (paths == null || c == null) return;
+      _messengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Builder(builder: (c) => CcSnackContent(c.l10n.openOutsideLibrary(paths.length), CcTiming.msg)),
+          action: SnackBarAction(
+            label: c.l10n.openAddToLibrary,
+            onPressed: () => unawaited(ref.read(openFilesProvider).addToLibrary(paths)),
+          ),
+        ),
+      );
     });
     ref.listen(jamOnlineFailuresProvider, (_, next) {
       final r = next.value;

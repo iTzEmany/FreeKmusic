@@ -13398,6 +13398,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Senza titolo'**
   String get shareUntitled;
+
+  /// No description provided for @openOutsideLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}'**
+  String openOutsideLibrary(int count);
+
+  /// No description provided for @openAddToLibrary.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi alla libreria'**
+  String get openAddToLibrary;
 }
 
 class _AppLocalizationsDelegate

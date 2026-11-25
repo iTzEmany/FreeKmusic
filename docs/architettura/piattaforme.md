@@ -100,6 +100,13 @@ Backend libmpv, MPRIS (`MprisControls`, percorso `/org/codecore/track/<id>` in `
 ### macOS
 Il runner Flutter esiste in `macos/` (id `com.freekmusic.player`). `just_audio_media_kit` si inizializza solo su Linux e Windows, quindi su macOS suona il backend nativo di `just_audio`. La CI lo compila con `flutter build macos --debug` nel job `build-apple` (solo a mano). La release (D-543) ha il job `macos`: `flutter build macos --release` e `.app` in zip non firmato (`FreeKmusic-<versione>-macos.zip`), senza yt-dlp né ffmpeg dentro. Niente firma né notarizzazione. Il video karaoke usa media_kit direttamente (`MediaKit.ensureInitialized` alla prima creazione del player video, non in `main.dart`).
 
+### Istanza unica, «Apri con» e titolo della finestra (fase 158, D-727, D-736)
+- **Linux** (`my_application.cc`): `GApplication` con `G_APPLICATION_HANDLES_OPEN`. Una seconda istanza vede `is_remote`, inoltra i file con `g_application_open` (via D-Bus) ed esce; la prima li tiene in una lista, fa `gtk_window_present` e avvisa Dart con `opened`. `FREEKMUSIC_NON_UNIQUE=1` toglie l'unicità (prove e `flutter run` accanto all'app installata).
+- **Windows** (`main.cpp`, `flutter_window.cpp`): mutex `Local\FreeKmusic.SingleInstance`; se esiste, la seconda istanza trova la finestra per classe, `SetForegroundWindow` e spedisce gli argomenti con `WM_COPYDATA` (UTF-8, uno per riga), poi esce. Da provare su una macchina Windows.
+- **Canale `freekmusic/window`**: `takeFiles` (i percorsi in attesa), `opened` (nativo verso Dart), `setTitle`. Lato Dart `lib/services/platform/open_files.dart`: i percorsi (argomenti di `main` e canale, anche `file://`) suonano dopo il ripristino della coda, più file in ordine; un file fuori dalle cartelle della libreria non suona e mostra l'avviso «Aggiungi alla libreria» (aggiunge la sua cartella e lo suona).
+- **Titolo** (`window_title.dart`): «Artista — Titolo · FreeKmusic» mentre suona, «FreeKmusic» in pausa o senza brano; il separatore è scritto con escape perché le guardie vietano « · » nelle stringhe.
+- `.desktop` (Flatpak e deb/AppImage): `MimeType` audio ed `Exec=… %U`.
+
 ### Differenze per piattaforma
 | Aspetto | Android | Windows / Linux | macOS |
 |---|---|---|---|

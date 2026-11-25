@@ -8594,4 +8594,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareUntitled => 'Sem título';
+
+  @override
+  String openOutsideLibrary(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ficheiros estão fora das pastas da biblioteca',
+      one: 'O ficheiro está fora das pastas da biblioteca',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get openAddToLibrary => 'Adicionar à biblioteca';
 }

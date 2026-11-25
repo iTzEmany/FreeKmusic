@@ -3,8 +3,12 @@
 
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter/method_channel.h>
+#include <flutter/encodable_value.h>
 
 #include <memory>
+#include <string>
+#include <vector>
 
 #include "win32_window.h"
 
@@ -25,6 +29,10 @@ class FlutterWindow : public Win32Window {
  private:
   // The project to run.
   flutter::DartProject project_;
+
+  // 'freekmusic/window': files received while running, and the window title.
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
+  std::vector<std::string> pending_files_;
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;

@@ -4190,5 +4190,14 @@
   "updateNews": "What’s new",
   "updateNew": "new",
   "shareKindTrack": "Track",
-  "shareUntitled": "Untitled"
+  "shareUntitled": "Untitled",
+  "openOutsideLibrary": "{count, plural, one{The file is outside the library folders} other{{count} files are outside the library folders}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Add to library"
 }

@@ -1,5 +1,7 @@
 #include "flutter_window.h"
 
+#include <flutter/standard_method_codec.h>
+
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -25,6 +27,37 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "freekmusic/window",
+      &flutter::StandardMethodCodec::GetInstance());
+  channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                 result) {
+        if (call.method_name() == "takeFiles") {
+          flutter::EncodableList list;
+          for (const std::string& path : pending_files_) {
+            list.push_back(flutter::EncodableValue(path));
+          }
+          pending_files_.clear();
+          result->Success(flutter::EncodableValue(list));
+        } else if (call.method_name() == "setTitle") {
+          const auto* title = std::get_if<std::string>(call.arguments());
+          if (title) {
+            int len = ::MultiByteToWideChar(CP_UTF8, 0, title->c_str(), -1,
+                                            nullptr, 0);
+            if (len > 0) {
+              std::wstring wide(len, L'\0');
+              ::MultiByteToWideChar(CP_UTF8, 0, title->c_str(), -1, &wide[0],
+                                    len);
+              ::SetWindowText(GetHandle(), wide.c_str());
+            }
+          }
+          result->Success();
+        } else {
+          result->NotImplemented();
+        }
+      });
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
@@ -40,6 +73,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -62,6 +96,24 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
   }
 
   switch (message) {
+    case WM_COPYDATA: {
+      // Files of a second launch (see main.cpp), one path per line.
+      const auto* data = reinterpret_cast<COPYDATASTRUCT*>(lparam);
+      if (data && data->dwData == 0x464B4D31 && data->lpData && channel_) {
+        std::string joined(static_cast<const char*>(data->lpData),
+                           data->cbData);
+        size_t start = 0;
+        while (start < joined.size()) {
+          size_t end = joined.find('\n', start);
+          if (end == std::string::npos) end = joined.size();
+          if (end > start) pending_files_.push_back(joined.substr(start, end - start));
+          start = end + 1;
+        }
+        channel_->InvokeMethod("opened", nullptr);
+        return TRUE;
+      }
+      break;
+    }
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;

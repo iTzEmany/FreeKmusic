@@ -4190,5 +4190,14 @@
   "updateNews": "Novedades",
   "updateNew": "nueva",
   "shareKindTrack": "Canción",
-  "shareUntitled": "Sin título"
+  "shareUntitled": "Sin título",
+  "openOutsideLibrary": "{count, plural, one{El archivo está fuera de las carpetas de la biblioteca} other{{count} archivos están fuera de las carpetas de la biblioteca}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Añadir a la biblioteca"
 }

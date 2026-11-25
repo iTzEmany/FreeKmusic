@@ -4919,5 +4919,14 @@
   "updateNews": "Novità",
   "updateNew": "nuova",
   "shareKindTrack": "Brano",
-  "shareUntitled": "Senza titolo"
+  "shareUntitled": "Senza titolo",
+  "openOutsideLibrary": "{count, plural, one{Il file è fuori dalle cartelle della libreria} other{{count} file sono fuori dalle cartelle della libreria}}",
+  "@openOutsideLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "openAddToLibrary": "Aggiungi alla libreria"
 }
