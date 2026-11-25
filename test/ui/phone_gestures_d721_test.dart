@@ -63,13 +63,20 @@ void _phone(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
+/// Lets real async work (DB, files) and the animations run, with no wall-clock wait.
 Future<void> _settle(WidgetTester tester) async {
-  await tester.runAsync(
-    () => Future<void>.delayed(const Duration(milliseconds: 150)),
-  );
-  await tester.pump(const Duration(milliseconds: 300));
-  await tester.pump(const Duration(milliseconds: 300));
-  await tester.pump(const Duration(milliseconds: 300));
+  for (var i = 0; i < 12; i++) {
+    await tester.runAsync(() => pumpEventQueue());
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+}
+
+/// Pumps until [done] holds, at most 40 rounds.
+Future<void> _until(WidgetTester tester, bool Function() done) async {
+  for (var i = 0; i < 40 && !done(); i++) {
+    await tester.runAsync(() => pumpEventQueue());
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }
 
 void main() {
@@ -129,7 +136,7 @@ void main() {
     await _settle(tester);
     await _settle(tester);
     expect(h.handler.queueIds.length, before.length - 1);
-    tester.widget<SnackBarAction>(find.byType(SnackBarAction)).onPressed();
+    await tester.tap(find.byType(SnackBarAction));
     await _settle(tester);
     expect(h.handler.queueIds, before);
     await h.dispose(tester);
@@ -163,16 +170,27 @@ void main() {
   ) async {
     _phone(tester);
     final spy = _Spy();
+    late BuildContext ctx;
+    late WidgetRef ref;
     final h = await Harness.create(tester);
     await h.pump(
       tester,
-      const Scaffold(body: OnlineSongTile(result: _r, index: 0, selectionKey: 'k')),
+      Consumer(
+        builder: (c, r, _) {
+          ctx = c;
+          ref = r;
+          return const Scaffold();
+        },
+      ),
       extraOverrides: [playerControllerProvider.overrideWithValue(spy)],
     );
-    await tester.tap(find.text('Online song'));
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.tap(find.text('Online song'), warnIfMissed: false);
+    // What the row's onTap does, twice with no frame between: the second one
+    // finds the player already on the navigator and plays without pushing.
+    tapOnline(ctx, ref, _r);
+    tapOnline(ctx, ref, _r);
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
+    expect(spy.calls, ['play', 'play']);
     expect(find.byType(NowPlayingScreen), findsOneWidget);
     await h.dispose(tester);
   });
@@ -221,18 +239,16 @@ void main() {
     final g = await tester.startGesture(
       tester.getCenter(find.byType(CoverImage).first),
     );
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 700)); // past the long-press delay
+    await _until(tester, () => c.read(previewProvider).trackId == tracks[0].id);
     expect(c.read(previewProvider).trackId, tracks[0].id);
     await g.up();
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-    await tester.pump();
+    await _until(tester, () => !c.read(previewProvider).active);
     expect(c.read(previewProvider).active, isFalse);
     await h.dispose(tester);
   });
 
-  testWidgets('holding the cover of an online row starts a selection (no preview there today)', (
+  testWidgets('a long press on an online row (cover included) starts a selection, no preview', (
     tester,
   ) async {
     _phone(tester);
