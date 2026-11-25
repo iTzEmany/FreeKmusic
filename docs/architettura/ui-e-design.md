@@ -99,6 +99,7 @@ Sul desktop e sulle finestre larghe (`CcDims.wideBreakpoint`, 840) la shell dive
 - **Registro, importazioni**: in cima alla lista «Ferma tutto» e «Annulla tutto» (D-698) compaiono solo se c'è almeno un'importazione in corso («Ferma tutto» solo se una è `running`; `unfinishedImportsProvider`); agiscono su ogni catena con `pauseAll`/`cancelAll` del servizio, «Annulla tutto» chiede conferma.
 
 ### Fogli, dialoghi, menu
+- **Desktop (fase 155, D-717)**: il clic destro e il ⋮ aprono `showContextMenu` (`widgets/context_menu.dart`, unico file ammesso per `showMenu`) ancorato al punto del clic, con le stesse voci del foglio; tastiera: frecce, Invio, Esc, tasto Menu e Maiusc+F10. `showCcSheet` da 840 px sul desktop è un dialogo centrato alto quanto il contenuto, stesso valore restituito; sul telefono resta il foglio (D-721).
 Regola dei dialoghi: **dialogo per il testo** (un nome, una conferma), **foglio per le scelte** (elenchi, azioni, selettori). Ogni foglio si apre con `showCcSheet` (sempre sul navigator di radice, così copre dock e sidebar, 250 ms, zero con «Riduci animazioni»). I menu sono `showCcActionSheet` con `CcAction`. Dalla fase 138 un foglio senza `constraints` propri occupa `min(560, larghezza)` (`minWidth` in `showCcSheet`, un solo punto): un foglio con poco contenuto non resta stretto al centro. I campi di ricerca e il nome di una playlist non prendono il focus da soli (D-667): la tastiera si apre solo al tocco; Ctrl+F resta su desktop.
 
 ### Token
