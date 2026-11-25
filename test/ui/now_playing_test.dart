@@ -634,4 +634,28 @@ void main() {
       await h.dispose(tester);
     });
   });
+
+  testWidgets('the big heart favourites the song and «Annulla» puts it back', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 2);
+    final rows = await tester.runAsync(() => h.db.select(h.db.tracks).get());
+    await tester.runAsync(() => h.handler.playQueue([rows!.first.id], 0));
+    await h.pump(tester, const NowPlayingScreen());
+    Future<bool> favorite() async => (await tester.runAsync(
+      () => (h.db.select(h.db.tracks)..where((r) => r.id.equals(rows!.first.id))).getSingle(),
+    ))!.isFavorite;
+    await tester.tap(find.byTooltip('Preferito'));
+    await _settle(tester);
+    expect(await favorite(), isTrue);
+    expect(find.text('Aggiunto ai preferiti'), findsOneWidget);
+    await tester.tap(find.text('Annulla'));
+    await _settle(tester);
+    expect(await favorite(), isFalse);
+    expect(find.byTooltip('Preferito'), findsOneWidget);
+    await h.dispose(tester);
+  });
 }
