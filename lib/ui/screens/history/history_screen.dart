@@ -11,6 +11,7 @@ import '../../../providers/settings_providers.dart';
 import '../../theme/app_theme.dart';
 import '../../shell/shell_nav.dart';
 import '../../widgets/confirm.dart';
+import '../../widgets/page_frame.dart';
 import '../../widgets/empty_state.dart';
 import '../library/all_tracks_screen.dart';
 import '../../widgets/section_header.dart';
@@ -106,10 +107,7 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
           ),
         ],
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
+      body: PageFrame(
           child: AsyncBody(
             value: history,
             onRetry: () => ref.invalidate(historyProvider(_limit)),
@@ -170,7 +168,6 @@ class _HistoryScreenState extends ConsumerState<HistoryScreen> {
               );
             },
           ),
-        ),
       ),
     );
   }

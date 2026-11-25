@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/create_flows.dart';
+import '../../widgets/page_frame.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/db/app_database.dart';
@@ -42,10 +43,7 @@ class TagsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
+      body: PageFrame(
           child: tags.isEmpty
               ? EmptyState(
                   icon: Icons.label_outline_rounded,
@@ -73,7 +71,6 @@ class TagsScreen extends ConsumerWidget {
                       ),
                   ],
                 ),
-        ),
       ),
     );
   }

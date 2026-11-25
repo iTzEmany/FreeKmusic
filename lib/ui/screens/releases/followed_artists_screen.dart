@@ -14,6 +14,7 @@ import '../../../services/online/ytm_artist.dart';
 import '../../theme/tokens.dart';
 import '../../shell/shell_nav.dart';
 import '../../widgets/cc_sheet.dart';
+import '../../widgets/page_frame.dart';
 import '../../widgets/confirm.dart';
 import '../../widgets/empty_state.dart';
 import '../search/search_screen.dart';
@@ -57,10 +58,7 @@ class FollowedArtistsScreen extends ConsumerWidget {
       ),
       body: !followed.hasValue
           ? const LinearProgressIndicator(minHeight: 2)
-          : Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 960),
+          : PageFrame(
                 child: rows.isEmpty && toConfirm.isEmpty
                     ? EmptyState(
                         icon: Icons.notifications_none_rounded,
@@ -75,7 +73,6 @@ class FollowedArtistsScreen extends ConsumerWidget {
                             ? _PendingRow(lookup: toConfirm[i])
                             : _FollowedRow(artist: rows[i - toConfirm.length]),
                       ),
-              ),
             ),
     );
   }

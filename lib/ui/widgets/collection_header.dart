@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'page_frame.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/db/app_database.dart' show Track;
@@ -174,7 +175,7 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
               itemCount: widget.scrollerCount ?? 0,
               topInset: () =>
                   MediaQuery.paddingOf(context).top + kToolbarHeight,
-              child: scroll,
+              child: PageFrame(child: scroll),
             ),
           ),
           if (widget.selectionBar != null)

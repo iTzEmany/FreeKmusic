@@ -1,6 +1,7 @@
 import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
+import '../../widgets/page_frame.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -193,10 +194,7 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
             ),
         ],
       ),
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: wide ? 1240 : 960),
+      body: PageFrame(
           child: wide
               ? Row(
                   children: [
@@ -219,7 +217,6 @@ class _ActivityLogScreenState extends ConsumerState<ActivityLogScreen> {
                   ],
                 )
               : list,
-        ),
       ),
     );
   }
