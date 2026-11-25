@@ -209,3 +209,6 @@ Ogni testo visibile viene da un ARB (`context.l10n.<chiave>`). Italiano è il mo
 | [D-381](../decisioni.md) | Etichette TalkBack dopo il giro sul telefono della fase 83. |
 | [D-382](../decisioni.md) | Dissolvenza fra pagine; scheletri solo dopo 150 ms. |
 | [D-541](../decisioni.md) | Ogni avviso si chiude da solo e mostra un conto alla rovescia. |
+
+## Telaio delle pagine desktop (fase 157, D-720)
+`PageFrame` (`widgets/page_frame.dart`) dà a ogni pagina desktop lo stesso bordo sinistro: contenuto al massimo 1136 px centrato, margine reale 32 px da 1168 px; sotto 840 px non fa nulla. La home desktop è a 5 + 7 colonne con scaffali (`ShelfScroller`); il player desktop ha la barra lineare e Testo/Coda a tutta altezza a destra; il pannello destro dello shell è chiuso di default e ricordato (`sidePanel`, fuori dal backup). Anello di focus: `FocusRing` solo in modalità tastiera; bersagli desktop 36 px (guideline di `a11y_guidelines_test`), telefono 48 dp.

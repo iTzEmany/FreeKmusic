@@ -8,37 +8,37 @@ D-717, D-720. Refactor: [`analisi.md`](../refactor/desktop-e-coerenza/analisi.md
 Codice: `lib/ui/screens/home/home_screen.dart` (`:110`), `lib/ui/shell/app_shell.dart` (pannello destro, `~:410`), `side_panel.dart`, `lib/ui/screens/now_playing/now_playing_screen.dart`, `lib/ui/screens/settings/settings_pages.dart` (`:156`), `settings_screen.dart`, `settings_summaries.dart`, `lib/ui/screens/radio/radio_screen.dart` (`:112`), `lib/ui/screens/online/online_page_frame.dart`, `lib/ui/widgets/focus_ring_button.dart`, `desktop_sidebar.dart`, `lib/data/settings/settings_store.dart`.
 
 ## Task
-- [ ] 157.1 Caratterizzazione di impostazioni e pannelli
+- [x] 157.1 Caratterizzazione di impostazioni e pannelli
   - File: `test/ui/settings_index_test.dart`, `test/ui/app_shell_test.dart`, `test/ui/focus_test.dart`, `test/ui/xl_layout_test.dart`.
   - Passi: fissare le voci e le sezioni di Impostazioni (8), l'apertura del pannello destro da 1200 px, l'ordine del Tab di base.
   - Comando mirato: `flutter test` sui quattro file
   - Fatto quando: verdi sul codice di oggi.
-- [ ] 157.2 Telaio di pagina e home a 12 colonne (F-106, F-107)
+- [x] 157.2 Telaio di pagina e home a 12 colonne (F-106, F-107)
   - File: nuovo `lib/ui/widgets/page_frame.dart`, `home_screen.dart`, `home_blocks.dart`, `radio_screen.dart`, `online_page_frame.dart`, schermate podcast e Libreria.
   - Passi: 1) un solo contenitore: larghezza massima 1136 px centrata, margini 32 px, bordo sinistro fisso; 2) home su griglia a 12 colonne con scaffali orizzontali di copertine (Riprendi con lo stesso provider della 153); 3) sotto 840 px: telefono invariato.
   - Comando mirato: `flutter test test/ui/home_screen_test.dart test/ui/xl_layout_test.dart test/ui/radio_screen_test.dart`
   - Fatto quando: test: a 1920 px il contenuto è 1136 px e centrato in ogni pagina elencata; home senza metà vuota (golden).
-- [ ] 157.3 Player a tutto schermo e pannelli (F-111, F-112)
+- [x] 157.3 Player a tutto schermo e pannelli (F-111, F-112)
   - File: `now_playing_screen.dart`, `app_shell.dart`, `side_panel.dart`, `settings_store.dart`, ARB.
   - Passi: 1) copertina grande a sinistra, Testo e Coda a tutta altezza a destra, barra di posizione lineare con i tempi (non più l'anello); 2) pannello destro **chiuso di default** e scelta dell'utente ricordata (preferenza); 3) Registro e Daylist non si riducono a 830 px da soli.
   - Comando mirato: `flutter test test/ui/now_playing_test.dart test/ui/seek_characterization_test.dart test/ui/app_shell_test.dart`
   - Fatto quando: test: primo avvio a 1440 px con pannello chiuso; dopo l'apertura e un riavvio simulato resta aperto.
-- [ ] 157.4 Impostazioni da PC (F-113)
+- [x] 157.4 Impostazioni da PC (F-113)
   - File: `settings_pages.dart` (`:156`), `settings_screen.dart`, `settings_summaries.dart`, `lib/l10n/app_*.arb` (le chiavi «può rallentare sui telefoni»), `lib/core/platform.dart`.
   - Passi: nascondere sul desktop le opzioni solo-telefono («Dimensione testo» a blocchi, testi sui telefoni); colonna di dettaglio con larghezza massima, etichetta e interruttore vicini; sezione «Scorciatoie» predisposta per la 158.
   - Comando mirato: `flutter test test/ui/settings_index_test.dart test/ui/advanced_settings_test.dart`
   - Fatto quando: test con `debugIsDesktopOverride`: opzioni solo-telefono assenti sul desktop, presenti sul telefono.
-- [ ] 157.5 Ascolto, altre schermate, stati vuoti (F-119)
+- [x] 157.5 Ascolto, altre schermate, stati vuoti (F-119)
   - File: `lib/ui/screens/history/`, `lib/ui/screens/podcast/`, `lib/ui/screens/stats/`, `lib/ui/screens/activity/activity_log_screen.dart`, `lib/ui/screens/daylist/`, `lib/ui/screens/library/favorites_screen.dart`, `lib/ui/screens/releases/`.
   - Passi: seguire `desktop-ascolto.html` (Cronologia, Daylist, Statistiche, Podcast) e `desktop-altro.html` (Registro, Radio, Artisti seguiti, Generi, Etichette, Preferiti); stati vuoti con icona, testo e azione (`EmptyState` della 152) per Cronologia, Etichette, Artisti seguiti, Preferiti.
   - Comando mirato: `flutter test test/ui/radio_screen_test.dart test/ui/search_screen_test.dart` + i test di ogni schermata toccata
   - Fatto quando: un test per schermata con dati e uno vuoto (icona, testo, azione).
-- [ ] 157.6 Focus e tooltip (F-115, F-116)
+- [x] 157.6 Focus e tooltip (F-115, F-116)
   - File: `lib/ui/widgets/focus_ring_button.dart`, `desktop_sidebar.dart`, `segmented_blocks.dart`, `library_filter_bar.dart`, `cc_tile.dart`, pulsanti a icona (⋮, «+», chip attività, intestazioni).
   - Passi: 1) anello di focus 2 px nel colore d'accento su barra laterale, chip, segmenti, tile; distinto dalla selezione; 2) `tooltip` su ogni `IconButton` desktop e bersaglio ≥ 32 px (36 dove il telaio lo permette); 3) estendere `a11y_guidelines_test` a Cerca, impostazioni, player desktop.
   - Comando mirato: `flutter test test/ui/focus_test.dart test/ui/a11y_guidelines_test.dart`
   - Fatto quando: test: dopo 3 Tab l'elemento focalizzato ha l'anello e non ha lo stato «selezionato»; `_known` non cresce.
-- [ ] 157.7 Goldens, guardie, documenti
+- [x] 157.7 Goldens, guardie, documenti
   - Passi: `flutter test --update-goldens test/goldens` una volta (Linux, 27 desktop e telefono), `scripts/guardie.sh`, `flutter analyze`; `ui-e-design.md`.
   - Comando mirato: `flutter test test/goldens`
   - Fatto quando: verdi; il controllo visivo contro i mockup è nella 161.
@@ -47,3 +47,12 @@ Codice: `lib/ui/screens/home/home_screen.dart` (`:110`), `lib/ui/shell/app_shell
 Niente.
 
 ## Note di deviazione
+- Una sola PR per tutta la fase (D-745 ne prevedeva due: 157a con 157.1/157.4/157.5 stati vuoti e 157b con il resto; sono state pronte insieme).
+- 157.1: tolto il test del Tab su tre `TextButton` (provava solo Flutter); l'ordine del Tab è coperto dal test dell'anello di 157.6.
+- 157.2: `PageFrame(child:)` (`lib/ui/widgets/page_frame.dart`): da 840 px contenuto al massimo 1136 px centrato in alto; da 1168 px aggiunge 16 px per lato, così il margine reale è 32 (D-720). Applicato a Home, Libreria, Tutti i brani, Cerca, Impostazioni, Radio, pagine online, podcast, Cronologia, Daylist, Statistiche, Registro, Artisti seguiti, Generi, Etichette e a `CollectionScaffold` (album, playlist, artista, Preferiti). Home desktop: 5 + 7 colonne (scorciatoie a sinistra, Riprendi e Daylist a destra), poi scaffali a tutta larghezza con `ShelfScroller`; con la colonna destra vuota la sinistra prende tutta la larghezza.
+- 157.3: colonna destra del player 520 px da 1100 px, 400 sotto; barra di posizione lineare (`NpSeekRow` accessibile), anello solo sul telefono; Esc chiude il player sul desktop. Pannello destro chiuso di default, preferenza `sidePanel` fuori dal backup; tolta l'apertura automatica a 1200 px (era lei a stringere Registro e Daylist). Karaoke non compare sul desktop: richiede il motore di separazione, che c'è solo su Android (D-623/D-624).
+- 157.4: sul desktop sono nascoste Dimensione testo, Dock sfocato e Pre-carica con i dati mobili; i valori salvati (anche arrivati da backup o sync) sono ignorati alla lettura sul desktop, non cancellati. Sezione «Scorciatoie» predisposta con uno stato vuoto (la riempie la 158.3).
+- 157.5: i mockup non hanno sezioni per Cronologia, Etichette, Artisti seguiti, Generi e Preferiti: lì solo telaio e stati vuoti con azione. Cronologia resta una lista per giorno (una tabella per giorno ripeterebbe l'intestazione); episodi dei podcast non in tabella (non sono `Track`); Statistiche: grafici affiancati, senza i quattro numeri del mockup (l'app non ha quei dati per periodo); Daylist senza intestazione a mosaico e chip delle fasce; Registro senza «Riprova» nel dettaglio.
+- 157.6: `FocusRing` disegna l'anello solo in modalità tastiera e segue i cambi di modalità; non legge lo stato selezionato. Sul desktop la guideline dei bersagli in `a11y_guidelines_test` è 36 px (D-720), sul telefono resta 48 dp: `_known` da 2 voci a 1 (resta il chip della velocità del player del telefono). Nessun `IconButton` senza tooltip trovato. Barra desktop: karaoke e timer da 900 px (a 800 traboccava di ~10 px); riga dei controlli da 44 a 40 px.
+- 157.7: golden rigenerati su master (66 PNG, quasi tutti desktop); il controllo visivo contro i mockup è nella 161.
+- Prova dal vivo (D-746, scheggia sul Mi A3 e su Linux sotto Xvfb dopo tutte le fasi UI): corretti telaio mancante in Tutti i brani/Cerca/Impostazioni, colonna vuota della home desktop, dialogo «Nuova playlist» alto quanto il tetto, ⋮ a capo nella testata a 360 dp, Esc nel player, testo del cuore di collezione. Non riprodotto: snackbar del cuore assente nel mini player (test di regressione aggiunto).
