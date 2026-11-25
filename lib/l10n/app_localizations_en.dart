@@ -8681,4 +8681,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shortcutKeySpace => 'Space';
+
+  @override
+  String get trayPlayPause => 'Play/Pause';
+
+  @override
+  String get trayNext => 'Next';
+
+  @override
+  String get trayShowHide => 'Show/Hide';
+
+  @override
+  String get trayQuit => 'Quit';
+
+  @override
+  String get closeToTray => 'Close to the system tray';
+
+  @override
+  String get closeToTrayHint =>
+      'Closing the window keeps the music playing in the background, with its menu in the system tray. Off on Linux: GNOME shows the tray only with the AppIndicator extension.';
+
+  @override
+  String get closeToTrayUnavailable =>
+      'This desktop has no system tray: the window always closes.';
+
+  @override
+  String get dropHint => 'Drop to listen';
+
+  @override
+  String get dropRejected => 'Drop audio files only, not folders';
 }

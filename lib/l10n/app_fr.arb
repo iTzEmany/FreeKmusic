@@ -4489,5 +4489,14 @@
   "shortcutPasteLink": "Rechercher et coller un lien",
   "shortcutShowList": "Afficher la liste des raccourcis",
   "shortcutQuit": "Quitter FreeKmusic",
-  "shortcutKeySpace": "Espace"
+  "shortcutKeySpace": "Espace",
+  "trayPlayPause": "Lecture/Pause",
+  "trayNext": "Suivant",
+  "trayShowHide": "Afficher/Masquer",
+  "trayQuit": "Quitter",
+  "closeToTray": "Fermer dans la zone de notification",
+  "closeToTrayHint": "Fermer la fenêtre laisse la musique en arrière-plan, avec le menu dans la zone de notification. Désactivé sous Linux : GNOME n’affiche la zone qu’avec l’extension AppIndicator.",
+  "closeToTrayUnavailable": "Ce bureau n’a pas de zone de notification : la fenêtre se ferme toujours.",
+  "dropHint": "Déposez pour écouter",
+  "dropRejected": "Déposez uniquement des fichiers audio, pas des dossiers"
 }

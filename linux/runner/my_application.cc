@@ -12,6 +12,7 @@ struct _MyApplication {
   char** dart_entrypoint_arguments;
   FlMethodChannel* channel;  // 'freekmusic/window', set once the view exists
   GPtrArray* pending_files;  // paths received while running, taken by Dart
+  gboolean shown_once;       // the first frame was drawn and the window shown
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
@@ -53,7 +54,16 @@ static void channel_cb(FlMethodChannel* channel, FlMethodCall* call,
 
 // Called when first Flutter frame received.
 static void first_frame_cb(MyApplication* self, FlView* view) {
+  self->shown_once = TRUE;
   gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+}
+
+// Brings the window forward, also when it was hidden (closed to the tray).
+// Before the first frame it stays as it is: showing it now would be a black window.
+static void present_window(MyApplication* self, GtkWidget* window) {
+  if (!self->shown_once) return;
+  gtk_widget_show(window);
+  gtk_window_present(GTK_WINDOW(window));
 }
 
 // Implements GApplication::activate.
@@ -62,9 +72,7 @@ static void my_application_activate(GApplication* application) {
   // Already running (a second launch without files): bring it forward.
   GList* existing = gtk_application_get_windows(GTK_APPLICATION(application));
   if (existing != nullptr) {
-    if (gtk_widget_get_visible(GTK_WIDGET(existing->data))) {
-      gtk_window_present(GTK_WINDOW(existing->data));
-    }
+    present_window(self, GTK_WIDGET(existing->data));
     return;
   }
   GtkWindow* window =
@@ -180,9 +188,7 @@ static void my_application_open(GApplication* application, GFile** files,
     if (path != nullptr) g_ptr_array_add(self->pending_files, path);
   }
   GList* windows = gtk_application_get_windows(GTK_APPLICATION(application));
-  if (windows != nullptr && gtk_widget_get_visible(GTK_WIDGET(windows->data))) {
-    gtk_window_present(GTK_WINDOW(windows->data));
-  }
+  if (windows != nullptr) present_window(self, GTK_WIDGET(windows->data));
   if (self->channel != nullptr) {
     fl_method_channel_invoke_method(self->channel, "opened", nullptr, nullptr,
                                     nullptr, nullptr);

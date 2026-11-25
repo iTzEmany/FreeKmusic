@@ -8745,4 +8745,33 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shortcutKeySpace => 'Leertaste';
+
+  @override
+  String get trayPlayPause => 'Wiedergabe/Pause';
+
+  @override
+  String get trayNext => 'Nächster';
+
+  @override
+  String get trayShowHide => 'Anzeigen/Verbergen';
+
+  @override
+  String get trayQuit => 'Beenden';
+
+  @override
+  String get closeToTray => 'In den Infobereich schließen';
+
+  @override
+  String get closeToTrayHint =>
+      'Das Schließen des Fensters lässt die Musik im Hintergrund weiterspielen, mit dem Menü im Infobereich. Unter Linux aus: GNOME zeigt den Infobereich nur mit der AppIndicator-Erweiterung.';
+
+  @override
+  String get closeToTrayUnavailable =>
+      'Dieser Desktop hat keinen Infobereich: das Fenster wird immer geschlossen.';
+
+  @override
+  String get dropHint => 'Zum Abspielen loslassen';
+
+  @override
+  String get dropRejected => 'Nur Audiodateien ablegen, keine Ordner';
 }

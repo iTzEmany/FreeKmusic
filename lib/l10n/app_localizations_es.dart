@@ -8735,4 +8735,33 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get shortcutKeySpace => 'Espacio';
+
+  @override
+  String get trayPlayPause => 'Reproducir/Pausa';
+
+  @override
+  String get trayNext => 'Siguiente';
+
+  @override
+  String get trayShowHide => 'Mostrar/Ocultar';
+
+  @override
+  String get trayQuit => 'Salir';
+
+  @override
+  String get closeToTray => 'Cerrar en la bandeja del sistema';
+
+  @override
+  String get closeToTrayHint =>
+      'Cerrar la ventana deja la música sonando de fondo, con el menú en la bandeja del sistema. Desactivado en Linux: GNOME muestra la bandeja solo con la extensión AppIndicator.';
+
+  @override
+  String get closeToTrayUnavailable =>
+      'Este escritorio no tiene bandeja del sistema: la ventana siempre se cierra.';
+
+  @override
+  String get dropHint => 'Suelta para escuchar';
+
+  @override
+  String get dropRejected => 'Suelta solo archivos de audio, no carpetas';
 }

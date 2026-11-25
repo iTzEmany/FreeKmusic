@@ -30,7 +30,7 @@ jobs:
       - name: ffmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg clang pkg-config libgtk-3-dev libx11-dev libxi-dev
       - name: yt-dlp (pinned, verified)
         run: |
           curl -fsSL -o yt-dlp "https://github.com/yt-dlp/yt-dlp/releases/download/${YTDLP_VERSION}/yt-dlp_linux"

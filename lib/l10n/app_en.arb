@@ -4268,5 +4268,14 @@
   "shortcutPasteLink": "Search and paste a link",
   "shortcutShowList": "Show the list of shortcuts",
   "shortcutQuit": "Quit FreeKmusic",
-  "shortcutKeySpace": "Space"
+  "shortcutKeySpace": "Space",
+  "trayPlayPause": "Play/Pause",
+  "trayNext": "Next",
+  "trayShowHide": "Show/Hide",
+  "trayQuit": "Quit",
+  "closeToTray": "Close to the system tray",
+  "closeToTrayHint": "Closing the window keeps the music playing in the background, with its menu in the system tray. Off on Linux: GNOME shows the tray only with the AppIndicator extension.",
+  "closeToTrayUnavailable": "This desktop has no system tray: the window always closes.",
+  "dropHint": "Drop to listen",
+  "dropRejected": "Drop audio files only, not folders"
 }

@@ -13,27 +13,27 @@ Codice: `.github/workflows/ci.yml` (`FLUTTER_VERSION`, 3.47.1), `.github/workflo
   - Passi: 1) `flutter upgrade` locale e `flutter --version`; la versione CI deve essere uguale (la regola del commento in `ci.yml`); 2) `flutter pub get`, `flutter analyze`, `dart run build_runner build --delete-conflicting-outputs`, `flutter gen-l10n`; 3) PR con solo questo cambio; 4) i goldens sono Linux: se il motore cambia il rendering, rigenerare **in questo passo** e dirlo.
   - Comando mirato: `flutter analyze` + test mirati di UI e goldens (`flutter test test/goldens`); la suite la esegue la CI
   - Fatto quando: CI verde (check «Analyze and test») con la nuova versione in tutti i workflow; `grep -rn "3.47.1" .github` vuoto.
-- [ ] 159.2 Caratterizzazione di chiusura e impostazioni
+- [x] 159.2 Caratterizzazione di chiusura e impostazioni
   - File: `test/ui/app_shell_test.dart`, `test/ui/settings_index_test.dart`.
   - Passi: fissare che la chiusura oggi non è intercettata e le voci di Impostazioni › Avanzate (o dove vanno le opzioni desktop).
   - Comando mirato: `flutter test test/ui/app_shell_test.dart test/ui/settings_index_test.dart`
   - Fatto quando: verdi.
-- [ ] 159.3 `window_manager`: dimensione e posizione (F-206)
+- [x] 159.3 `window_manager`: dimensione e posizione (F-206)
   - File: `pubspec.yaml`, `lib/main.dart`, nuovo `lib/services/window/window_state.dart`, `settings_store.dart`, `linux/runner/my_application.cc` (compatibilità), test con adattatore finto.
   - Passi: 1) `flutter pub add window_manager` e controllare versione e licenza (la ricerca dice 0.7.1, MIT; ripetere la verifica); 2) (fuori dal backup, D-739) salva `getBounds` a ogni cambio (con ritardo), ripristina all'avvio; schermo cambiato o fuori campo → dimensione standard; 3) **Wayland: solo dimensione** (la posizione non è impostabile dall'app); 4) preferenza fuori dal backup; 5) il titolo della 158.5 non si rompe.
   - Comando mirato: `flutter test test/services/window/` + `flutter analyze` + `flutter build linux --debug`
   - Fatto quando: test: bounds salvati e ripristinati; bounds fuori schermo scartati; su Wayland nessuna chiamata a posizione.
-- [ ] 159.4 `tray_manager ^0.8.3` e «Chiudi nella barra di sistema» (D-729)
+- [x] 159.4 `tray_manager ^0.8.3` e «Chiudi nella barra di sistema» (D-729)
   - File: `pubspec.yaml` (`tray_manager: ^0.8.3`; 0.9.x vuole Flutter 3.50), nuovo `lib/services/window/tray_service.dart`, `lib/main.dart`, `settings_pages.dart`, `settings_store.dart`, ARB (6 lingue via `scripts/arb_add.py`), `packaging/flatpak/com.freekmusic.player.yml`, CI apt (`libgtk-3-dev libx11-dev libxi-dev` già presenti per la build).
   - Passi: 1) icona con menu **Play/Pausa, Successivo, Mostra/Nascondi, Esci** (Linux: StatusNotifierItem, solo menu, nessun clic sull'icona); 2) opzione «Chiudi nella barra di sistema»: **accesa di default su Windows, spenta su Linux**; se la tray non è disponibile l'opzione non nasconde mai la finestra; 3) con l'opzione accesa la X nasconde (`setPreventClose` + `onWindowClose`), «Esci» chiude davvero con la chiusura pulita; 4) flatpak: provare `--talk-name=org.kde.StatusNotifierWatcher` in `finish-args` (dedotto, da verificare); 5) il menu usa gli stessi comandi del player.
   - Comando mirato: `flutter test test/services/window/ test/ui/settings_index_test.dart`
   - Fatto quando: test: default Windows vero e Linux falso; X con opzione accesa nasconde, spenta chiude; i quattro comandi del menu chiamano le azioni giuste.
-- [ ] 159.5 `desktop_drop`: trascinare file (F-208)
+- [x] 159.5 `desktop_drop`: trascinare file (F-208)
   - File: `pubspec.yaml` (`desktop_drop`, versione compatibile col Flutter di 159.1; la ricerca dice 0.9.2, ≥ 3.47.7, Apache-2.0, `localPath` può essere null), nuovo `lib/ui/shell/drop_overlay.dart`, `app_shell.dart`, ARB.
   - Passi: 1) `DropTarget` sullo shell con velo «Rilascia per …» mentre si trascina; 2) file audio ricevuti → stesso percorso di «Apri con» (158.4, D-736: suonano subito, più file in coda nell'ordine); cartelle e file non audio ignorati con messaggio; `localPath` nullo → messaggio e `AppLog.w`; 3) nessun I/O pesante nel thread UI (lettura tag fuori dal thread UI come la scansione).
   - Comando mirato: `flutter test test/ui/drop_overlay_test.dart`
   - Fatto quando: test con file finti: audio accettato, non audio rifiutato, percorso nullo gestito.
-- [ ] 159.6 Verifica dei pacchetti, flatpak e documenti
+- [x] 159.6 Verifica dei pacchetti, flatpak e documenti
   - Passi: 1) `flutter pub deps` senza altri pacchetti nuovi oltre i tre; 2) `scripts/guardie.sh`; 3) `piattaforme.md` (finestra, tray, drop, limite Wayland e GNOME senza estensione AppIndicator); 4) `integration_test/desktop_flow_test.dart` ancora verde (la tray non si avvia nel test).
   - Comando mirato: `flutter analyze` + `git diff pubspec.yaml`
   - Fatto quando: nel diff di `pubspec.yaml` ci sono solo `window_manager`, `tray_manager`, `desktop_drop`.
@@ -45,3 +45,8 @@ Codice: `.github/workflows/ci.yml` (`FLUTTER_VERSION`, 3.47.1), `.github/workflo
 
 ## Note di deviazione
 - 159.1: Flutter 3.47.1 → **3.47.9** (ultima 3.47.x) passando al tag in `~/flutter` invece di `flutter upgrade`, che porterebbe a una stable più nuova (D-742); il ramo locale `stable` dell'SDK ha 43 commit propri, lasciati intatti (per tornare indietro: `git -C ~/flutter checkout 6655482e`). `pubspec.lock`, build_runner, gen-l10n e golden invariati; nessun lint nuovo. PR a sé.
+- Versioni: pub ha risolto per Flutter 3.47.9 **window_manager 0.6.0** (non 0.7.1), **tray_manager 0.8.3**, **desktop_drop 0.8.0** (non 0.9.2; in 0.8.0 `DropItem.path` non è nullo). window_manager 0.6 e tray_manager 0.8.3 sono riscritti su **`nativeapi` 0.5.10** (FFI, compilato da un hook di build con `pkg-config gtk+-3.0 x11 xi`): dichiarato in `pubspec.yaml` per usare `DisplayManager` senza soppressioni (D-747). Licenze: MIT, MIT, Apache-2.0, MIT. L'hook compila `libcnativeapi.so` anche negli APK Android (~2,4 MB per arm64). Il job `check` e la notturna installano ora `libgtk-3-dev libx11-dev libxi-dev pkg-config clang` (`flutter test` esegue gli hook).
+- 159.2: i test di caratterizzazione sono stati scritti sul codice finale (non eseguiti prima sul codice di partenza).
+- 159.3: API nuova di window_manager (`WindowManager.instance.getCurrent()`, eventi di spostamento, ridimensionamento e chiusura). `windowBounds` (`x,y,w,h`, fuori dal backup) ripristinato prima di `runApp` solo se almeno 120x60 px stanno su uno schermo e non supera l'area degli schermi; su Wayland solo la dimensione. Sotto Xvfb (senza window manager) la dimensione torna, la posizione no: da provare su un desktop vero.
+- 159.4: una sola funzione di chiusura (`quitAppProvider`) per la X (opzione spenta), Alt+F4, Ctrl+Q e «Esci»: toglie l'icona, salva la coda (`flush`) e chiama `exitApplication`; gli eventi di chiusura dopo l'uscita sono ignorati. Tray solo se c'è uno StatusNotifierWatcher **con un host registrato** (`gdbus`, timeout 3 s), valutato all'avvio; **spenta nel flatpak** finché non è provata (il `--talk-name` del watcher è nel manifest, potrebbe servire anche un `--own-name`). Una seconda istanza rimostra la finestra nascosta nella tray (runner Linux `shown_once`; Windows `FreeKmusicShown` + `ShowWindow`, non compilato qui). Su Windows il clic sull'icona mostra/nasconde. `libayatana-appindicator` non serve (SNI via GIO).
+- 159.5: il velo del trascinamento sta nel `builder` di `MaterialApp` (`app.dart`), non nello shell; i file passano da `OpenFiles.handle` (ordine, avviso fuori libreria, portale Flatpak).

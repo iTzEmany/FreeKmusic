@@ -127,6 +127,7 @@ void main() {
     'acoustId', // sends audio fingerprints to an outside service: each device decides
     'pauseOnZeroVolume',
     'blurredChrome',
+    'closeToTray', // a PC without a tray must not be hidden by another's choice (D-729)
     'enrichOnMetered',
     'jamLatencyMs',
     'receiveFromLan',

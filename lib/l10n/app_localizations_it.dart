@@ -8708,4 +8708,33 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get shortcutKeySpace => 'Spazio';
+
+  @override
+  String get trayPlayPause => 'Riproduci/Pausa';
+
+  @override
+  String get trayNext => 'Successivo';
+
+  @override
+  String get trayShowHide => 'Mostra/Nascondi';
+
+  @override
+  String get trayQuit => 'Esci';
+
+  @override
+  String get closeToTray => 'Chiudi nella barra di sistema';
+
+  @override
+  String get closeToTrayHint =>
+      'Chiudere la finestra lascia la musica in sottofondo, con il menu nella barra di sistema. Spento su Linux: GNOME mostra la barra solo con l\'estensione AppIndicator.';
+
+  @override
+  String get closeToTrayUnavailable =>
+      'Questo desktop non ha una barra di sistema: la finestra si chiude sempre.';
+
+  @override
+  String get dropHint => 'Rilascia per ascoltare';
+
+  @override
+  String get dropRejected => 'Trascina solo file audio, non cartelle';
 }

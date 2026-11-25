@@ -16,6 +16,7 @@ import '../../../providers/equalizer_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/permission_providers.dart';
 import '../../../providers/settings_providers.dart';
+import '../../../providers/tray_providers.dart';
 import '../../widgets/cc_sheet.dart';
 import '../../widgets/choice_dialog.dart';
 import '../../widgets/confirm.dart';
@@ -590,9 +591,24 @@ List<SettingsGroup> _backup(BuildContext context, WidgetRef ref) {
   ];
 }
 
+Widget _closeToTrayTile(BuildContext context, WidgetRef ref) {
+  final l = context.l10n;
+  final available = ref.watch(trayAvailableProvider);
+  return SwitchListTile(
+    key: const ValueKey('close-to-tray'),
+    title: Text(l.closeToTray),
+    subtitle: Text(available ? l.closeToTrayHint : l.closeToTrayUnavailable),
+    value: available && ref.watch(settingsProvider.select((s) => s.closeToTray)),
+    onChanged: available
+        ? (v) => ref.read(settingsProvider.notifier).update((c) => c.copyWith(closeToTray: v))
+        : null,
+  );
+}
+
 List<SettingsGroup> _advanced(BuildContext context, WidgetRef ref) {
   final l = context.l10n;
   return [
+    if (isDesktop) SettingsGroup(children: [_closeToTrayTile(context, ref)]),
     SettingsGroup(
       title: l.settingsAdvanced,
       children: const [AdvancedSettingsTiles()],

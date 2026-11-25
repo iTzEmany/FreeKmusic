@@ -3,6 +3,7 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/activity_providers.dart';
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:codecore/providers/exportify_providers.dart' show IncomingText, incomingTextProvider;
 import 'package:codecore/providers/memory_providers.dart';
@@ -76,6 +77,15 @@ Future<void> _openTabSheet(WidgetTester t) async {
 }
 
 void main() {
+  testWidgets('closing the app is not intercepted by the shell: an exit request is answered with exit', (t) async {
+    _phone(t);
+    final h = await Harness.create(t);
+    await h.pump(t, const AppShell());
+    await _settle(t);
+    expect(await t.binding.handleRequestAppExit(), ui.AppExitResponse.exit);
+    await h.dispose(t);
+  });
+
   testWidgets('Esc closes a sheet opened inside a tab', (t) async {
     _phone(t);
     final h = await Harness.create(t);

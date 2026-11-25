@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,6 +49,7 @@ class AppSettings {
     this.spinCover = false,
     this.pauseOnZeroVolume = false,
     this.blurredChrome = false,
+    this.closeToTray = false,
     this.language = 'it',
     this.autoEnrich = true,
     this.autoLyrics = true,
@@ -127,6 +129,9 @@ class AppSettings {
 
   /// Dock and headers semi-transparent with a blur; off by default (slow on weak phones, D-406).
   final bool blurredChrome;
+
+  /// Desktop: the window's X hides it into the system tray instead of quitting (D-729). Device-bound.
+  final bool closeToTray;
   final bool compactMode,
       reducedMotion,
       autoEnrich,
@@ -268,6 +273,7 @@ class AppSettings {
     bool? spinCover,
     bool? pauseOnZeroVolume,
     bool? blurredChrome,
+    bool? closeToTray,
     String? language,
     bool? autoEnrich,
     bool? autoLyrics,
@@ -334,6 +340,7 @@ class AppSettings {
     spinCover: spinCover ?? this.spinCover,
     pauseOnZeroVolume: pauseOnZeroVolume ?? this.pauseOnZeroVolume,
     blurredChrome: blurredChrome ?? this.blurredChrome,
+    closeToTray: closeToTray ?? this.closeToTray,
     language: language ?? this.language,
     autoEnrich: autoEnrich ?? this.autoEnrich,
     autoLyrics: autoLyrics ?? this.autoLyrics,
@@ -447,6 +454,15 @@ const genreRereadDoneKey = 'genreRereadDone';
 /// D-665 one-off step done on this device (device-bound: a restored backup neither repeats nor blocks it).
 const storageModeD665Key = 'storageModeD665';
 
+/// «Chiudi nella barra di sistema» (D-729). Device-bound: a restore must not hide the window of a PC without a tray.
+const closeToTrayKey = 'closeToTray';
+
+/// On by default on Windows, off on Linux (GNOME shows the tray only with the AppIndicator extension).
+bool closeToTrayDefault({bool? windows}) => windows ?? Platform.isWindows;
+
+/// Last window position and size, `x,y,w,h`. Device-bound: it only makes sense on this screen (D-739).
+const windowBoundsKey = 'windowBounds';
+
 /// Last version whose «Aggiornata alla X» page was decided on. Device-bound: a restore must not show the page nor hide it.
 const lastSeenVersionKey = 'lastSeenVersion';
 
@@ -516,6 +532,7 @@ class SettingsStore {
     spinCover: _prefs.getBool('spinCover') ?? false,
     pauseOnZeroVolume: _prefs.getBool('pauseOnZeroVolume') ?? false,
     blurredChrome: _prefs.getBool('blurredChrome') ?? false,
+    closeToTray: _prefs.getBool(closeToTrayKey) ?? closeToTrayDefault(),
     language: _prefs.getString('language') ?? 'it',
     autoEnrich: _prefs.getBool('autoEnrich') ?? true,
     autoLyrics: _prefs.getBool('autoLyrics') ?? true,
@@ -627,6 +644,7 @@ class SettingsStore {
     await _prefs.setBool('spinCover', s.spinCover);
     await _prefs.setBool('pauseOnZeroVolume', s.pauseOnZeroVolume);
     await _prefs.setBool('blurredChrome', s.blurredChrome);
+    await _prefs.setBool(closeToTrayKey, s.closeToTray);
     await _prefs.setString('language', s.language);
     await _prefs.setBool('autoEnrich', s.autoEnrich);
     await _prefs.setBool('autoLyrics', s.autoLyrics);
@@ -770,6 +788,10 @@ class SettingsStore {
   bool get flatpakNoticeShown => _prefs.getBool(flatpakNoticeShownKey) ?? false;
 
   Future<void> markFlatpakNoticeShown() => _prefs.setBool(flatpakNoticeShownKey, true);
+
+  String? readWindowBounds() => _prefs.getString(windowBoundsKey);
+
+  Future<void> writeWindowBounds(String v) => _prefs.setString(windowBoundsKey, v);
 
   String? readLastSeenVersion() => _prefs.getString(lastSeenVersionKey);
 

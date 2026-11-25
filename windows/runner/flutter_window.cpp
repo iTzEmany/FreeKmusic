@@ -61,6 +61,8 @@ bool FlutterWindow::OnCreate() {
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
+    // Marks that the window has been shown once (read by a second launch, main.cpp).
+    ::SetProp(GetHandle(), L"FreeKmusicShown", reinterpret_cast<HANDLE>(1));
     this->Show();
   });
 

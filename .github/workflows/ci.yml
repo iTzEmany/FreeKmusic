@@ -84,6 +84,12 @@ jobs:
         run: node --test tools/report-worker/test/*.test.js
       - name: Share page tests
         run: node --test test/site/fragment.test.mjs
+      # flutter test runs the build hooks: cnativeapi (window_manager, tray_manager) needs gtk+-3.0, x11, xi.
+      - name: Native build packages
+        if: steps.scope.outputs.docs != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang pkg-config libgtk-3-dev libx11-dev libxi-dev
       # Covers lib, test, test/live, test_shots and integration_test.
       - if: steps.scope.outputs.docs != 'true'
         run: flutter analyze
@@ -193,7 +199,7 @@ jobs:
       - name: System packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev mpv libsqlite3-dev zip dpkg-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev libmpv-dev mpv libsqlite3-dev zip dpkg-dev
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -224,7 +230,7 @@ jobs:
       - name: System packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libmpv-dev mpv libsqlite3-dev zip dpkg-dev xvfb pulseaudio libpulse0 libasound2t64
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libx11-dev libxi-dev libmpv-dev mpv libsqlite3-dev zip dpkg-dev xvfb pulseaudio libpulse0 libasound2t64
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
