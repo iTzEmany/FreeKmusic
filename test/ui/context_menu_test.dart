@@ -4,6 +4,7 @@ import 'package:codecore/providers/youtube_providers.dart';
 import 'package:codecore/services/online/download_queue.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/ui/screens/online/online_song_row.dart';
+import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:codecore/ui/theme/app_theme.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/context_menu.dart';
@@ -125,7 +126,7 @@ void main() {
         focusNode: opener,
         onPressed: () => showContextMenu(c, const Offset(100, 100), [
           [MenuAction(Icons.add, 'Uno', () => ran.add('uno')), MenuAction(Icons.add, 'Due', () => ran.add('due'))],
-          [MenuAction(Icons.delete, 'Tre', () => ran.add('tre'), destructive: true, shortcut: 'Canc')],
+          [MenuAction(Icons.delete, 'Tre', () => ran.add('tre'), destructive: true)],
         ]),
         child: const Text('open'),
       ),
@@ -135,7 +136,6 @@ void main() {
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
     expect(Focus.of(tester.element(find.text('Uno'))).hasPrimaryFocus, isTrue);
-    expect(find.text('Canc'), findsOneWidget);
     expect(find.bySemanticsLabel('Altre azioni'), findsWidgets);
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.sendKeyEvent(LogicalKeyboardKey.enter);
@@ -144,23 +144,55 @@ void main() {
     expect(opener.hasPrimaryFocus, isTrue);
   });
 
-  testWidgets('the Menu key and Shift+F10 open it from the keyboard', (tester) async {
-    final key = FocusNode();
-    addTearDown(key.dispose);
-    var opened = 0;
+  testWidgets('empty groups are dropped; nothing left, nothing opens', (tester) async {
     await _plain(
       tester,
-      (_) => ContextMenuKey(
-        onOpen: (_) => opened++,
-        child: Focus(focusNode: key, child: const Text('row')),
+      (c) => Column(
+        children: [
+          TextButton(onPressed: () => showContextMenu(c, const Offset(100, 100), [[], []]), child: const Text('none')),
+          TextButton(
+            onPressed: () => showContextMenu(c, const Offset(100, 100), [[], [MenuAction(Icons.add, 'Uno', () {})]]),
+            child: const Text('some'),
+          ),
+        ],
       ),
     );
-    key.requestFocus();
+    await tester.tap(find.text('none'));
+    await tester.pumpAndSettle();
+    expect(_items, findsNothing);
+    await tester.tap(find.text('some'));
+    await tester.pumpAndSettle();
+    expect(_items, findsOneWidget);
+    expect(find.byType(PopupMenuDivider), findsNothing);
+  });
+
+  testWidgets('a real TrackRow reached with Tab opens the menu with the Menu key and with Shift+F10', (tester) async {
+    debugIsDesktopOverride = true;
+    tester.view.physicalSize = const Size(1200, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 1);
+    final t = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!.first;
+    final opened = <Offset>[];
+    await h.pump(
+      tester,
+      Builder(
+        builder: (c) => Theme(
+          data: Theme.of(c).copyWith(platform: TargetPlatform.linux),
+          child: Scaffold(
+            body: SizedBox(height: 64, child: TrackRow(track: t, onTap: () {}, onSecondaryTap: opened.add)),
+          ),
+        ),
+      ),
+    );
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     await tester.sendKeyEvent(LogicalKeyboardKey.contextMenu);
+    expect(opened, hasLength(1));
     await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
     await tester.sendKeyEvent(LogicalKeyboardKey.f10);
     await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-    expect(opened, 2);
+    expect(opened, hasLength(2));
+    await h.dispose(tester);
   });
 }

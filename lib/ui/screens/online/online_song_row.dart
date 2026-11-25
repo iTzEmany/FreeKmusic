@@ -46,7 +46,8 @@ void startOnlineDownloads(
 ) {
   final l = context.l10n;
   final adder = ref.read(libraryAdderProvider);
-  final streaming = ref.read(settingsProvider).storageMode == StorageMode.stream;
+  final streaming =
+      ref.read(settingsProvider).storageMode == StorageMode.stream;
   final busy = {
     for (final d in ref.read(downloadsProvider))
       if (d.status == DownloadStatus.queued ||
@@ -68,7 +69,9 @@ void startOnlineDownloads(
     started == 0
         ? l.ytNothingToDownload
         : streaming
-        ? (skipped == 0 ? l.libraryAddedMany(started) : l.libraryAddedSkipped(started, skipped))
+        ? (skipped == 0
+              ? l.libraryAddedMany(started)
+              : l.libraryAddedSkipped(started, skipped))
         : skipped == 0
         ? l.ytDownloadsStarted(started)
         : l.ytDownloadsSkipped(started, skipped),
@@ -128,7 +131,9 @@ class OnlineSongTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pick = watchOnlinePick(ref, selectionKey, index);
-    final inLibrary = ownedLocally || ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
+    final inLibrary =
+        ownedLocally ||
+        ref.watch(trackStateProvider(result.indexKey)) != TrackState.online;
     final item = ref.watch(
       downloadsProvider.select(
         (d) => d.where((x) => x.result.id == result.id).lastOrNull,
@@ -233,97 +238,106 @@ class OnlineSongRow extends StatelessWidget {
         child: ContextMenuKey(
           onOpen: (p) => selecting ? null : onMoreAt?.call(p),
           child: GestureDetector(
-          excludeFromSemantics: true,
-          onSecondaryTapDown: onMoreAt == null || selecting ? null : (d) => onMoreAt!(d.globalPosition),
-          child: InkWell(
-          onTap: onTap,
-          onLongPress: onLongPress,
-          child: SizedBox(
-            height: onlineRowExtentOf(context),
-            child: Row(
-              children: [
-                const SizedBox(width: CcDims.margin),
-                if (number != null && !selecting)
-                  SizedBox(
-                    width: 32,
-                    child: Text(
-                      '$number',
-                      textAlign: TextAlign.center,
-                      style: theme.bodyMedium?.copyWith(color: cc.textMuted),
-                    ),
-                  )
-                else
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      if (square)
-                        NetThumbnail(
-                          url: result.thumbnailUrl,
-                          width: 48,
-                          height: 48,
-                          icon: Icons.music_note,
-                        )
-                      else
-                        NetThumbnail(
-                          url: result.thumbnailUrl,
-                          width: 80,
-                          height: 45,
-                          icon: Icons.music_video,
-                        ),
-                      if (selecting) ...[
-                        Container(
-                          width: square ? 48 : 80,
-                          height: square ? 48 : 45,
-                          decoration: BoxDecoration(
-                            color: cc.bg.withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(CcDims.rList),
+            excludeFromSemantics: true,
+            onSecondaryTapDown: onMoreAt == null || selecting
+                ? null
+                : (d) => onMoreAt!(d.globalPosition),
+            child: InkWell(
+              onTap: onTap,
+              onLongPress: onLongPress,
+              child: SizedBox(
+                height: onlineRowExtentOf(context),
+                child: Row(
+                  children: [
+                    const SizedBox(width: CcDims.margin),
+                    if (number != null && !selecting)
+                      SizedBox(
+                        width: 32,
+                        child: Text(
+                          '$number',
+                          textAlign: TextAlign.center,
+                          style: theme.bodyMedium?.copyWith(
+                            color: cc.textMuted,
                           ),
                         ),
-                        SelectionBox(
-                          selected: selected,
-                          position: position,
-                          size: square ? 40 : 36,
-                        ),
-                      ],
-                    ],
-                  ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _SongText(
-                    result: result,
-                    inLibrary: inLibrary,
-                    onArtistTap: onArtistTap,
-                    note: note,
-                    tagLine: tagLine,
-                  ),
-                ),
-                ?listen,
-                _DownloadState(
-                  entryKey: item?.result.indexKey ?? result.indexKey,
-                  item: item,
-                  inLibrary: inLibrary,
-                  onDownload: onDownload,
-                ),
-                if (onMore != null && !selecting)
-                  Builder(
-                    builder: (context) => IconButton(
-                      tooltip: CatalogAction.more.label(l),
-                      icon: Icon(CatalogAction.more.icon),
-                      onPressed: onMoreAt != null && isDesktop
-                          ? () {
-                              final b = context.findRenderObject()! as RenderBox;
-                              onMoreAt!(b.localToGlobal(Offset(0, b.size.height)));
-                            }
-                          : onMore,
+                      )
+                    else
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          if (square)
+                            NetThumbnail(
+                              url: result.thumbnailUrl,
+                              width: 48,
+                              height: 48,
+                              icon: Icons.music_note,
+                            )
+                          else
+                            NetThumbnail(
+                              url: result.thumbnailUrl,
+                              width: 80,
+                              height: 45,
+                              icon: Icons.music_video,
+                            ),
+                          if (selecting) ...[
+                            Container(
+                              width: square ? 48 : 80,
+                              height: square ? 48 : 45,
+                              decoration: BoxDecoration(
+                                color: cc.bg.withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(
+                                  CcDims.rList,
+                                ),
+                              ),
+                            ),
+                            SelectionBox(
+                              selected: selected,
+                              position: position,
+                              size: square ? 40 : 36,
+                            ),
+                          ],
+                        ],
+                      ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _SongText(
+                        result: result,
+                        inLibrary: inLibrary,
+                        onArtistTap: onArtistTap,
+                        note: note,
+                        tagLine: tagLine,
+                      ),
                     ),
-                  )
-                else
-                  const SizedBox(width: 8),
-              ],
+                    ?listen,
+                    _DownloadState(
+                      entryKey: item?.result.indexKey ?? result.indexKey,
+                      item: item,
+                      inLibrary: inLibrary,
+                      onDownload: onDownload,
+                    ),
+                    if (onMore != null && !selecting)
+                      Builder(
+                        builder: (context) => IconButton(
+                          tooltip: CatalogAction.more.label(l),
+                          icon: Icon(CatalogAction.more.icon),
+                          onPressed: onMoreAt != null && isDesktop
+                              ? () {
+                                  final b =
+                                      context.findRenderObject()! as RenderBox;
+                                  onMoreAt!(
+                                    b.localToGlobal(Offset(0, b.size.height)),
+                                  );
+                                }
+                              : onMore,
+                        ),
+                      )
+                    else
+                      const SizedBox(width: 8),
+                  ],
+                ),
+              ),
             ),
           ),
-        ),
-        ),
         ),
       ),
     );

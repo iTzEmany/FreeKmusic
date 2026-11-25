@@ -34,7 +34,13 @@ Future<T?> showCcSheet<T>({
             maxHeight: MediaQuery.sizeOf(dc).height * 0.8,
           ),
           // Focus starts on the first control; Esc and the focus return come from the route.
-          child: _FirstFocus(child: Builder(builder: builder)),
+          // The handle's room stays when the caller asked for one: content does not touch the edge.
+          child: _FirstFocus(
+            child: Padding(
+              padding: EdgeInsets.only(top: showDragHandle == true ? CcDims.gap24 : 0),
+              child: Builder(builder: builder),
+            ),
+          ),
         ),
       ),
     );
