@@ -1,6 +1,7 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/library_entries.dart';
 import 'package:codecore/data/repositories/library_queries.dart' show LastPlay;
+import 'package:codecore/data/repositories/release_repository.dart' show RecentRelease;
 import 'package:codecore/providers/daylist_providers.dart'
     show DaylistActions, daylistActionsProvider;
 import 'package:codecore/l10n/app_localizations.dart';
@@ -451,6 +452,25 @@ void main() {
         ProviderScope(
           overrides: [
             newReleasesCountProvider.overrideWith((ref) => Stream.value(n)),
+            recentReleasesProvider(30).overrideWith(
+              (ref) => Stream.value([
+                if (n > 0)
+                  const RecentRelease(
+                    ArtistRelease(
+                      browseId: 'B1',
+                      artistId: 'UC1',
+                      title: 'Disco',
+                      kind: 0,
+                      firstSeenAt: 1,
+                      isNew: true,
+                      groupKey: 'disco',
+                    ),
+                    'Artista',
+                    false,
+                    0,
+                  ),
+              ]),
+            ),
           ],
           child: MaterialApp(
             locale: const Locale('it'),

@@ -4187,5 +4187,14 @@
   "updateNews": "Novedades",
   "updateNew": "nueva",
   "shareKindTrack": "Canción",
-  "shareUntitled": "Sin título"
+  "shareUntitled": "Sin título",
+  "libraryHistorySub": "Escuchado hace poco",
+  "genresCount": "{count, plural, one{1 género} other{{count} géneros}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

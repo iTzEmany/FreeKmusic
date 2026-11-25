@@ -8585,4 +8585,18 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get shareUntitled => 'Sem título';
+
+  @override
+  String get libraryHistorySub => 'Ouvidos recentemente';
+
+  @override
+  String genresCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count géneros',
+      one: '1 género',
+    );
+    return '$_temp0';
+  }
 }

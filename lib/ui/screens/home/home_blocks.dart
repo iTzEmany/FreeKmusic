@@ -94,7 +94,7 @@ class ShuffleHero extends ConsumerWidget {
 }
 
 /// Favourites, Playlist and Radio: the same tiles as the Library shortcuts
-/// ([LibraryShortcuts]), with an icon and the count in the subtitle.
+/// ([LibraryShortcuts]), with the count and its unit in the subtitle.
 class ShortcutsRow extends ConsumerWidget {
   const ShortcutsRow({super.key});
 
@@ -107,13 +107,11 @@ class ShortcutsRow extends ConsumerWidget {
     return LibraryShortcuts(
       items: [
         LibraryShortcut(
-          icon: Icons.favorite_border,
           label: l.navFavorites,
           meta: l.tracksCount(ref.watch(favoriteCountProvider).value ?? 0),
           onTap: () => open(const FavoritesScreen()),
         ),
         LibraryShortcut(
-          icon: Icons.queue_music,
           label: l.navPlaylists,
           meta: l.playlistsCount(count(ref.watch(playlistsProvider))),
           onTap: () => open(
@@ -124,7 +122,6 @@ class ShortcutsRow extends ConsumerWidget {
           ),
         ),
         LibraryShortcut(
-          icon: Icons.radio,
           label: l.radioTitle,
           meta: radios == 0 ? l.homeRadioLive : l.radioLibrarySubtitle(radios),
           onTap: () => open(const RadioScreen()),
@@ -172,6 +169,7 @@ class NewReleasesBlock extends ConsumerWidget {
     final l = context.l10n;
     final recent =
         ref.watch(recentReleasesProvider(30)).value ?? const <RecentRelease>[];
+    if (recent.isEmpty) return const SizedBox.shrink(); // 30-day window or loading
     return HomeBlock(
       header: SectionHeader(
         l.newReleasesTitle,
@@ -219,6 +217,7 @@ class _ReleaseTile extends StatelessWidget {
       label: '${r.title}, ${release.artistName}',
       excludeSemantics: true,
       onTap: () => ShellNav.open<void>(context, const NewReleasesScreen()),
+      // A cover opens the full list, like «Tutti» (no page per release here).
       child: InkWell(
         key: ValueKey('shelf-release-${r.browseId}'),
         onTap: () => ShellNav.open<void>(context, const NewReleasesScreen()),

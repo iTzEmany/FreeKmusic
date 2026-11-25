@@ -7,26 +7,22 @@ class LibraryShortcut {
   const LibraryShortcut({
     required this.label,
     this.icon,
-    this.count,
     this.meta,
     required this.onTap,
-    this.keepWhenZero = false,
   });
 
   final String label;
 
-  /// Libreria shortcuts have none (D-26); Memoria tools keep theirs.
+  /// Home and Libreria have none (mockup); Memoria tools keep theirs.
   final IconData? icon;
-  final int? count;
 
-  /// A small second line under the label.
+  /// The second line under the label, count with its unit («87 brani»).
   final String? meta;
   final VoidCallback onTap;
-  final bool keepWhenZero;
 }
 
-/// Grid of equal-width blocks; empty ones are hidden. Blocks without an icon
-/// (Libreria, D-26/D-53): 2 columns, all on one row from 720 dp. Blocks with an
+/// Grid of equal-width blocks. Blocks without an icon
+/// (Home, Libreria): up to 3 on one row, else 2 columns, all on one row from 720 dp. Blocks with an
 /// icon (Memoria): one column per 160 dp, up to 4.
 class LibraryShortcuts extends StatelessWidget {
   const LibraryShortcuts({super.key, required this.items});
@@ -41,11 +37,7 @@ class LibraryShortcuts extends StatelessWidget {
     final theme = Theme.of(context).textTheme;
     return Semantics(
       button: true,
-      label: [
-        s.label,
-        if (s.count != null) '${s.count}',
-        if (s.meta != null) s.meta!,
-      ].join(', '),
+      label: [s.label, ?s.meta].join(', '),
       excludeSemantics: true,
       onTap: s.onTap,
       child: PressScale(
@@ -68,21 +60,14 @@ class LibraryShortcuts extends StatelessWidget {
                 child: s.icon == null
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             s.label,
                             maxLines: 1,
-                            textAlign: TextAlign.center,
                             overflow: TextOverflow.ellipsis,
                             style: theme.labelLarge,
                           ),
-                          if (s.count != null)
-                            Text(
-                              '${s.count}',
-                              style: theme.bodySmall?.copyWith(
-                                color: cc.textMuted,
-                              ),
-                            ),
                           if (s.meta != null)
                             Text(
                               s.meta!,
@@ -120,15 +105,6 @@ class LibraryShortcuts extends StatelessWidget {
                               ],
                             ),
                           ),
-                          if (s.count != null) ...[
-                            const SizedBox(width: 8),
-                            Text(
-                              '${s.count}',
-                              style: theme.bodyMedium?.copyWith(
-                                color: cc.textMuted,
-                              ),
-                            ),
-                          ],
                         ],
                       ),
               ),
@@ -141,10 +117,7 @@ class LibraryShortcuts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visible = [
-      for (final s in items)
-        if (s.count != 0 || s.keepWhenZero) s,
-    ];
+    final visible = items;
     final scale = MediaQuery.textScalerOf(context).scale(1);
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -161,7 +134,7 @@ class LibraryShortcuts extends StatelessWidget {
           final iconic = visible.any((s) => s.icon != null);
           final cols = iconic
               ? (w ~/ 160).clamp(1, 4)
-              : (w >= 720 ? visible.length : 2);
+              : (w >= 720 || visible.length <= 3 ? visible.length : 2);
           return Column(
             children: [
               for (var i = 0; i < visible.length; i += cols) ...[

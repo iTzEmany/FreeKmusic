@@ -8611,4 +8611,18 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get shareUntitled => 'Ohne Titel';
+
+  @override
+  String get libraryHistorySub => 'Zuletzt gehört';
+
+  @override
+  String genresCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Genres',
+      one: '1 Genre',
+    );
+    return '$_temp0';
+  }
 }

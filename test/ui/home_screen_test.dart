@@ -180,6 +180,19 @@ void main() {
     handle.dispose();
   });
 
+  testWidgets('at 360 dp Favorites, Playlist and Radio share one row', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, const HomeScreen());
+    await _settle(tester);
+    final tops = {for (final l in ['Preferiti', 'Playlist', 'Radio']) tester.getRect(_inShortcuts(l)).top};
+    expect(tops.length, 1);
+    expect(tester.takeException(), isNull);
+    await h.dispose(tester);
+  });
+
   testWidgets('Play starts the library in order with shuffle off', (
     tester,
   ) async {

@@ -13380,6 +13380,18 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Senza titolo'**
   String get shareUntitled;
+
+  /// No description provided for @libraryHistorySub.
+  ///
+  /// In it, this message translates to:
+  /// **'Ultimi ascolti'**
+  String get libraryHistorySub;
+
+  /// No description provided for @genresCount.
+  ///
+  /// In it, this message translates to:
+  /// **'{count, plural, one{1 genere} other{{count} generi}}'**
+  String genresCount(int count);
 }
 
 class _AppLocalizationsDelegate

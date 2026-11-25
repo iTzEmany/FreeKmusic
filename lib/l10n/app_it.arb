@@ -4916,5 +4916,14 @@
   "updateNews": "Novità",
   "updateNew": "nuova",
   "shareKindTrack": "Brano",
-  "shareUntitled": "Senza titolo"
+  "shareUntitled": "Senza titolo",
+  "libraryHistorySub": "Ultimi ascolti",
+  "genresCount": "{count, plural, one{1 genere} other{{count} generi}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

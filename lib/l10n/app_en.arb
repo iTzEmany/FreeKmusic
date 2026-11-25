@@ -4187,5 +4187,14 @@
   "updateNews": "What’s new",
   "updateNew": "new",
   "shareKindTrack": "Track",
-  "shareUntitled": "Untitled"
+  "shareUntitled": "Untitled",
+  "libraryHistorySub": "Recently played",
+  "genresCount": "{count, plural, one{1 genre} other{{count} genres}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

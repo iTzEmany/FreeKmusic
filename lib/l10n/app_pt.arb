@@ -4373,5 +4373,14 @@
   "updateNews": "Novidades",
   "updateNew": "nova",
   "shareKindTrack": "Faixa",
-  "shareUntitled": "Sem título"
+  "shareUntitled": "Sem título",
+  "libraryHistorySub": "Ouvidos recentemente",
+  "genresCount": "{count, plural, one{1 género} other{{count} géneros}}",
+  "@genresCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

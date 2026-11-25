@@ -411,6 +411,7 @@ class _LibraryShortcuts extends ConsumerWidget {
       reviewCountProvider.select((c) => c.value ?? 0),
     );
     final trackCount = ref.watch(trackCountProvider).value ?? 0;
+    final genreCount = ref.watch(genresProvider).value?.length ?? 0;
     final downloadedCount =
         ref.watch(downloadedNoPlaylistCountProvider).value ?? 0;
     void open(Widget w) => ShellNav.open<void>(context, w);
@@ -418,59 +419,56 @@ class _LibraryShortcuts extends ConsumerWidget {
       items: [
         LibraryShortcut(
           label: l.navFavorites,
-          count: favCount,
-          keepWhenZero: true,
+          meta: l.tracksCount(favCount),
           onTap: () => open(const FavoritesScreen()),
         ),
         LibraryShortcut(
           label: l.allTracks,
-          count: trackCount,
-          keepWhenZero: true,
+          meta: l.tracksCount(trackCount),
           onTap: () => open(const AllTracksScreen()),
         ),
         LibraryShortcut(
           label: l.historyTitle,
+          meta: l.libraryHistorySub,
           onTap: () => open(const HistoryScreen()),
         ),
         LibraryShortcut(
           label: l.podcastsTitle,
-          count: podcastCount,
-          keepWhenZero: true,
+          meta: l.podcastsSubtitle(podcastCount),
           onTap: () => open(const PodcastsScreen()),
         ),
         LibraryShortcut(
           label: l.radioTitle,
-          count: radioCount,
-          keepWhenZero: true,
+          meta: radioCount == 0
+              ? l.homeRadioLive
+              : l.radioLibrarySubtitle(radioCount),
           onTap: () => open(const RadioScreen()),
         ),
         if (kEnableYoutube && (followedCount > 0 || releaseTopArtists))
           LibraryShortcut(
             label: l.releasesFollowedLibrary,
-            count: followedCount,
-            keepWhenZero: true,
+            meta: l.artistsCount(followedCount),
             onTap: () => open(const FollowedArtistsScreen()),
           ),
         LibraryShortcut(
           label: l.genresTitle,
+          meta: l.genresCount(genreCount),
           onTap: () => open(const LibraryGenresScreen()),
         ),
         LibraryShortcut(
           label: l.tagsTitle,
-          count: tagCount,
-          keepWhenZero: true,
+          meta: l.tagsCount(tagCount),
           onTap: () => open(const TagsScreen()),
         ),
         if (reviewCount > 0)
           LibraryShortcut(
             label: l.reviewTitle,
-            count: reviewCount,
+            meta: l.tracksCount(reviewCount),
             onTap: () => open(const ReviewScreen()),
           ),
         LibraryShortcut(
           label: l.downloadedNoPlaylist,
-          count: downloadedCount,
-          keepWhenZero: true,
+          meta: l.tracksCount(downloadedCount),
           onTap: () => open(const AllTracksScreen(downloadedNoPlaylist: true)),
         ),
       ],

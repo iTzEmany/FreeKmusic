@@ -462,14 +462,12 @@ class _MemoryListState extends ConsumerState<_MemoryList> {
             meta: dup.phase == DuplicatePhase.done
                 ? l.memoryDuplicateGroups(dup.groups.length)
                 : null,
-            keepWhenZero: true,
             onTap: () => ShellNav.open<void>(context, const DuplicatesScreen()),
           ),
           LibraryShortcut(
             label: l.missingTracksTitle,
             icon: Icons.link_off_rounded,
             meta: missing == null ? null : l.tracksCount(missing),
-            keepWhenZero: true,
             onTap: () =>
                 ShellNav.open<void>(context, const MissingTracksScreen()),
           ),
