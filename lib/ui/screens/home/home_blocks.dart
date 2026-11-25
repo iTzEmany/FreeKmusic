@@ -229,15 +229,14 @@ class NewReleasesBlock extends ConsumerWidget {
     if (n <= 0) return const SizedBox.shrink();
     final l = context.l10n;
     return HomeBlock(
-      header: SectionHeader(l.newReleasesTitle, count: '$n'),
-      children: [
-        HomeRow(
-          key: const ValueKey('resume-releases'),
-          cover: const HomeIconCover(Icons.new_releases_outlined),
-          title: l.showAll,
-          onTap: () => ShellNav.open<void>(context, const NewReleasesScreen()),
-        ),
-      ],
+      header: SectionHeader(
+        l.newReleasesTitle,
+        key: const ValueKey('resume-releases'),
+        count: '$n',
+        actionLabel: l.showAll,
+        onAction: () => ShellNav.open<void>(context, const NewReleasesScreen()),
+      ),
+      children: const [],
     );
   }
 }

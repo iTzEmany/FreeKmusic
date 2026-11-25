@@ -52,7 +52,7 @@ void main() {
   testWidgets('«Riprendi» offers the new releases and the row opens their page', (tester) async {
     await open(tester, seed: () => seedNewRelease(h.db, _lucio, 'MPREb_1', 'Volevo'));
     expect(find.byKey(const ValueKey('resume-releases')), findsOneWidget);
-    await tester.tap(find.byKey(const ValueKey('resume-releases')));
+    await tester.tap(find.descendant(of: find.byKey(const ValueKey('resume-releases')), matching: find.byType(TextButton)));
     await _settle(tester);
     expect(find.byType(NewReleasesScreen), findsOneWidget);
     await close(tester);

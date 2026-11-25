@@ -30,11 +30,9 @@ class DaylistCard extends ConsumerWidget {
     ]);
     void open() => ShellNav.open<void>(context, const DaylistScreen());
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        CcDims.margin,
-        CcDims.gap16,
-        CcDims.margin,
-        0,
+      padding: EdgeInsets.symmetric(
+        horizontal: CcDims.margin,
+        vertical: CcDims.blockPad,
       ),
       child: Material(
         color: cc.surface1,

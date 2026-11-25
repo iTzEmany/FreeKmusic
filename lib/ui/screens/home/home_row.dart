@@ -104,11 +104,9 @@ class HomeBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(
-      CcDims.margin,
-      CcDims.gap12,
-      CcDims.margin,
-      0,
+    padding: EdgeInsets.symmetric(
+      horizontal: CcDims.margin,
+      vertical: CcDims.blockPad,
     ),
     child: Material(
       color: context.cc.surface1,

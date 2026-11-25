@@ -21,9 +21,12 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(CcDims.margin, 20, CcDims.margin, CcDims.gap8),
-      child: Row(
+    // Fixed height: the 48 dp action button fits inside, so «Tutti» never grows the header.
+    return SizedBox(
+      height: CcDims.sectionHeaderHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: CcDims.margin),
+        child: Row(
         children: [
           Expanded(
             child: Text(
@@ -43,6 +46,7 @@ class SectionHeader extends StatelessWidget {
           if (actionLabel != null)
             TextButton(onPressed: onAction, child: Text(actionLabel!)),
         ],
+      ),
       ),
     );
   }
