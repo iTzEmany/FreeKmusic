@@ -43,8 +43,6 @@ import 'package:codecore/providers/podcast_discover_providers.dart';
 import 'package:codecore/services/podcast/apple_podcasts.dart' show PodcastGenre;
 import 'package:codecore/ui/screens/podcast/podcasts_screen.dart';
 import 'package:codecore/ui/screens/smart/smart_playlist_editor.dart';
-import 'package:codecore/ui/widgets/segmented_blocks.dart';
-import 'package:codecore/data/repositories/library_entries.dart' show LibraryKind;
 import 'package:codecore/ui/widgets/track_row.dart';
 import 'package:codecore/ui/screens/library/album_detail_screen.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
@@ -317,7 +315,7 @@ void main() {
       Future<void> libraryTab(Shot s, WidgetTester tester, String label) async {
         await s.show(const AppShell(), extra: [navIndexProvider.overrideWith(_LibraryTab.new)]);
         await tester.tap(find.descendant(
-            of: find.byType(SegmentedBlocks<LibraryKind?>), matching: find.text(label)));
+            of: find.byKey(const ValueKey('library-tabs')), matching: find.text(label)));
         await s.settle();
       }
 
