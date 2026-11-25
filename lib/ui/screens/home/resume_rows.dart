@@ -69,6 +69,7 @@ class ResumeList extends ConsumerWidget {
       };
       return _Slot(
         key: key,
+        radio: r.area == ResumeArea.radio,
         areaLabel: areaLabel,
         title: title,
         subtitle: subtitle,
@@ -216,7 +217,7 @@ class ResumeList extends ConsumerWidget {
       child: _SlotButton(
         slot: s,
         size: _itemSize,
-        radius: s.isRadio ? _itemSize / 2 : CcDims.rList,
+        radius: s.radio ? _itemSize / 2 : CcDims.rList,
       ),
     );
   }
@@ -237,7 +238,7 @@ class ResumeList extends ConsumerWidget {
       _SlotButton(
         slot: s,
         size: _coreSize,
-        radius: s.isRadio ? _coreSize / 2 : CcDims.rCard,
+        radius: s.radio ? _coreSize / 2 : CcDims.rCard,
         lead: lead,
       ),
     ],
@@ -295,14 +296,14 @@ class _Slot {
     required this.cover,
     required this.onTap,
     this.progress,
+    this.radio = false,
   });
 
+  final bool radio;
   final String key, areaLabel, title, subtitle;
   final Widget Function(double size, double radius) cover;
   final VoidCallback? onTap;
   final double? progress;
-
-  bool get isRadio => key.startsWith('resume-radio');
 }
 
 /// A cover that taps: at least 48 dp, read by screen readers as «lead, area, title, detail».
