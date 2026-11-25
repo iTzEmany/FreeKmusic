@@ -60,6 +60,9 @@ class WindowState {
       if (areas.any((a) => saved.width <= a.width && saved.height <= a.height)) await host.setSize(saved.size);
       return;
     }
+    // A size bigger than all the screens together is a corrupt value, not a window.
+    final all = areas.fold<Rect?>(null, (u, a) => u?.expandToInclude(a) ?? a);
+    if (all == null || saved.width > all.width || saved.height > all.height) return;
     // At least a 120x60 corner of the window must be on some screen, or the user could not grab it.
     final visible = areas.any((a) {
       final i = a.intersect(saved);

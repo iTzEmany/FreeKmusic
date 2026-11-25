@@ -1,12 +1,9 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:path/path.dart' as p;
 import 'package:tray_manager/tray_manager.dart' as tray;
 
 import '../../core/app_log.dart';
-import '../../core/paths.dart';
 import 'window_host.dart';
 
 enum TrayCommand { playPause, next, toggleWindow, quit }
@@ -41,7 +38,7 @@ class TrayService {
   final bool Function() closeToTray;
   final Future<void> Function() playPause, next, quit;
   bool available = false;
-  bool _hidden = false;
+  bool _quitting = false;
   StreamSubscription<void>? _sub;
 
   Future<void> start() async {
@@ -54,27 +51,27 @@ class TrayService {
     _sub = host.closeRequests.listen((_) => unawaited(onCloseRequested()));
   }
 
+  /// Once the exit has started, destroying the window sends one more (not cancelable) close: ignored.
   Future<void> onCloseRequested() async {
-    if (available && closeToTray()) return _hide();
-    await quit();
+    if (_quitting) return;
+    if (available && closeToTray()) return host.hide();
+    await _leave();
+  }
+
+  Future<void> _leave() {
+    _quitting = true;
+    return quit();
   }
 
   Future<void> _run(TrayCommand c) => switch (c) {
     TrayCommand.playPause => playPause(),
     TrayCommand.next => next(),
-    TrayCommand.toggleWindow => _hidden ? _show() : _hide(),
-    TrayCommand.quit => quit(),
+    TrayCommand.toggleWindow => _toggle(),
+    TrayCommand.quit => _leave(),
   };
 
-  Future<void> _hide() async {
-    _hidden = true;
-    await host.hide();
-  }
-
-  Future<void> _show() async {
-    _hidden = false;
-    await host.show();
-  }
+  /// Asks the window every time: the state may have changed without the tray (a second launch shows it).
+  Future<void> _toggle() async => await host.isVisible() ? host.hide() : host.show();
 
   void dispose() {
     unawaited(_sub?.cancel());
@@ -89,10 +86,11 @@ class NativeTrayAdapter implements TrayAdapter {
 
   @override
   Future<bool> show(Map<TrayCommand, String> labels, void Function(TrayCommand) onCommand) async {
-    if (!tray.TrayManager.instance.isSupported() || !await _hasWatcher()) return false;
+    if (!tray.TrayManager.instance.isSupported() || !await _linuxHasTray()) return false;
+    final image = tray.ImageAsset.fromAsset('assets/icon/tray.png');
     final icon = tray.TrayIcon.create();
     final menu = tray.Menu.create();
-    if (icon == null || menu == null) return false;
+    if (image == null || icon == null || menu == null) return false;
     for (final c in TrayCommand.values) {
       if (c == TrayCommand.quit) menu.addSeparator();
       final item = tray.MenuItem.createWithLabelAndType(labels[c]!, tray.MenuItemType.normal);
@@ -103,9 +101,13 @@ class NativeTrayAdapter implements TrayAdapter {
       menu.addItem(item);
       _items.add(item); // held: a collected item would stop answering
     }
-    final file = File(p.join(await appSupportDir(), 'tray.png'));
-    await file.writeAsBytes((await rootBundle.load('assets/icon/tray.png')).buffer.asUint8List());
-    icon.icon = tray.Image.fromFile(file.path);
+    // Windows: a click on the icon shows or hides the window; on Linux the menu is all there is.
+    if (!Platform.isLinux) {
+      icon.addListener((e) {
+        if (e is tray.TrayIconClickedEvent) onCommand(TrayCommand.toggleWindow);
+      });
+    }
+    icon.icon = image;
     icon.setTooltip('FreeKmusic');
     icon.setContextMenu(menu);
     icon.setVisible(true);
@@ -114,19 +116,36 @@ class NativeTrayAdapter implements TrayAdapter {
     return true;
   }
 
-  /// Linux (StatusNotifierItem): without a watcher on the bus (GNOME with no AppIndicator
-  /// extension) the icon would be invisible, and a hidden window could not come back.
-  Future<bool> _hasWatcher() async {
+  /// Linux (StatusNotifierItem): the icon is seen only with a watcher on the bus AND a host registered
+  /// (GNOME with no AppIndicator extension has neither), or a hidden window could not come back.
+  /// Checked once, at start. In a Flatpak it is off until proven there: the X would hide the window with no icon.
+  Future<bool> _linuxHasTray() async {
     if (!Platform.isLinux) return true;
+    if (File('/.flatpak-info').existsSync() || Platform.environment.containsKey('FLATPAK_ID')) return false;
+    final owner = await _gdbus(const [
+      '--dest', 'org.freedesktop.DBus', '--object-path', '/org/freedesktop/DBus',
+      '--method', 'org.freedesktop.DBus.NameHasOwner', 'org.kde.StatusNotifierWatcher',
+    ]);
+    if (!owner.contains('true')) return false;
+    final host = await _gdbus(const [
+      '--dest', 'org.kde.StatusNotifierWatcher', '--object-path', '/StatusNotifierWatcher',
+      '--method', 'org.freedesktop.DBus.Properties.Get', 'org.kde.StatusNotifierWatcher', 'IsStatusNotifierHostRegistered',
+    ]);
+    return host.contains('true');
+  }
+
+  /// One `gdbus call` on the session bus; empty output on any failure. The child is killed at the timeout.
+  Future<String> _gdbus(List<String> args) async {
+    Process? proc;
     try {
-      final r = await Process.run('gdbus', const [
-        'call', '--session', '--dest', 'org.freedesktop.DBus', '--object-path', '/org/freedesktop/DBus',
-        '--method', 'org.freedesktop.DBus.NameHasOwner', 'org.kde.StatusNotifierWatcher',
-      ]).timeout(const Duration(seconds: 3));
-      return r.exitCode == 0 && (r.stdout as String).contains('true');
+      proc = await Process.start('gdbus', ['call', '--session', ...args]);
+      final out = proc.stdout.transform(const SystemEncoding().decoder).join();
+      final code = await proc.exitCode.timeout(const Duration(seconds: 3));
+      return code == 0 ? await out : '';
     } on Object catch (e) {
-      AppLog.d('tray watcher check failed', e);
-      return false;
+      AppLog.d('tray bus check failed', e);
+      proc?.kill();
+      return '';
     }
   }
 

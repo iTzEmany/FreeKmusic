@@ -27,6 +27,10 @@ bool ForwardToRunningInstance() {
   if (::IsIconic(hwnd)) {
     ::ShowWindow(hwnd, SW_RESTORE);
   }
+  // Hidden after the first frame (closed to the tray): show it again.
+  if (!::IsWindowVisible(hwnd) && ::GetProp(hwnd, L"FreeKmusicShown")) {
+    ::ShowWindow(hwnd, SW_SHOW);
+  }
   ::SetForegroundWindow(hwnd);
   if (!joined.empty()) {
     COPYDATASTRUCT data;

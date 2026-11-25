@@ -316,6 +316,7 @@ Future<void> main(List<String> args) async {
   container = ProviderContainer(
     overrides: [
       trayAvailableProvider.overrideWithValue(trayService?.available ?? false),
+      trayServiceProvider.overrideWithValue(trayService),
       systemDeviceNameProvider.overrideWithValue(systemName),
       systemDeviceModelProvider.overrideWithValue(systemModel),
       databaseProvider.overrideWithValue(db),

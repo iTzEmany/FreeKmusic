@@ -1,11 +1,8 @@
-// The legacy API is the 0.5.x one: it keeps `hide`, `setPreventClose` and the listener as the docs of this phase name them.
-// ignore_for_file: deprecated_member_use, depend_on_referenced_packages
 import 'dart:async';
 import 'dart:ui' show Rect, Size;
 
-import 'package:nativeapi/nativeapi.dart' as native show DisplayManager;
-import 'package:window_manager/legacy.dart';
-import 'package:window_manager/window_manager.dart' show RectangleToRect;
+import 'package:nativeapi/nativeapi.dart' show DisplayManager;
+import 'package:window_manager/window_manager.dart';
 
 /// What the app needs from the desktop window. The real one is [PlatformWindowHost];
 /// tests use a fake, so no native library is loaded.
@@ -26,46 +23,56 @@ abstract class WindowHost {
   Future<void> setPreventClose(bool on);
   Future<void> show();
   Future<void> hide();
+  Future<bool> isVisible();
 }
 
-class PlatformWindowHost with WindowListener implements WindowHost {
+class PlatformWindowHost implements WindowHost {
   PlatformWindowHost() {
-    windowManager.addListener(this);
+    _window.addListener(_onEvent);
   }
 
   final _changes = StreamController<void>.broadcast();
   final _close = StreamController<void>.broadcast();
+  bool _preventClose = false;
+
+  Window get _window => WindowManager.instance.getCurrent()!;
 
   @override
   Stream<void> get changes => _changes.stream;
   @override
   Stream<void> get closeRequests => _close.stream;
 
-  @override
-  void onWindowResized() => _changes.add(null);
-  @override
-  void onWindowMoved() => _changes.add(null);
-  @override
-  void onWindowClose() => _close.add(null);
-
-  @override
-  Future<Rect> getBounds() => windowManager.getBounds();
-  @override
-  Future<void> setBounds(Rect bounds) => windowManager.setBounds(bounds);
-  @override
-  Future<void> setSize(Size size) => windowManager.setSize(size);
-  @override
-  Future<List<Rect>> workAreas() async => [
-    for (final d in native.DisplayManager.instance.getAll()) d.workArea.toRect(),
-  ];
-  @override
-  Future<void> setPreventClose(bool on) => windowManager.setPreventClose(on);
-  @override
-  Future<void> show() async {
-    await windowManager.show();
-    await windowManager.focus();
+  void _onEvent(WindowEvent e) {
+    switch (e) {
+      case WindowMovedEvent() || WindowResizedEvent():
+        _changes.add(null);
+      case WindowCloseRequestedEvent(:final request):
+        // The destruction after «Esci» is not cancelable: it goes through.
+        if (_preventClose && request.isCancelable) request.cancel();
+        _close.add(null);
+      default:
+    }
   }
 
   @override
-  Future<void> hide() => windowManager.hide();
+  Future<Rect> getBounds() async => _window.bounds.toRect();
+  @override
+  Future<void> setBounds(Rect bounds) async => _window.bounds = bounds.toNative();
+  @override
+  Future<void> setSize(Size size) async => _window.bounds = ((await getBounds()).topLeft & size).toNative();
+  @override
+  Future<List<Rect>> workAreas() async => [for (final d in DisplayManager.instance.getAll()) d.workArea.toRect()];
+  @override
+  Future<void> setPreventClose(bool on) async => _preventClose = on;
+  @override
+  Future<void> show() async {
+    _window
+      ..show()
+      ..focus();
+  }
+
+  @override
+  Future<void> hide() async => _window.hide();
+  @override
+  Future<bool> isVisible() async => _window.isVisible;
 }

@@ -9,6 +9,7 @@ class FakeWindowHost implements WindowHost {
 
   Rect bounds;
   List<Rect> areas;
+  bool visible = true; // changes by itself too, as a second launch does
   final calls = <String>[];
   final _changes = StreamController<void>.broadcast();
   final _close = StreamController<void>.broadcast();
@@ -35,14 +36,25 @@ class FakeWindowHost implements WindowHost {
   @override
   Future<void> setPreventClose(bool on) async => calls.add('preventClose $on');
   @override
-  Future<void> show() async => calls.add('show');
+  Future<void> show() async {
+    visible = true;
+    calls.add('show');
+  }
+
   @override
-  Future<void> hide() async => calls.add('hide');
+  Future<void> hide() async {
+    visible = false;
+    calls.add('hide');
+  }
+
+  @override
+  Future<bool> isVisible() async => visible;
 }
 
 class FakeTrayAdapter implements TrayAdapter {
-  FakeTrayAdapter({this.supported = true});
-  final bool supported;
+  FakeTrayAdapter({this.supported = true, this.fails = false});
+  final bool supported, fails;
+  bool disposed = false;
   void Function(TrayCommand)? press;
   Map<TrayCommand, String>? shown;
 
@@ -50,9 +62,10 @@ class FakeTrayAdapter implements TrayAdapter {
   Future<bool> show(Map<TrayCommand, String> labels, void Function(TrayCommand) onCommand) async {
     shown = labels;
     press = onCommand;
+    if (fails) throw StateError('no bus');
     return supported;
   }
 
   @override
-  void dispose() {}
+  void dispose() => disposed = true;
 }

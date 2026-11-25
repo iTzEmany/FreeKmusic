@@ -56,4 +56,24 @@ void main() {
     expect(isWayland({'XDG_SESSION_TYPE': 'x11'}), isFalse);
     expect(isWayland({}), isFalse);
   });
+
+  test('X11: a size bigger than all the screens, or a wrong number of fields, is dropped', () async {
+    final host = FakeWindowHost();
+    for (final saved in ['1,1,100000,100000', '1,1,1000,700,5', '1,1,1000']) {
+      await _state(host, saved: saved).start();
+    }
+    expect(host.calls, isEmpty);
+  });
+
+  test('X11: a window on a monitor at the left (negative x) is restored; 120x60 is the visible minimum', () async {
+    final host = FakeWindowHost(areas: const [Rect.fromLTWH(-1920, 0, 1920, 1080), Rect.fromLTWH(0, 0, 1920, 1080)]);
+    await _state(host, saved: '-1500,100,1000,700').start();
+    expect(host.calls, ['setBounds']);
+    final edge = FakeWindowHost();
+    await _state(edge, saved: '-880,100,1000,700').start(); // 120 wide on screen
+    await _state(edge, saved: '-881,100,1000,700').start(); // 119
+    await _state(edge, saved: '100,1021,1000,700').start(); // 59 high
+    await _state(edge, saved: '100,1020,1000,700').start(); // 60 high
+    expect(edge.calls, ['setBounds', 'setBounds']);
+  });
 }
