@@ -347,7 +347,6 @@ void main() {
         'edit',
         'add',
         'cover',
-        'favorite',
         'sendToDevice',
         'export',
         'rename',
@@ -384,7 +383,6 @@ void main() {
       expect(await _open(tester, find.byTooltip('Altre azioni').first), [
         'queue',
         'playlist',
-        'favorite',
         'sendToDevice',
         'enrich',
         'cover',
