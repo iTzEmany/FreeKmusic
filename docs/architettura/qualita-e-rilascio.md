@@ -42,7 +42,7 @@ Questo documento dice come si verifica una modifica e come esce una versione. Co
 
 | File | Quando | Che cosa fa |
 |---|---|---|
-| `ci.yml` | Push su `master`, tag `v*`, PR, avvio a mano (`integration`) | Job `check`, `test-windows`, `build-*`, `integration-android`, `build-apple`. |
+| `ci.yml` | Push su `master`, tag `v*`, PR, avvio a mano (`integration`) | Job `check`, `test-windows`, `build-*`, `integration-android`, `integration-linux`, `build-apple`. `integration-linux` (non bloccante, D-733): `integration_test/desktop_flow_test.dart` sull'app Linux vera sotto Xvfb (barra laterale, scansione, play, tasto destro, selezione, scorciatoie, ridimensionamento); saltato sulle PR di sola documentazione; resta fuori dai check obbligatori di `master` finché non ha due settimane verdi. |
 | `release.yml` | Tag `v*` o avvio a mano | Pacchetti per ogni piattaforma e pubblicazione. |
 | `deps.yml` | Settimanale | Solo un rapporto sulle dipendenze. |
 | notturno (test live) | Pianificato | `flutter test` su `test/live/*` (senza `curiosity_survey`). |
