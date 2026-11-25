@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/repositories/favorite_collections_repository.dart';
+import '../data/repositories/hidden_playlists.dart' show AppDatabasePlaylists;
+import '../services/online/youtube_service.dart' show YtResult;
+import '../services/stream/stream_key.dart' show streamPathOf;
+import 'library_add_providers.dart' show libraryAdderProvider;
 import '../data/repositories/library_queries.dart';
 import '../data/repositories/playlist_repository.dart';
 import 'database_providers.dart';
@@ -60,3 +64,26 @@ final isFavoriteCollectionProvider = StreamProvider.autoDispose.family<bool, ({S
 final toggleFavoriteCollectionProvider = Provider<Future<void> Function(String kind, String key)>(
   (ref) => ref.read(favoriteCollectionsRepositoryProvider).toggle,
 );
+
+/// The library album key of a saved online album (found through its first song's key), or null while it is not saved.
+final savedOnlineAlbumKeyProvider = FutureProvider.autoDispose.family<String?, String>((ref, indexKey) async {
+  final row = await ref.read(trackRepositoryProvider).byPath(streamPathOf(indexKey));
+  return row != null && row.saved ? row.albumKey : null;
+});
+
+/// «Salva in libreria» of an online album: the songs become saved stream rows (D-524). Returns the album key they
+/// group under, or null when nothing was saved (e.g. every song is already a file).
+Future<String?> saveOnlineAlbum(WidgetRef ref, List<YtResult> songs) async {
+  final adder = ref.read(libraryAdderProvider);
+  String? key;
+  for (final r in songs) {
+    final id = await adder.saveStreamNow(r);
+    if (id != null && key == null) key = (await ref.read(trackRepositoryProvider).getById(id))?.albumKey;
+  }
+  if (songs.isNotEmpty) ref.invalidate(savedOnlineAlbumKeyProvider(songs.first.indexKey));
+  return key;
+}
+
+/// The uuid of the visible library playlist called [name] (just saved from an online page), or null.
+Future<String?> playlistUuidByName(WidgetRef ref, String name) async =>
+    (await ref.read(databaseProvider).visiblePlaylists()).where((p) => p.name == name).firstOrNull?.uuid;

@@ -534,13 +534,14 @@ void main() {
     await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
     expect(find.text('Invia a un dispositivo'), findsOneWidget);
-    await tester.tap(find.text('Aggiungi ai preferiti'));
+    expect(find.text('Aggiungi ai preferiti'), findsNothing, reason: 'the heart is in the header now');
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('collection-favorite')));
     await _settle(tester);
     final repo = FavoriteCollectionsRepository(h.db);
     expect(await tester.runAsync(() => repo.isFavoriteNow('album', 'artist|album 0')), isTrue);
-    await tester.tap(find.byTooltip('Altre azioni').first);
-    await tester.pumpAndSettle();
-    expect(find.text('Togli dai preferiti'), findsOneWidget);
+    expect(find.byTooltip('Togli dai preferiti'), findsOneWidget);
     await h.dispose(tester);
   });
 

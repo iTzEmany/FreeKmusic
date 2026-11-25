@@ -10,6 +10,8 @@ import 'package:codecore/services/online/ytm_artist.dart';
 import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';
 import 'package:codecore/ui/screens/online/online_album_screen.dart';
+import 'package:codecore/ui/widgets/play_buttons.dart' show PlayCircleButton;
+import 'package:codecore/ui/widgets/shuffle_button.dart' show ShufflePill;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -96,7 +98,7 @@ void main() {
 
   testWidgets('Play and Shuffle send the album in order and open the player', (tester) async {
     final h = await show(tester);
-    await tester.tap(find.byKey(const ValueKey('album-play')));
+    await tester.tap(find.byType(PlayCircleButton));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
     expect(ctrl.calls, ['list a,b key=${SelectionKey.ytmAlbumOf('MPREb_wall')}']);
@@ -106,7 +108,7 @@ void main() {
 
   testWidgets('Shuffle is a toggle of the album: it starts nothing (D-534)', (tester) async {
     final h = await show(tester);
-    await tester.tap(find.byKey(const ValueKey('album-shuffle')));
+    await tester.tap(find.byType(ShufflePill));
     await tester.pump(const Duration(milliseconds: 400));
     expect(ctrl.calls, ['toggle ${SelectionKey.ytmAlbumOf('MPREb_wall')} plus=false']);
     expect(find.byType(NowPlayingScreen), findsNothing);
@@ -115,7 +117,7 @@ void main() {
 
   testWidgets('with a Jam on, Play queues the album instead (D-89)', (tester) async {
     final h = await show(tester, jam: true);
-    await tester.tap(find.byKey(const ValueKey('album-play')));
+    await tester.tap(find.byType(PlayCircleButton));
     await tester.pumpAndSettle();
     expect(ctrl.calls, ['enqueue a', 'enqueue b']);
     expect(find.byType(NowPlayingScreen), findsNothing);
@@ -138,11 +140,39 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('the ⋮ menu has 4 items; queue, playlist and share run', (tester) async {
+  testWidgets('the heart saves the album and favourites it; tapping again drops only the favourite (D-724)', (tester) async {
+    final h = await show(tester);
+    Future<List<Object?>> counts() async => (await tester.runAsync(() async => [
+          (await h.db.select(h.db.favoriteCollections).get()).length,
+          (await h.db.select(h.db.tracks).get()).where((t) => t.saved).length,
+        ]))!;
+    await tester.tap(find.byKey(const ValueKey('collection-favorite')));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pumpAndSettle();
+    expect(await counts(), [1, 2]);
+    expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('collection-favorite')));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
+    await tester.pumpAndSettle();
+    expect(await counts(), [0, 2]);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the header has the same commands as a local collection: Play, Casuale, heart, Condividi, ⋮', (tester) async {
+    final h = await show(tester);
+    expect(find.byType(PlayCircleButton), findsOneWidget);
+    expect(find.byType(ShufflePill), findsOneWidget);
+    expect(find.byKey(const ValueKey('collection-favorite')), findsOneWidget);
+    expect(find.byTooltip('Condividi'), findsOneWidget);
+    expect(find.byKey(const ValueKey('album-more')), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the ⋮ menu has 4 items; queue and playlist run; Condividi is in view', (tester) async {
     final h = await show(tester);
     await tester.tap(find.byKey(const ValueKey('album-more')));
     await tester.pumpAndSettle();
-    for (final k in ['download', 'queue', 'playlist', 'share']) {
+    for (final k in ['download', 'queue', 'playlist', 'save']) {
       expect(find.byKey(ValueKey<Object>('album-menu-$k')), findsOneWidget, reason: k);
     }
     await tester.tap(find.byKey(const ValueKey<Object>('album-menu-queue')));
@@ -162,7 +192,8 @@ void main() {
       return null;
     });
     addTearDown(() => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(SystemChannels.platform, null));
-    await menu(tester, 'album-menu-share');
+    await tester.tap(find.byTooltip('Condividi'));
+    await tester.pumpAndSettle();
     expect(copied, 'https://music.youtube.com/browse/MPREb_wall');
     await h.dispose(tester);
   });

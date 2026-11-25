@@ -5,8 +5,10 @@ import '../../data/db/app_database.dart' show Track;
 import '../../data/repositories/track_kinds.dart' show kStreamKind;
 
 import '../../l10n/l10n_ext.dart';
+import '../../providers/settings_providers.dart' show settingsProvider;
 import '../theme/tokens.dart';
 import 'alpha_scroller.dart';
+import 'confirm.dart' show showUndoSnack;
 import 'keep_offline_action.dart';
 import 'play_buttons.dart';
 import 'shuffle_button.dart';
@@ -29,6 +31,8 @@ class CollectionScaffold extends ConsumerStatefulWidget {
     this.onPlay,
     this.downloadTracks,
     this.onShare,
+    this.favorite = false,
+    this.onFavorite,
     this.scrollerCount,
     this.shuffleIds,
     this.shuffleKey,
@@ -60,6 +64,11 @@ class CollectionScaffold extends ConsumerStatefulWidget {
 
   /// «Condividi»: gets the icon's rectangle (it anchors the share sheet on iPad and desktop); null hides it.
   final ValueChanged<Rect?>? onShare;
+
+  /// The heart next to «Condividi»: [favorite] is its state, [onFavorite] toggles it (the same call undoes it);
+  /// null hides the heart (a playlist without uuid, D-726).
+  final bool favorite;
+  final Future<void> Function()? onFavorite;
 
   /// How many rows the page lists: past [alphaScrollerMinItems] a by-position
   /// scroll bar is laid over the page; null: none.
@@ -103,44 +112,19 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final actions = [
-      if (widget.onPlay != null) PlayCircleButton(onPressed: widget.onPlay),
-      if (widget.shuffleIds != null)
-        ShufflePill(
-          iconOnly: true,
-          ids: widget.shuffleIds!,
-          listKey: widget.shuffleKey,
-          plus: widget.shufflePlus,
-        ),
-      if (widget.downloadTracks?.any((t) => t.kind == kStreamKind) ?? false)
-        SizedBox.square(
-          dimension: 48,
-          child: IconButton(
-            onPressed: () => keepOfflineFlow(context, ref, widget.downloadTracks!),
-            tooltip: context.l10n.ytDownload,
-            icon: Icon(CatalogAction.download.icon),
-          ),
-        ),
-      if (widget.onShare != null)
-        SizedBox.square(
-          dimension: 48,
-          child: Builder(
-            builder: (ctx) => IconButton(
-              onPressed: () {
-                final box = ctx.findRenderObject();
-                widget.onShare!(box is RenderBox ? box.localToGlobal(Offset.zero) & box.size : null);
-              },
-              tooltip: CatalogAction.share.label(context.l10n),
-              icon: Icon(CatalogAction.share.icon),
-            ),
-          ),
-        ),
-      if (widget.menu != null)
-        ConstrainedBox(
-          constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-          child: widget.menu,
-        ),
-    ];
+    final actions = collectionActions(
+      context,
+      ref,
+      onPlay: widget.onPlay,
+      shuffleIds: widget.shuffleIds,
+      shuffleKey: widget.shuffleKey,
+      shufflePlus: widget.shufflePlus,
+      downloadTracks: widget.downloadTracks,
+      favorite: widget.favorite,
+      onFavorite: widget.onFavorite,
+      onShare: widget.onShare,
+      menu: widget.menu,
+    );
     final scroll = CustomScrollView(
       controller: _scroll,
       slivers: [
@@ -191,6 +175,71 @@ class _CollectionScaffoldState extends ConsumerState<CollectionScaffold> {
       ),
     );
   }
+}
+
+/// The action row of a collection header: Play, Casuale, Scarica, the heart, Condividi, ⋮ (each only when given).
+/// Shared by [CollectionScaffold] and the online album and playlist pages.
+List<Widget> collectionActions(
+  BuildContext context,
+  WidgetRef ref, {
+  VoidCallback? onPlay,
+  List<int>? shuffleIds,
+  Object? shuffleKey,
+  bool shufflePlus = true,
+  List<Track>? downloadTracks,
+  bool favorite = false,
+  Future<void> Function()? onFavorite,
+  ValueChanged<Rect?>? onShare,
+  Widget? menu,
+}) {
+  final l = context.l10n;
+  return [
+    if (onPlay != null) PlayCircleButton(onPressed: onPlay),
+    if (shuffleIds != null)
+      ShufflePill(iconOnly: true, ids: shuffleIds, listKey: shuffleKey, plus: shufflePlus),
+    if (downloadTracks?.any((t) => t.kind == kStreamKind) ?? false)
+      SizedBox.square(
+        dimension: 48,
+        child: IconButton(
+          onPressed: () => keepOfflineFlow(context, ref, downloadTracks!),
+          tooltip: CatalogAction.download.label(l),
+          icon: Icon(CatalogAction.download.icon),
+        ),
+      ),
+    if (onFavorite != null)
+      SizedBox.square(
+        dimension: 48,
+        child: IconButton(
+          key: const ValueKey('collection-favorite'),
+          onPressed: () async {
+            await onFavorite();
+            if (!context.mounted || !ref.read(settingsProvider).showUndoSnackbar) return;
+            showUndoSnack(
+              context,
+              favorite ? l.removedFromFavorites : l.addedToFavorites,
+              () => onFavorite(),
+            );
+          },
+          tooltip: favorite ? l.bulkRemoveFromFavorites : l.bulkAddToFavorites,
+          icon: Icon(favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded),
+        ),
+      ),
+    if (onShare != null)
+      SizedBox.square(
+        dimension: 48,
+        child: Builder(
+          builder: (ctx) => IconButton(
+            onPressed: () {
+              final box = ctx.findRenderObject();
+              onShare(box is RenderBox ? box.localToGlobal(Offset.zero) & box.size : null);
+            },
+            tooltip: CatalogAction.share.label(l),
+            icon: Icon(CatalogAction.share.icon),
+          ),
+        ),
+      ),
+    if (menu != null) ConstrainedBox(constraints: const BoxConstraints(minWidth: 48, minHeight: 48), child: menu),
+  ];
 }
 
 /// Cover at the left of name and meta (above them when the text is large),

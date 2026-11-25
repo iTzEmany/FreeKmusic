@@ -16,6 +16,8 @@ import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import 'package:codecore/ui/screens/online/online_playlist_screen.dart';
 import 'package:codecore/ui/screens/youtube/playlist_source_sheet.dart';
+import 'package:codecore/ui/widgets/play_buttons.dart' show PlayCircleButton;
+import 'package:codecore/ui/widgets/shuffle_button.dart' show ShufflePill;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -155,7 +157,7 @@ void externalTests() {
     expect(find.text('Mix'), findsWidgets);
     expect(find.byKey(const ValueKey('pending-0')), findsOneWidget);
     expect(find.byKey(const ValueKey('pending-2')), findsOneWidget);
-    expect(tester.widget<FilledButton>(find.byKey(const ValueKey('playlist-play'))).onPressed, isNull);
+    expect(find.byType(PlayCircleButton), findsNothing, reason: 'Play is hidden until a row is ready');
     await h.dispose(tester);
   });
 
@@ -176,7 +178,7 @@ void externalTests() {
   testWidgets('Play before the end plays the ready rows; later ones join the queue', (tester) async {
     await showExt(tester, _ext());
     await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
-    await tester.tap(find.byKey(const ValueKey('playlist-play')));
+    await tester.tap(find.byType(PlayCircleButton));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
     expect(ctrl.mixed, [
@@ -190,7 +192,7 @@ void externalTests() {
   testWidgets('another list with the same name started later gets no rows', (tester) async {
     await showExt(tester, _ext());
     await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
-    await tester.tap(find.byKey(const ValueKey('playlist-play')));
+    await tester.tap(find.byType(PlayCircleButton));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
     ctrl.playing = false; // a library playlist with the same name started since
@@ -223,6 +225,34 @@ void externalTests() {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pump();
     expect(find.text('Salvata come «Mix»'), findsOneWidget);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the heart saves the page as a playlist and favourites it; tapping again keeps the playlist', (tester) async {
+    await showExt(tester, _ext());
+    await emit(tester, 0, TrackReady.online(ytmSong('y0', 'One found')));
+    Future<List<int>> counts() async => (await tester.runAsync(() async => [
+          (await h.db.select(h.db.favoriteCollections).get()).length,
+          (await h.db.select(h.db.playlists).get()).length,
+        ]))!;
+    await tester.tap(find.byKey(const ValueKey('collection-favorite')));
+    await settle(tester);
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await settle(tester);
+    expect(await counts(), [1, 1]);
+    await tester.tap(find.byKey(const ValueKey('collection-favorite')));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 200)));
+    await settle(tester);
+    expect(await counts(), [0, 1]);
+    await h.dispose(tester);
+  });
+
+  testWidgets('Condividi is in view and «Copia link» stays in the menu', (tester) async {
+    await showExt(tester, _ext());
+    expect(find.byTooltip('Condividi'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('playlist-more')));
+    await settle(tester);
+    expect(find.byKey(const ValueKey<Object>('playlist-menu-copy')), findsOneWidget);
     await h.dispose(tester);
   });
 
@@ -297,7 +327,7 @@ void main() {
 
   testWidgets('Play plays the list from the first song', (tester) async {
     final h = await show(tester, _Yt(_listing()));
-    await tester.tap(find.byKey(const ValueKey('playlist-play')));
+    await tester.tap(find.byType(PlayCircleButton));
     await tester.pump(const Duration(milliseconds: 400));
     await tester.pump(const Duration(milliseconds: 400));
     expect(ctrl.calls, ['list a,b']);
@@ -306,7 +336,7 @@ void main() {
 
   testWidgets('Shuffle toggles the list shuffle and starts nothing', (tester) async {
     final h = await show(tester, _Yt(_listing()));
-    await tester.tap(find.byKey(const ValueKey('playlist-shuffle')));
+    await tester.tap(find.byType(ShufflePill));
     await tester.pump(const Duration(milliseconds: 400));
     expect(ctrl.calls, ['toggle plus=false']);
     await h.dispose(tester);

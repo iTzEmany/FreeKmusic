@@ -69,8 +69,7 @@ void main() {
       [onlineAlbumProvider.overrideWith((ref, id) async => CatalogResult(_album, DateTime(2026, 10, 22)))],
     );
     expect(find.text('The Wall'), findsWidgets);
-    expect(find.text('Album, 1979'), findsOneWidget);
-    expect(find.text('3 brani, 8 min'), findsOneWidget);
+    expect(find.text('Album, 1979\n3 brani, 8 min'), findsOneWidget);
     expect(find.text('In the Flesh?'), findsOneWidget);
     expect(find.text('3'), findsOneWidget, reason: 'the number of the third song');
     expect(find.byKey(const ValueKey('album-artist')), findsOneWidget);
