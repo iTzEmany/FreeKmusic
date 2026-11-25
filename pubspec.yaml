@@ -76,6 +76,9 @@ dependencies:
   sodium: ^4.1.2
   mqtt_client: ^10.14.0
   share_plus: ^13.3.1
+  window_manager: ^0.6.0
+  tray_manager: ^0.8.3
+  desktop_drop: ^0.8.0
 
 # Local copy of audio_service: PLAY/PAUSE keys must not toggle (R-227, D-608).
 dependency_overrides:
