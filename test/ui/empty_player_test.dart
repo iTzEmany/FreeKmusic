@@ -115,6 +115,10 @@ void main() {
   });
 
   testWidgets('desktop bar: same words, and ▶ plays the last queue again', (t) async {
+    // Karaoke and the timer joined the right side in 154: at 800 px they overflow.
+    t.view.physicalSize = const Size(1280, 800);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
     final h = await Harness.create(t, tracks: 2);
     await _endedQueue(t, h);
     await h.pump(t, const Scaffold(body: Align(alignment: Alignment.bottomCenter, child: DesktopPlayerBar())));
