@@ -71,7 +71,7 @@ class AppUnderTest {
   static Future<AppUnderTest> create({double seconds = 2.5}) async {
     // Same as lib/main.dart: desktop has no native just_audio plugin.
     if (Platform.isLinux || Platform.isWindows) JustAudioMediaKit.ensureInitialized();
-    SharedPreferences.setMockInitialValues({'onboardingDone': true, 'autoEnrich': false, 'autoLyrics': false});
+    SharedPreferences.setMockInitialValues({'onboardingDone': true, 'onboardingFinished': true, 'autoEnrich': false, 'autoLyrics': false});
     final dir = await Directory.systemTemp.createTemp('codecore-it');
     final music = Directory(p.join(dir.path, 'music'))..createSync();
     for (var i = 0; i < names.length; i++) {
