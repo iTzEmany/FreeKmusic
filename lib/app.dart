@@ -36,6 +36,7 @@ import 'providers/releases_providers.dart' show releaseCheckControllerProvider;
 import 'ui/screens/settings/update_tiles.dart' show updateSnackBar;
 import 'ui/screens/settings/whats_new_page.dart' show showWhatsNew;
 import 'ui/shell/app_shell.dart';
+import 'ui/shell/drop_overlay.dart';
 import 'ui/widgets/app_icon_sync.dart';
 import 'ui/widgets/track_actions.dart' show TrackMenuHost;
 import 'ui/widgets/user_activity_scope.dart';
@@ -188,7 +189,7 @@ class CodecoreApp extends ConsumerWidget {
         child: AppBackground(
           colors: themeColors,
           background: themeBackground,
-          child: UserActivityScope(child: child ?? const SizedBox.shrink()),
+          child: UserActivityScope(child: _withDrop(ref, child ?? const SizedBox.shrink())),
         ),
       ),
       home: TrackMenuHost(
@@ -205,6 +206,9 @@ class CodecoreApp extends ConsumerWidget {
     );
   }
 }
+
+Widget _withDrop(WidgetRef ref, Widget child) =>
+    isDesktop ? DropOverlay(onAudio: ref.read(openFilesProvider).handle, child: child) : child;
 
 /// System scaler (kept, so non-linear Android scaling survives) times the app setting.
 /// Value equality matters: an unequal scaler on every rebuild makes MediaQuery
