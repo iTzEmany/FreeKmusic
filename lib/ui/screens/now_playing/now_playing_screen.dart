@@ -511,26 +511,31 @@ class _PlayerHeader extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  IconButton(
-                    tooltip: l.moreActions,
-                    icon: Icon(CatalogAction.more.icon),
-                    onPressed: () {
-                      final nav = Navigator.of(context);
-                      showTrackActions(
-                        context,
-                        track,
-                        // D-732: car mode lives in ⋮, not as a button of its own.
-                        lead: desktop
-                            ? null
-                            : TrackAction(
-                                Icons.directions_car_outlined,
-                                l.carMode,
-                                () async => nav.push(
-                                  MaterialPageRoute<void>(builder: (_) => const CarModeScreen()),
+                  Builder(
+                    builder: (button) => IconButton(
+                      tooltip: l.moreActions,
+                      icon: Icon(CatalogAction.more.icon),
+                      onPressed: () {
+                        final nav = Navigator.of(context);
+                        final b = button.findRenderObject()! as RenderBox;
+                        showTrackActions(
+                          button,
+                          track,
+                          // A desktop opens the menu under the button, like the rows; a phone keeps the sheet.
+                          at: desktop ? b.localToGlobal(Offset(0, b.size.height)) : null,
+                          // D-732: car mode lives in ⋮, not as a button of its own.
+                          lead: desktop
+                              ? null
+                              : TrackAction(
+                                  Icons.directions_car_outlined,
+                                  l.carMode,
+                                  () async => nav.push(
+                                    MaterialPageRoute<void>(builder: (_) => const CarModeScreen()),
+                                  ),
                                 ),
-                              ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
