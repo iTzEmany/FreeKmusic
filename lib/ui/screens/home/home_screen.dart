@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/repositories/home_sections.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
+import '../../../providers/daylist_providers.dart';
 import '../../../providers/library_providers.dart';
 import '../../../providers/permission_providers.dart';
+import '../../../providers/resume_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/activity_button.dart';
@@ -110,6 +112,10 @@ class HomeScreen extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, box) {
             final wide = box.maxWidth >= CcDims.wideBreakpoint;
+            // Right column empty (nothing to resume, no daylist): the left takes all.
+            final rightEmpty =
+                ref.watch(resumeItemsProvider).isEmpty &&
+                (ref.watch(daylistVisibleProvider)?.result.tooFew ?? true);
             const lead = [ShuffleHero(), ShortcutsRow(), ExportifyCard()];
             return PageFrame(
               child: ListView(
@@ -121,9 +127,9 @@ class HomeScreen extends ConsumerWidget {
                     // Desktop: 12 columns (5 + 7), then the shelves full width.
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Expanded(
-                          flex: 5,
+                          flex: rightEmpty ? 1 : 5,
                           child: Column(
                             children: [
                               ShuffleHero(),
@@ -132,13 +138,15 @@ class HomeScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        SizedBox(width: CcDims.gap32),
-                        Expanded(
-                          flex: 7,
-                          child: Column(
-                            children: [ResumeList(), DaylistCard()],
+                        if (!rightEmpty) ...const [
+                          SizedBox(width: CcDims.gap32),
+                          Expanded(
+                            flex: 7,
+                            child: Column(
+                              children: [ResumeList(), DaylistCard()],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                     const NewReleasesBlock(wide: true),

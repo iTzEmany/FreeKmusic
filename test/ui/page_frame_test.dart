@@ -1,4 +1,8 @@
+import 'package:codecore/ui/screens/home/home_blocks.dart' show ShuffleHero;
 import 'package:codecore/ui/screens/home/home_screen.dart';
+import 'package:codecore/ui/screens/library/all_tracks_screen.dart';
+import 'package:codecore/ui/screens/search/search_screen.dart';
+import 'package:codecore/ui/screens/settings/settings_screen.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/ui/screens/online/online_page_frame.dart';
 import 'package:codecore/ui/screens/podcast/podcasts_screen.dart';
@@ -31,6 +35,9 @@ void main() {
     'online page': () => const OnlinePageFrame(title: 'x', slivers: []),
     'radio': () => const RadioScreen(),
     'podcasts': () => const PodcastsScreen(),
+    'all tracks': () => const AllTracksScreen(),
+    'search': () => const SearchScreen(),
+    'settings': () => const SettingsScreen(),
   };
 
   for (final MapEntry(:key, :value) in pages.entries) {
@@ -72,5 +79,36 @@ void main() {
       ),
     );
     expect(tester.getSize(find.byKey(const Key('page'))).width, 360);
+  });
+
+  for (final w in [1440.0, 1920.0]) {
+    testWidgets('same left edge on every page at $w px', (tester) async {
+      tester.view.physicalSize = Size(w, 1000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester, tracks: 4);
+      final lefts = <String, double>{};
+      for (final MapEntry(:key, :value) in pages.entries) {
+        if (const ['online page', 'radio', 'podcasts'].contains(key)) continue;
+        await h.pump(tester, value());
+        await _settle(tester);
+        lefts[key] = _content(tester).left;
+        await tester.pump(const Duration(seconds: 10));
+      }
+      expect(lefts.values.toSet(), hasLength(1), reason: '$lefts');
+      await h.dispose(tester);
+    });
+  }
+
+  testWidgets('home at 1440 px with nothing to resume: no empty right column', (tester) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await h.pump(tester, const HomeScreen());
+    await _settle(tester);
+    expect(tester.getSize(find.byType(ShuffleHero)).width, greaterThan(PageFrame.maxWidth - 100));
+    await tester.pump(const Duration(seconds: 10));
+    await h.dispose(tester);
   });
 }

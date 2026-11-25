@@ -8,6 +8,7 @@ import '../../widgets/motion.dart';
 import 'settings_pages.dart';
 import 'settings_summaries.dart';
 import '../../widgets/cc_app_bar.dart';
+import '../../widgets/page_frame.dart';
 import '../stats/stats_screen.dart';
 
 export 'settings_pages.dart' show SettingsPage, SettingsPageView, SettingsGroup, settingsPageTitle;
@@ -108,7 +109,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final wide = MediaQuery.sizeOf(context).width >= CcDims.wideBreakpoint;
     if (wide) {
-      return Row(
+      return PageFrame(child: Row(
         children: [
           SizedBox(width: 280, child: _index(true)),
           Expanded(
@@ -122,7 +123,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
         ],
-      );
+      ));
     }
     final initial = widget.initial;
     return initial != null ? SettingsPageView(initial) : _index(false);

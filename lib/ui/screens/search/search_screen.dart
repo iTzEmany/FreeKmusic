@@ -11,6 +11,7 @@ import '../../../providers/ui_providers.dart';
 import '../../shell/shell_nav.dart';
 import '../../theme/palette.dart' show chartGenreColors;
 import '../../theme/tokens.dart';
+import '../../widgets/page_frame.dart';
 import '../../widgets/activity_button.dart';
 import '../../widgets/cc_search_field.dart';
 import '../../widgets/genre_grid.dart';
@@ -114,7 +115,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     ref.listen(searchPrefillProvider, (_, next) => _applyPrefill(next));
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Column(
+      body: PageFrame(child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -155,7 +156,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 : OnlineResults(query: _text, submitted: _submitted),
           ),
         ],
-      ),
+      )),
     );
   }
 }
