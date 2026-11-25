@@ -8,7 +8,7 @@ D-718, D-727, D-728, D-729. Refactor: [`ricerca-pacchetti.md`](../refactor/deskt
 Codice: `.github/workflows/ci.yml` (`FLUTTER_VERSION`, 3.47.1), `.github/workflows/release.yml`, `.github/workflows/deps.yml`, `.github/workflows/nightly.yml`, `pubspec.yaml`, `lib/main.dart`, `lib/ui/shell/app_shell.dart`, `lib/data/settings/settings_store.dart`, `lib/ui/screens/settings/settings_pages.dart`, `lib/providers/player_providers.dart`, `linux/runner/my_application.cc`, `packaging/flatpak/com.freekmusic.player.yml` (`finish-args`).
 
 ## Task
-- [ ] 159.1 Flutter all'ultima 3.47.x (D-728, passo a sé)
+- [x] 159.1 Flutter all'ultima 3.47.x (D-728, passo a sé)
   - File: `.github/workflows/ci.yml`, `release.yml`, `deps.yml`, `nightly.yml` (ogni `FLUTTER_VERSION`), `pubspec.lock` se cambia, doc in `qualita-e-rilascio.md`.
   - Passi: 1) `flutter upgrade` locale e `flutter --version`; la versione CI deve essere uguale (la regola del commento in `ci.yml`); 2) `flutter pub get`, `flutter analyze`, `dart run build_runner build --delete-conflicting-outputs`, `flutter gen-l10n`; 3) PR con solo questo cambio; 4) i goldens sono Linux: se il motore cambia il rendering, rigenerare **in questo passo** e dirlo.
   - Comando mirato: `flutter analyze` + test mirati di UI e goldens (`flutter test test/goldens`); la suite la esegue la CI
@@ -44,3 +44,4 @@ Codice: `.github/workflows/ci.yml` (`FLUTTER_VERSION`, 3.47.1), `.github/workflo
 - [ ] Flatpak: permesso StatusNotifier e drop di file (percorsi `/run/user/UID/doc/`).
 
 ## Note di deviazione
+- 159.1: Flutter 3.47.1 → **3.47.9** (ultima 3.47.x) passando al tag in `~/flutter` invece di `flutter upgrade`, che porterebbe a una stable più nuova (D-742); il ramo locale `stable` dell'SDK ha 43 commit propri, lasciati intatti (per tornare indietro: `git -C ~/flutter checkout 6655482e`). `pubspec.lock`, build_runner, gen-l10n e golden invariati; nessun lint nuovo. PR a sé.
