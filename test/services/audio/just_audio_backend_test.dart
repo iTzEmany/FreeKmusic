@@ -1,15 +1,14 @@
-// ignore_for_file: depend_on_referenced_packages (the platform interface of just_audio, already a transitive package)
 import 'dart:async';
 import 'dart:io';
 
 import 'package:codecore/services/audio/audio_backend.dart';
 import 'package:codecore/services/audio/just_audio_backend.dart';
 import 'package:flutter_test/flutter_test.dart';
+// ignore: depend_on_referenced_packages
 import 'package:just_audio_platform_interface/just_audio_platform_interface.dart';
-import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 
 /// A native player that takes a moment to start (the first one of a session does) and then loads at once.
-class _Platform extends JustAudioPlatform with MockPlatformInterfaceMixin {
+class _Platform extends JustAudioPlatform {
   @override
   Future<AudioPlayerPlatform> init(InitRequest request) async {
     await Future<void>.delayed(const Duration(milliseconds: 30));
@@ -24,6 +23,8 @@ class _Platform extends JustAudioPlatform with MockPlatformInterfaceMixin {
       DisposeAllPlayersResponse();
 }
 
+var _platformLoads = 0;
+
 class _Player extends AudioPlayerPlatform {
   _Player(super.id);
 
@@ -37,6 +38,7 @@ class _Player extends AudioPlayerPlatform {
 
   @override
   Future<LoadResponse> load(LoadRequest request) async {
+    _platformLoads++;
     await Future<void>.delayed(const Duration(milliseconds: 5));
     _events.add(PlaybackEventMessage(
       processingState: ProcessingStateMessage.ready,
@@ -86,6 +88,25 @@ void main() {
     await backend.load(files[1]); // the newest: must load
     await first;
     await backend.load(files[2]); // and the player keeps working
+    await backend.dispose();
+  });
+
+  test('a stop during a load: the load is not started again', () async {
+    JustAudioPlatform.instance = _Platform();
+    final dir = await Directory.systemTemp.createTemp('jab');
+    addTearDown(() => dir.delete(recursive: true));
+    final file = (File('${dir.path}/0.mp3')..writeAsBytesSync([0])).path;
+    final backend = JustAudioBackend();
+    _platformLoads = 0;
+    final load = expectLater(
+      backend.load(file),
+      throwsA(isA<BackendException>().having((e) => e.interrupted, 'interrupted', true)),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+    await backend.stop();
+    await load;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(_platformLoads, 0, reason: "the stopped load must not come back");
     await backend.dispose();
   });
 }

@@ -158,7 +158,7 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
     try {
       await _setSource(() => _player.setFilePath(filePath));
     } on PlayerInterruptedException catch (e) {
-      // A newer load replaced this one: expected when skipping quickly.
+      // Replaced by a newer load, or stopped: expected when skipping quickly.
       AppLog.d('load interrupted: $filePath (${e.message})');
       throw BackendException('load interrupted: ${e.message}', interrupted: true);
     } on Object catch (e, st) {
@@ -206,7 +206,10 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   }
 
   @override
-  Future<void> stop() => _player.stop();
+  Future<void> stop() {
+    _loadSeq++; // a load in progress must not start again after the stop (see [_setSource])
+    return _player.stop();
+  }
 
   @override
   Future<void> seek(Duration position) => _player.seek(position);
@@ -223,6 +226,7 @@ class JustAudioBackend implements AudioBackend, GaplessCapable {
   @override
   Future<void> dispose() async {
     _generation++;
+    _loadSeq++;
     await _indexSub.cancel();
     await _advanced.close();
     await _player.dispose();
