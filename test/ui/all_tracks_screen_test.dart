@@ -208,13 +208,22 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('a row tap queues exactly the visible list, in order, at the tapped row', (tester) async {
-    final h = await _open(tester);
+  testWidgets('a row tap queues exactly the visible (filtered) list, in order, at the tapped row', (tester) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final h = await Harness.create(tester, tracks: 4);
+    await tester.runAsync(() => _insertSaved(h));
+    await h.pump(tester, const AllTracksScreen());
+    await _settle(tester);
+    await tester.tap(find.text('Sul dispositivo'));
+    await _settle(tester);
     final visible = _visibleTitles(tester);
     expect(visible, hasLength(4));
+    expect(find.text('Cloud Song'), findsNothing);
     await tester.tap(find.text(visible[2]));
     await _settle(tester);
-    expect(await _queueTitles(tester, h), visible);
+    expect(await _queueTitles(tester, h), visible, reason: 'the cloud row is in the library but not in the queue');
     expect(h.handler.currentIndex, 2);
     await h.dispose(tester);
   });

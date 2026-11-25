@@ -285,16 +285,32 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('a row tap queues the visible playlist, in order, at the tapped row', (tester) async {
-      final (h, _) = await open(tester, search: false);
+    testWidgets('a row tap queues the playlist only, in its order, at the tapped row', (tester) async {
+      _phone(tester);
+      final h = await Harness.create(tester, tracks: 4);
+      final id = await tester.runAsync(() async {
+        final repo = PlaylistRepository(h.db);
+        final id = await repo.create('Notte');
+        final rows = await h.db.select(h.db.tracks).get();
+        final byTitle = {for (final r in rows) r.title: r.id};
+        // Not all of the library, and not in library order.
+        await repo.addTracks(id, [byTitle['Song 3']!, byTitle['Song 1']!, byTitle['Song 2']!]);
+        return id;
+      });
+      await h.pump(
+          tester,
+          PlaylistDetailScreen(
+              playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
+      await _settle(tester);
       final visible = _visibleTitles(tester);
-      expect(visible, hasLength(4));
+      expect(visible, hasLength(3));
+      expect(find.text('Song 0'), findsNothing);
       await tester.runAsync(() async {
-        await tester.tap(find.text(visible[2]));
+        await tester.tap(find.text(visible[1]));
         await Future<void>.delayed(const Duration(milliseconds: 100));
       });
       expect(await _queueTitles(tester, h), visible);
-      expect(h.handler.currentIndex, 2);
+      expect(h.handler.currentIndex, 1);
       await h.dispose(tester);
     });
 

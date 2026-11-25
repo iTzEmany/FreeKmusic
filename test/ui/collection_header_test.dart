@@ -203,7 +203,7 @@ void main() {
 
     group('actions', () {
       Future<Harness> pumpActions(WidgetTester tester,
-          {VoidCallback? onPlay, List<Track>? downloads, List<Override> extra = const [], Widget? menu}) async {
+          {VoidCallback? onPlay, List<Track>? downloads, List<Override> extra = const []}) async {
         final h = await Harness.create(tester, tracks: 0);
         await h.pump(
           tester,
@@ -214,7 +214,6 @@ void main() {
             onPlay: onPlay,
             shuffleIds: const [1, 2],
             downloadTracks: downloads,
-            menu: menu,
           ),
           extraOverrides: extra,
         );
@@ -229,15 +228,17 @@ void main() {
         await h.dispose(tester);
       });
 
-      testWidgets('Casuale moves the list from off to its next shuffle mode', (tester) async {
+      testWidgets('Casuale moves the list from off to shuffle', (tester) async {
         final h = await pumpActions(tester);
         final c = ProviderScope.containerOf(tester.element(find.byType(CollectionScaffold)));
         final key = listKeyOf(const [1, 2]);
         expect(c.read(listShuffleProvider(key)), ShuffleMode.off);
         await tester.tap(find.byIcon(Icons.shuffle_rounded));
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(c.read(listShuffleProvider(key)), isNot(ShuffleMode.off));
+        for (var i = 0; i < 40 && c.read(listShuffleProvider(key)) == ShuffleMode.off; i++) {
+          await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+          await tester.pump(const Duration(milliseconds: 25));
+        }
+        expect(c.read(listShuffleProvider(key)), ShuffleMode.shuffle);
         await h.dispose(tester);
       });
 
@@ -259,15 +260,6 @@ void main() {
         await tester.pump(const Duration(seconds: 5));
         await h.dispose(tester);
         await h0.dispose(tester);
-      });
-
-      testWidgets('the menu slot shows the caller widget, which keeps its own tap', (tester) async {
-        var opened = 0;
-        final h = await pumpActions(tester,
-            menu: IconButton(onPressed: () => opened++, icon: const Icon(Icons.more_vert)));
-        await tester.tap(find.byIcon(Icons.more_vert));
-        expect(opened, 1);
-        await h.dispose(tester);
       });
     });
   });

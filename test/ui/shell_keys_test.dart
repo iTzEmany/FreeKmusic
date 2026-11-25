@@ -110,12 +110,18 @@ void main() {
   ProviderContainer container(WidgetTester t) =>
       ProviderScope.containerOf(t.element(find.byType(AppShell)));
 
+  Future<void> until(WidgetTester t, bool Function() ok) async {
+    for (var i = 0; i < 40 && !ok(); i++) {
+      await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 25)));
+      await t.pump(const Duration(milliseconds: 25));
+    }
+  }
+
   testWidgets('shell: Space toggles play/pause', (t) async {
     final h = await shell(t);
     final before = h.handler.isPlaying;
     await t.sendKeyEvent(LogicalKeyboardKey.space);
-    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
-    await t.pump(const Duration(milliseconds: 100));
+    await until(t, () => h.handler.isPlaying != before);
     expect(h.handler.isPlaying, !before);
     await h.dispose(t);
   });
@@ -124,10 +130,10 @@ void main() {
     final h = await shell(t);
     expect(h.handler.currentTrack?.title, 'Song 1');
     await chord(t, LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.arrowRight);
-    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await until(t, () => h.handler.currentTrack?.title == 'Song 2');
     expect(h.handler.currentTrack?.title, 'Song 2');
     await chord(t, LogicalKeyboardKey.controlLeft, LogicalKeyboardKey.arrowLeft);
-    await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+    await until(t, () => h.handler.currentTrack?.title == 'Song 1');
     expect(h.handler.currentTrack?.title, 'Song 1');
     await h.dispose(t);
   });
@@ -144,6 +150,14 @@ void main() {
     await h.dispose(t);
   });
 
+  testWidgets('shell: Esc with no preview running does not call stop', (t) async {
+    final fake = _Preview(active: false);
+    final h = await shell(t, extra: [previewProvider.overrideWith(() => fake)]);
+    await t.sendKeyEvent(LogicalKeyboardKey.escape);
+    expect(fake.stopped, 0);
+    await h.dispose(t);
+  });
+
   testWidgets('shell: Esc ends a running preview', (t) async {
     final fake = _Preview();
     final h = await shell(t, extra: [previewProvider.overrideWith(() => fake)]);
@@ -154,10 +168,13 @@ void main() {
 }
 
 class _Preview extends PreviewNotifier {
+  _Preview({this.active = true});
+
+  final bool active;
   int stopped = 0;
 
   @override
-  PreviewState build() => PreviewState(trackId: 1, startedAt: DateTime(2020));
+  PreviewState build() => active ? PreviewState(trackId: 1, startedAt: DateTime(2020)) : const PreviewState();
 
   @override
   Future<void> stop() async => stopped++;
