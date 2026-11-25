@@ -2,6 +2,7 @@
 // (38.6). Defects are pinned as known; D-14 / phase 40 change them and update
 // these tests in the same step.
 import 'package:codecore/app.dart';
+import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/ui/screens/car/car_mode_screen.dart';
 import 'package:codecore/ui/shell/app_shell.dart';
@@ -15,7 +16,10 @@ void _phone(WidgetTester tester, {double scale = 1}) {
   tester.view.physicalSize = const Size(360, 740);
   tester.view.devicePixelRatio = 1;
   tester.platformDispatcher.textScaleFactorTestValue = scale;
+  // Desktop ignores the text size (157a): these cases are the phone ones.
+  debugIsDesktopOverride = false;
   addTearDown(() {
+    debugIsDesktopOverride = null;
     tester.view.reset();
     tester.platformDispatcher.clearTextScaleFactorTestValue();
   });
