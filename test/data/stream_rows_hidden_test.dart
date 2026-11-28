@@ -365,6 +365,22 @@ void main() {
       expect(entries.last.streamKey, isNull);
     });
 
+    test('a shadow row (saved=false) and a missing file are not offered', () async {
+      final c = ProviderContainer(overrides: [
+        databaseProvider.overrideWithValue(db),
+        coversDirProvider.overrideWithValue(tmp),
+      ]);
+      addTearDown(c.dispose);
+      final shadow = (await tracks.streamRow('youtube:zero'))!;
+      await (db.update(db.tracks)..where((t) => t.id.equals(shadow.id))).write(const TracksCompanion(saved: Value(false)));
+      final local = await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/gone.mp3', title: 'Gone', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 1,
+            missing: const Value(true)));
+      final rows = await tracks.getByIds([shadow.id, local]);
+      expect(rows.length, 2);
+      expect(await buildShareEntries(c.read(_refProvider), rows), isEmpty);
+    });
+
     test('a saved SoundCloud stream is not offered in LAN (only YouTube keys travel)', () async {
       final c = ProviderContainer(overrides: [
         databaseProvider.overrideWithValue(db),
