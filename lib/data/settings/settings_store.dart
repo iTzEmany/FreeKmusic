@@ -1056,7 +1056,8 @@ class SettingsStore {
       repeat: repeat,
       contextKind: _prefs.getInt('lastContextKind'),
       contextName: _prefs.getString('lastContextName'),
-      listKey: _prefs.getString('lastListKey'),
+      // Not a string (a hand-edited file): no key, the queue still comes back.
+      listKey: _prefs.get('lastListKey') is String ? _prefs.getString('lastListKey') : null,
       userAhead: _prefs.getInt('lastQueueUser') ?? 0,
     );
   }

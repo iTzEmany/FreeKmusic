@@ -5,6 +5,7 @@ import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/page_frame.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
+import 'package:codecore/ui/widgets/shuffle_button.dart' show ShufflePill;
 import 'package:codecore/ui/widgets/shelf_scroller.dart';
 import 'package:codecore/ui/screens/home/home_blocks.dart' show ShortcutsRow;
 import 'package:codecore/ui/screens/home/home_row.dart';
@@ -144,6 +145,32 @@ void main() {
     // 4 tracks are too few for Shuffle+: the Home's list stays on shuffle (D-767).
     expect(h.handler.shuffleEnabled, isTrue);
     expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.shuffle);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the Shuffle+ reason shows at every tap on the Home, not on another list (D-768, D-770)', (
+    tester,
+  ) async {
+    final h = await openHome(tester); // 4 tracks: Shuffle+ is out
+    final reason = find.textContaining('almeno 5 brani');
+    final messenger = ScaffoldMessenger.of(tester.element(find.byType(HomeScreen)));
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.byIcon(Icons.shuffle_rounded));
+      await _settle(tester);
+      expect(reason, findsOneWidget, reason: 'tap $i');
+      messenger.hideCurrentSnackBar();
+      await _settle(tester);
+      expect(reason, findsNothing);
+    }
+    // The library plays now; another list's pill keeps the once-per-session rule.
+    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await _settle(tester);
+    await h.pump(tester, const Scaffold(body: ShufflePill(ids: [1, 2, 3])));
+    await tester.tap(find.byType(ShufflePill)); // shuffle
+    await _settle(tester);
+    await tester.tap(find.byType(ShufflePill)); // off, with a reason already given
+    await _settle(tester);
+    expect(reason, findsNothing);
     await h.dispose(tester);
   });
 

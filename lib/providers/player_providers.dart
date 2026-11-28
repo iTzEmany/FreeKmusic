@@ -166,7 +166,10 @@ class PlayerController {
   List<int>? _listKeySource;
 
   /// The saved queue of the Home's list is back: its lock with it (D-767).
-  void restoreListKey(String key) {
+  /// Only for the queue that was restored: [ids] must still be the source (the
+  /// user may have started another one while it loaded).
+  void restoreListKey(String key, List<int> ids) {
+    if (key != libraryListKey || !listEquals(_handler.sourceIds, ids)) return;
     _listKey = key;
     _listKeySource = _handler.sourceIds;
   }
@@ -177,6 +180,12 @@ class PlayerController {
   bool isPlayingList(Object key) {
     final src = _handler.sourceIds;
     if (src == null) return false;
+    // The Home's lock survives what only shrinks or reorders its queue (a track
+    // removed, the queue given back after a Jam): the same logical queue.
+    if (key == libraryListKey && _listKey == key) {
+      final base = _listKeySource?.toSet() ?? const <int>{};
+      return src.every(base.contains);
+    }
     return (_listKey == key && listEquals(src, _listKeySource)) ||
         listKeyOf(src) == key;
   }
@@ -413,7 +422,12 @@ class PlayerController {
           context: _context,
         );
       } else {
-        await _start(ids, 0, _context);
+        await _start(
+          ids,
+          0,
+          _context,
+          listKey: isPlayingList(libraryListKey) ? libraryListKey : null,
+        );
       }
     } on Object catch (e, st) {
       AppLog.w('last queue not resumed', e, st);

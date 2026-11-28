@@ -14,6 +14,7 @@ import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/play_queue.dart';
+import 'package:codecore/services/audio/playback_persistence.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -464,10 +465,76 @@ void main() {
       expect(handler.shuffleEnabled, isFalse, reason: 'another list restored: not locked');
 
       handler.setShuffleAndRepeat(shuffle: true, repeat: PlayRepeat.off);
-      home.restoreListKey(libraryListKey);
+      home.restoreListKey(libraryListKey, handler.sourceIds!);
       expect(home.isPlayingList(libraryListKey), isTrue);
       await home.setShuffleFromSystem(false);
       expect(handler.shuffleEnabled, isTrue);
+    });
+
+    test('the Home lock survives resumeLastQueue, track removal and handler.restore', () async {
+      await home.playAll(tracks, listKey: libraryListKey);
+      await pumpEventQueue();
+      Future<void> refused(String route) async {
+        expect(home.isPlayingList(libraryListKey), isTrue, reason: route);
+        await home.setShuffleFromSystem(false);
+        expect(handler.shuffleEnabled, isTrue, reason: route);
+      }
+
+      await home.resumeLastQueue();
+      await pumpEventQueue();
+      await refused('resumeLastQueue');
+      await handler.restore(handler.queueIds, 0, Duration.zero); // a Jam guest ends
+      await refused('handler.restore');
+      await handler.removeTracks({tracks.first.id});
+      await refused('removeTracks');
+    });
+
+    test('a queue of other songs is not the Home\'s even with the key left over', () async {
+      await home.playAll(tracks, listKey: libraryListKey);
+      await pumpEventQueue();
+      await handler.restore([-5, -6], 0, Duration.zero);
+      expect(home.isPlayingList(libraryListKey), isFalse);
+    });
+
+    test('restoreListKey takes only the Home key for the queue that is really there', () async {
+      final ids = [for (final t in tracks) t.id];
+      await handler.restore(ids, 0, Duration.zero);
+      home.restoreListKey('k', ids);
+      expect(home.isPlayingList('k'), isFalse);
+      home.restoreListKey(libraryListKey, [ids.first]); // the user started another meanwhile
+      expect(home.isPlayingList(libraryListKey), isFalse);
+      home.restoreListKey(libraryListKey, ids);
+      expect(home.isPlayingList(libraryListKey), isTrue);
+    });
+
+    test('locked with Shuffle+ on, a turn-off request leaves Casuale', () async {
+      await home.playAll(tracks, listKey: libraryListKey);
+      await pumpEventQueue();
+      await home.cycleShuffle(); // Casuale+
+      expect((handler.shuffleEnabled, plus), (true, true));
+      await home.setShuffleFromSystem(false);
+      expect((handler.shuffleEnabled, plus), (true, false));
+    });
+
+    test('the saved list key follows the queue: written for the Home, cleared for another', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final saver = PlaybackPersistence(handler, SettingsStore(prefs));
+      final c = PlayerController(
+        handler,
+        saver,
+        shufflePlus: () => plus,
+        setShufflePlus: (on) => plus = on,
+        random: _LastPick(),
+      );
+      await c.playAll(tracks, listKey: libraryListKey);
+      await pumpEventQueue();
+      await saver.flush();
+      expect(prefs.getString('lastListKey'), libraryListKey);
+      await c.playAll(tracks, listKey: 'k');
+      await pumpEventQueue();
+      await saver.flush();
+      expect(prefs.containsKey('lastListKey'), isFalse);
     });
 
     test('the Home\'s mode in ListShuffle: Casuale by default, off reads as Casuale', () {

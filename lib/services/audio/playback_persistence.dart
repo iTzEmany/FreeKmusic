@@ -56,7 +56,7 @@ class PlaybackPersistence {
   /// no loop on a bad copy).
   Future<void> restore({
     void Function(bool plus)? applyPlus,
-    void Function(String listKey)? applyListKey,
+    void Function(String listKey, List<int> ids)? applyListKey,
   }) async {
     final s = _store.readPlayback();
     ({SavedPlayback queue, bool plus})? aside;
@@ -77,7 +77,7 @@ class PlaybackPersistence {
         await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs),
             userAhead: q.userAhead);
         final key = s.listKey;
-        if (key != null) applyListKey?.call(key);
+        if (key != null) applyListKey?.call(key, q.queueIds);
         if (aside != null) {
           _position = Duration(milliseconds: q.positionMs);
           await flush(); // the disk follows the queue now back
