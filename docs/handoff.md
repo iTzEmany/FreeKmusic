@@ -6,7 +6,7 @@ Prossimo obiettivo consigliato: **refactor «playlist-aggiungi-e-casuale»**, fa
 
 In alternativa, indipendente dalle 162-164: **refactor «invia-playlist-completa»**, fasi 165 → 166: «Invia a un dispositivo» di una playlist manda tutti i brani (oggi solo i file) e sul ricevente arriva la playlist con nome e ordine. Prompt: `/pilot phase 165`.
 
-In alternativa, indipendente dalle 162-166: **refactor «karaoke-casuale»**, fasi 167 → 168 / 169 (dopo la 167 in qualunque ordine): dopo un video karaoke la coda si riempie solo di karaoke dei brani simili all'originale; il pulsante del casuale di «Casuale su tutto» passa solo tra Casuale e Casuale+ (anche nel player, MPRIS e dopo un riavvio). Prompt: `/pilot phase 167`.
+In alternativa, indipendente dalle 162-166: **refactor «karaoke-casuale»**, fasi 167 → 168 / 169 (dopo la 167 in qualunque ordine): dopo un video karaoke la coda si riempie solo di karaoke dei brani simili all'originale; il pulsante del casuale di «Casuale su tutto» passa solo tra Casuale e Casuale+ (anche nel player, MPRIS e dopo un riavvio; codice della 169 scritto, vedi `fasi/fase-169-*.md`). Prompt: `/pilot phase 167`.
 
 Altri obiettivi possibili:
 0. Memoria della griglia (era la «fase 162» proposta il 25/11, mai scritta): RSS dopo il giro della libreria a 778 MB contro la soglia di 680; provare a limitare `imageCache` sul desktop o `cacheWidth` delle copertine della griglia, poi rimisurare. Numero di fase: il primo libero dopo la 169.
