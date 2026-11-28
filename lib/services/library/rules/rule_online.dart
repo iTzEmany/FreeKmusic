@@ -11,10 +11,13 @@ bool onlineMatches(RuleExpr rules, YtResult r) => _eval(rules, r) ?? true;
 bool? _eval(RuleExpr e, YtResult r) {
   switch (e) {
     case RuleAnd(:final terms):
+      var held = false;
       for (final t in terms) {
-        if (_eval(t, r) == false) return false;
+        final v = _eval(t, r);
+        if (v == false) return false;
+        if (v == true) held = true;
       }
-      return null; // all held or ignored: the caller reads null as satisfied
+      return held ? true : null; // null: every term ignored
     case RuleOr(:final left, :final right):
       final l = _eval(left, r), rt = _eval(right, r);
       return l == null || rt == null ? null : l || rt; // an ignored side holds
@@ -47,10 +50,12 @@ bool? _eval(RuleExpr e, YtResult r) {
   }
 }
 
-List<String> _artists(YtResult r) => r.artists.isEmpty ? [r.channel] : r.artists;
+List<String> _artists(YtResult r) => r.artists.isEmpty
+    ? [r.channel.replaceFirst(RegExp(r' - Topic$'), '')]
+    : r.artists;
 
 List<String>? _texts(RuleField f, YtResult r) => switch (f) {
       RuleField.artist || RuleField.albumArtist => _artists(r),
-      RuleField.album => [r.album ?? ''],
+      RuleField.album => r.album == null ? null : [r.album!],
       _ => null,
     };

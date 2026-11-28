@@ -1,3 +1,4 @@
+import 'package:codecore/services/library/rules/rule_ast.dart';
 import 'package:codecore/services/library/rules/rule_online.dart';
 import 'package:codecore/services/library/rules/rule_parser.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -59,6 +60,21 @@ void main() {
     const bare = YtResult(id: 'y', title: 't', channel: 'Muse', duration: null);
     expect(m('artista:muse', bare), isTrue);
     expect(m('durata>10m', bare), isTrue);
-    expect(m('album:x', bare), isFalse);
+    expect(m('album:x', bare), isTrue);
+    expect(m('-album:x', bare), isTrue);
+    expect(m('-durata>10m', bare), isTrue);
+    const topic = YtResult(id: 'z', title: 't', channel: 'Pink Floyd - Topic', duration: null);
+    expect(m('artista:"pink floyd",', topic), isTrue);
+  });
+
+  test('Not over And is not read as ignored', () {
+    expect(onlineMatches(RuleNot(RuleAnd([parseRules('artista:pink').expr])), _r), isFalse);
+    expect(onlineMatches(RuleNot(RuleAnd([parseRules('genere:rock').expr])), _r), isTrue);
+  });
+
+  test('free text: title, artist, album', () {
+    expect(m('time'), isTrue);
+    expect(m('floyd'), isTrue);
+    expect(m('nothing'), isFalse);
   });
 }

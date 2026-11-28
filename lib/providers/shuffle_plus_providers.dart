@@ -390,15 +390,20 @@ final genreMixProvider = StreamProvider.autoDispose
 final smartMixProvider = StreamProvider.autoDispose
     .family<GenreMixState, int>((ref, id) {
       if (!kEnableYoutube) return const Stream.empty();
-      ref.listen(smartPlaylistProvider(id), (_, _) {});
+      // Rules, limit or order edited: the mix starts again with the new ones.
+      ref.watch(
+        smartPlaylistProvider(id).select((p) => (p.value?.rules, p.value?.limitCount, p.value?.sort)),
+      );
       ref.listen(smartTracksProvider(id), (_, _) {});
       final playlist = ref.read(smartPlaylistProvider(id).future);
-      final all = ref.read(smartTracksProvider(id).future);
       RuleExpr? rules;
-      // genreMixOf awaits the tracks before it first calls [accept].
-      final tracks = playlist.then((p) {
+      // The tracks are read once the playlist is there (cold open: until then
+      // they are an empty stream); genreMixOf awaits them before [accept].
+      final tracks = playlist.then<List<Track>>((p) {
         rules = p == null ? null : parseRules(p.rules).expr;
-        return all;
+        return ref.mounted
+            ? ref.read(smartTracksProvider(id).future)
+            : Future.value(<Track>[]);
       });
       return _mixOf(
         ref,
