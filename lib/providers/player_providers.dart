@@ -153,8 +153,8 @@ class PlayerController {
   List<int>? _listKeySource;
 
   /// Is the list [key] the one playing? A key is the page's own (a Play that
-  /// passed it) or the hash of the list's ids ([listKeyOf]), so a row tap
-  /// counts too (D-534).
+  /// passed it, also a row tap of a playlist page) or the hash of the list's
+  /// ids ([listKeyOf]), so a row tap of the other pages counts too (D-534).
   bool isPlayingList(Object key) {
     final src = _handler.sourceIds;
     if (src == null) return false;
@@ -249,10 +249,12 @@ class PlayerController {
     List<Track> snapshot,
     int index, {
     PlayContext? context,
+    Object? listKey,
   }) => playMixed(
     [for (final t in snapshot) (track: t, online: null, seedTitle: null)],
     index: index,
     context: context,
+    listKey: listKey,
   );
 
   /// The list's Play button: from a random track when shuffle is on (the

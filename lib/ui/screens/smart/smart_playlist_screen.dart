@@ -195,7 +195,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
                 track: shown[i],
                 compact: compact,
                 selection: selection,
-                onTap: () => ctrl.playFromList(tracks, whole(shown[i]), context: playCtx),
+                onTap: () => ctrl.playFromList(tracks, whole(shown[i]), context: playCtx, listKey: shuffleKey),
               ),
             ),
           ),
