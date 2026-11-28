@@ -11,7 +11,7 @@ import 'offers.dart';
 /// here. [pathOfItem] maps the id of a received file to where it was stored; a file that did not arrive is looked
 /// up in the library by [resolver] and skipped when absent. Saved streams are found by key (the caller saved
 /// them first); shadow rows are made with `ensureStreamRow` and stay out of the library (`saved = false`, D-761).
-/// A part after the first appends to [appendTo]. Returns the playlist id, null when nothing could be written.
+/// A part after the first appends to [appendTo] (a new playlist if that one is gone). Returns the playlist id, null when nothing could be written.
 Future<int?> writeReceivedPlaylist({
   required OfferPlaylist playlist,
   required List<OfferItem> items,
@@ -28,26 +28,24 @@ Future<int?> writeReceivedPlaylist({
   final ids = <int>[];
   for (final ref in playlist.order) {
     try {
-      final int? id;
+      int? id;
       if (ref.item != null) {
         final path = pathOfItem[ref.item];
         final item = itemById[ref.item];
-        id = path != null
-            ? (await tracks.byPath(path))?.id
-            : item == null
-                ? null
-                : resolver.resolve(TrackRef(title: item.title, artist: item.artist));
+        if (path != null) id = (await tracks.byPath(path))?.id;
+        if (id == null && item != null) id = resolver.resolve(TrackRef(title: item.title, artist: item.artist));
       } else {
         final s = streamByKey[ref.stream];
-        if (s == null) {
-          id = null;
-        } else if (s.shadow) {
-          id = await tracks.ensureStreamRow(
-              streamResultOf(s.key, title: s.title, artist: s.artist, album: s.album, durationMs: s.durationMs));
-          final m = s.meta;
-          if (m != null && credits != null) await credits.saveIfNone(id, m.credits, m.details);
-        } else {
+        if (s != null) {
+          // A row for the key first; else a file already here (a download); a shadow row only as the last resort.
           id = (await tracks.streamRow(s.key))?.id;
+          id ??= resolver.resolve(TrackRef(title: s.title, artist: s.artist, durationMs: s.durationMs));
+          if (id == null && s.shadow) {
+            id = await tracks.ensureStreamRow(
+                streamResultOf(s.key, title: s.title, artist: s.artist, album: s.album, durationMs: s.durationMs));
+            final m = s.meta;
+            if (m != null && credits != null) await credits.saveIfNone(id, m.credits, m.details);
+          }
         }
       }
       if (id != null) ids.add(id);
@@ -56,7 +54,10 @@ Future<int?> writeReceivedPlaylist({
     }
   }
   if (ids.isEmpty) return null;
-  final id = appendTo ?? await playlists.create(await playlists.freeName(playlist.name.trim()));
-  await playlists.addStreamTracks(id, ids);
-  return id;
+  // A playlist the user deleted between two parts: the part starts a new one.
+  if (appendTo != null && await playlists.uuidOf(appendTo) != null) {
+    await playlists.addStreamTracks(appendTo, ids);
+    return appendTo;
+  }
+  return playlists.createWithStreams(playlist.name, ids);
 }

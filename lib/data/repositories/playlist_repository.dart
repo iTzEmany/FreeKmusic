@@ -369,6 +369,14 @@ class PlaylistRepository {
     return name;
   }
 
+  /// A new playlist called [base] (or the next free «base (2)»…) holding [trackIds] in order, music and shadow
+  /// rows alike, in one transaction: a failure leaves no empty playlist.
+  Future<int> createWithStreams(String base, List<int> trackIds) => _db.transaction(() async {
+    final id = await create(await freeName(base));
+    await addStreamTracks(id, trackIds);
+    return id;
+  });
+
   Future<void> _renumber(int playlistId) async {
     final rows = await (_db.select(_db.playlistTracks)
           ..where((t) => t.playlistId.equals(playlistId))

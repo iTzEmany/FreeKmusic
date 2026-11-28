@@ -1,4 +1,18 @@
+import 'dart:io';
+
 import 'package:codecore/data/db/app_database.dart';
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/share_hub.dart';
+import 'package:codecore/providers/share_providers.dart' show lanClientProvider;
+import 'package:codecore/providers/youtube_providers.dart' show downloadIndexProvider;
+import 'package:codecore/services/share/lan_client.dart';
+import 'package:codecore/services/online/download_index.dart';
+// ignore: depend_on_referenced_packages
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:codecore/data/repositories/hidden_playlists.dart';
 import 'package:codecore/data/repositories/playlist_repository.dart';
 import 'package:codecore/data/repositories/playlist_sync_repository.dart';
@@ -17,6 +31,14 @@ OfferItem item(int id) => OfferItem(id: id, title: 'Song $id', sizeBytes: 1, ext
 StreamOffer stream(String key, {bool shadow = false}) => StreamOffer(key: key, title: 'T $key', shadow: shadow);
 OfferRef it(int id) => (item: id, stream: null);
 OfferRef st(String key) => (item: null, stream: key);
+
+class _NoNetClient extends LanClient {
+  @override
+  Future<void> offerAction(String host, int port, String offerId, String action, String token, {int? tlsPort, String? pin}) async {}
+}
+
+IncomingOffer _offer(String id, {List<StreamOffer> streams = const [], OfferPlaylist? playlist}) => IncomingOffer(
+    offerId: id, fromId: 'f', fromName: 'n', fromHost: '10.0.0.2', fromPort: 1, token: 'tok12345', items: const [], streams: streams, playlist: playlist);
 
 void main() {
   late AppDatabase db;
@@ -174,6 +196,167 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(log, ['decline 2', 'decline 3']);
       expect(await db.visiblePlaylists(), isEmpty);
+    });
+  });
+  test('a saved stream already downloaded here, and a file with no row, are found by title instead of vanishing', () async {
+    await addFile('/lib/Song 2.mp3', title: 'Song 2');
+    await addFile('/lib/Live.mp3', title: 'T ${ykey(5)}');
+    final id = await write(
+      plOf([it(1), st(ykey(5)), st(ykey(6))]),
+      items: [item(1)],
+      streams: [stream(ykey(5)), stream(ykey(6), shadow: true)],
+      paths: {1: '/r/not-in-db.mp3'},
+    );
+    // item 1: path without row -> looked up by title ("Song 1" is not here); ykey(5): file here; ykey(6): new shadow row.
+    expect(await pathsOf(id!), ['/lib/Live.mp3', 'stream:${ykey(6)}']);
+  });
+
+  test('a part appended to a playlist the user deleted starts a new one', () async {
+    await addFile('/r/a.mp3');
+    final first = await write(plOf([it(1)]), items: [item(1)], paths: {1: '/r/a.mp3'});
+    await playlists.delete(first!);
+    final next = await write(plOf([it(1)], part: 2, parts: 2), items: [item(1)], paths: {1: '/r/a.mp3'}, appendTo: first);
+    expect(next, isNot(first));
+    expect(await pathsOf(next!), ['/r/a.mp3']);
+  });
+
+  group('hub accept', () {
+    late ProviderContainer c;
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      final tmp = await Directory.systemTemp.createTemp('hubpl');
+      addTearDown(() => tmp.delete(recursive: true));
+      c = ProviderContainer(overrides: [
+        settingsStoreProvider.overrideWithValue(SettingsStore(await SharedPreferences.getInstance())),
+        databaseProvider.overrideWithValue(db),
+        lanClientProvider.overrideWithValue(_NoNetClient()),
+        downloadIndexProvider.overrideWith((ref) => DownloadIndex(File('${tmp.path}/idx.json'))),
+      ]);
+      addTearDown(c.dispose);
+    });
+
+    test('shadow stream without a valid playlist is never saved to the library', () async {
+      final o = _offer('o1', streams: [stream(ykey(1), shadow: true), stream(ykey(2))]);
+      await c.read(shareHubProvider.notifier).accept(o);
+      expect(await tracks.streamRow(ykey(1)), isNull);
+      expect((await tracks.streamRow(ykey(2)))!.saved, true);
+      expect(await db.visiblePlaylists(), isEmpty);
+    });
+
+    test('with a playlist: it is created in order, shadow rows only inside it', () async {
+      final o = _offer('o2',
+          streams: [stream(ykey(1)), stream(ykey(2), shadow: true)], playlist: plOf([st(ykey(2)), st(ykey(1))], name: 'Mix'));
+      await c.read(shareHubProvider.notifier).accept(o);
+      final lists = await db.visiblePlaylists();
+      expect(lists.single.name, 'Mix');
+      expect(await pathsOf(lists.single.id), ['stream:${ykey(2)}', 'stream:${ykey(1)}']);
+      expect((await tracks.streamRow(ykey(2)))!.saved, false);
+      expect((await tracks.streamRow(ykey(1)))!.saved, true);
+    });
+  });
+
+  group('PlaylistParts rules', () {
+    IncomingOffer p(int n, int of, {String id = '', String host = '10.0.0.2'}) => IncomingOffer(
+        offerId: id.isEmpty ? 'p$n' : id, fromId: 'f', fromName: 'n', fromHost: host, fromPort: 1, token: 'tok12345', items: const [],
+        streams: [stream(ykey(n))], playlist: plOf([st(ykey(n))], key: 'k', part: n, parts: of));
+
+    void run(String name, void Function(FakeAsync fa, List<String> log, PlaylistParts parts) body, {bool throwOn2 = false}) {
+      test(name, () {
+        fakeAsync((fa) {
+          final log = <String>[];
+          final parts = PlaylistParts(
+            accept: (o) async {
+              log.add('accept ${o.playlist!.part}');
+              if (throwOn2 && o.playlist!.part == 2) throw StateError('disk full');
+            },
+            decline: (o) async => log.add('decline ${o.playlist!.part}'),
+          );
+          body(fa, log, parts);
+          parts.dispose();
+        });
+      });
+    }
+
+    run('part 1 accepted but downloading for 15 minutes: the waiting parts are not declined', (fa, log, parts) {
+      final p1 = p(1, 3);
+      parts.handle(p1);
+      fa.elapse(const Duration(minutes: 1));
+      expect(parts.handle(p(2, 3)), true);
+      parts.answered(p1);
+      fa.elapse(const Duration(minutes: 15));
+      expect(log, isEmpty);
+      parts.firstDone(p1, ok: true);
+      fa.flushMicrotasks();
+      expect(log, ['accept 2']);
+    });
+
+    run('part 1 never answered: at the end of offerTtl the pending parts are refused', (fa, log, parts) {
+      parts.handle(p(1, 3));
+      parts.handle(p(2, 3));
+      fa.elapse(offerTtl + const Duration(seconds: 1));
+      expect(log, ['decline 2']);
+      expect(parts.accepts('f', '10.0.0.2', null, 'k', 3, 3), false);
+    });
+
+    run('an accept that throws does not block the next part', (fa, log, parts) {
+      final p1 = p(1, 3);
+      parts.handle(p1);
+      parts.handle(p(2, 3));
+      parts.handle(p(3, 3));
+      parts.firstDone(p1, ok: true);
+      fa.flushMicrotasks();
+      expect(log, ['accept 2', 'accept 3']);
+    }, throwOn2: true);
+
+    run('only the next part of the declared parts is taken: no duplicate, jump, other total or repeated part 1', (fa, log, parts) {
+      final p1 = p(1, 3);
+      parts.handle(p1);
+      expect(parts.handle(p(1, 3, id: 'again')), false);
+      expect(parts.handle(p(3, 3)), false); // jump
+      expect(parts.handle(p(2, 5)), false); // another `parts`
+      expect(parts.handle(p(2, 3)), true);
+      expect(parts.handle(p(2, 3, id: 'dup')), false);
+      expect(parts.handle(p(4, 3)), false); // beyond the declared
+      expect(parts.accepts('f', '10.0.0.2', null, 'k', 3, 3), true);
+      expect(parts.accepts('f', '10.0.0.9', null, 'k', 3, 3), false);
+      // The repeated part 1 did not replace the group: the real one still leads.
+      parts.firstDone(p1, ok: true);
+      fa.flushMicrotasks();
+      expect(log, ['accept 2']);
+    });
+
+    run('the group closes after the last part; a single part makes no group', (fa, log, parts) {
+      final p1 = p(1, 2);
+      parts.handle(p1);
+      parts.handle(p(2, 2));
+      parts.firstDone(p1, ok: true);
+      fa.flushMicrotasks();
+      expect(log, ['accept 2']);
+      expect(parts.handle(p(2, 2, id: 'late')), false);
+      expect(parts.handle(p(1, 1, id: 'solo')), false);
+      expect(parts.accepts('f', '10.0.0.2', null, 'k', 2, 2), false);
+    });
+
+    run('an idle group ends offerTtl after its last activity', (fa, log, parts) {
+      final p1 = p(1, 3);
+      parts.handle(p1);
+      parts.firstDone(p1, ok: true);
+      fa.elapse(offerTtl - const Duration(seconds: 1));
+      expect(parts.accepts('f', '10.0.0.2', null, 'k', 2, 3), true);
+      fa.elapse(const Duration(seconds: 2));
+      expect(parts.accepts('f', '10.0.0.2', null, 'k', 2, 3), false);
+    });
+
+    run('part 2 appends to the playlist of part 1, and only for offers of the group', (fa, log, parts) {
+      final p1 = p(1, 2), p2 = p(2, 2);
+      parts.handle(p1);
+      parts.handle(p2);
+      expect(parts.playlistFor(p1), isNull);
+      parts.wrote(p1, 7);
+      expect(parts.playlistFor(p2), 7);
+      expect(parts.playlistFor(p(2, 2, id: 'stranger')), isNull);
+      parts.wrote(p(1, 2, id: 'stranger1'), 99);
+      expect(parts.playlistFor(p2), 7);
     });
   });
 }

@@ -184,6 +184,83 @@ void main() {
         expect((await post('/', payload)).statusCode, 202);
         expect(seen.single.playlist!.order.length, 2);
       });
+
+      test('tryParse boundaries: parts 1000/1001, key 64/65, order 500/501, name 200/201, shadow only when true', () {
+        Map<String, Object?> raw({String key = 'k', int parts = 1, int refs = 1, String name = 'n'}) => {
+              'key': key, 'name': name, 'part': 1, 'parts': parts,
+              'order': [for (var i = 0; i < refs; i++) {'item': i}],
+            };
+        OfferPlaylist? parse(Map<String, Object?> m) =>
+            OfferPlaylist.tryParse(m, itemIds: {for (var i = 0; i < 600; i++) i}, streamKeys: {});
+        expect(parse(raw(parts: 1000)), isNotNull);
+        expect(parse(raw(parts: 1001)), isNull);
+        expect(parse(raw(key: 'k' * 64)), isNotNull);
+        expect(parse(raw(key: 'k' * 65)), isNull);
+        expect(parse(raw(refs: 500)), isNotNull);
+        expect(parse(raw(refs: 501)), isNull);
+        expect(parse(raw(name: 'n' * 200)), isNotNull);
+        expect(parse(raw(name: 'n' * 201)), isNull);
+        for (final v in [false, 'yes', 1, null]) {
+          expect(StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 't', 'shadow': v})!.shadow, false, reason: '$v');
+        }
+        expect(StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 't', 'shadow': true})!.shadow, true);
+      });
+
+      test('invisible and bidi characters are stripped from the name; a name of only those is no playlist', () {
+        OfferPlaylist? parse(String n) => OfferPlaylist.tryParse(
+            {'key': 'k', 'name': n, 'part': 1, 'parts': 1, 'order': [{'item': 1}]}, itemIds: {1}, streamKeys: {});
+        expect(parse('\u202Eab\u200B\u0000c')!.name, 'abc');
+        expect(parse('\u200B\u200B'), isNull);
+      });
+
+      test('shadow streams without a valid playlist are dropped; only shadow and no files is refused', () async {
+        final r = await post('/', {
+          ...body({...pl, 'part': 9}),
+          'streams': [
+            {'key': 'youtube:abcdefghijk', 'title': 'Live', 'shadow': true},
+            {'key': 'youtube:bbbbbbbbbbb', 'title': 'Saved'},
+          ],
+        });
+        expect(r.statusCode, 202);
+        expect(seen.single.streams.map((s) => s.key), ['youtube:bbbbbbbbbbb']);
+        ip = '192.168.1.60';
+        final only = await post('/', {
+          ...offerBody(id: 'o2', items: []),
+          'streams': [{'key': 'youtube:abcdefghijk', 'title': 'Live', 'shadow': true}],
+        });
+        expect(only.statusCode, 400);
+      });
+
+      test('over the limits, only the next part of a group already being received gets in', () async {
+        receiver.acceptsPart = (id, host, fp, key, part, parts) => key == 'k1' && part > 1 && id == 'dev-a';
+        final codes = <int>[];
+        for (var i = 1; i <= 8; i++) {
+          codes.add((await post('/', {...body({...pl, 'part': i, 'parts': 8}), 'offerId': 'p$i'})).statusCode);
+        }
+        expect(codes, [for (var i = 0; i < 8; i++) 202]);
+        // The same flood with another key is limited as always.
+        final other = await post('/', {...body({...pl, 'key': 'other', 'part': 2, 'parts': 8}), 'offerId': 'x'});
+        expect(other.statusCode, 429);
+      });
+
+      test('the sender keeps the parts of an accepted group alive while the first one is busy', () async {
+        var t = DateTime(2026, 1, 1, 12);
+        final sender = OfferService(deviceId: 's', deviceName: 'S', now: () => t);
+        const e = ShareEntry(id: 1, path: '/a.mp3', title: 'One', sizeBytes: 1, durationMs: 0, ext: 'mp3');
+        OutgoingOffer mk(int part) => sender.createOutgoing(
+            toId: 'b', toName: 'B', entries: [e], playlist: (key: 'k', name: 'Mix', part: part, parts: 2));
+        final a = mk(1), b = mk(2);
+        final h = sender.buildRouter(clientIp: (_) => '192.168.1.5').call;
+        t = t.add(const Duration(minutes: 9));
+        final r = await h(Request('POST', Uri.parse('http://x/${a.offerId}/accept'), headers: {'X-Token': a.token}));
+        expect(r.statusCode, 200);
+        t = t.add(const Duration(minutes: 9)); // 18 minutes after creation, 9 after the answer
+        sender.expire();
+        expect((a.status, b.status), (OfferStatus.accepted, OfferStatus.pending));
+        t = t.add(const Duration(minutes: 2));
+        sender.expire();
+        expect((a.status, b.status), (OfferStatus.expired, OfferStatus.expired));
+      });
     });
 
     test('StreamOffer.tryParse clips text, keeps a sane duration only', () {

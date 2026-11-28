@@ -339,6 +339,8 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
               deviceId: await store.deviceId(),
               deviceName: ref.read(deviceNameProvider),
             )
+            ..acceptsPart = ((id, host, fp, key, part, parts) => _parts.accepts(id, host, fp, key, part, parts))
+            ..onCancelled = ((o) => _parts.firstDone(o, ok: false))
             ..onIncoming = (o) {
               final fp = o.callerFingerprint;
               final trusted = ref.read(trustedDevicesProvider);
@@ -495,13 +497,15 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     );
     if (entries.isEmpty) return outcome(SendStatus.nothingToSend);
     final parts = playlistName == null ? [entries] : splitParts(entries);
+    // The receiver refuses a longer name (and then the offer would arrive as loose tracks).
+    final name = playlistName != null && playlistName.length > 200 ? playlistName.substring(0, 200) : playlistName;
     final key = newToken();
     for (var i = 0; i < parts.length; i++) {
       final offer = service.createOutgoing(
         toId: peer.id,
         toName: peer.name,
         entries: parts[i],
-        playlist: playlistName == null ? null : (key: key, name: playlistName, part: i + 1, parts: parts.length),
+        playlist: name == null ? null : (key: key, name: name, part: i + 1, parts: parts.length),
       );
       try {
         await ref
@@ -588,6 +592,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       return;
     }
     o.status = OfferStatus.accepted;
+    _parts.answered(o);
     _service?.notify();
     final cancel = _cancels[o.offerId] = CancelToken();
     final saved = <String>[];
@@ -650,7 +655,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       }
       final pl = o.playlist;
       // Shadow rows live only in the playlist (D-761): they are not saved to the library.
-      final saveable = [for (final s in o.streams) if (pl == null || !s.shadow) s];
+      final saveable = [for (final s in o.streams) if (!s.shadow) s];
       if (saveable.isNotEmpty && !cancel.isCancelled) {
         final index = await ref.read(downloadIndexProvider.future);
         await saveReceivedStreams(

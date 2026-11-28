@@ -156,6 +156,9 @@ class StreamOffer {
   }
 }
 
+/// Control, zero-width and bidi-override characters: never part of a name shown to the user.
+final _invisible = RegExp('[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]');
+
 /// One element of the playlist order: a file of `items` (by id) or a stream of `streams` (by key).
 typedef OfferRef = ({int? item, String? stream});
 
@@ -186,7 +189,9 @@ class OfferPlaylist {
     if (raw is! Map) return null;
     final key = raw['key'], name = raw['name'], part = raw['part'], parts = raw['parts'], order = raw['order'];
     if (key is! String || key.isEmpty || key.length > 64) return null;
-    if (name is! String || name.trim().isEmpty || name.length > 200) return null;
+    if (name is! String || name.length > 200) return null;
+    final clean = name.replaceAll(_invisible, '').trim();
+    if (clean.isEmpty) return null;
     if (part is! int || parts is! int || parts < 1 || parts > 1000 || part < 1 || part > parts) return null;
     if (order is! List || order.length > maxOfferItems) return null;
     final refs = <OfferRef>[];
@@ -201,7 +206,7 @@ class OfferPlaylist {
         return null;
       }
     }
-    return OfferPlaylist(key: key, name: name, part: part, parts: parts, order: refs);
+    return OfferPlaylist(key: key, name: clean, part: part, parts: parts, order: refs);
   }
 }
 
@@ -264,6 +269,10 @@ class OutgoingOffer {
   final Map<int, ShareEntry> entries;
   final OfferPlaylist? playlist;
   final DateTime createdAt;
+
+  /// Last sign of life of this offer or of another part of its playlist: expiry counts from here, so a slow
+  /// first part does not expire the parts waiting behind it (D-762).
+  late DateTime touched = createdAt;
   OfferStatus status = OfferStatus.pending;
 
   bool get open =>
@@ -294,6 +303,12 @@ class OfferService {
   final _changes = StreamController<void>.broadcast();
   final _recent = <String, List<DateTime>>{}; // ip -> offer timestamps
 
+  /// Asked only when the limits are hit: is this the next part of a playlist already being received (D-762)?
+  bool Function(String fromId, String host, String? fingerprint, String key, int part, int parts)? acceptsPart;
+
+  /// The sender withdrew a pending offer.
+  void Function(IncomingOffer offer)? onCancelled;
+
   /// Fired when a new valid offer arrives (the UI asks the user).
   void Function(IncomingOffer offer)? onIncoming;
 
@@ -302,6 +317,14 @@ class OfferService {
   bool get hasOpenOutgoing {
     expire();
     return outgoing.values.any((o) => o.open);
+  }
+
+  /// Marks [o] and the other parts of its playlist as alive now.
+  void _touch(OutgoingOffer o) {
+    final now = _now(), key = o.playlist?.key;
+    for (final x in outgoing.values) {
+      if (identical(x, o) || (key != null && x.playlist?.key == key)) x.touched = now;
+    }
   }
 
   void notify() {
@@ -313,7 +336,7 @@ class OfferService {
   void expire() {
     final limit = _now().subtract(offerTtl);
     for (final o in outgoing.values) {
-      if (o.open && o.createdAt.isBefore(limit)) o.status = OfferStatus.expired;
+      if (o.open && o.touched.isBefore(limit)) o.status = OfferStatus.expired;
     }
     for (final o in incoming.values) {
       if (o.status == OfferStatus.pending && o.receivedAt.isBefore(limit)) {
@@ -429,15 +452,26 @@ class OfferService {
       times.removeWhere((t) => t.isBefore(cutoff));
       final pending =
           incoming.values.where((o) => o.status == OfferStatus.pending).length;
-      if (times.length >= maxOffersPerMinute || pending >= maxPendingIncoming) {
-        return Response(429, body: 'too many offers');
-      }
+      final limited = times.length >= maxOffersPerMinute || pending >= maxPendingIncoming;
       Object? body;
+      // Over the limits only the next part of a playlist already being received gets in (D-762).
+      var exempt = false;
       try {
         body = jsonDecode(await r.readAsString());
+        final b = body;
+        final pl = b is Map ? b['playlist'] : null;
+        if (limited && b is Map && pl is Map) {
+          final fromId = b['fromId'], key = pl['key'], part = pl['part'], parts = pl['parts'];
+          exempt = fromId is String &&
+              key is String &&
+              part is int &&
+              parts is int &&
+              (acceptsPart?.call(fromId, ip, callerFingerprint(r), key, part, parts) ?? false);
+        }
       } on FormatException {
-        return Response(400, body: 'bad json');
+        return limited ? Response(429, body: 'too many offers') : Response(400, body: 'bad json');
       }
+      if (limited && !exempt) return Response(429, body: 'too many offers');
       if (body is! Map) return Response(400, body: 'bad request');
       final offerId = body['offerId'], fromId = body['fromId'];
       final fromName = body['fromName'], port = body['port'];
@@ -445,11 +479,12 @@ class OfferService {
       final tlsRaw = body['tlsPort'];
       // Optional and lenient: a bad entry is skipped, an absent list is no streams.
       final rawStreams = body['streams'];
-      final streams = <StreamOffer>[
+      final allStreams = <StreamOffer>[
         if (rawStreams is List)
           for (final raw in rawStreams.take(maxOfferItems))
             ?StreamOffer.tryParse(raw),
       ];
+      var streams = allStreams;
       final tlsPort = tlsRaw is int && tlsRaw > 0 && tlsRaw < 65536 ? tlsRaw : null;
       if (offerId is! String ||
           fromId is! String ||
@@ -481,10 +516,15 @@ class OfferService {
         itemIds: {for (final i in items) i.id},
         streamKeys: {for (final s in streams) s.key},
       );
+      // A shadow row lives only inside a playlist (D-761): without a valid one it is not offered at all.
+      if (playlist == null) {
+        streams = [for (final s in allStreams) if (!s.shadow) s];
+        if (rawItems.isEmpty && streams.isEmpty) return Response(400, body: 'bad request');
+      }
       if (incoming.containsKey(offerId)) {
         return Response(409, body: 'duplicate');
       }
-      times.add(_now());
+      if (!exempt) times.add(_now());
       final offer = IncomingOffer(
         offerId: offerId,
         fromId: fromId,
@@ -517,7 +557,10 @@ class OfferService {
       if (!_tokenOk(o.token, r.headers['x-token'])) {
         return Response(401, body: 'unauthorized');
       }
-      if (o.status == OfferStatus.pending) o.status = OfferStatus.cancelled;
+      if (o.status == OfferStatus.pending) {
+        o.status = OfferStatus.cancelled;
+        onCancelled?.call(o);
+      }
       notify();
       return Response.ok('ok');
     });
@@ -537,6 +580,7 @@ class OfferService {
         return Response(409, body: 'not pending');
       }
       o.status = OfferStatus.accepted;
+      _touch(o);
       notify();
       return Response.ok('ok');
     });
@@ -553,6 +597,7 @@ class OfferService {
       final o = authorised(r, id);
       if (o == null) return Response(401, body: 'unauthorized');
       if (o.status == OfferStatus.accepted) o.status = OfferStatus.done;
+      _touch(o);
       notify();
       return Response.ok('ok');
     });
@@ -565,6 +610,7 @@ class OfferService {
       if (o.status != OfferStatus.accepted) {
         return Response.forbidden('offer not accepted');
       }
+      _touch(o);
       final itemId = int.tryParse(n);
       final cover = itemId == null ? null : o.entries[itemId]?.coverPath;
       if (cover == null) return Response.notFound('not found');
@@ -584,6 +630,7 @@ class OfferService {
       if (o.status != OfferStatus.accepted) {
         return Response.forbidden('offer not accepted');
       }
+      _touch(o);
       final itemId = int.tryParse(n);
       final entry = itemId == null ? null : o.entries[itemId];
       if (entry == null) return Response.notFound('not found');
