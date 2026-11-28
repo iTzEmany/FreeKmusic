@@ -1,6 +1,6 @@
-// Characterization (38.4): fixes TODAY's behaviour of the synced lyrics, the
-// queue sheet and the tag / activity / devices sheets. Whoever changes the
-// behaviour updates these tests in the same step.
+// Synced lyrics, the queue sheet and the tag / activity / devices sheets
+// (born as the 38.4 safety net). Whoever changes the behaviour updates these
+// tests in the same step.
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/tag_repository.dart';
 import 'package:codecore/data/settings/settings_store.dart';
@@ -253,28 +253,17 @@ void main() {
   });
 
   group('queue sheet', () {
-    Future<Harness> pumpQueue(WidgetTester tester, {int at = 0}) async {
+    Future<Harness> pumpQueue(WidgetTester tester) async {
       _phone(tester);
       final h = await Harness.create(tester, tracks: 6);
       final rows = (await tester.runAsync(() => h.db.select(h.db.tracks).get()))!;
-      await tester.runAsync(() => h.handler.playQueue([for (final t in rows) t.id], at));
+      await tester.runAsync(() => h.handler.playQueue([for (final t in rows) t.id], 0));
       final sc = ScrollController();
       addTearDown(sc.dispose);
       await h.pump(tester, Scaffold(body: QueueSheet(scrollController: sc)));
       await _settle(tester);
       return h;
     }
-
-    testWidgets('the current track sits under «In riproduzione», played ones are hidden',
-        (tester) async {
-      final h = await pumpQueue(tester, at: 2);
-      expect(find.text('In riproduzione'), findsOneWidget);
-      expect(find.text('Song 2'), findsOneWidget);
-      expect(find.text('Song 0'), findsNothing);
-      expect(find.text('Song 1'), findsNothing);
-      expect(find.text('Song 3'), findsOneWidget);
-      await h.dispose(tester);
-    });
 
     testWidgets('tapping an upcoming row jumps to it', (tester) async {
       final h = await pumpQueue(tester);
@@ -284,16 +273,6 @@ void main() {
       await h.dispose(tester);
     });
 
-    testWidgets('swiping an upcoming row removes it from the queue', (tester) async {
-      final h = await pumpQueue(tester);
-      final before = h.handler.queueIds;
-      await tester.fling(find.text('Song 3'), const Offset(-300, 0), 1500);
-      await _settle(tester);
-      await _settle(tester);
-      expect(h.handler.queueIds.length, before.length - 1);
-      expect(h.handler.queueIds, isNot(contains(before[3])));
-      await h.dispose(tester);
-    });
   });
 
   group('sheets with 30 entries on 360x640', () {

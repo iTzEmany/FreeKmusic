@@ -59,6 +59,7 @@ void main() {
   test('a huge title with unclosed brackets is answered fast', () {
     final sw = Stopwatch()..start();
     coverHint('(' * 20000, null);
-    expect(sw.elapsedMilliseconds, lessThan(100));
+    // Catastrophic backtracking on 20000 chars takes seconds; 1 s leaves room for a GC pause on CI.
+    expect(sw.elapsedMilliseconds, lessThan(1000));
   });
 }

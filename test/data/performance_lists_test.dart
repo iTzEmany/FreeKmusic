@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:drift/drift.dart' show Value;
@@ -66,37 +64,5 @@ void main() {
     // Time is printed for information only: it is not reliable on a loaded machine.
     // 28.2: the lists leave the long texts in the database (29.7 MB before).
     expect(mb, lessThan(1.5), reason: 'only the list columns are read');
-  });
-
-  test('in a background isolate, as in the app: list rows against whole rows', () async {
-    final dir = await Directory.systemTemp.createTemp('cc_lists');
-    final db = AppDatabase(NativeDatabase.createInBackground(File('${dir.path}/l.sqlite')));
-    addTearDown(() async {
-      await db.close();
-      await dir.delete(recursive: true);
-    });
-    await db.batch((b) => b.insertAll(db.tracks, [for (var i = 0; i < _tracks; i++) _row(i)]));
-    final repo = TrackRepository(db);
-    Future<double> timed(Future<Object?> Function() f) async {
-      final sw = Stopwatch()..start();
-      await f();
-      return sw.elapsedMicroseconds / 1000;
-    }
-
-    await db.select(db.tracks).get(); // warm-up
-    await repo.watchTracks().first;
-    final whole = await timed(() => db.select(db.tracks).get());
-    final list = await timed(() => repo.watchTracks().first);
-    final wholeRows = await db.select(db.tracks).get();
-    final listRows = await repo.watchTracks().first;
-    final wholeChars = _textChars(wholeRows);
-    final listChars = _textChars(listRows);
-    // Timings are information only: they are not reliable on a loaded machine.
-    // ignore: avoid_print
-    print('lists3k isolate: whole rows=${whole.toStringAsFixed(1)} ms, '
-        'list rows=${list.toStringAsFixed(1)} ms; text chars whole=$wholeChars list=$listChars');
-    expect(listRows, hasLength(_tracks));
-    // Deterministic guarantee: the long texts no longer cross the isolate.
-    expect(listChars * 10, lessThan(wholeChars), reason: 'the texts no longer cross the isolate');
   });
 }

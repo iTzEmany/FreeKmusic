@@ -1,8 +1,11 @@
 // Characterization of PlayQueue: a seeded random walk over its operations
 // (no append, no insertNext), fingerprinting `items` + `currentIndex` after
-// every step. The expected values below were generated once from the code as
-// it was in phase 107 and must NOT change in phases 108-112: this file is the
-// metric "queue behavior without additions, identical fingerprint" (D-499).
+// every step. The expected values were generated once from the code of phase
+// 107 (the D-499 metric of the coda-e-libreria refactor, closed in phase 113)
+// and are now a standing invariant (docs/architettura/riproduzione-e-coda.md):
+// play_queue_test.dart checks the queue stays consistent, only this file pins
+// the exact order. A red run means PlayQueue changed: if that is intended,
+// regenerate the values and check every difference by hand.
 // «Svuota» + undo is covered in play_queue_test.dart, not repeated here.
 //
 // Representation: per seed, the readable fingerprints of the first 20 steps

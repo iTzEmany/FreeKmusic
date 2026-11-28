@@ -1,5 +1,5 @@
 // Characterization (38.5, points 2-3): multi-track actions, favourites, the
-// queries that live in widgets today (setLyrics, pathsById) and the rule that
+// queries that live in widgets (setLyrics, pathsById) and the rule that
 // tells a streamed entry from a library row. Whoever changes the behaviour
 // updates these tests in the same step.
 import 'package:codecore/data/db/app_database.dart';
