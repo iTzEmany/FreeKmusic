@@ -70,16 +70,19 @@ class YtDlpUpdateNotifier extends Notifier<YtDlpUpdateState> {
         binDir: await ytDlpBinDir(),
       );
       final tag = await updater.update(
-        onProgress: (f) => state =
-            YtDlpUpdateState(YtDlpUpdatePhase.working, progress: f),
+        onProgress: (f) {
+          if (ref.mounted) state = YtDlpUpdateState(YtDlpUpdatePhase.working, progress: f);
+        },
       );
+      // The provider can be disposed during the download (app closing, tests ending).
+      if (!ref.mounted) return;
       final service = ref.read(ytDlpServiceProvider);
       if (service is YtDlpProcessService) service.refresh();
       ref.invalidate(ytDlpStatusProvider);
       state = YtDlpUpdateState(YtDlpUpdatePhase.done, tag: tag);
     } on YtDlpUpdateException catch (e, st) {
       AppLog.e('yt-dlp update failed', e, st);
-      state = YtDlpUpdateState(YtDlpUpdatePhase.failed, error: e.kind);
+      if (ref.mounted) state = YtDlpUpdateState(YtDlpUpdatePhase.failed, error: e.kind);
     }
   }
 }
