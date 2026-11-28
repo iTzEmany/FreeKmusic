@@ -137,6 +137,27 @@ Backup automatico (R-241): `runAutoBackupIfDue` scrive `freekmusic-auto-<data>.z
 - **Video karaoke nella Jam (fase 148, D-710)**: con un item karaoke di YouTube ogni dispositivo mostra il video allineato alla posizione della Jam (dettagli in `online.md`, «Video karaoke»); il protocollo non cambia. Il karaoke col modello resta tolto (sotto).
 - **Karaoke tolto dalla Jam (D-623, fase 130)**: `JamState` non ha più il campo `'kar'` e non esistono i comandi `karaoke` e `karaokeGuests`. Compatibilità: uno stato di una versione vecchia con `kar` si legge normalmente (la chiave è ignorata, come ogni chiave sconosciuta); un comando `karaoke`/`karaokeGuests` non è più un tipo noto, quindi `JamCommand.tryParse` dà `null` e il canale lo scarta senza errori (la LAN risponde 400, il ponte lo lascia cadere). Una versione vecchia che riceve stati nuovi non vede `kar` e suona senza filtro. Il microfono non compare durante una Jam. Nessuna modifica alla crittografia.
 
+## «Continua qui» (I-09) — progetto
+Requisiti R-278…R-297 in [`feature/feature-continua-qui.md`](../feature/feature-continua-qui.md); aspetto: mockup A in `mockups/continua-qui/a-sezione-continua/`. Nessuna migrazione del DB: solo una chiave di impostazioni («Suggerisci di continuare qui», accesa di base).
+
+**Dove va il codice.** Protocollo e istantanea in `lib/services/share/continue_*.dart` (puro Dart, testabile con due nodi in memoria); stato e azioni in `lib/providers/continue_providers.dart`; UI nella sezione «Continua» in cima a `devices_sheet.dart`, pillola sopra mini player e barra del desktop, scritta «In ascolto su» in `now_playing_controls.dart` e `desktop_player_bar.dart` (i pulsanti Dispositivi ci sono già, D-732).
+
+**Trasporto.** Rotte fidate HTTPS `/continue` in `_secureRoutes` (`share_hub.dart`), con lo stesso controllo del chiamante di `/sync` (`trustedCaller`) più `isMine`; client `LanClient.secureGet`/`securePost`:
+- `GET /continue/state` → istantanea corrente (o «niente in riproduzione»). La usa «Prendi» e, ogni 10 s con l'app in primo piano, il suggerimento (solo verso i dispositivi miei visti dalla scoperta; nulla nel beacon UDP, D-191).
+- `POST /continue/take` (manda) → l'arrivo applica l'istantanea e risponde solo quando suona; allora la partenza va in pausa (R-284).
+- `POST /continue/release` (prendi) → l'arrivo, dopo aver iniziato a suonare, chiede alla partenza la pausa e la scritta «In ascolto su <nome>».
+Capacità: chiave nuova nel JSON di `/hello` (`offer_node.dart`); assente → «Aggiorna l'app per continuare qui» (D-07). Con `jamProvider.active` su uno dei due le rotte rispondono «Jam attiva» e le voci sono spente.
+
+**Istantanea.** Lista di `TrackRef` (`services/backup/user_data.dart`: cartella+relPath, titolo, artista, durata, sha256, `streamKey` per gli online), indice, posizione, blocco utente (`userAhead`), casuale, ripeti, contesto (`playContext`), volume dell'app; più l'ora locale di lettura della posizione, così l'arrivo aggiunge il tempo trascorso (R-283). Limiti validati in ingresso (numero di brani, lunghezze) come per le richieste di `/sync`.
+
+**Risoluzione sull'arrivo.** Brani locali con `track_resolver.dart` (relPath → sha256 → titolo|artista); online con `StreamPreparer` come i propri (senza rete o flavor senza yt-dlp → saltati); mancanti → `loadUri` su `http://<partenza>/continue/<gettone>/file/<n>` del nodo HTTP, con gettone casuale per quel passaggio e quell'arrivo nell'intestazione, sul modello di `/jam/<sid>/file/<n>` e `_ownedItem` (`jam_host.dart`). Il gettone vale solo per i brani dell'istantanea e scade quando la partenza riprende a suonare o dopo 12 h. Partenza sparita → quei brani saltati (R-288). Riepilogo «N brani saltati».
+
+**Applicazione.** `handler.restore(ids, index, position, userAhead:)` + `setShuffleAndRepeat` + `setPlayContext` + volume, come `playback_persistence.dart`; prima si salva lo stato dell'arrivo per «Annulla» (`showUndoSnack`, `ui/widgets/confirm.dart`, ~10 s).
+
+**Android.** La partenza che serve brani a un arrivo avvia `ReceiveService` col testo «Condivido brani con <nome>» (stesso canale `codecore/share` di `_startReceiveService`/`_startJamService`); si ferma quando il gettone scade o l'arrivo non ha più brani suoi.
+
+**Invarianti.** Solo dispositivi `mine`; la partenza non cambia mai finché l'arrivo non conferma; nessun cambiamento al protocollo di oggi (Jam, Invia, `/sync`) né al beacon; il flusso LAN dei file è HTTP in chiaro come quello della Jam (accettato, D-779), il resto è HTTPS fidato.
+
 ## Invarianti da non rompere
 - **Stringhe di protocollo con `codecore`, per scelta** (D-539: il nome visibile è cambiato, il filo no). Non vanno rinominate senza una nuova decisione, perché romperebbero la compatibilità con le versioni già installate:
   | Stringa | Dove |

@@ -13,7 +13,7 @@ verifica nel codice dei casi d'uso. Le idee più vecchie stanno in [`13-idee-fut
 | I-06 | incompleta | Rinomina ed elimina dal menu dell'elenco playlist | Oggi bisogna aprire la playlist | medio | S | scelta | 2026-11-28 |
 | I-07 | incompleta | Selezione multipla più ricca sui brani in streaming | Solo scarica o togli: niente preferiti né condivisione | medio | M | scelta | 2026-11-28 |
 | I-08 | incompleta | Ricerca e filtri nelle puntate | Feed lunghi senza ricerca né «non ascoltate» / «scaricate» | medio | M | scelta | 2026-11-28 |
-| I-09 | nuova | «Continua qui» fra dispositivi | Pausa sul telefono, ripresa sul PC dallo stesso punto | alto | M | scelta | 2026-11-28 |
+| I-09 | nuova | «Continua qui» fra dispositivi | Pausa sul telefono, ripresa sul PC dallo stesso punto | alto | M | in sviluppo | 2026-11-28 |
 | I-10 | nuova | Offline automatico | Preferiti, daylist e recenti scaricati da soli (Wi-Fi, in carica, tetto di spazio) | alto | M | scelta | 2026-11-28 |
 | I-11 | nuova | Ripresa all'aggancio di auto o cuffie | La musica riparte da dove era quando si collega il Bluetooth | alto | M | scelta | 2026-11-28 |
 | I-12 | nuova | Controllo della libreria | Copertine, testi, tag mancanti e file rotti, correzione in blocco | medio | M | scelta | 2026-11-28 |
