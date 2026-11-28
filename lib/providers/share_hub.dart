@@ -503,6 +503,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       _publish();
       return outcome(SendStatus.sent);
     } on LanException catch (e) {
+      AppLog.w('send offer to ${peer.name} failed', e);
       offer.status = OfferStatus.failed;
       state = state.copyWith(error: e.error);
       service.notify();
@@ -851,7 +852,7 @@ class SendOutcome {
   /// Everything went (no dropped track).
   bool get complete => status == SendStatus.sent && sent == total;
 
-  /// The ready-to-show message for a sheet or tab; the most frequent drop reason wins.
+  /// The ready-to-show message for a sheet or tab; a single shared drop reason is named.
   String message(AppLocalizations l, String peerName) {
     switch (status) {
       case SendStatus.unreachable:
@@ -861,9 +862,11 @@ class SendOutcome {
       case SendStatus.sent:
         if (complete) return l.offerSent(peerName);
         final n = total - sent;
-        if (missing >= unsupported && missing >= shadow) return l.offerPartialMissing(sent, total, peerName, n);
-        if (unsupported >= shadow) return l.offerPartialUnsupported(sent, total, peerName, n);
-        return l.offerPartialShadow(sent, total, peerName, n);
+        // One shared reason names it; mixed reasons say only how many could not go.
+        if (n == missing) return l.offerPartialMissing(sent, total, peerName, n);
+        if (n == unsupported) return l.offerPartialUnsupported(sent, total, peerName, n);
+        if (n == shadow) return l.offerPartialShadow(sent, total, peerName, n);
+        return l.offerPartialMixed(sent, total, peerName, n);
     }
   }
 }

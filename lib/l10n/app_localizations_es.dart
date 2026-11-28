@@ -8770,16 +8770,69 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String offerPartialMissing(int sent, int total, String name, int n) {
-    return 'Enviadas $sent de $total canciones a $name: $n archivos no encontrados';
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent canciones',
+      one: 'Enviada 1 canción',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n archivos no encontrados',
+      one: '1 archivo no encontrado',
+    );
+    return '$_temp0 de $total a $name: $_temp1';
   }
 
   @override
   String offerPartialUnsupported(int sent, int total, String name, int n) {
-    return 'Enviadas $sent de $total canciones a $name: $n streams que no son de YouTube, no se pueden enviar';
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent canciones',
+      one: 'Enviada 1 canción',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n streams que no son de YouTube no se pueden enviar',
+      one: '1 stream que no es de YouTube no se puede enviar',
+    );
+    return '$_temp0 de $total a $name: $_temp1';
   }
 
   @override
   String offerPartialShadow(int sent, int total, String name, int n) {
-    return 'Enviadas $sent de $total canciones a $name: $n no disponibles en este dispositivo';
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent canciones',
+      one: 'Enviada 1 canción',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n no disponibles en este dispositivo',
+      one: '1 no disponible en este dispositivo',
+    );
+    return '$_temp0 de $total a $name: $_temp1';
+  }
+
+  @override
+  String offerPartialMixed(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent canciones',
+      one: 'Enviada 1 canción',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n no se pueden enviar',
+      one: '1 no se puede enviar',
+    );
+    return '$_temp0 de $total a $name: $_temp1';
   }
 }

@@ -8743,16 +8743,69 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String offerPartialMissing(int sent, int total, String name, int n) {
-    return 'Inviati $sent brani su $total a $name: $n file mancanti';
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Inviati $sent brani',
+      one: 'Inviato 1 brano',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n file mancanti',
+      one: '1 file mancante',
+    );
+    return '$_temp0 su $total a $name: $_temp1';
   }
 
   @override
   String offerPartialUnsupported(int sent, int total, String name, int n) {
-    return 'Inviati $sent brani su $total a $name: $n streaming non YouTube, non inviabili';
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Inviati $sent brani',
+      one: 'Inviato 1 brano',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n streaming non YouTube, non inviabili',
+      one: '1 streaming non YouTube, non inviabile',
+    );
+    return '$_temp0 su $total a $name: $_temp1';
   }
 
   @override
   String offerPartialShadow(int sent, int total, String name, int n) {
-    return 'Inviati $sent brani su $total a $name: $n non disponibili su questo dispositivo';
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Inviati $sent brani',
+      one: 'Inviato 1 brano',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n non disponibili su questo dispositivo',
+      one: '1 non disponibile su questo dispositivo',
+    );
+    return '$_temp0 su $total a $name: $_temp1';
+  }
+
+  @override
+  String offerPartialMixed(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Inviati $sent brani',
+      one: 'Inviato 1 brano',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n non si possono inviare',
+      one: '1 non si può inviare',
+    );
+    return '$_temp0 su $total a $name: $_temp1';
   }
 }

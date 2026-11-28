@@ -5008,7 +5008,7 @@
   "dropHint": "Rilascia per ascoltare",
   "dropRejected": "Trascina solo file audio, non cartelle",
   "offerNothingToSend": "Nessuno di questi brani si può inviare",
-  "offerPartialMissing": "Inviati {sent} brani su {total} a {name}: {n} file mancanti",
+  "offerPartialMissing": "{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 file mancante} other{{n} file mancanti}}",
   "@offerPartialMissing": {
     "placeholders": {
       "sent": {
@@ -5025,7 +5025,7 @@
       }
     }
   },
-  "offerPartialUnsupported": "Inviati {sent} brani su {total} a {name}: {n} streaming non YouTube, non inviabili",
+  "offerPartialUnsupported": "{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 streaming non YouTube, non inviabile} other{{n} streaming non YouTube, non inviabili}}",
   "@offerPartialUnsupported": {
     "placeholders": {
       "sent": {
@@ -5042,8 +5042,25 @@
       }
     }
   },
-  "offerPartialShadow": "Inviati {sent} brani su {total} a {name}: {n} non disponibili su questo dispositivo",
+  "offerPartialShadow": "{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 non disponibile su questo dispositivo} other{{n} non disponibili su questo dispositivo}}",
   "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialMixed": "{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 non si può inviare} other{{n} non si possono inviare}}",
+  "@offerPartialMixed": {
     "placeholders": {
       "sent": {
         "type": "int"

@@ -54,11 +54,13 @@ void main() {
       expect(o.message(l, 'Pc'), l.offerSent('Pc'));
     });
     test('some dropped: N of M and the most frequent reason', () {
-      const o = SendOutcome(SendStatus.sent, total: 5, sent: 2, missing: 1, shadow: 2);
+      const o = SendOutcome(SendStatus.sent, total: 5, sent: 2, shadow: 3);
       expect(o.complete, isFalse);
       expect(o.message(l, 'Pc'), 'Inviati 2 brani su 5 a Pc: 3 non disponibili su questo dispositivo');
-      const m = SendOutcome(SendStatus.sent, total: 3, sent: 1, missing: 2);
-      expect(m.message(l, 'Pc'), 'Inviati 1 brani su 3 a Pc: 2 file mancanti');
+      const x = SendOutcome(SendStatus.sent, total: 5, sent: 2, missing: 1, shadow: 2);
+      expect(x.message(l, 'Pc'), 'Inviati 2 brani su 5 a Pc: 3 non si possono inviare');
+      const one = SendOutcome(SendStatus.sent, total: 3, sent: 1, missing: 2);
+      expect(one.message(l, 'Pc'), 'Inviato 1 brano su 3 a Pc: 2 file mancanti');
     });
     test('nothing to send', () {
       const o = SendOutcome(SendStatus.nothingToSend, total: 2, shadow: 2);

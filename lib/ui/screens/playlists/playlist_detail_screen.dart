@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/app_log.dart';
 import '../../../core/text_utils.dart';
 import '../../../data/db/app_database.dart';
-import '../../../data/repositories/track_kinds.dart' show kStreamKind;
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/database_providers.dart';
 import '../../../providers/favorite_collections_providers.dart';
@@ -229,7 +228,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
             label: l.playlistRemoveCover,
             value: _PlaylistAction.clearCover,
           ),
-        if (tracks.any((t) => t.kind != kStreamKind))
+        if (tracks.isNotEmpty)
           CcAction(icon: Icons.devices_rounded, label: l.sendToDeviceMenu, value: _PlaylistAction.sendToDevice),
         CcAction(
           icon: CatalogAction.export.icon,

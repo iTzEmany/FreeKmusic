@@ -4500,7 +4500,7 @@
   "dropHint": "Déposez pour écouter",
   "dropRejected": "Déposez uniquement des fichiers audio, pas des dossiers",
   "offerNothingToSend": "Aucun de ces titres ne peut être envoyé",
-  "offerPartialMissing": "{sent} titres sur {total} envoyés à {name} : {n} fichiers manquants",
+  "offerPartialMissing": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 fichier manquant} other{{n} fichiers manquants}}",
   "@offerPartialMissing": {
     "placeholders": {
       "sent": {
@@ -4517,7 +4517,7 @@
       }
     }
   },
-  "offerPartialUnsupported": "{sent} titres sur {total} envoyés à {name} : {n} flux non YouTube, non envoyables",
+  "offerPartialUnsupported": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 flux non YouTube non envoyable} other{{n} flux non YouTube non envoyables}}",
   "@offerPartialUnsupported": {
     "placeholders": {
       "sent": {
@@ -4534,8 +4534,25 @@
       }
     }
   },
-  "offerPartialShadow": "{sent} titres sur {total} envoyés à {name} : {n} non disponibles sur cet appareil",
+  "offerPartialShadow": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 non disponible sur cet appareil} other{{n} non disponibles sur cet appareil}}",
   "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialMixed": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 non envoyable} other{{n} non envoyables}}",
+  "@offerPartialMixed": {
     "placeholders": {
       "sent": {
         "type": "int"

@@ -4279,7 +4279,7 @@
   "dropHint": "Zum Abspielen loslassen",
   "dropRejected": "Nur Audiodateien ablegen, keine Ordner",
   "offerNothingToSend": "Keiner dieser Titel kann gesendet werden",
-  "offerPartialMissing": "{sent} von {total} Titeln an {name} gesendet: {n} Dateien fehlen",
+  "offerPartialMissing": "{sent, plural, one{1 Titel} other{{sent} Titel}} von {total} an {name} gesendet: {n, plural, one{1 Datei fehlt} other{{n} Dateien fehlen}}",
   "@offerPartialMissing": {
     "placeholders": {
       "sent": {
@@ -4296,7 +4296,7 @@
       }
     }
   },
-  "offerPartialUnsupported": "{sent} von {total} Titeln an {name} gesendet: {n} Streams außer YouTube, nicht sendbar",
+  "offerPartialUnsupported": "{sent, plural, one{1 Titel} other{{sent} Titel}} von {total} an {name} gesendet: {n, plural, one{1 Stream außer YouTube nicht sendbar} other{{n} Streams außer YouTube nicht sendbar}}",
   "@offerPartialUnsupported": {
     "placeholders": {
       "sent": {
@@ -4313,8 +4313,25 @@
       }
     }
   },
-  "offerPartialShadow": "{sent} von {total} Titeln an {name} gesendet: {n} auf diesem Gerät nicht verfügbar",
+  "offerPartialShadow": "{sent, plural, one{1 Titel} other{{sent} Titel}} von {total} an {name} gesendet: {n, plural, one{1 auf diesem Gerät nicht verfügbar} other{{n} auf diesem Gerät nicht verfügbar}}",
   "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialMixed": "{sent, plural, one{1 Titel} other{{sent} Titel}} von {total} an {name} gesendet: {n, plural, one{1 nicht sendbar} other{{n} nicht sendbar}}",
+  "@offerPartialMixed": {
     "placeholders": {
       "sent": {
         "type": "int"

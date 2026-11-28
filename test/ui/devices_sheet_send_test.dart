@@ -52,7 +52,7 @@ void main() {
 
   testWidgets('all sent: Inviato a X', (t) => send(t, const SendOutcome(SendStatus.sent, total: 2, sent: 2), 'Richiesta inviata a Pc'));
   testWidgets('some dropped: N of M plus the reason',
-      (t) => send(t, const SendOutcome(SendStatus.sent, total: 2, sent: 1, shadow: 1), 'Inviati 1 brani su 2 a Pc: 1 non disponibili su questo dispositivo'));
+      (t) => send(t, const SendOutcome(SendStatus.sent, total: 2, sent: 1, shadow: 1), 'Inviato 1 brano su 2 a Pc: 1 non disponibile su questo dispositivo'));
   testWidgets('none can be sent', (t) => send(t, const SendOutcome(SendStatus.nothingToSend, total: 2, missing: 2), 'Nessuno di questi brani si può inviare'));
   testWidgets('unreachable: as today', (t) => send(t, const SendOutcome.unreachable(2), 'Dispositivo non raggiungibile: controlla indirizzo e Wi‑Fi'));
 }

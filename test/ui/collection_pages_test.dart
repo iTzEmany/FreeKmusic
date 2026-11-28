@@ -452,7 +452,7 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('playlist page of streamed rows only: no «Invia a un dispositivo»', (tester) async {
+  testWidgets('playlist page of streamed rows only: «Invia a un dispositivo» stays (D-759)', (tester) async {
     _phone(tester);
     final h = await Harness.create(tester, tracks: 2);
     final id = await tester.runAsync(() async {
@@ -462,14 +462,14 @@ void main() {
       }
       final repo = PlaylistRepository(h.db);
       final id = await repo.create('Notte');
-      await repo.addTracks(id, [for (final t in rows) t.id]);
+      await repo.addStreamTracks(id, [for (final t in rows) t.id]);
       return id;
     });
     await h.pump(tester, PlaylistDetailScreen(playlist: Playlist(id: id!, name: 'Notte', createdAt: 0, updatedAt: 0)));
     await _settle(tester);
     await tester.tap(find.byTooltip('Altre azioni').first);
     await tester.pumpAndSettle();
-    expect(find.text('Invia a un dispositivo'), findsNothing);
+    expect(find.text('Invia a un dispositivo'), findsOneWidget);
     await h.dispose(tester);
   });
 

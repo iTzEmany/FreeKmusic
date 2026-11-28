@@ -4279,7 +4279,7 @@
   "dropHint": "Drop to listen",
   "dropRejected": "Drop audio files only, not folders",
   "offerNothingToSend": "None of these tracks can be sent",
-  "offerPartialMissing": "Sent {sent} of {total} tracks to {name}: {n} files missing",
+  "offerPartialMissing": "{sent, plural, one{Sent 1 track} other{Sent {sent} tracks}} of {total} to {name}: {n, plural, one{1 file missing} other{{n} files missing}}",
   "@offerPartialMissing": {
     "placeholders": {
       "sent": {
@@ -4296,7 +4296,7 @@
       }
     }
   },
-  "offerPartialUnsupported": "Sent {sent} of {total} tracks to {name}: {n} non-YouTube streams, cannot be sent",
+  "offerPartialUnsupported": "{sent, plural, one{Sent 1 track} other{Sent {sent} tracks}} of {total} to {name}: {n, plural, one{1 non-YouTube stream cannot be sent} other{{n} non-YouTube streams cannot be sent}}",
   "@offerPartialUnsupported": {
     "placeholders": {
       "sent": {
@@ -4313,8 +4313,25 @@
       }
     }
   },
-  "offerPartialShadow": "Sent {sent} of {total} tracks to {name}: {n} not available on this device",
+  "offerPartialShadow": "{sent, plural, one{Sent 1 track} other{Sent {sent} tracks}} of {total} to {name}: {n, plural, one{1 not available on this device} other{{n} not available on this device}}",
   "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialMixed": "{sent, plural, one{Sent 1 track} other{Sent {sent} tracks}} of {total} to {name}: {n, plural, one{1 cannot be sent} other{{n} cannot be sent}}",
+  "@offerPartialMixed": {
     "placeholders": {
       "sent": {
         "type": "int"
