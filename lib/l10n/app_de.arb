@@ -4313,6 +4313,7 @@
     }
   },
   "playlistAddFailed": "Titel konnten nicht zu einer Playlist hinzugefügt werden",
+  "smartMixSwitch": "Ähnliche Songs hinzufügen, die du nicht hast",
   "offerNothingToSend": "Keiner dieser Titel kann gesendet werden",
   "offerPartialMissing": "{sent, plural, one{1 Titel} other{{sent} Titel}} von {total} an {name} gesendet: {n, plural, one{1 Datei fehlt} other{{n} Dateien fehlen}}",
   "@offerPartialMissing": {

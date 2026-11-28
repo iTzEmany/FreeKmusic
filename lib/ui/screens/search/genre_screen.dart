@@ -27,13 +27,70 @@ import '../../widgets/track_row_selection.dart';
 import '../library/album_detail_screen.dart' show collectionMeta;
 import '../../widgets/cc_app_bar.dart';
 
-String _offText(AppLocalizations l, GenreMixOff off) => switch (off) {
+String mixOffText(AppLocalizations l, GenreMixOff off) => switch (off) {
   GenreMixOff.jam => l.genreMixOffJam,
   GenreMixOff.metered => l.genreMixOffMetered,
   GenreMixOff.offline => l.genreMixOffOffline,
   GenreMixOff.noTool => l.genreMixOffNoTool,
   GenreMixOff.rateLimited => l.genreMixOffRateLimited,
 };
+
+/// What a mixed list shows without the placeholders, and where each row stands in it.
+({List<MixItem> items, List<int> itemAt}) mixItemsOf(List<MixRow<Track>> rows) {
+  final items = <MixItem>[];
+  final itemAt = <int>[];
+  for (final r in rows) {
+    itemAt.add(items.length);
+    if (r.track != null || r.suggestion != null) {
+      items.add((track: r.track, online: r.suggestion?.result, seedTitle: r.suggestion?.seedTitle));
+    }
+  }
+  return (items: items, itemAt: itemAt);
+}
+
+/// The stop text (when the mix is off) and the rows of a mixed list: library rows from
+/// [trackRow] (given the row's index), suggested songs, and one placeholder node (D-356).
+List<Widget> mixSlivers(
+  BuildContext context, {
+  required List<MixRow<Track>> rows,
+  required GenreMixState mix,
+  required bool compact,
+  required Widget Function(Track t, int rowIndex) trackRow,
+}) {
+  final l = context.l10n;
+  final extent = trackRowExtentOf(context, compact);
+  final onlineExtent = onlineRowExtentOf(context);
+  final firstSkeleton = rows.indexWhere((r) => r.track == null && r.suggestion == null);
+  return [
+    if (mix.off != null)
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(CcDims.margin, 0, CcDims.margin, CcDims.gap8),
+          child: Text(
+            mixOffText(l, mix.off!),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: context.cc.textMuted),
+          ),
+        ),
+      ),
+    SliverVariedExtentList.builder(
+      itemCount: rows.length,
+      itemExtentBuilder: (i, _) => rows[i].track == null ? onlineExtent : extent,
+      itemBuilder: (_, i) {
+        final t = rows[i].track;
+        if (t != null) return trackRow(t, i);
+        final r = rows[i].suggestion;
+        if (r != null) return MixSuggestedRow(result: r.result);
+        // One semantic node for all the placeholder rows.
+        final skeleton = Skeleton.list(
+          rows: 1,
+          rowHeight: onlineExtent,
+          label: l.shufflePlusChoosing(mix.incoming),
+        );
+        return i == firstSkeleton ? skeleton : ExcludeSemantics(child: skeleton);
+      },
+    ),
+  ];
+}
 
 /// Tracks of one genre, with an online suggestion every second one (D-356).
 class GenreScreen extends ConsumerWidget {
@@ -48,21 +105,7 @@ class GenreScreen extends ConsumerWidget {
         ref.watch(genreTracksProvider(genre)).value ?? const <Track>[];
     final mix = ref.watch(genreMixProvider(genre)).value ?? GenreMixState.none;
     final rows = interleave(tracks, mix);
-    final onlineExtent = onlineRowExtentOf(context);
-    final firstSkeleton = rows.indexWhere((r) => r.track == null && r.suggestion == null);
-    // What is shown without the placeholders, and where each row stands in it.
-    final items = <MixItem>[];
-    final itemAt = <int>[];
-    for (final r in rows) {
-      itemAt.add(items.length);
-      if (r.track != null || r.suggestion != null) {
-        items.add((track: r.track, online: r.suggestion?.result, seedTitle: r.suggestion?.seedTitle));
-      }
-    }
-    final extent = trackRowExtentOf(
-      context,
-      ref.watch(settingsProvider).compactMode,
-    );
+    final (:items, :itemAt) = mixItemsOf(rows);
     final ctrl = ref.read(playerControllerProvider);
     final compact = ref.watch(settingsProvider).compactMode;
     final ctx = PlayContext(PlayContextKind.playlist, genre);
@@ -100,52 +143,22 @@ class GenreScreen extends ConsumerWidget {
         // Suggested songs in the list: Shuffle+ would go off anyway (R-18).
         shufflePlus: !items.any((i) => i.online != null),
         slivers: [
-          if (mix.off != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  CcDims.margin,
-                  0,
-                  CcDims.margin,
-                  CcDims.gap8,
-                ),
-                child: Text(
-                  _offText(l, mix.off!),
-                  style: Theme.of(context).textTheme.bodySmall
-                      ?.copyWith(color: context.cc.textMuted),
-                ),
+          ...mixSlivers(
+            context,
+            rows: rows,
+            mix: mix,
+            compact: compact,
+            trackRow: (t, i) => LiveTrackRow(
+              track: t,
+              compact: compact,
+              selection: selection,
+              onTap: () => ctrl.playMixed(
+                items,
+                index: itemAt[i],
+                context: ctx,
+                listKey: shuffleKey,
               ),
             ),
-          SliverVariedExtentList.builder(
-            itemCount: rows.length,
-            itemExtentBuilder: (i, _) =>
-                rows[i].track == null ? onlineExtent : extent,
-            itemBuilder: (_, i) {
-              final row = rows[i];
-              final t = row.track;
-              if (t != null) {
-                return LiveTrackRow(
-                  track: t,
-                  compact: compact,
-                  selection: selection,
-                  onTap: () => ctrl.playMixed(
-                    items,
-                    index: itemAt[i],
-                    context: ctx,
-                    listKey: shuffleKey,
-                  ),
-                );
-              }
-              final r = row.suggestion;
-              if (r != null) return _SuggestedRow(result: r.result);
-              // One semantic node for all the placeholder rows.
-              final skeleton = Skeleton.list(
-                rows: 1,
-                rowHeight: onlineExtent,
-                label: l.shufflePlusChoosing(mix.incoming),
-              );
-              return i == firstSkeleton ? skeleton : ExcludeSemantics(child: skeleton);
-            },
           ),
         ],
       ),
@@ -154,8 +167,8 @@ class GenreScreen extends ConsumerWidget {
 }
 
 /// A suggested online song: «Suggerito» with the online icon; a tap streams it.
-class _SuggestedRow extends ConsumerWidget {
-  const _SuggestedRow({required this.result});
+class MixSuggestedRow extends ConsumerWidget {
+  const MixSuggestedRow({super.key, required this.result});
 
   final YtResult result;
 

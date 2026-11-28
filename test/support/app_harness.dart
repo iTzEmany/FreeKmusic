@@ -5,6 +5,7 @@ import 'package:codecore/services/lyrics/romanization_resolver.dart';
 import 'package:codecore/providers/artist_merge_providers.dart';
 import 'package:codecore/services/online/ytm_artist.dart' show YtmArtistRef;
 import 'dart:io';
+import 'package:codecore/providers/shuffle_plus_providers.dart' show smartMixProvider;
 
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/l10n/app_localizations.dart';
@@ -98,6 +99,8 @@ class Harness {
         artistMergeSearchProvider.overrideWithValue(mergeSearch),
         // Never the real download folder (it would create ~/Music).
         downloadRootsProvider.overrideWithValue(const AsyncData(<String>[])),
+        // No real online mix on a smart playlist page (it reads the app support folder); a test passes its own as an extra.
+        smartMixProvider.overrideWith((ref, _) => const Stream.empty()),
         downloadFolderIdProvider.overrideWith((ref) async => downloadFolderId),
         // Not loaded (no file I/O on fake time); a test that needs its own passes it as an extra.
         downloadIndexProvider.overrideWith((ref) async => DownloadIndex(File('/nonexistent/downloads.json'))),

@@ -9,6 +9,7 @@ import '../../../data/repositories/smart_playlist_repository.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../../l10n/l10n_ext.dart';
 import '../../../providers/filter_counts_providers.dart';
+import '../../../providers/settings_providers.dart';
 import '../../../services/library/rules/rule_parser.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/cc_app_bar.dart';
@@ -83,6 +84,9 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
   int? _count;
   bool _countFailed = false;
   bool _saved = false;
+
+  /// «Aggiungi brani simili che non hai» (D-757): saved with the playlist, in `smartMixOff`.
+  late bool _mix;
   late final String _initial;
 
   @override
@@ -92,13 +96,14 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
     _name = TextEditingController(text: p?.name ?? '');
     _limit = TextEditingController(text: p?.limitCount?.toString() ?? '');
     _sort = SmartSort.fromName(p?.sort);
+    _mix = p == null || !ref.read(settingsProvider).smartMixOff.contains(p.id);
     _load(p?.rules ?? '');
     _showAdvanced = _raw != null;
     _initial = _snapshot;
   }
 
   String get _snapshot =>
-      '${_name.text.trim()}|$_rules|${_sort.name}|${_limit.text.trim()}';
+      '${_name.text.trim()}|$_rules|${_sort.name}|${_limit.text.trim()}|$_mix';
 
   bool get _dirty => _snapshot != _initial;
 
@@ -194,7 +199,7 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
       setState(() => _triedSave = true);
       return;
     }
-    await ref
+    final id = await ref
         .read(playlistOpsProvider)
         .saveSmart(
           existingId: widget.existing?.id,
@@ -203,6 +208,9 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
           sort: _sort,
           limit: _limitValue,
         );
+    ref.read(settingsProvider.notifier).update(
+      (s) => s.copyWith(smartMixOff: _mix ? ({...s.smartMixOff}..remove(id)) : {...s.smartMixOff, id}),
+    );
     if (!mounted) return;
     _saved = true;
     Navigator.of(context).pop(true);
@@ -439,6 +447,12 @@ class _SmartPlaylistEditorState extends ConsumerState<SmartPlaylistEditor> {
                 ],
                 const SizedBox(height: CcDims.gap16),
                 _orderAndLimit(context),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l.smartMixSwitch),
+                  value: _mix,
+                  onChanged: (v) => setState(() => _mix = v),
+                ),
                 const SizedBox(height: CcDims.gap8),
                 ListTile(
                   contentPadding: EdgeInsets.zero,

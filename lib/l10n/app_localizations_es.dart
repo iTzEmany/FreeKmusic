@@ -8808,6 +8808,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudieron añadir las canciones a una lista';
 
   @override
+  String get smartMixSwitch => 'Añadir canciones parecidas que no tienes';
+
+  @override
   String get offerNothingToSend => 'Ninguna de estas canciones se puede enviar';
 
   @override

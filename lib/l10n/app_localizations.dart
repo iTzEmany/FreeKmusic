@@ -13693,6 +13693,12 @@ abstract class AppLocalizations {
   /// **'Non sono riuscito ad aggiungere i brani a una playlist'**
   String get playlistAddFailed;
 
+  /// No description provided for @smartMixSwitch.
+  ///
+  /// In it, this message translates to:
+  /// **'Aggiungi brani simili che non hai'**
+  String get smartMixSwitch;
+
   /// No description provided for @offerNothingToSend.
   ///
   /// In it, this message translates to:

@@ -4499,6 +4499,7 @@
     }
   },
   "playlistAddFailed": "Não foi possível adicionar as faixas a uma playlist",
+  "smartMixSwitch": "Adicionar músicas parecidas que você não tem",
   "offerNothingToSend": "Nenhuma destas músicas pode ser enviada",
   "offerPartialMissing": "{sent, plural, one{Enviada 1 música} other{Enviadas {sent} músicas}} de {total} para {name}: {n, plural, one{1 arquivo em falta} other{{n} arquivos em falta}}",
   "@offerPartialMissing": {

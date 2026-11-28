@@ -5042,6 +5042,7 @@
     }
   },
   "playlistAddFailed": "Non sono riuscito ad aggiungere i brani a una playlist",
+  "smartMixSwitch": "Aggiungi brani simili che non hai",
   "offerNothingToSend": "Nessuno di questi brani si può inviare",
   "offerPartialMissing": "{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 file mancante} other{{n} file mancanti}}",
   "@offerPartialMissing": {

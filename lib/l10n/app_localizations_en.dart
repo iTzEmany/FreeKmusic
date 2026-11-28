@@ -8753,6 +8753,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playlistAddFailed => 'Could not add the tracks to a playlist';
 
   @override
+  String get smartMixSwitch => 'Add similar songs you don’t have';
+
+  @override
   String get offerNothingToSend => 'None of these tracks can be sent';
 
   @override

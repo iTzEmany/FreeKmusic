@@ -15,7 +15,6 @@ import '../../../providers/player_providers.dart';
 import '../../../providers/settings_providers.dart';
 import '../../../providers/smart_playlist_providers.dart';
 import '../../shell/shell_nav.dart';
-import '../../theme/app_theme.dart';
 import '../../theme/tokens.dart';
 import '../../widgets/collection_header.dart';
 import '../../widgets/confirm.dart';
@@ -26,8 +25,10 @@ import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
 import 'smart_playlist_editor.dart';
 import '../../widgets/show_msg.dart';
-import '../../../providers/shuffle_plus_providers.dart' show PlaylistShuffleKey;
+import '../../../providers/shuffle_plus_providers.dart' show PlaylistShuffleKey, smartMixProvider;
 import '../../widgets/action_catalog.dart';
+import '../../../services/shuffle_plus/genre_mix.dart';
+import '../search/genre_screen.dart' show mixItemsOf, mixSlivers;
 
 /// A smart playlist: its tracks come from the rules and change by themselves,
 /// so the page is read-only (no reordering, no «add songs»).
@@ -74,6 +75,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
     ref.read(settingsProvider.notifier).update(
       (s) => s.copyWith(
         playlistShuffles: {...s.playlistShuffles}..remove('smart:${p.id}'),
+        smartMixOff: {...s.smartMixOff}..remove(p.id),
       ),
     );
     if (mounted) Navigator.of(context).pop();
@@ -86,13 +88,18 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
     final p = ref.watch(smartPlaylistProvider(id)).value;
     final tracks = ref.watch(smartTracksProvider(id)).value ?? const <Track>[];
     final shown = filterByText(tracks, _query, trackSearchFields);
+    // Similar online songs (D-756): on unless this playlist is in `smartMixOff`; a search shows only what it finds.
+    final mixOn = !ref.watch(settingsProvider.select((s) => s.smartMixOff.contains(id)));
+    final mix = mixOn ? ref.watch(smartMixProvider(id)).value ?? GenreMixState.none : GenreMixState.none;
+    final rows = interleave(shown, _query.isEmpty ? mix : GenreMixState.none);
+    final (:items, :itemAt) = mixItemsOf(interleave(tracks, mix));
+    final mixed = mix.suggested.isNotEmpty || mix.incoming > 0;
     // Rows of a search keep the place they have in the whole list.
     int whole(Track t) => tracks.indexWhere((x) => x.id == t.id);
     if (p == null) return const Scaffold();
     final compact = ref.watch(settingsProvider).compactMode;
     final ctrl = ref.read(playerControllerProvider);
     final playCtx = PlayContext(PlayContextKind.playlist, p.name);
-    final extent = trackRowExtentOf(context, compact);
     final key = SelectionKey.smartOf(id);
     final selection = RowSelection(
       listKey: key,
@@ -121,13 +128,17 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
         scrollerCount: shown.length,
         onPlay: tracks.isEmpty
             ? null
+            : mixed
+            ? () => ctrl.playMixed(items, context: playCtx, listKey: shuffleKey)
             : () => ctrl.playAll(
                 tracks,
                 context: playCtx,
                 listKey: shuffleKey,
               ),
-        shuffleIds: tracks.isEmpty ? null : [for (final t in tracks) t.id],
+        shuffleIds: tracks.isEmpty ? null : [for (final i in items) ?i.track?.id],
         shuffleKey: shuffleKey,
+        // Suggested songs in the list: Shuffle+ would go off anyway (R-18).
+        shufflePlus: !mix.suggested.isNotEmpty,
         menu: IconButton(
           tooltip: l.moreActions,
           icon: Icon(CatalogAction.more.icon),
@@ -187,16 +198,18 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
             SliverToBoxAdapter(
               child: EmptyState(icon: Icons.search_off_rounded, message: l.noResults),
             ),
-          SliverList.builder(
-            itemCount: shown.length,
-            itemBuilder: (_, i) => SizedBox(
-              height: extent,
-              child: LiveTrackRow(
-                track: shown[i],
-                compact: compact,
-                selection: selection,
-                onTap: () => ctrl.playFromList(tracks, whole(shown[i]), context: playCtx, listKey: shuffleKey),
-              ),
+          ...mixSlivers(
+            context,
+            rows: rows,
+            mix: _query.isEmpty ? mix : GenreMixState.none,
+            compact: compact,
+            trackRow: (t, i) => LiveTrackRow(
+              track: t,
+              compact: compact,
+              selection: selection,
+              onTap: () => mixed && _query.isEmpty
+                  ? ctrl.playMixed(items, index: itemAt[i], context: playCtx, listKey: shuffleKey)
+                  : ctrl.playFromList(tracks, whole(t), context: playCtx, listKey: shuffleKey),
             ),
           ),
         ],

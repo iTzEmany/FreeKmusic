@@ -8781,6 +8781,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non sono riuscito ad aggiungere i brani a una playlist';
 
   @override
+  String get smartMixSwitch => 'Aggiungi brani simili che non hai';
+
+  @override
   String get offerNothingToSend => 'Nessuno di questi brani si può inviare';
 
   @override

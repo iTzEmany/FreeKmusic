@@ -79,12 +79,20 @@ Stream<GenreMixState> genreMix({
   required RadioGate gate,
   required Future<bool Function(YtResult r)> Function() loadInLibrary,
   bool Function()? cancelled,
+  bool Function(SuggestionCandidate c)? accept,
   Random? random,
   SuggestionPool? pool,
 }) async* {
   final want = min(genreMixMax, tracks.length ~/ genreMixEvery);
   if (want == 0) return;
-  final off = await offReason();
+  GenreMixOff? off;
+  try {
+    off = await offReason();
+  } on Object catch (e, st) {
+    // Not silent: an error here would end the stream before the first state and the page would show nothing.
+    AppLog.w('genre mix off reason failed', e, st);
+    off = GenreMixOff.offline;
+  }
   if (off != null) {
     yield GenreMixState(off: off);
     return;
@@ -112,6 +120,7 @@ Stream<GenreMixState> genreMix({
       inQueue: (id) => found.any((s) => s.result.id == id),
       cancelled: cancelled,
       maxRequests: _maxRequests,
+      accept: accept,
     )) {
       found.add((result: c.result, seedTitle: c.seedTitle));
       yield GenreMixState(
@@ -146,18 +155,31 @@ Stream<GenreMixState> genreMixOf({
   required Future<GenreMixOff?> Function() offReason,
   required Future<LibraryIndex> Function() library,
   required bool Function() cancelled,
+  bool Function(SuggestionCandidate c)? accept,
 }) async* {
-  final list = await tracks;
-  if (list.length < genreMixEvery) return;
-  final index = await downloads;
+  final List<Track> list;
+  final DownloadIndex index;
+  final SeedResolver seeds;
+  try {
+    list = await tracks;
+    if (list.length < genreMixEvery) return;
+    index = await downloads;
+    seeds = await resolver;
+  } on Object catch (e, st) {
+    // Same as in [genreMix]: a failed dependency ends in a stop text, not in nothing.
+    AppLog.w('genre mix could not start', e, st);
+    yield const GenreMixState(off: GenreMixOff.offline);
+    return;
+  }
   yield* genreMix(
     tracks: list,
-    resolver: await resolver,
+    resolver: seeds,
     radioPage: radioPage,
     log: log,
     filter: filter,
     gate: gate,
     cancelled: cancelled,
+    accept: accept,
     offReason: offReason,
     loadInLibrary: () async =>
         inLibraryTest(hasDownload: index.contains, library: await library()),

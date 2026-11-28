@@ -4313,6 +4313,7 @@
     }
   },
   "playlistAddFailed": "No se pudieron añadir las canciones a una lista",
+  "smartMixSwitch": "Añadir canciones parecidas que no tienes",
   "offerNothingToSend": "Ninguna de estas canciones se puede enviar",
   "offerPartialMissing": "{sent, plural, one{Enviada 1 canción} other{Enviadas {sent} canciones}} de {total} a {name}: {n, plural, one{1 archivo no encontrado} other{{n} archivos no encontrados}}",
   "@offerPartialMissing": {

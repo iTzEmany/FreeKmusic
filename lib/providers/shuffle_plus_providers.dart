@@ -7,7 +7,11 @@ import '../core/constants.dart';
 import '../core/network_kind.dart';
 import '../data/settings/settings_store.dart';
 import '../services/audio/codecore_audio_handler.dart';
+import '../data/db/app_database.dart' show Track;
 import '../services/import/track_matcher.dart';
+import '../services/library/rules/rule_ast.dart';
+import '../services/library/rules/rule_online.dart';
+import '../services/library/rules/rule_parser.dart' show parseRules;
 import '../services/online/merge_results.dart' show libraryMatchOf;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
@@ -15,7 +19,8 @@ import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/genre_mix.dart';
 import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/radio_gate.dart';
-import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed;
+import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed, SuggestionCandidate;
+import 'smart_playlist_providers.dart';
 import '../services/shuffle_plus/shuffle_host.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/shuffle_plus/shuffle_plus_controller.dart';
@@ -373,46 +378,83 @@ final similarFillProvider =
 final genreMixProvider = StreamProvider.autoDispose
     .family<GenreMixState, String>((ref, genre) {
       if (!kEnableYoutube) return const Stream.empty();
-      final link = ref.keepAlive();
-      Timer? timer;
-      ref.onCancel(() => timer = Timer(const Duration(minutes: 5), link.close));
-      ref.onResume(() => timer?.cancel());
-      ref.onDispose(() => timer?.cancel());
       // Listened (not restarting): an unlistened stream provider stays paused.
       ref.listen(genreTracksProvider(genre), (_, _) {});
-      final tracks = ref.read(genreTracksProvider(genre).future);
-      final resolver = ref.read(seedResolverProvider.future);
-      final downloads = ref.read(downloadIndexProvider.future);
-      final tool = ref.read(ytDlpStatusProvider.future);
-      final probe = ref.read(networkProbeProvider);
-      final radio = ref.read(ytmRadioServiceProvider);
-      final log = ref.read(suggestionLogProvider);
-      final filter = ref.read(suggestionGateProvider);
-      final jam = ref.read(jamProvider).active;
-      final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
-      final gate = ref.read(radioGateProvider);
-      return genreMixOf(
-        tracks: tracks,
-        resolver: resolver,
-        downloads: downloads,
-        radioPage: radio.page,
-        log: log,
-        filter: filter,
-        gate: gate,
-        offReason: () => radioOffReason(
-          jam: jam,
-          toolVersion: tool.then((s) => s.version),
-          probe: probe,
-          unmeteredOnly: unmeteredOnly,
-          gate: gate,
-        ),
-        // Read after awaits: a disposed ref cannot read, and the mix is cancelled anyway.
-        library: () async => ref.mounted
-            ? ref.read(libraryIndexProvider.future)
-            : LibraryIndex(const []),
-        cancelled: () => !ref.mounted,
+      return _mixOf(ref, ref.read(genreTracksProvider(genre).future));
+    });
+
+/// The online songs of a smart playlist (D-756): the twin of [genreMixProvider],
+/// seeded by the playlist's own tracks (its limit counts library tracks only)
+/// and keeping only the songs [onlineMatches] its rules. Whether the playlist
+/// has it on is the screen's choice: it watches this provider or not.
+final smartMixProvider = StreamProvider.autoDispose
+    .family<GenreMixState, int>((ref, id) {
+      if (!kEnableYoutube) return const Stream.empty();
+      // Rules, limit or order edited: the mix starts again with the new ones.
+      ref.watch(
+        smartPlaylistProvider(id).select((p) => (p.value?.rules, p.value?.limitCount, p.value?.sort)),
+      );
+      ref.listen(smartTracksProvider(id), (_, _) {});
+      final playlist = ref.read(smartPlaylistProvider(id).future);
+      RuleExpr? rules;
+      // The tracks are read once the playlist is there (cold open: until then
+      // they are an empty stream); genreMixOf awaits them before [accept].
+      final tracks = playlist.then<List<Track>>((p) {
+        rules = p == null ? null : parseRules(p.rules).expr;
+        return ref.mounted
+            ? ref.read(smartTracksProvider(id).future)
+            : Future.value(<Track>[]);
+      });
+      return _mixOf(
+        ref,
+        tracks,
+        accept: (c) => rules == null || onlineMatches(rules!, c.result),
       );
     });
+
+Stream<GenreMixState> _mixOf(
+  Ref ref,
+  Future<List<Track>> tracks, {
+  bool Function(SuggestionCandidate c)? accept,
+}) {
+  final link = ref.keepAlive();
+  Timer? timer;
+  ref.onCancel(() => timer = Timer(const Duration(minutes: 5), link.close));
+  ref.onResume(() => timer?.cancel());
+  ref.onDispose(() => timer?.cancel());
+  final resolver = ref.read(seedResolverProvider.future);
+  final downloads = ref.read(downloadIndexProvider.future);
+  final tool = ref.read(ytDlpStatusProvider.future);
+  final probe = ref.read(networkProbeProvider);
+  final radio = ref.read(ytmRadioServiceProvider);
+  final log = ref.read(suggestionLogProvider);
+  final filter = ref.read(suggestionGateProvider);
+  final jam = ref.read(jamProvider).active;
+  final unmeteredOnly = ref.read(shufflePlusConfigProvider).unmeteredOnly;
+  final gate = ref.read(radioGateProvider);
+  return genreMixOf(
+    tracks: tracks,
+    resolver: resolver,
+    downloads: downloads,
+    radioPage: radio.page,
+    log: log,
+    filter: filter,
+    gate: gate,
+    accept: accept,
+    offReason: () => radioOffReason(
+      jam: jam,
+      toolVersion: tool.then((s) => s.version),
+      probe: probe,
+      unmeteredOnly: unmeteredOnly,
+      gate: gate,
+    ),
+    // Read after awaits: a disposed ref cannot read, and the mix is cancelled anyway.
+    library: () async => ref.mounted
+        ? ref.read(libraryIndexProvider.future)
+        : LibraryIndex(const []),
+    cancelled: () => !ref.mounted,
+  );
+}
 
 /// Told to the user once (rate limit, too many errors): the shell shows them.
 final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((

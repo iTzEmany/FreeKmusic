@@ -4313,6 +4313,7 @@
     }
   },
   "playlistAddFailed": "Could not add the tracks to a playlist",
+  "smartMixSwitch": "Add similar songs you don’t have",
   "offerNothingToSend": "None of these tracks can be sent",
   "offerPartialMissing": "{sent, plural, one{Sent 1 track} other{Sent {sent} tracks}} of {total} to {name}: {n, plural, one{1 file missing} other{{n} files missing}}",
   "@offerPartialMissing": {

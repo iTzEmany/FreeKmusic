@@ -8853,6 +8853,10 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d’ajouter les titres à une playlist';
 
   @override
+  String get smartMixSwitch =>
+      'Ajouter des titres similaires que vous n’avez pas';
+
+  @override
   String get offerNothingToSend => 'Aucun de ces titres ne peut être envoyé';
 
   @override

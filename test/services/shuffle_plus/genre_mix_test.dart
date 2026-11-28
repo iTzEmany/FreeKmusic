@@ -11,6 +11,7 @@ import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_index.dart';
 import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
+import 'package:codecore/services/shuffle_plus/suggestion_pool.dart' show SuggestionCandidate;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
 
@@ -118,7 +119,7 @@ void main() {
     gate = RadioGate(now: () => tick = tick.add(const Duration(minutes: 2)));
   });
 
-  Future<List<GenreMixState>> run(int tracks, {int from = 1}) => genreMix(
+  Future<List<GenreMixState>> run(int tracks, {int from = 1, bool Function(SuggestionCandidate c)? accept}) => genreMix(
     tracks: [for (var i = from; i < from + tracks; i++) track(i)],
     offReason: () async => off,
     resolver: resolver,
@@ -135,6 +136,7 @@ void main() {
     loadInLibrary: () async =>
         (r) => allInLibrary || inLibrary.contains(r.id),
     cancelled: () => cancelled,
+    accept: accept,
   ).toList();
 
   test('one slot for every 2 library songs: 3 incoming first, then each one as it is found', () async {
@@ -144,6 +146,14 @@ void main() {
     expect([for (final s in states) s.suggested.length], [0, 1, 2, 3, 3]);
     expect([for (final s in states) s.incoming], [3, 2, 1, 0, 0]);
     expect(states.last.suggested.map((s) => s.result.id).toSet(), hasLength(3));
+  });
+
+  test('accept refuses rows before they count; without it nothing changes', () async {
+    final states = await run(6, accept: (c) => RegExp(r'r[0-4]$').hasMatch(c.result.id));
+    expect(states.last.suggested, hasLength(3));
+    expect(states.last.suggested.every((s) => RegExp(r'r[0-4]$').hasMatch(s.result.id)), isTrue);
+    final none = await run(6, accept: (_) => false);
+    expect(none.last.suggested, isEmpty);
   });
 
   test('seeds are songs of the genre, found without a search', () async {
@@ -192,6 +202,20 @@ void main() {
     expect(states.last.incoming, 0);
     expect(states.last.suggested, isEmpty);
     expect(states.last.off, isNull);
+  });
+
+  test('an offReason that throws ends in a stop state, not in silence', () async {
+    final states = await genreMix(
+      tracks: [for (var i = 1; i <= 6; i++) track(i)],
+      offReason: () async => throw StateError('probe'),
+      resolver: resolver,
+      radioPage: (id, {continuation}) async => page(id),
+      log: log,
+      filter: testGate(),
+      gate: gate,
+      loadInLibrary: () async => (r) => false,
+    ).toList();
+    expect(states.single.off, GenreMixOff.offline);
   });
 
   test('fewer than 2 library songs: no slot at all', () async {
