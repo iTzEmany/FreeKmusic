@@ -1,0 +1,356 @@
+/* FreeKmusic, direzione «Copertine al centro» (D-723). Token e componenti condivisi dei mockup.
+   Mirror dei nomi di lib/ui/theme/tokens.dart (CcColors, CcDims, CcMotion) dove esistono.
+
+   COLORE (D-730). Fondo SEMPRE scuro nella palette indaco: #07050C (CcColors.bg), mai tinto dalla
+   copertina. Superfici indaco di oggi #120E1C/#1D1630/#2A2140 (un passo di tono, niente ombre).
+   Il viola (#A06BFF) sta solo su play, selezione, stato e anello di focus; il colore lo portano le copertine.
+   Unico cambio rispetto a oggi: text-muted piu' chiaro (#A79DB8 -> #B3AAC2).
+
+   RAPPORTI DI CONTRASTO (WCAG 2.x) su fondo #07050C / s1 #120E1C / s2 #1D1630 / s3 #2A2140:
+     text        #F4F0FA ... 18.0 / 16.9 / 15.5 / 13.4
+     text-muted  #B3AAC2 ...  9.1 /  8.5 /  7.8 /  6.8
+     text-faint  #9A92A6 ...  6.8 /  6.4 /  5.8 /  5.1
+     accent      #A06BFF ...  5.8 /  5.5 /  5.0 /  4.3   (glifi e riempimenti; testo accentato solo fino a s2)
+     on-accent   #12081F su accent 5.6:1 · error #FF6B81 su fondo 7.4:1 · line bianco 11% ~1.4:1 (decorativa)
+*/
+
+@font-face{font-family:"Figtree";src:url("../../../assets/fonts/Figtree-Variable.ttf") format("truetype");font-weight:300 900;font-display:swap}
+@font-face{font-family:"Unbounded";src:url("../../../assets/fonts/Unbounded-Variable.ttf") format("truetype");font-weight:200 900;font-display:swap}
+
+:root{
+  /* colori base (CcColors.notte) */
+  --bg:#07050C;
+  --text:#F4F0FA;
+  --text-muted:#B3AAC2;
+  --text-faint:#9A92A6;
+  --accent:#A06BFF;
+  --accent-soft:#D9C8FF;
+  --on-accent:#12081F;
+  --error:#FF6B81;
+  --focus:var(--accent);          /* anello di focus 2 px, offset 2 px (F-115) */
+  --focus-w:2px;
+
+  /* D-730: nessuna tinta dalla copertina (il fondo resta indaco); variabili tenute a 0 per i frame */
+  --tint:#000000;
+  --tint-mix:0%;
+
+  /* spaziatura (CcDims.gap*, base 4) */
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-6:24px;--sp-8:32px;--sp-12:48px;
+
+  /* raggi (CcDims) */
+  --r-list:4px;--r-grid:8px;--r-card:12px;--r-sheet:16px;--r-pill:999px;--r-bar:2px;
+
+  /* movimento (CcMotion): press 120, enter 180, sheet 250, page 320 ms */
+  --dur-press:120ms;--dur-enter:180ms;--dur-sheet:250ms;--dur-page:320ms;
+  --ease-enter:cubic-bezier(.215,.61,.355,1);  /* ease-out-cubic, in entrata */
+  --ease-exit:cubic-bezier(.55,.055,.675,.19); /* curva di uscita (CcMotion) */
+
+  /* famiglie (assets/fonts, le stesse dell'app) */
+  --font-display:"Unbounded","Figtree",system-ui,sans-serif;
+  --font-body:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+
+  /* scala tipografica TELEFONO (dp) */
+  --fs-display:24px;--lh-display:30px;   /* titolo di pagina, Unbounded 700 */
+  --fs-hero:22px;--lh-hero:28px;         /* «Casuale su tutto» */
+  --fs-section:18px;--lh-section:24px;   /* titolo di sezione, Figtree 700 */
+  --fs-title:16px;--lh-title:22px;       /* titolo riga/carta, 700 */
+  --fs-body:15px;--lh-body:22px;
+  --fs-label:13px;--lh-label:18px;       /* sottotitoli, etichette (minimo telefono 12) */
+
+  /* ritmo verticale della home (F-20, F-14) */
+  --section-gap:24px;      /* UGUALE sopra e sotto ogni sezione */
+  --head-h:40px;           /* altezza fissa dell'intestazione, con o senza «Tutti» */
+  --head-gap:12px;         /* titolo -> contenuto */
+  --gutter:16px;           /* margine laterale (CcDims.margin) */
+  --shelf-gap:12px;
+  --tap:48px;              /* bersaglio minimo */
+
+  /* dimensioni di shell (CcDims) */
+  --sidebar-w:240px;--sidebar-w-rail:72px;--playerbar-h:80px;--dock-r:28px;
+}
+
+/* DESKTOP: minimo 13 px, bersagli 36 px (>= 32, F-116), margini e larghezza massima uniche (F-106) */
+.desk{
+  --fs-display:28px;--lh-display:34px;
+  --fs-hero:24px;--lh-hero:30px;
+  --fs-section:20px;--lh-section:26px;
+  --fs-title:15px;--lh-title:20px;
+  --fs-body:14px;--lh-body:20px;
+  --fs-label:13px;--lh-label:18px;
+  --section-gap:32px;--head-h:44px;--head-gap:16px;
+  --gutter:32px;--shelf-gap:24px;--tap:36px;
+  --page-max:1136px;       /* contenuto: 1200 - 2x32 di margine, 12 colonne da ~72.7 + 11 gap da 24 */
+  --col-gap:24px;
+}
+
+/* derivati: dichiarati su :root e su .ground, cosi' ogni frame ricalcola col proprio --tint */
+:root,.ground{
+  --ground:var(--bg);
+  --surface1:#120E1C;
+  --surface2:#1D1630;
+  --surface3:#2A2140;
+  --line:rgb(255 255 255 / .11);          /* il separatore da 1 px (CcColors.separator) */
+  --line-strong:rgb(255 255 255 / .20);   /* bordo dei controlli */
+  --float:color-mix(in srgb,#fff 9%,var(--ground)); /* menu, dialoghi, tooltip: opachi */
+  --scrim:rgb(0 0 0 / .56);
+}
+
+.ground{background:var(--ground);color:var(--text);font-family:var(--font-body);font-size:var(--fs-body);line-height:var(--lh-body)}
+
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-press:0ms;--dur-enter:0ms;--dur-sheet:0ms;--dur-page:0ms}
+  *{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+}
+
+/* ---------- icone (icons.svg, 24 px, tratto 1.75) ---------- */
+.ic{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.ic-20{width:20px;height:20px}.ic-18{width:18px;height:18px}.ic-28{width:28px;height:28px}
+
+/* ---------- focus (F-115): un anello unico su ogni controllo ---------- */
+:where(a,button,[tabindex],[role=button]):focus-visible,.is-focus{outline:var(--focus-w) solid var(--focus);outline-offset:2px}
+
+/* ---------- testo ---------- */
+.t-display{font:700 var(--fs-display)/var(--lh-display) var(--font-display);letter-spacing:-.01em;margin:0}
+.t-hero{font:700 var(--fs-hero)/var(--lh-hero) var(--font-display);letter-spacing:-.01em;margin:0}
+.t-section{font:700 var(--fs-section)/var(--lh-section) var(--font-body);margin:0}
+.t-title{font:700 var(--fs-title)/var(--lh-title) var(--font-body);margin:0}
+.t-label{font:400 var(--fs-label)/var(--lh-label) var(--font-body);color:var(--text-muted)}
+.t-faint{color:var(--text-faint)}
+.num{font-variant-numeric:tabular-nums}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+
+/* ---------- sezione: ritmo unico (F-13, F-14, F-20) ----------
+   Ogni sezione ha --section-gap sopra E sotto (i blocchi sono impilati con lo stesso gap, e la pagina ha lo
+   stesso margine in testa e in fondo). L'intestazione ha altezza fissa: «Tutti» non la alza. */
+.page{padding-block:var(--section-gap)}
+.page>.section+.section,.page>.row12+.section,.page>.section+.row12{margin-top:var(--section-gap)}
+.section-head{height:var(--head-h);display:flex;align-items:center;justify-content:space-between;gap:var(--sp-3);margin-bottom:var(--head-gap)}
+.section-head .t-section{min-width:0}
+.section-head .meta{font-size:var(--fs-label);color:var(--text-muted);margin-left:var(--sp-2);font-weight:400}
+.link-all{height:var(--head-h);display:inline-flex;align-items:center;gap:2px;padding-inline:var(--sp-2) 4px;margin-right:-8px;border-radius:var(--r-grid);
+  color:var(--text-muted);font:600 var(--fs-label)/1 var(--font-body);text-decoration:none;background:none;border:0;cursor:pointer;transition:color var(--dur-press)}
+.link-all:hover{color:var(--text)}
+.link-all .ic{width:18px;height:18px}
+
+/* ---------- copertina (le protagoniste) ---------- */
+.cover{--s:96px;width:var(--s);height:var(--s);flex:none;display:block;border-radius:var(--r-grid);background:var(--surface2);object-fit:cover;overflow:hidden}
+.cover.round{border-radius:50%}
+.cover.sm{border-radius:var(--r-list)}
+.mosaic{--s:96px;width:var(--s);height:var(--s);flex:none;display:grid;grid-template:1fr 1fr/1fr 1fr;border-radius:var(--r-grid);overflow:hidden;background:var(--surface2)}
+.mosaic img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* ---------- scaffale orizzontale (F-114: frecce ai bordi su desktop) ---------- */
+.shelf{display:flex;gap:var(--shelf-gap);overflow-x:auto;scrollbar-width:none;scroll-snap-type:x proximity;margin-inline:calc(-1*var(--gutter));padding-inline:var(--gutter);scroll-padding-inline:var(--gutter)}
+.shelf::-webkit-scrollbar{display:none}
+.shelf-item{--s:112px;width:var(--s);flex:none;scroll-snap-align:start;color:inherit;text-decoration:none;display:block;border-radius:var(--r-grid)}
+.shelf-item .cover,.shelf-item .mosaic{width:100%;height:auto;aspect-ratio:1}
+.shelf-item .t{margin-top:var(--sp-2);font:700 var(--fs-title)/var(--lh-title) var(--font-body)}
+.shelf-item .s{font-size:var(--fs-label);line-height:var(--lh-label);color:var(--text-muted)}
+.shelf-wrap{position:relative}
+.shelf-wrap .shelf-arrow{position:absolute;top:calc(var(--s-cover,120px)/2 - 18px);width:36px;height:36px;border-radius:50%;background:var(--float);border:1px solid var(--line-strong);color:var(--text);display:grid;place-items:center;cursor:pointer}
+.shelf-wrap .shelf-arrow.l{left:-18px}.shelf-wrap .shelf-arrow.r{right:-18px}
+.dot-new{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:middle}
+
+/* ---------- riga brano (telefono) ---------- */
+.track-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--sp-3);align-items:center;min-height:56px;padding-block:4px}
+.track-row .cover{--s:48px}
+.track-row .rank{width:20px;text-align:right;color:var(--text-muted);font-size:var(--fs-label)}
+.track-row .tail{font-size:var(--fs-label);color:var(--text-muted)}
+
+/* ---------- riga di tabella (desktop, F-104/F-105): regole e allineamento, niente zebra ---------- */
+.table{display:block;font-size:var(--fs-body)}
+.thead,.trow{display:grid;grid-template-columns:32px minmax(0,4fr) minmax(0,3fr) minmax(0,3fr) 56px 36px;column-gap:var(--sp-4);align-items:center;padding-inline:var(--sp-3)}
+.thead{height:36px;font-size:var(--fs-label);color:var(--text-muted);border-bottom:1px solid var(--line)}
+.thead button{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-list)}
+.thead button:focus-visible{outline:var(--focus-w) solid var(--focus);outline-offset:2px}
+.trow{height:56px;border-bottom:1px solid var(--line);border-radius:0}
+.trow:hover,.trow.is-hover{background:var(--surface1)}
+.trow.is-selected{position:relative;background:var(--surface2)}
+.trow.is-selected::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--accent)}  /* selezione = stato: bordo viola da 2 px */
+.trow .title{display:flex;align-items:center;gap:var(--sp-3);min-width:0}
+.trow .title .cover{--s:40px;border-radius:var(--r-list)}
+.trow .r,.thead .r{text-align:right;justify-content:flex-end}
+.trow .muted{color:var(--text-muted)}
+
+/* ---------- pulsanti ---------- */
+.btn{height:var(--tap);padding-inline:var(--sp-4) var(--sp-4);border-radius:var(--r-pill);border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;gap:var(--sp-2);
+  font:600 var(--fs-body)/1 var(--font-body);cursor:pointer;color:var(--text);background:none;text-decoration:none;white-space:nowrap;transition:background var(--dur-press) var(--ease-enter)}
+.btn .ic{width:20px;height:20px}
+.btn-primary{background:var(--accent);color:var(--on-accent)}          /* il viola: solo l'azione di riproduzione */
+.btn-primary:hover{background:color-mix(in srgb,#fff 10%,var(--accent))}
+.btn-secondary{border-color:var(--line-strong)}
+.btn-secondary:hover{background:var(--surface2)}
+.btn-ghost:hover{background:var(--surface2)}
+.btn-play{width:var(--tap);height:var(--tap);padding:0;border-radius:50%;background:var(--accent);color:var(--on-accent)}
+.btn-play .ic{width:24px;height:24px}
+
+.icon-btn{position:relative;width:var(--tap);height:var(--tap);border-radius:50%;border:0;background:none;color:var(--text-muted);display:inline-grid;place-items:center;cursor:pointer;transition:background var(--dur-press),color var(--dur-press)}
+.icon-btn:hover,.icon-btn.is-hover{background:var(--surface2);color:var(--text)}
+.icon-btn[aria-pressed=true]{color:var(--accent)}   /* stato: acceso */
+
+/* tooltip (F-116): su ogni pulsante a icona; .is-tip lo mostra fisso nel mockup */
+[data-tip]{position:relative}
+[data-tip]::after{content:attr(data-tip);position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);z-index:20;white-space:nowrap;pointer-events:none;
+  background:var(--float);color:var(--text);border:1px solid var(--line-strong);border-radius:var(--r-grid);padding:6px 10px;font:500 var(--fs-label)/1.1 var(--font-body);opacity:0;transition:opacity var(--dur-enter) var(--ease-enter)}
+[data-tip].tip-up::after{top:auto;bottom:calc(100% + 8px)}
+[data-tip]:hover::after,[data-tip]:focus-visible::after,[data-tip].is-tip::after{opacity:1}
+
+/* ---------- menu a comparsa sotto il puntatore (F-101): voci da 36 px con scorciatoie ---------- */
+.menu{display:inline-block;min-width:264px;background:var(--float);border:1px solid var(--line-strong);border-radius:var(--r-grid);padding:4px;font-size:var(--fs-body)}
+.menu-item{height:36px;display:flex;align-items:center;gap:var(--sp-3);padding-inline:var(--sp-3);border-radius:6px;color:var(--text);cursor:default}
+.menu-item .ic{width:18px;height:18px;color:var(--text-muted)}
+.menu-item .k{margin-left:auto;color:var(--text-faint);font-size:var(--fs-label)}
+.menu-item:hover,.menu-item.is-hover{background:var(--surface2)}
+.menu hr{border:0;border-top:1px solid var(--line);margin:4px 0}
+
+/* ---------- dialogo centrato (F-103) ---------- */
+.dialog{width:440px;max-width:100%;background:var(--float);border:1px solid var(--line-strong);border-radius:var(--r-card);padding:var(--sp-6)}
+.dialog h3{margin:0 0 var(--sp-2);font:700 var(--fs-section)/var(--lh-section) var(--font-body)}
+.dialog p{margin:0 0 var(--sp-6);color:var(--text-muted)}
+.dialog .actions{display:flex;justify-content:flex-end;gap:var(--sp-2)}
+
+/* ---------- chip ---------- */
+.chip{height:32px;padding-inline:var(--sp-3);border-radius:var(--r-pill);border:1px solid var(--line-strong);display:inline-flex;align-items:center;font-size:var(--fs-label);color:var(--text);background:none}
+.chip[aria-pressed=true]{background:var(--surface3);border-color:transparent}
+
+/* ---------- anello aperto di «Riprendi» (D-725, segno distintivo) ----------
+   Il più recente è grande al centro, gli altri sull'arco (260° con l'apertura rivolta verso l'etichetta).
+   L'arco interno è l'avanzamento del brano in ripresa: il solo tratto viola della schermata. */
+.ring{position:relative;width:var(--ring-w);height:var(--ring-h);margin-inline:auto}
+.ring svg.arcs{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.ring .arc-outer{fill:none;stroke:var(--line-strong);stroke-width:1}
+.ring .arc-track{fill:none;stroke:var(--surface3);stroke-width:3;stroke-linecap:round}
+.ring .arc-progress{fill:none;stroke:var(--accent);stroke-width:3;stroke-linecap:round}
+.ring-item,.ring-core{position:absolute;transform:translate(-50%,-50%);display:block;padding:0;border:0;background:none;color:inherit;cursor:pointer;border-radius:var(--r-grid)}
+.ring-item{width:var(--item);height:var(--item)}
+.ring-item::before{content:"";position:absolute;inset:-4px}  /* bersaglio >= 48 anche con copertine da 44 */
+.ring-item .cover,.ring-item .mosaic{--s:var(--item);width:100%;height:100%;transition:transform var(--dur-press) var(--ease-enter)}
+.ring-item:hover .cover,.ring-item:hover .mosaic{transform:scale(1.06)}
+.ring-core{width:var(--core);height:var(--core)}
+.ring-core .cover{--s:var(--core);width:100%;height:100%;border-radius:var(--r-card)}
+
+/* ===== impalcatura del mockup + componenti condivisi ===== */
+html{background:#0b0a0f}
+body.mock{margin:0;background:#0b0a0f;color:#E8E4EE;font:400 15px/1.5 "Figtree",system-ui,sans-serif;padding:32px 40px 64px;width:1536px}
+.mock h1{font:700 24px/1.2 "Unbounded","Figtree",sans-serif;margin:0 0 8px}
+.mock .intro{margin:0 0 8px;color:#B3AAC2;max-width:90ch}
+.mock h2.band{font:700 18px/1 "Figtree",sans-serif;margin:44px 0 16px;color:#F4F0FA}
+.frames{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+figure.f{margin:0}
+.cap{margin:10px 0 0;font-size:13px;color:#B3AAC2;max-width:360px}
+.cap.wide{max-width:none}.cap b{color:#F4F0FA}
+.phone{position:relative;width:360px;height:800px;overflow:hidden;border-radius:24px;border:1px solid rgb(255 255 255 /.14)}
+.phone.short{height:150px}
+.status{position:absolute;inset:0 0 auto 0;height:24px;display:flex;align-items:center;justify-content:space-between;padding-inline:16px;font:600 12px/1 var(--font-body);z-index:3}
+.desktop{position:relative;width:1440px;height:900px;overflow:hidden;border:1px solid rgb(255 255 255 /.14);border-radius:8px}
+.desktop.crop{height:230px}
+.desktop.crop .d-in{position:absolute;left:0;right:0;bottom:0;height:900px}
+.d-in{position:absolute;inset:0;display:flex;flex-direction:column}
+.cover img{width:100%;height:100%;object-fit:cover;display:block}
+.cover{--s:48px}
+.cover.tilt{filter:saturate(.7) brightness(.8)}
+button{font-family:inherit}
+.btnr{height:36px;padding-inline:14px;border-radius:999px;border:1px solid var(--line-strong);background:none;color:var(--text);font:600 13px/1 var(--font-body);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btnr.fill{background:var(--accent);border-color:transparent;color:var(--on-accent)}
+.xbtn{width:36px;height:36px;border-radius:50%;border:0;background:none;color:var(--text-muted);display:grid;place-items:center;flex:none}
+.xbtn .ic{width:18px;height:18px}
+
+/* --- player telefono --- */
+.pl{position:absolute;inset:24px 0 0;display:flex;flex-direction:column;padding-inline:16px}
+.pl-top{height:48px;display:flex;align-items:center;justify-content:space-between;color:var(--text-muted);font-size:13px}
+.pl-top .icon-btn{--tap:44px}
+.pl-cover{width:296px;height:296px;margin:12px auto 18px;border-radius:12px;overflow:hidden;flex:none}
+.pl-cover img{width:100%;height:100%;display:block}
+.pl-meta{min-height:56px}
+.pl-meta .t-hero{font-size:20px;line-height:26px}
+.pl-bar{margin:12px 0 4px;height:3px;border-radius:2px;background:var(--surface3);position:relative}
+.pl-bar i{position:absolute;left:0;top:0;bottom:0;width:31%;background:var(--text);border-radius:2px}
+.pl-time{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)}
+.pl-ctrl{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 4px}
+.pl-ctrl .icon-btn{--tap:48px}
+.pl-ctrl .btn-play{--tap:60px}
+.pl-acts{display:grid;grid-template-columns:repeat(4,1fr);margin-top:auto;padding-bottom:12px}
+.act-b{display:flex;flex-direction:column;align-items:center;gap:4px;height:56px;justify-content:center;background:none;border:0;color:var(--text-muted);font-size:12px;border-radius:12px;position:relative}
+.act-b.on{color:var(--accent-soft)}
+.act-b.on .ic{color:var(--accent)}
+.act-b .pip{position:absolute;top:8px;left:calc(50% + 6px);width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--ground)}
+
+/* --- home telefono + mini --- */
+.hm{position:absolute;inset:24px 0 0;padding:16px}
+.hm h2{margin:8px 0 16px}
+.hm .sec{font:700 18px/24px var(--font-body);margin:20px 0 12px}
+.hm .shelfr{display:flex;gap:12px}
+.hm .shelfr .cover{--s:104px;width:104px;height:104px;border-radius:8px}
+.hm .rowc{display:flex;gap:12px;align-items:center;height:56px}
+.hm .rowc .cover{--s:48px}
+.mini{position:absolute;left:8px;right:8px;bottom:64px;height:64px;border-radius:12px;background:var(--surface2);display:flex;align-items:center;gap:12px;padding:0 4px 0 8px;z-index:4;overflow:hidden}
+.mini .bar{position:absolute;left:0;top:0;height:2px;width:31%;background:var(--text)}
+.mini .cover{--s:48px;width:48px;height:48px;border-radius:6px;flex:none}
+.mini .tx{flex:1;min-width:0}
+.mini b{display:block;font:700 15px/20px var(--font-body)}
+.mini span{display:block;font-size:13px;line-height:18px;color:var(--text-muted)}
+.mini .icon-btn{--tap:44px}
+.mini .tx span b{display:inline;font:700 13px/18px var(--font-body);color:var(--text)}
+.bnav{position:absolute;left:0;right:0;bottom:0;height:56px;background:var(--surface1);display:flex;justify-content:space-around;align-items:center;font-size:12px;color:var(--text-muted);z-index:3}
+.bnav div{display:flex;flex-direction:column;align-items:center;gap:2px;width:80px}
+.bnav .on{color:var(--text)}
+
+/* --- foglio --- */
+.scrim{position:absolute;inset:0;background:var(--scrim);z-index:20}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:30;background:var(--float);border-radius:16px 16px 0 0;padding:8px 0 16px}
+.sheet .grab{width:32px;height:4px;border-radius:2px;background:var(--line-strong);margin:0 auto 4px}
+.sheet h3{margin:0;padding:8px 16px 8px;font:700 18px/24px var(--font-body)}
+.slab{padding:12px 16px 4px;font:600 13px/18px var(--font-body);color:var(--text-muted)}
+.sheet hr,.pop hr{border:0;border-top:1px solid var(--line);margin:8px 0}
+.drow{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;min-height:56px;padding:8px 16px}
+.drow .gl{width:40px;height:40px;border-radius:50%;background:var(--surface3);display:grid;place-items:center;color:var(--text)}
+.drow .n{font:700 15px/20px var(--font-body)}
+.drow .s{font-size:13px;line-height:18px;color:var(--text-muted)}
+.drow.off .gl{color:var(--text-faint);background:var(--surface2)}
+.drow.off .n{color:var(--text-muted)}
+.drow.off .s{color:var(--text-faint)}
+.note-jam{margin:4px 16px 8px;padding:10px 12px;border-radius:8px;background:var(--surface2);font-size:13px;line-height:18px;color:var(--text);display:flex;gap:10px;align-items:flex-start}
+.note-jam .ic{color:var(--text-muted);margin-top:0}
+.live{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:6px}
+
+/* --- desktop --- */
+.side{position:absolute;left:0;top:0;bottom:80px;width:240px;background:var(--surface1);padding:24px 16px}
+.side .logo{font:700 18px/1 var(--font-display);margin:0 8px 28px}
+.side .it{height:36px;display:flex;align-items:center;gap:12px;padding-inline:8px;border-radius:8px;color:var(--text-muted);font-size:14px}
+.side .it.on{background:var(--surface2);color:var(--text)}
+.dmain{position:absolute;left:240px;right:0;top:0;bottom:80px;padding:32px 32px;overflow:hidden}
+.dmain h2{margin:0 0 24px}
+.grid6{display:grid;grid-template-columns:repeat(6,1fr);gap:24px}
+.grid6 .cover{--s:100%;width:100%;height:auto;aspect-ratio:1;border-radius:8px}
+.grid6 .tt{margin-top:8px;font:700 15px/20px var(--font-body)}.grid6 .ss{font-size:13px;color:var(--text-muted)}
+.dmain .sec{font:700 20px/26px var(--font-body);margin:32px 0 16px}
+.pbar{position:absolute;left:0;right:0;bottom:0;height:80px;background:var(--surface1);display:grid;grid-template-columns:1fr 2fr 1fr;align-items:center;padding-inline:24px;z-index:5}
+.pbar .l{display:flex;gap:12px;align-items:center;min-width:0}
+.pbar .l .cover{--s:56px;width:56px;height:56px;border-radius:6px}
+.pbar .l b{display:block;font:700 15px/20px var(--font-body)}.pbar .l span{font-size:13px;color:var(--text-muted)}
+.pbar .c{display:flex;flex-direction:column;align-items:center;gap:6px}
+.pbar .c .ctl{display:flex;gap:8px;align-items:center}
+.pbar .c .icon-btn{--tap:36px}.pbar .c .btn-play{--tap:40px}
+.pbar .c .tl{display:flex;gap:10px;align-items:center;font-size:12px;color:var(--text-muted)}
+.pbar .c .tl i{display:block;width:420px;height:3px;border-radius:2px;background:var(--surface3);position:relative}
+.pbar .c .tl i u{position:absolute;left:0;top:0;bottom:0;background:var(--text);border-radius:2px;text-decoration:none}
+.pbar .r{display:flex;justify-content:flex-end;gap:4px;align-items:center}
+.pbar .icon-btn{--tap:36px}
+.pbar .icon-btn.on{color:var(--accent);background:var(--surface2)}
+.pop{position:absolute;right:16px;bottom:88px;width:380px;z-index:30;background:var(--float);border:1px solid var(--line-strong);border-radius:12px;padding:8px 0}
+.pop h3{margin:0;padding:8px 16px;font:700 16px/22px var(--font-body)}
+.snack{position:absolute;left:50%;transform:translateX(-50%);bottom:96px;z-index:40;min-width:380px;background:var(--float);border:1px solid var(--line-strong);border-radius:8px;padding:0 8px 0 16px;height:48px;display:flex;align-items:center;gap:24px;font-size:14px;justify-content:space-between}
+.snack .a{font:700 14px/1 var(--font-body);color:var(--accent-soft);background:none;border:0;height:36px;padding-inline:10px;border-radius:6px}
+
+/* --- notifica Android --- */
+.shade{position:absolute;inset:0;background:#15131a;padding:12px}
+.notif{background:#26222f;border-radius:20px;padding:12px 16px;display:grid;grid-template-columns:20px 1fr;gap:4px 12px}
+.notif .app{display:flex;align-items:center;gap:8px;grid-column:1/-1;font-size:12px;color:var(--text-muted)}
+.notif .app i{width:18px;height:18px;border-radius:50%;background:var(--accent);display:grid;place-items:center;color:var(--on-accent)}
+.notif .app i .ic{width:12px;height:12px}
+.notif b{grid-column:1/-1;font:600 15px/20px var(--font-body)}
+.notif p{grid-column:1/-1;margin:0;font-size:13px;line-height:18px;color:var(--text-muted)}
+.icon-btn.btn-play{background:var(--accent);color:var(--on-accent)}
+.phone,.desktop{box-sizing:border-box}
+.grid6 .cover{width:100%!important;height:auto!important;aspect-ratio:1}
+.desktop.crop .d-in{top:auto}

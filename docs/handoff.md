@@ -2,7 +2,9 @@
 Aggiornato: 2026-11-28 · Stato: refactor «playlist-aggiungi-e-casuale» (fasi 162-164, #258 #259 #262), «invia-playlist-completa» (fasi 165-166, #260 #266) e «karaoke-casuale» (fasi 167-169, #261 #264 #265) **chiusi**; nessuna fase aperta; Flutter 3.47.9; schema DB invariato (v24).
 
 ## Prossima sessione
-Nessuna fase scritta in [`fasi/`](fasi/README.md). Obiettivi possibili:
+Feature «Continua qui» (I-09, kickoff del 28/11): fasi scritte [`fasi/fase-171-continua-qui-manda-e-prendi.md`](fasi/fase-171-continua-qui-manda-e-prendi.md) e [`fasi/fase-172-continua-qui-brani-mancanti-e-suggerimento.md`](fasi/fase-172-continua-qui-brani-mancanti-e-suggerimento.md); requisiti in [`feature/feature-continua-qui.md`](feature/feature-continua-qui.md). Prompt: `/pilot phase 171`.
+
+Altri obiettivi possibili:
 0. **Seguiti della revisione di architettura delle fasi 162-169**: le 8 voci in [`prossimi-lavori.md`](prossimi-lavori.md) («Dalla revisione di architettura delle fasi 162-169»): un solo «Home bloccata», pulizia delle impostazioni in `PlaylistOps.delete`, parti delle playlist guidate da `OfferService`, esenzione dai limiti dopo la validazione, pausa 429 del karaoke, `KaraokeRadio` fuori da `PlayerController`, helper delle liste miste, righe ombra create in un solo modo. Prompt: `/refactor` oppure una fase scritta a mano.
 1. Memoria della griglia (era la «fase 162» proposta il 25/11, mai scritta): RSS dopo il giro della libreria a 778 MB contro la soglia di 680; provare a limitare `imageCache` sul desktop o `cacheWidth` delle copertine della griglia, poi rimisurare. Numero di fase: 170.
 2. Release 1.8.0 con i tre refactor (alzare la versione, `release-notes/<versione>.md`, `python3 scripts/fdroid_version.py`, tag).
