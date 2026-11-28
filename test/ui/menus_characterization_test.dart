@@ -73,7 +73,7 @@ void _phone(WidgetTester tester) {
   addTearDown(tester.view.reset);
 }
 
-// ---- How a menu is opened and read: the ONLY part phase 61 changes. ----
+// ---- How a menu is opened and read. ----
 
 /// The entries shown now, in order (PopupMenu or action sheet).
 List<String> _shown(WidgetTester tester) => shownMenuEntries(
@@ -223,7 +223,7 @@ JamUiState _jam({required bool host}) => JamUiState(
   ),
 );
 
-// ---- Expected entries, in order: they stay the same in phase 61. ----
+// ---- Expected entries, in order. ----
 const _sleepIdle = ['15', '30', '45', '60', '-1'];
 const _sleepActive = ['15', '30', '45', '60', '-1', '0'];
 const _favoritesSort = [

@@ -6,7 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'merge_results_test.dart' show song, video, ytm, yt;
 
-// Characterization of phase 87: what the online results are today.
+// What the merged online results are (born as the phase 87 safety net).
 Map _card(String title, String pageType, String browseId) => {
       'musicCardShelfRenderer': {
         'title': {'runs': [{'text': title}]},

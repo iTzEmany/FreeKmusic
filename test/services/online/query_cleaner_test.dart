@@ -100,7 +100,8 @@ void main() {
   test('a pathological 20000-char title is cut and stays fast', () {
     final sw = Stopwatch()..start();
     cleanSearchQuery('[' * 20000, '');
-    expect(sw.elapsedMilliseconds, lessThan(200));
+    // Catastrophic backtracking on 20000 chars takes seconds; 1 s leaves room for a GC pause on CI.
+    expect(sw.elapsedMilliseconds, lessThan(1000));
   });
 
   test('extractPrimaryArtist', () {

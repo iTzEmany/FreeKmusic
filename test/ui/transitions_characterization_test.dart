@@ -1,5 +1,5 @@
-// Characterization of today's transitions (phase 38.3): behaviour that must
-// still hold after the "ui fluida" refactor.
+// Transitions (born as the 38.3 safety net of the "ui fluida" refactor): push and
+// pop of the player, TabFade, mini player swipe thresholds, cover Hero counts.
 import 'package:codecore/providers/nav_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/ui/screens/now_playing/now_playing_screen.dart';

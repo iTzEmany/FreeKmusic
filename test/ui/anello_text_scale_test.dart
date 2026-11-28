@@ -30,7 +30,7 @@ import '../support/memory_fakes.dart';
 import '../support/results_host.dart';
 import '../support/search_input.dart';
 
-/// Every screen of the redesign at 150 % text, 360x780, in the three themes:
+/// Every screen of the redesign at 150 % text, 360x780, each in one of the three themes:
 /// nothing may overflow, and every block label stays inside the screen.
 class _FakeJam extends JamController {
   @override
@@ -72,47 +72,47 @@ void main() {
     'AllTracks': (_) => const AllTracksScreen(),
     'Settings': (_) => const SettingsScreen(),
   };
-  for (final t in themes.entries) {
-    for (final s in screens.entries) {
-      testWidgets('${s.key} at 150 % in ${t.key}', (tester) async {
-        tester.view.physicalSize = const Size(360, 780);
-        tester.view.devicePixelRatio = 1;
-        addTearDown(tester.view.reset);
-        final h = await Harness.create(tester, tracks: 6);
-        // Real data, so the real layouts are drawn: a tag with tracks, a queue,
-        // a podcast with an author, an active jam. Search and the online artist
-        // page are not here (plan 2.4).
-        final podcastId = (await tester.runAsync(() async {
-          final ids = [for (final r in await h.db.select(h.db.tracks).get()) r.id];
-          final tag = await TagRepository(h.db).create('Live');
-          await TagRepository(h.db).assign(ids, tag);
-          await h.handler.playQueue(ids, 0);
-          return PodcastRepository(h.db).subscribe(
-            'https://x/feed',
-            const PodcastFeed(title: 'Un podcast con un titolo molto lungo', author: 'Autrice Lunga', episodes: []),
-            now: 1,
-          );
-        }))!;
-        await h.pump(tester, Scaffold(body: s.value(podcastId)),
-            textScale: 1.5, colors: t.value, extraOverrides: [
-              jamProvider.overrideWith(_FakeJam.new),
-              // Never a request to Apple from the Podcasts page.
-              podcastGenresProvider.overrideWith((ref) async => const []),
-              podcastChartProvider.overrideWith((ref, genre) async => const []),
-            ]);
-        await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
-        await tester.pump(const Duration(milliseconds: 400));
-        expect(tester.takeException(), isNull);
-        for (final blocks in find.byWidgetPredicate((w) => w is SegmentedBlocks).evaluate()) {
-          for (final text in find.descendant(of: find.byWidget(blocks.widget), matching: find.byType(Text)).evaluate()) {
-            final r = tester.getRect(find.byWidget(text.widget));
-            expect(r.left, greaterThanOrEqualTo(0));
-            expect(r.right, lessThanOrEqualTo(360), reason: 'a block label leaves the screen');
-          }
+  // Colours do not change the layout: one theme per screen, in rotation, keeps all three exercised.
+  for (final (i, s) in screens.entries.indexed) {
+    final t = themes.entries.elementAt(i % themes.length);
+    testWidgets('${s.key} at 150 % in ${t.key}', (tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final h = await Harness.create(tester, tracks: 6);
+      // Real data, so the real layouts are drawn: a tag with tracks, a queue,
+      // a podcast with an author, an active jam. Search and the online artist
+      // page are not here (plan 2.4).
+      final podcastId = (await tester.runAsync(() async {
+        final ids = [for (final r in await h.db.select(h.db.tracks).get()) r.id];
+        final tag = await TagRepository(h.db).create('Live');
+        await TagRepository(h.db).assign(ids, tag);
+        await h.handler.playQueue(ids, 0);
+        return PodcastRepository(h.db).subscribe(
+          'https://x/feed',
+          const PodcastFeed(title: 'Un podcast con un titolo molto lungo', author: 'Autrice Lunga', episodes: []),
+          now: 1,
+        );
+      }))!;
+      await h.pump(tester, Scaffold(body: s.value(podcastId)),
+          textScale: 1.5, colors: t.value, extraOverrides: [
+            jamProvider.overrideWith(_FakeJam.new),
+            // Never a request to Apple from the Podcasts page.
+            podcastGenresProvider.overrideWith((ref) async => const []),
+            podcastChartProvider.overrideWith((ref, genre) async => const []),
+          ]);
+      await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(tester.takeException(), isNull);
+      for (final blocks in find.byWidgetPredicate((w) => w is SegmentedBlocks).evaluate()) {
+        for (final text in find.descendant(of: find.byWidget(blocks.widget), matching: find.byType(Text)).evaluate()) {
+          final r = tester.getRect(find.byWidget(text.widget));
+          expect(r.left, greaterThanOrEqualTo(0));
+          expect(r.right, lessThanOrEqualTo(360), reason: 'a block label leaves the screen');
         }
-        await h.dispose(tester);
-      });
-    }
+      }
+      await h.dispose(tester);
+    });
   }
 
   // The matrix above renders Memoria on an unselected tab (empty). Here it is

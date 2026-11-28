@@ -1,5 +1,6 @@
-// Characterisation (phase 58): the seek behaviour of today, kept as it is until
-// phase 59/63 change it on purpose. Complements ring_progress_test.dart.
+// Seek on the ring and the bars: the arc geometry (fractionAt, the 40 deg gap),
+// seekDragProvider while dragging, seek only on release. Born as the phase 58
+// safety net; complements ring_progress_test.dart and seek_bar_test.dart.
 import 'dart:math' as math;
 
 import 'package:codecore/l10n/app_localizations.dart';

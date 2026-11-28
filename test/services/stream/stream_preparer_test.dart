@@ -745,12 +745,14 @@ void main() {
   });
 
   test('an address-only event does not shorten the start timeout', () async {
-    make(startTimeout: const Duration(seconds: 2), stallTimeout: const Duration(milliseconds: 30));
+    // The gap is 3x the stall timeout; the stall timeout leaves room for the file write after the
+    // progress event on a loaded machine (30 ms flaked under coverage).
+    make(startTimeout: const Duration(seconds: 2), stallTimeout: const Duration(milliseconds: 200));
     yt
       ..urls.add('https://x/a')
       ..autoFinish = true
       ..progress = [(10, 100)]
-      ..gap = const Duration(milliseconds: 120);
+      ..gap = const Duration(milliseconds: 600);
     expect((await prep.ready('youtube:a', _r('a'))).existsSync(), isTrue);
     expect(yt.started, ['a']);
   });

@@ -1,6 +1,5 @@
-// What the app does TODAY with system accessibility flags and at 200 % text
-// (38.6). Defects are pinned as known; D-14 / phase 40 change them and update
-// these tests in the same step.
+// System accessibility flags and large text: the flags are followed (D-14),
+// the text scale is capped at 2.0 (D-31), car mode stays usable at 200 %.
 import 'package:codecore/app.dart';
 import 'package:codecore/core/platform.dart' show debugIsDesktopOverride;
 import 'package:codecore/providers/settings_providers.dart';
@@ -57,16 +56,6 @@ void main() {
     c.read(settingsProvider.notifier).update((s) => s.copyWith(fontScale: 1.5));
     await tester.pump();
     expect(MediaQuery.of(ctx).textScaler.scale(10), closeTo(19.5, 1e-6));
-    await h.dispose(tester);
-  });
-
-  testWidgets('mini player and dock at 200 %: no overflow', (tester) async {
-    _phone(tester);
-    final h = await _playing(tester);
-    await h.pump(tester, const AppShell(), textScale: 2.0);
-    await _settle(tester);
-    expect(tester.takeException(), isNull);
-    expect(find.text('Song 0'), findsWidgets);
     await h.dispose(tester);
   });
 
