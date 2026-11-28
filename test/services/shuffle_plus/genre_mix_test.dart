@@ -204,6 +204,20 @@ void main() {
     expect(states.last.off, isNull);
   });
 
+  test('an offReason that throws ends in a stop state, not in silence', () async {
+    final states = await genreMix(
+      tracks: [for (var i = 1; i <= 6; i++) track(i)],
+      offReason: () async => throw StateError('probe'),
+      resolver: resolver,
+      radioPage: (id, {continuation}) async => page(id),
+      log: log,
+      filter: testGate(),
+      gate: gate,
+      loadInLibrary: () async => (r) => false,
+    ).toList();
+    expect(states.single.off, GenreMixOff.offline);
+  });
+
   test('fewer than 2 library songs: no slot at all', () async {
     expect(await run(1), isEmpty);
   });
