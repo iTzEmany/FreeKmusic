@@ -8819,4 +8819,75 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get smartMixSwitch => 'Ähnliche Songs hinzufügen, die du nicht hast';
+
+  @override
+  String get offerNothingToSend => 'Keiner dieser Titel kann gesendet werden';
+
+  @override
+  String offerPartialMissing(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent Titel',
+      one: '1 Titel',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Dateien fehlen',
+      one: '1 Datei fehlt',
+    );
+    return '$_temp0 von $total an $name gesendet: $_temp1';
+  }
+
+  @override
+  String offerPartialUnsupported(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent Titel',
+      one: '1 Titel',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n Streams außer YouTube nicht sendbar',
+      one: '1 Stream außer YouTube nicht sendbar',
+    );
+    return '$_temp0 von $total an $name gesendet: $_temp1';
+  }
+
+  @override
+  String offerPartialShadow(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent Titel',
+      one: '1 Titel',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n auf diesem Gerät nicht verfügbar',
+      one: '1 auf diesem Gerät nicht verfügbar',
+    );
+    return '$_temp0 von $total an $name gesendet: $_temp1';
+  }
+
+  @override
+  String offerPartialMixed(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent Titel',
+      one: '1 Titel',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n nicht sendbar',
+      one: '1 nicht sendbar',
+    );
+    return '$_temp0 von $total an $name gesendet: $_temp1';
+  }
 }

@@ -4534,5 +4534,74 @@
     }
   },
   "playlistAddFailed": "Impossible d’ajouter les titres à une playlist",
-  "smartMixSwitch": "Ajouter des titres similaires que vous n’avez pas"
+  "smartMixSwitch": "Ajouter des titres similaires que vous n’avez pas",
+  "offerNothingToSend": "Aucun de ces titres ne peut être envoyé",
+  "offerPartialMissing": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 fichier manquant} other{{n} fichiers manquants}}",
+  "@offerPartialMissing": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialUnsupported": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 flux non YouTube non envoyable} other{{n} flux non YouTube non envoyables}}",
+  "@offerPartialUnsupported": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialShadow": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 non disponible sur cet appareil} other{{n} non disponibles sur cet appareil}}",
+  "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialMixed": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 non envoyable} other{{n} non envoyables}}",
+  "@offerPartialMixed": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

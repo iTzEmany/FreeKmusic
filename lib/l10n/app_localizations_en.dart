@@ -8754,4 +8754,75 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get smartMixSwitch => 'Add similar songs you don’t have';
+
+  @override
+  String get offerNothingToSend => 'None of these tracks can be sent';
+
+  @override
+  String offerPartialMissing(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Sent $sent tracks',
+      one: 'Sent 1 track',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n files missing',
+      one: '1 file missing',
+    );
+    return '$_temp0 of $total to $name: $_temp1';
+  }
+
+  @override
+  String offerPartialUnsupported(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Sent $sent tracks',
+      one: 'Sent 1 track',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n non-YouTube streams cannot be sent',
+      one: '1 non-YouTube stream cannot be sent',
+    );
+    return '$_temp0 of $total to $name: $_temp1';
+  }
+
+  @override
+  String offerPartialShadow(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Sent $sent tracks',
+      one: 'Sent 1 track',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n not available on this device',
+      one: '1 not available on this device',
+    );
+    return '$_temp0 of $total to $name: $_temp1';
+  }
+
+  @override
+  String offerPartialMixed(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Sent $sent tracks',
+      one: 'Sent 1 track',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n cannot be sent',
+      one: '1 cannot be sent',
+    );
+    return '$_temp0 of $total to $name: $_temp1';
+  }
 }

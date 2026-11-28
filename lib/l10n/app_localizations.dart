@@ -13698,6 +13698,36 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Aggiungi brani simili che non hai'**
   String get smartMixSwitch;
+
+  /// No description provided for @offerNothingToSend.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuno di questi brani si può inviare'**
+  String get offerNothingToSend;
+
+  /// No description provided for @offerPartialMissing.
+  ///
+  /// In it, this message translates to:
+  /// **'{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 file mancante} other{{n} file mancanti}}'**
+  String offerPartialMissing(int sent, int total, String name, int n);
+
+  /// No description provided for @offerPartialUnsupported.
+  ///
+  /// In it, this message translates to:
+  /// **'{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 streaming non YouTube, non inviabile} other{{n} streaming non YouTube, non inviabili}}'**
+  String offerPartialUnsupported(int sent, int total, String name, int n);
+
+  /// No description provided for @offerPartialShadow.
+  ///
+  /// In it, this message translates to:
+  /// **'{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 non disponibile su questo dispositivo} other{{n} non disponibili su questo dispositivo}}'**
+  String offerPartialShadow(int sent, int total, String name, int n);
+
+  /// No description provided for @offerPartialMixed.
+  ///
+  /// In it, this message translates to:
+  /// **'{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 non si può inviare} other{{n} non si possono inviare}}'**
+  String offerPartialMixed(int sent, int total, String name, int n);
 }
 
 class _AppLocalizationsDelegate

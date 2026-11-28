@@ -468,14 +468,23 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
 
   // ---- sending -------------------------------------------------------------
 
-  /// Sends an offer (metadata only) to [peer]. Returns false if delivery fails.
-  Future<bool> sendOffer(Peer peer, List<Track> tracks) async {
+  /// Sends an offer (metadata only) to [peer]; the outcome says what travelled and what was dropped.
+  Future<SendOutcome> sendOffer(Peer peer, List<Track> tracks) async {
     await _ensureRunning();
     final service = _service;
     final node = _node;
-    if (service == null || node == null || node.port == null) return false;
-    final entries = await buildShareEntries(ref, tracks);
-    if (entries.isEmpty) return false;
+    if (service == null || node == null || node.port == null) return SendOutcome.unreachable(tracks.length);
+    final built = await buildShareEntriesCounted(ref, tracks);
+    final entries = built.entries;
+    SendOutcome outcome(SendStatus s) => SendOutcome(
+      s,
+      total: tracks.length,
+      sent: s == SendStatus.sent ? entries.length : 0,
+      missing: built.missing,
+      unsupported: built.unsupported,
+      shadow: built.shadow,
+    );
+    if (entries.isEmpty) return outcome(SendStatus.nothingToSend);
     final offer = service.createOutgoing(
       toId: peer.id,
       toName: peer.name,
@@ -492,12 +501,13 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
             pin: _pinOf(peer.id),
           );
       _publish();
-      return true;
+      return outcome(SendStatus.sent);
     } on LanException catch (e) {
+      AppLog.w('send offer to ${peer.name} failed', e);
       offer.status = OfferStatus.failed;
       state = state.copyWith(error: e.error);
       service.notify();
-      return false;
+      return outcome(SendStatus.unreachable);
     }
   }
 
@@ -825,8 +835,39 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       tlsPort: request.tlsPort,
       platform: 'other',
     );
-    final ok = await sendOffer(to, tracks);
-    return ok ? tracks.length : 0;
+    return (await sendOffer(to, tracks)).sent;
+  }
+}
+
+enum SendStatus { sent, nothingToSend, unreachable }
+
+/// Result of [ShareHubNotifier.sendOffer]: [sent] tracks travelled out of [total]; the rest were dropped by reason.
+class SendOutcome {
+  const SendOutcome(this.status, {required this.total, this.sent = 0, this.missing = 0, this.unsupported = 0, this.shadow = 0});
+  const SendOutcome.unreachable(int total) : this(SendStatus.unreachable, total: total);
+
+  final SendStatus status;
+  final int total, sent, missing, unsupported, shadow;
+
+  /// Everything went (no dropped track).
+  bool get complete => status == SendStatus.sent && sent == total;
+
+  /// The ready-to-show message for a sheet or tab; a single shared drop reason is named.
+  String message(AppLocalizations l, String peerName) {
+    switch (status) {
+      case SendStatus.unreachable:
+        return l.shareErrUnreachable;
+      case SendStatus.nothingToSend:
+        return l.offerNothingToSend;
+      case SendStatus.sent:
+        if (complete) return l.offerSent(peerName);
+        final n = total - sent;
+        // One shared reason names it; mixed reasons say only how many could not go.
+        if (n == missing) return l.offerPartialMissing(sent, total, peerName, n);
+        if (n == unsupported) return l.offerPartialUnsupported(sent, total, peerName, n);
+        if (n == shadow) return l.offerPartialShadow(sent, total, peerName, n);
+        return l.offerPartialMixed(sent, total, peerName, n);
+    }
   }
 }
 

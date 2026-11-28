@@ -8855,4 +8855,75 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get smartMixSwitch =>
       'Ajouter des titres similaires que vous n’avez pas';
+
+  @override
+  String get offerNothingToSend => 'Aucun de ces titres ne peut être envoyé';
+
+  @override
+  String offerPartialMissing(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent titres envoyés',
+      one: '1 titre envoyé',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n fichiers manquants',
+      one: '1 fichier manquant',
+    );
+    return '$_temp0 sur $total à $name : $_temp1';
+  }
+
+  @override
+  String offerPartialUnsupported(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent titres envoyés',
+      one: '1 titre envoyé',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n flux non YouTube non envoyables',
+      one: '1 flux non YouTube non envoyable',
+    );
+    return '$_temp0 sur $total à $name : $_temp1';
+  }
+
+  @override
+  String offerPartialShadow(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent titres envoyés',
+      one: '1 titre envoyé',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n non disponibles sur cet appareil',
+      one: '1 non disponible sur cet appareil',
+    );
+    return '$_temp0 sur $total à $name : $_temp1';
+  }
+
+  @override
+  String offerPartialMixed(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: '$sent titres envoyés',
+      one: '1 titre envoyé',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n non envoyables',
+      one: '1 non envoyable',
+    );
+    return '$_temp0 sur $total à $name : $_temp1';
+  }
 }

@@ -14,7 +14,7 @@ Codice: `playlist_detail_screen.dart:113-114` (filtro `kind != kStreamKind`); `D
 `_offerWanted` (:811-830); `buildShareEntries` (`lib/providers/share_providers.dart:76-112`).
 
 ## Task
-- [ ] 165.1 Test di caratterizzazione (nessun codice di prodotto)
+- [x] 165.1 Test di caratterizzazione (nessun codice di prodotto)
   - File: `test/services/share/offers_test.dart`, `test/data/stream_rows_hidden_test.dart` (o un nuovo `test/providers/share_entries_test.dart`),
     `test/services/share/received_meta_test.dart`.
   - Passi: 1) `buildShareEntries`: un file passa con `path`; uno streaming salvato YouTube passa con `streamKey` e `path` vuoto; uno salvato SoundCloud,
@@ -24,14 +24,14 @@ Codice: `playlist_detail_screen.dart:113-114` (filtro `kind != kStreamKind`); `D
   - Comando mirato: `flutter test test/services/share/offers_test.dart test/data/stream_rows_hidden_test.dart test/services/share/received_meta_test.dart`
     (più il file nuovo, se creato)
   - Fatto quando: i test nuovi passano senza toccare `lib/`.
-- [ ] 165.2 La playlist passa tutti gli id
+- [x] 165.2 La playlist passa tutti gli id
   - File: `playlist_detail_screen.dart` (togliere il filtro a :114 e l'import di `kStreamKind` se resta inutile), un test widget del menu
     (es. `test/ui/playlist_detail_send_test.dart` o un file di caratterizzazione esistente dei menu).
   - Passi: 1) `DevicesSheet.show(context, trackIds: [for (final t in tracks) t.id])`; 2) test: una playlist con un file, uno streaming salvato e una
     riga ombra apre il foglio con i tre id (la scelta di cosa viaggia resta a `buildShareEntries`).
   - Comando mirato: `flutter test <file del test>` (più `flutter analyze`)
   - Fatto quando: test verde; i test della 165.1 restano verdi senza modifiche.
-- [ ] 165.3 Esito dell'invio e messaggi
+- [x] 165.3 Esito dell'invio e messaggi
   - File: `share_hub.dart` (`sendOffer` restituisce un esito, es. `({int sent, int missing, int unsupported})` o una classe piccola, con un caso
     «niente da inviare» distinto da «non raggiungibile»; `_offerWanted` adattato), `share_providers.dart` (`buildShareEntries` conta gli scartati per
     motivo: file mancante, streaming non YouTube, riga ombra), `devices_sheet.dart`, `send_tab.dart`, ARB delle 6 lingue con `scripts/arb_add.py`
@@ -46,3 +46,7 @@ Codice: `playlist_detail_screen.dart:113-114` (filtro `kind != kStreamKind`); `D
 Niente.
 
 ## Note di deviazione
+
+- **165.1** Quasi tutto era già coperto (`stream_rows_hidden_test`, `offers_test` :105/:248/:263, `received_meta_test` :219/:235): aggiunto solo il caso «riga ombra e file mancante non partono».
+- **165.2** Il menu «Invia a un dispositivo» compare per ogni playlist con brani, anche di soli streaming (prima era nascosto: contraddiceva D-759; test di `collection_pages_test` invertito di proposito).
+- **165.3** `sendOffer` restituisce `SendOutcome` (inviati, mancanti, streaming non YouTube, righe ombra; «niente da inviare» distinto da «non raggiungibile»); `buildShareEntries` resta come involucro di `buildShareEntriesCounted`. Messaggio parziale: il motivo solo se tutti gli scartati hanno lo stesso, altrimenti «K non si possono inviare»; plurali ICU. `/want` ora conta in `offered` i brani che partono davvero (formato invariato). Dalla review: menu, numero del motivo e plurali corretti; `AppLog` sull'errore di rete.

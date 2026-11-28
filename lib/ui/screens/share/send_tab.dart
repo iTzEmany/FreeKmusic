@@ -73,11 +73,11 @@ class _SendTabState extends ConsumerState<SendTab> {
       showMsg(context, l.offerChooseFirst);
       return;
     }
-    final ok = await ref
+    final out = await ref
         .read(shareHubProvider.notifier)
         .sendOffer(peer, tracks);
     if (!mounted) return;
-    showMsg(context, ok ? l.offerSent(peer.name) : l.shareErrUnreachable);
+    showMsg(context, out.message(l, peer.name));
   }
 
   void _startJam(Peer peer) {

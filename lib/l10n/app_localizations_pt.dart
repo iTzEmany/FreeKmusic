@@ -8793,4 +8793,75 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get smartMixSwitch => 'Adicionar músicas parecidas que você não tem';
+
+  @override
+  String get offerNothingToSend => 'Nenhuma destas músicas pode ser enviada';
+
+  @override
+  String offerPartialMissing(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent músicas',
+      one: 'Enviada 1 música',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n arquivos em falta',
+      one: '1 arquivo em falta',
+    );
+    return '$_temp0 de $total para $name: $_temp1';
+  }
+
+  @override
+  String offerPartialUnsupported(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent músicas',
+      one: 'Enviada 1 música',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n streams que não são do YouTube não podem ser enviados',
+      one: '1 stream que não é do YouTube não pode ser enviado',
+    );
+    return '$_temp0 de $total para $name: $_temp1';
+  }
+
+  @override
+  String offerPartialShadow(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent músicas',
+      one: 'Enviada 1 música',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n não disponíveis neste dispositivo',
+      one: '1 não disponível neste dispositivo',
+    );
+    return '$_temp0 de $total para $name: $_temp1';
+  }
+
+  @override
+  String offerPartialMixed(int sent, int total, String name, int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      sent,
+      locale: localeName,
+      other: 'Enviadas $sent músicas',
+      one: 'Enviada 1 música',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: '$n não podem ser enviadas',
+      one: '1 não pode ser enviada',
+    );
+    return '$_temp0 de $total para $name: $_temp1';
+  }
 }

@@ -72,8 +72,21 @@ Future<String?> localIpAddress() async {
   return null;
 }
 
+/// The entries that travel plus how many tracks were dropped, by reason.
+class ShareEntries {
+  const ShareEntries(this.entries, {this.missing = 0, this.unsupported = 0, this.shadow = 0});
+  final List<ShareEntry> entries;
+
+  /// File flagged missing; stream that is not YouTube; stream row not saved (shadow).
+  final int missing, unsupported, shadow;
+}
+
 /// Tracks -> shareable entries (paths stay on this side of the connection).
-Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async {
+Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async =>
+    (await buildShareEntriesCounted(ref, tracks)).entries;
+
+/// Like [buildShareEntries], also counting the dropped tracks by reason.
+Future<ShareEntries> buildShareEntriesCounted(Ref ref, List<Track> tracks) async {
   final dir = ref.read(coversDirProvider);
   String? coverPath(Track t) {
     final k = t.coverKey;
@@ -87,12 +100,24 @@ Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async {
 
   final credits = ref.read(creditsRepositoryProvider);
   final entries = <ShareEntry>[];
+  var missing = 0, unsupported = 0, shadow = 0;
   final extra = await credits.portableOfMany([for (final t in tracks) t.id]);
   for (final t in tracks) {
     // A saved stream has no file: only its key and metadata travel (D-674); a shadow row is not offered.
     final streamKey = t.kind == kStreamKind ? keyOfStreamPath(t.path) : null;
     // Only YouTube keys travel: a SoundCloud id has no link the receiver can replay.
-    if (t.missing || (t.kind == kStreamKind && (!t.saved || streamKey == null || !streamKey.startsWith('youtube:')))) continue;
+    if (t.missing) {
+      missing++;
+      continue;
+    }
+    if (t.kind == kStreamKind && !t.saved) {
+      shadow++;
+      continue;
+    }
+    if (t.kind == kStreamKind && (streamKey == null || !streamKey.startsWith('youtube:'))) {
+      unsupported++;
+      continue;
+    }
     final c = extra[t.id]!;
     entries.add(ShareEntry(
       id: t.id,
@@ -108,7 +133,7 @@ Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async {
       meta: TrackMeta.fromTrack(t, credits: c.credits, details: c.details),
     ));
   }
-  return entries;
+  return ShareEntries(entries, missing: missing, unsupported: unsupported, shadow: shadow);
 }
 
 class ShareController {
