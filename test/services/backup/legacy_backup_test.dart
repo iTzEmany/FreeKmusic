@@ -93,6 +93,11 @@ void main() {
     expect(prefs.containsKey('playlistSorts'), isFalse);
   });
 
+  test('a full restore of a backup without playlistShuffles drops the device ones (their ids are other playlists)', () async {
+    final prefs = await restoreWith({'playlistShuffles': '{"1":"plus","smart:2":"shuffle"}'}, _fixture);
+    expect(prefs.containsKey('playlistShuffles'), isFalse);
+  });
+
   test('a full restore of a backup holding playlistSorts takes the backup ones', () async {
     final a = Archive();
     for (final f in ZipDecoder().decodeBytes(_fixture.readAsBytesSync()).files) {

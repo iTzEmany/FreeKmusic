@@ -433,14 +433,52 @@ final shuffleModeProvider = Provider<ShuffleMode>((ref) {
       : (plus ? ShuffleMode.plus : ShuffleMode.shuffle);
 });
 
+/// The key of a playlist's «Casuale» (a normal one by id, or a smart one): its mode is saved in the settings.
+class PlaylistShuffleKey {
+  const PlaylistShuffleKey(this.id, {this.smart = false});
+  final int id;
+  final bool smart;
+
+  /// The key in `playlistShuffles`.
+  String get storeKey => smart ? 'smart:$id' : '$id';
+
+  @override
+  bool operator ==(Object other) =>
+      other is PlaylistShuffleKey && other.id == id && other.smart == smart;
+  @override
+  int get hashCode => Object.hash(id, smart);
+}
+
 /// The mode a list page's «Casuale» control holds for the list's own next Play
-/// (D-534); in memory, off by default.
+/// (D-534): saved in the settings for a playlist ([PlaylistShuffleKey]), in
+/// memory (off by default) for any other key.
 class ListShuffle extends Notifier<ShuffleMode> {
   ListShuffle(this.key);
   final Object key;
   @override
-  ShuffleMode build() => ShuffleMode.off;
-  void set(ShuffleMode m) => state = m;
+  ShuffleMode build() {
+    final k = key;
+    if (k is! PlaylistShuffleKey) return ShuffleMode.off;
+    final saved = ref.watch(
+      settingsProvider.select((s) => s.playlistShuffles[k.storeKey]),
+    );
+    return ShuffleMode.values.asNameMap()[saved] ?? ShuffleMode.off;
+  }
+
+  void set(ShuffleMode m) {
+    state = m;
+    final k = key;
+    if (k is! PlaylistShuffleKey) return;
+    ref.read(settingsProvider.notifier).update((s) {
+      final map = {...s.playlistShuffles};
+      if (m == ShuffleMode.off) {
+        map.remove(k.storeKey);
+      } else {
+        map[k.storeKey] = m.name;
+      }
+      return s.copyWith(playlistShuffles: map);
+    });
+  }
 }
 
 final listShuffleProvider =

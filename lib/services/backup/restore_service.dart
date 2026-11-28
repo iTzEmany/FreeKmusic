@@ -67,6 +67,7 @@ const _customThemesKey = 'customThemes';
 /// of this device's session, which mean nothing (or something wrong) here.
 const kMergeSkippedKeys = {
   'playlistSorts', // playlist ids
+  'playlistShuffles', // playlist ids
   unsyncedLyricsKey, // track ids
   manualRomanizationKey, // track ids
   handWrittenLyricsKey, // track ids
@@ -293,6 +294,7 @@ Future<bool> applyPendingRestore({
     // Playlist ids belong to the replaced database: an older backup without
     // the key must not leave sorts pointing at other playlists (D-424).
     await prefs.remove('playlistSorts');
+    await prefs.remove('playlistShuffles');
     // Track ids too: the set belongs to the replaced database (D-472).
     await prefs.remove(unsyncedLyricsKey);
     await prefs.remove(manualRomanizationKey);

@@ -46,6 +46,19 @@ void main() {
     expect(added, ['7:[42]']);
   });
 
+  test('addto:5 parses to playlist 5; addto:, addto:x and foo add nothing', () async {
+    expect(parseAddToPlaylistTag('addto:5'), 5);
+    for (final t in ['addto:', 'addto:x', 'foo', null]) {
+      expect(parseAddToPlaylistTag(t), isNull, reason: '$t');
+    }
+    settled.add(_item(DownloadStatus.done, tag: 'addto:5', path: '/m/a.m4a'));
+    for (final t in ['addto:', 'addto:x', 'foo']) {
+      settled.add(_item(DownloadStatus.done, tag: t, path: '/m/a.m4a'));
+    }
+    await pumpEventQueue();
+    expect(added, ['5:[42]']);
+  });
+
   test('a failed download adds nothing', () async {
     settled.add(_item(DownloadStatus.failed, tag: addToPlaylistTag(7)));
     await pumpEventQueue();

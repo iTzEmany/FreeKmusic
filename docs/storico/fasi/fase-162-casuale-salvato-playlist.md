@@ -14,7 +14,7 @@ Codice: `ListShuffle`, `listShuffleProvider`, `listKeyOf` (`lib/providers/shuffl
 `lib/services/backup/restore_service.dart:69, :295`, pulizia alla cancellazione in `playlist_detail_screen.dart:145`.
 
 ## Task
-- [ ] 162.1 Test di caratterizzazione (nessun codice di prodotto)
+- [x] 162.1 Test di caratterizzazione (nessun codice di prodotto)
   - File: `test/providers/list_shuffle_test.dart`, `test/providers/pending_playlist_adds_test.dart`, `test/ui/create_flows_test.dart`,
     `test/data/settings_store_test.dart`, `test/services/shuffle_plus/genre_mix_test.dart`, `test/ui/smart_playlists_test.dart`.
   - Passi: 1) il «Casuale» di album, artista e lista online sta in memoria con chiave `listKeyOf` e non scrive nelle impostazioni;
@@ -23,7 +23,7 @@ Codice: `ListShuffle`, `listShuffleProvider`, `listKeyOf` (`lib/providers/shuffl
     6) la pagina di una playlist intelligente mostra solo brani della libreria. Tutti verdi sul codice di oggi.
   - Comando mirato: `flutter test test/providers/list_shuffle_test.dart test/providers/pending_playlist_adds_test.dart test/ui/create_flows_test.dart test/data/settings_store_test.dart test/services/shuffle_plus/genre_mix_test.dart test/ui/smart_playlists_test.dart`
   - Fatto quando: i test nuovi passano senza toccare `lib/`.
-- [ ] 162.2 Modalità salvata nelle impostazioni
+- [x] 162.2 Modalità salvata nelle impostazioni
   - File: `settings_store.dart` (mappa `playlistShuffles`: chiave `'<id>'` per le playlist, `'smart:<id>'` per le intelligenti, valore
     `off|shuffle|plus`), `settings_sync.dart` (esclusa come `playlistSorts`), `restore_service.dart` (azzerata come `playlistSorts`),
     cancellazione di playlist normale e intelligente (togliere la voce, come `:145`), test in `settings_store_test.dart`, `settings_sync_test.dart`,
@@ -32,7 +32,7 @@ Codice: `ListShuffle`, `listShuffleProvider`, `listKeyOf` (`lib/providers/shuffl
     3) ripristino completo la toglie; 4) eliminare una playlist toglie la sua voce.
   - Comando mirato: `flutter test test/data/settings_store_test.dart test/services/share/settings_sync_test.dart test/services/backup/restore_service_test.dart test/services/backup/legacy_backup_test.dart`
   - Fatto quando: i quattro comportamenti sono coperti da test verdi.
-- [ ] 162.3 Il «Casuale» delle playlist letto e scritto per id
+- [x] 162.3 Il «Casuale» delle playlist letto e scritto per id
   - File: `shuffle_plus_providers.dart` (una chiave di playlist, es. `PlaylistShuffleKey(id, smart)`, che `ListShuffle` legge e scrive nelle
     impostazioni; le altre chiavi restano in memoria), `player_providers.dart` (`isPlayingList` riconosce la playlist che suona anche con la chiave
     nuova: stesso `_listKey` passato da Play), `playlist_detail_screen.dart`, `smart_playlist_screen.dart` (pill e Play con la stessa chiave nuova),
@@ -47,3 +47,7 @@ Codice: `ListShuffle`, `listShuffleProvider`, `listKeyOf` (`lib/providers/shuffl
 Niente.
 
 ## Note di deviazione
+
+- **162.1** Comportamento 5 (pagina genere: uno ogni 2, al massimo 9) già coperto da `genre_mix_test.dart`: nessun test nuovo. Il round trip di `playlistSorts` (punto 4) è in `settings_store_test.dart`, scritto con la 162.2.
+- **162.2** `off` toglie la voce invece di salvare `"off"`; `playlistShuffles` sta anche in `kMergeSkippedKeys` (come `playlistSorts`). Restano voci orfane se una playlist sparisce da una sync remota o con le playlist d'album nascoste: stessa cosa di `playlistSorts`, innocue.
+- **162.3** `PlaylistShuffleKey(id, smart)`; i test della 162.3 sono in `test/providers/playlist_shuffle_test.dart` e `test/ui/playlist_shuffle_delete_test.dart` (non in `list_shuffle_test.dart`, per lasciare intatti quelli della 162.1). Dalla review: anche il tocco di una riga passa la chiave (`playFromList(listKey:)`), altrimenti la playlist che suona non era riconosciuta.

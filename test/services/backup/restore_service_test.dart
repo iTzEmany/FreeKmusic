@@ -1026,6 +1026,7 @@ void main() {
         'trustedDevices': '[2]',
         'jamLatencyMs': 40,
         'playlistSorts': '{"1":"mine"}',
+        'playlistShuffles': '{"1":"plus"}',
         'lastQueueIds': ['1'],
         'customThemes': themesJson([('t2', 'Local', '/x/y.jpg')]),
       });
@@ -1049,6 +1050,7 @@ void main() {
       expect(prefs.getString('trustedDevices'), '[2]');
       expect(prefs.getInt('jamLatencyMs'), 40);
       expect(prefs.getString('playlistSorts'), '{"1":"mine"}');
+      expect(prefs.getString('playlistShuffles'), '{"1":"plus"}');
       expect(prefs.getStringList('lastQueueIds'), ['1']);
     });
 

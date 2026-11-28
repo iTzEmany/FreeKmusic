@@ -60,7 +60,7 @@ _Spec _whole(
 /// `downloadParallel`, `downloadRateLimitKBps`, `enrichOnMetered`, `prefetchOnMobile`, `shufflePlusUnmeteredOnly`),
 /// the storage mode, the files written to (`writeTagsToFiles`, `tagsAlsoInFile`, `writeTagsAfterDownload`), the
 /// launcher icon, the layout (`libraryGrid`), places (`radioCountry`, `radioRegion`, `chartCountry`, `radioOnlyCountry`),
-/// ids of this library (`playlistSorts`) and the state of this install (`onboardingFinished`, `ytNoticeSeen`,
+/// ids of this library (`playlistSorts`, `playlistShuffles`) and the state of this install (`onboardingFinished`, `ytNoticeSeen`,
 /// `recentSearches`, `recordHistory`), and `acoustId` (it sends audio fingerprints to an outside service: each device decides). A custom theme (`custom:…`) is not a valid `theme` value: its colours stay here.
 final Map<String, _Spec> _synced = {
   'theme': _choice((s) => s.theme, (s, v) => s.copyWith(theme: v), const [

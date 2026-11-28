@@ -6,6 +6,7 @@ import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/providers/filter_counts_providers.dart';
 import 'package:codecore/services/library/rules/rule_ast.dart';
+import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/library/rules/rule_parser.dart';
 import 'package:codecore/ui/screens/smart/smart_filter_model.dart';
 import 'package:codecore/ui/screens/smart/smart_playlist_editor.dart';
@@ -59,6 +60,22 @@ void main() {
       expect(find.byType(SmartCover), findsOneWidget);
       expect(find.text('Aggiungi brani'), findsNothing, reason: 'read-only');
       expect(find.byType(ReorderableDragStartListener), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('only library tracks: an unsaved stream row matching the rule is not shown', (tester) async {
+      h = await Harness.create(tester, tracks: 2);
+      repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
+      const r = YtResult(id: 'v', title: 'Online one', channel: 'artist', duration: Duration(seconds: 9));
+      await tester.runAsync(() => TrackRepository(h.db).ensureStreamRow(r));
+      final id = await make(tester, 'Tutti', 'artista:artist');
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await h.pump(tester, SmartPlaylistScreen(id: id));
+      await _settle(tester);
+      expect(_row('Song 0'), findsOneWidget);
+      expect(_row('Online one'), findsNothing);
       await h.dispose(tester);
     });
 

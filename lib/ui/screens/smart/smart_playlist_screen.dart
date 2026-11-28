@@ -26,7 +26,7 @@ import '../../widgets/track_row.dart';
 import '../../widgets/track_row_selection.dart';
 import 'smart_playlist_editor.dart';
 import '../../widgets/show_msg.dart';
-import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../../providers/shuffle_plus_providers.dart' show PlaylistShuffleKey;
 import '../../widgets/action_catalog.dart';
 
 /// A smart playlist: its tracks come from the rules and change by themselves,
@@ -71,6 +71,11 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
     );
     if (!ok) return;
     await ref.read(playlistOpsProvider).deleteSmart(p.id);
+    ref.read(settingsProvider.notifier).update(
+      (s) => s.copyWith(
+        playlistShuffles: {...s.playlistShuffles}..remove('smart:${p.id}'),
+      ),
+    );
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -94,7 +99,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
       visibleIds: [for (final t in shown) t.id],
     );
     // One key for the pill and Play: they must be the same list (D-534).
-    final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
+    final shuffleKey = PlaylistShuffleKey(id, smart: true);
     return SelectionScope(
       listKey: key,
       visibleIds: selection.visibleIds,
@@ -190,7 +195,7 @@ class _SmartPlaylistScreenState extends ConsumerState<SmartPlaylistScreen> {
                 track: shown[i],
                 compact: compact,
                 selection: selection,
-                onTap: () => ctrl.playFromList(tracks, whole(shown[i]), context: playCtx),
+                onTap: () => ctrl.playFromList(tracks, whole(shown[i]), context: playCtx, listKey: shuffleKey),
               ),
             ),
           ),

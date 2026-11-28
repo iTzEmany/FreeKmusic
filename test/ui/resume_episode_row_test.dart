@@ -30,6 +30,7 @@ class _Spy implements PlayerController {
     List<Track> snapshot,
     int index, {
     PlayContext? context,
+    Object? listKey,
   }) async => played.add([for (final t in snapshot) t.id]);
   @override
   dynamic noSuchMethod(Invocation invocation) => null;

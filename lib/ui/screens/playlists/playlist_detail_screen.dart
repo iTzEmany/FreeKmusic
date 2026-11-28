@@ -13,7 +13,7 @@ import '../../../providers/player_providers.dart';
 import '../../../providers/playlist_ops.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
-import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../../providers/shuffle_plus_providers.dart' show PlaylistShuffleKey;
 import '../../../services/share/share_fragment.dart' show SharedKind;
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
@@ -142,7 +142,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         if (!ok) return;
         await ops.delete(id);
         ref.read(settingsProvider.notifier).update(
-          (s) => s.copyWith(playlistSorts: {...s.playlistSorts}..remove('$id')),
+          (s) => s.copyWith(
+            playlistSorts: {...s.playlistSorts}..remove('$id'),
+            playlistShuffles: {...s.playlistShuffles}..remove('$id'),
+          ),
         );
         if (mounted) Navigator.of(context).pop();
     }
@@ -287,6 +290,8 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         (ref.watch(isFavoriteCollectionProvider((kind: favoritePlaylistKind, key: widget.playlist.uuid!))).value ?? false);
     final ctrl = ref.read(playerControllerProvider);
     final playCtx = PlayContext(PlayContextKind.playlist, _name);
+    // One key for the pill, Play and a row tap: they must be the same list (D-534).
+    final shuffleKey = PlaylistShuffleKey(id);
     // The mosaic follows the personal order, never the view order (D-424).
     final coverKeys = playlistCoverKeys(custom, stored.map((t) => t.coverKey));
     final durationMs = tracks.fold<int>(0, (a, t) => a + t.durationMs);
@@ -371,13 +376,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
           () => remove(t, whole(t)),
         ),
         // The queue is the whole playlist in the order shown, not just a search.
-        onPlay: (t, _) => ctrl.playFromList(tracks, whole(t), context: playCtx),
+        onPlay: (t, _) => ctrl.playFromList(tracks, whole(t), context: playCtx, listKey: shuffleKey),
       );
     }
 
-    // One key for the pill and Play: they must be the same list (D-534).
-
-    final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
 
     return SelectionScope(
       listKey: key,

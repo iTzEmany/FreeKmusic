@@ -64,6 +64,7 @@ Regole del blocco:
 ### Shuffle e ripetizione
 
 - `ShuffleMode {off, shuffle, plus}`; `cycleShuffle`, `cycleListShuffle` (D-534). `repeat` è `PlayQueue.repeat` (`PlayRepeat {off, all, one}`), salvato anche in `AppSettings.repeat`.
+- Il «Casuale» di una playlist (normale o intelligente) è salvato: `PlaylistShuffleKey(id, smart)` è la chiave di `ListShuffle`, che legge e scrive `AppSettings.playlistShuffles` (`'<id>'` / `'smart:<id>'` → `off|shuffle|plus`; fuori dalla sync, azzerata dal ripristino, tolta all'eliminazione). Le altre chiavi (`listKeyOf`, `libraryListKey`) restano in memoria.
 - Shuffle+: `ShufflePlusController` inserisce brani secondo `insertion_plan`. Salta il blocco utente (`plusPlan(skip: userAhead)`).
 - `plus_allowed` dice quando Shuffle+ è bloccato: `ShufflePlusBlock {jam, shortList, noTool, metered, stopped, online, radio}`.
 - Skip = lasciare un brano prima degli ultimi 3 s (D-497).
