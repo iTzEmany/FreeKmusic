@@ -6,7 +6,7 @@ vale ovunque (player intero, barra desktop, MPRIS) e anche dopo un riavvio. ▶ 
 piccola) il pulsante resta su Casuale e spiega il motivo a ogni tocco. Le altre liste girano spento → Casuale → Casuale+ come oggi (D-534).
 
 ## Riferimenti
-Refactor `../refactor/karaoke-casuale/analisi.md` (F-09..F-15, «Scelte», «Direzione», «Rete»). Decisioni del refactor «karaoke-casuale» in
+Refactor `../refactor/karaoke-casuale/analisi.md` (F-09..F-15, «Scelte», «Direzione», «Rete»). Decisioni D-765..D-771 (refactor «karaoke-casuale») in
 `../decisioni.md`: «Casuale su tutto» mai spento (supera in parte D-72, D-137, D-369), Casuale+ non possibile, struttura, intoccabili.
 Architettura: `../architettura/riproduzione-e-coda.md` («Shuffle e ripetizione»). Prerequisito: fase 167. Indipendente dalla 168.
 Attenzione: la fase 162 (refactor «playlist-aggiungi-e-casuale», D-749/D-750) cambia anche `ListShuffle` e `list_shuffle_test.dart`; se è già

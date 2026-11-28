@@ -7,7 +7,7 @@ trova suona solo il brano scelto. I brani non karaoke si comportano come oggi.
 Fuori: karaoke avviati da cronologia, playlist o coda (nessuna sessione, come oggi); Jam (D-89).
 
 ## Riferimenti
-Refactor `../refactor/karaoke-casuale/analisi.md` (F-01..F-08, «Scelte», «Direzione», «Rete»). Decisioni del refactor «karaoke-casuale» in
+Refactor `../refactor/karaoke-casuale/analisi.md` (F-01..F-08, «Scelte», «Direzione», «Rete»). Decisioni D-765..D-771 (refactor «karaoke-casuale») in
 `../decisioni.md`: coda solo karaoke, ritmo delle ricerche, struttura, intoccabili. Architettura: `../architettura/riproduzione-e-coda.md`.
 Prerequisito: fase 167. Indipendente dalla 169.
 Codice: `playFromSearch` (`player_providers.dart:491-549`, seme a :511-513, `SimilarQueue` a :522), `_similarId` (:553);

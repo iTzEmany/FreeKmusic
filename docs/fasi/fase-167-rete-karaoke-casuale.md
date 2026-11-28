@@ -5,7 +5,7 @@ Fissare con test il comportamento di oggi che le fasi 168 (karaoke) e 169 («Cas
 Nessun codice di prodotto: `lib/` non si tocca.
 
 ## Riferimenti
-Refactor `../refactor/karaoke-casuale/analisi.md` («Rete», «Direzione»). Decisioni del refactor «karaoke-casuale» in `../decisioni.md`
+Refactor `../refactor/karaoke-casuale/analisi.md` («Rete», «Direzione»). Decisioni D-765..D-771 (refactor «karaoke-casuale») in `../decisioni.md`
 (intoccabili compresi). Architettura: `../architettura/riproduzione-e-coda.md`.
 Codice: `playFromSearch` (`lib/providers/player_providers.dart:491-549`), `SimilarQueue` (`lib/services/shuffle_plus/similar_queue.dart:67-181`),
 `isKaraokeVideo`/`jamKaraokeVideoId` (`lib/services/karaoke_video/karaoke_video.dart:19-27`), `karaokeResults` (`lib/services/online/karaoke_filter.dart:4-31`),

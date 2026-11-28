@@ -131,13 +131,13 @@ Diagnosi confermata dall'utente. Tutti i risultati F-01..F-15 sono **scelti**; n
 - **Casuale su tutto** (F-14, F-11, F-09, F-13, F-10, F-12, F-15): Casuale ↔ Casuale+ e mai spento, per quella coda ovunque
   (Home, player intero, barra desktop, MPRIS) e dopo un riavvio (chiave della lista salvata nelle preferenze). ▶ parte su Casuale.
   Casuale+ impossibile → resta su Casuale con l'avviso a ogni tocco.
-- **Intoccabili**: vedi il file decisioni (refactor «karaoke-casuale», intoccabili). In breve: le altre liste, D-534, D-634/D-646,
+- **Intoccabili**: D-770. In breve: le altre liste, D-534, D-634/D-646,
   D-89, regole di Shuffle+, schema del DB, `PlayContextKind`, nessun pacchetto nuovo.
 - **Obiettivo**: comportamento nuovo con il minimo di codice nuovo; il ciclo del casuale in un solo punto.
 - **Audacia**: ritocchi per parti (nessuna riscrittura di modulo).
 
 ## Direzione (giro 3)
-Nessun mockup: nessuna parte visiva cambia (decisione «Niente mockup per karaoke-casuale»).
+Nessun mockup: nessuna parte visiva cambia (D-771).
 
 ### Karaoke: prima → dopo
 | Prima | Dopo |
