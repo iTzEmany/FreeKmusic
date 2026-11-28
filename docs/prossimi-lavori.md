@@ -40,6 +40,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 Rinvii di codice delle review e delle schegge, per area; ogni voce rimanda alla fase di origine in `storico/`. Le prove su telefono sono nella fase 147, «Tocca a te».
 
 ### Riproduzione e coda
+- **Mix senza risultati muto** (28 nov, fase 164): pagina genere e playlist intelligente, se nessun seme si risolve su YouTube Music o le radio non danno nulla il mix finisce con `off == null`: niente righe, niente scritta, niente log. Proposta: `GenreMixOff.empty` con una scritta «nessun brano simile trovato» (6 lingue) e un `AppLog.i`; aggiornare il test «a radio that fails ends with… off null».
 - **Riquadro Radio del Riprendi**: se la stazione suona già il tocco la riavvia (`playStations`); Android Auto mette il contesto a null (`codecore_audio_handler.dart:525,531`), quindi radio e album avviati dall'auto compaiono come «Brano» ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
 - **Griglia del Riprendi a 3 colonne**: la soglia è sul blocco (560 dp), su desktop serve una finestra di circa 1324 dp: rivedere la soglia o documentarla ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
 - **Riquadro Daylist** visibile per 90 giorni anche quando la daylist non può partire (`daylist_providers.dart:374`, ritorno silenzioso): nasconderlo o avvisare ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
