@@ -1,5 +1,5 @@
 # Handoff
-Aggiornato: 2026-11-28 · Stato: refactor «playlist-aggiungi-e-casuale» **pianificato** (fasi 162-164, decisioni del 28/11); il precedente «desktop-e-coerenza» è chiuso (fasi 150-161, D-748); Flutter 3.47.9; schema DB invariato (v24).
+Aggiornato: 2026-11-28 · Stato: refactor «playlist-aggiungi-e-casuale» **pianificato** (fasi 162-164, D-749..D-758); il precedente «desktop-e-coerenza» è chiuso (fasi 150-161, D-748); Flutter 3.47.9; schema DB invariato (v24).
 
 ## Prossima sessione
 Prossimo obiettivo consigliato: **refactor «playlist-aggiungi-e-casuale»**, fasi 162 → 163 → 164 in [`fasi/`](fasi/README.md): Casuale salvato per playlist, «Aggiungi alla playlist» a più playlist con ricerca e «Crea «…»», brani simili che non hai nelle playlist intelligenti. Prompt: `/pilot phase 162`.
@@ -18,7 +18,7 @@ Altri obiettivi possibili:
 - [ ] Posizione della finestra ripristinata su un desktop vero (sotto Xvfb torna solo la dimensione).
 
 ## Da sapere
-- Refactor «playlist-aggiungi-e-casuale»: analisi, scelte, direzione e rete in `refactor/playlist-aggiungi-e-casuale/analisi.md`; mockup approvato (variante A) in `mockups/playlist-aggiungi-e-casuale/variante-a.html` (la variante B è scartata, resta per confronto); decisioni del 28/11 in coda a `decisioni.md`.
+- Refactor «playlist-aggiungi-e-casuale»: analisi, scelte, direzione e rete in `refactor/playlist-aggiungi-e-casuale/analisi.md`; mockup approvato (variante A) in `mockups/playlist-aggiungi-e-casuale/variante-a.html` (la variante B è scartata, resta per confronto); D-749..D-758.
 - Fasi del refactor e note di deviazione: `storico/fasi/fase-150-*.md` … `fase-161-*.md`; decisioni D-714..D-748.
 - Avvii di prova su Linux: sempre Xvfb, HOME finto **vuoto e nuovo**, `FREEKMUSIC_NON_UNIQUE=1` (istanza unica dalla 158); vedi `.claude/obiettivo.md`.
 - Pacchetti desktop: window_manager 0.6, tray_manager 0.8.3 su `nativeapi` (FFI con hook di build: in CI servono `libgtk-3-dev libx11-dev libxi-dev`), desktop_drop 0.8 (D-747).

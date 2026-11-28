@@ -6,8 +6,7 @@ brani, dopo un cambio di ordinamento. Prima si fissa con test il comportamento c
 Fuori: il «Casuale» delle altre pagine di lista (album, artisti, generi, online, Home) e quello del player restano come oggi (D-534).
 
 ## Riferimenti
-Refactor `../refactor/playlist-aggiungi-e-casuale/analisi.md` (F-01, F-02, «Scelte», «Rete»). Decisioni del 28/11 «Casuale delle playlist salvato»
-e «dettagli» (supera in parte D-534), «Intoccabili». Architettura: `../architettura/riproduzione-e-coda.md`.
+Refactor `../refactor/playlist-aggiungi-e-casuale/analisi.md` (F-01, F-02, «Scelte», «Rete»). Decisioni D-749, D-750 (supera in parte D-534), D-754 (intoccabili). Architettura: `../architettura/riproduzione-e-coda.md`.
 Codice: `ListShuffle`, `listShuffleProvider`, `listKeyOf` (`lib/providers/shuffle_plus_providers.dart:436-453`); `PlayerController.playMixed`,
 `_cycleList`, `isPlayingList` (`lib/providers/player_providers.dart`); `_modeOf`, `ShufflePill` (`lib/ui/widgets/shuffle_button.dart`);
 `playlist_detail_screen.dart:380` (chiave = hash degli id); `smart_playlist_screen.dart`; modello `playlistSorts` in

@@ -76,13 +76,13 @@ Diagnosi confermata dall'utente (28/11). Si affrontano **tutti** i risultati F-0
 
 | Risultato | Soluzione scelta | Decisione |
 |---|---|---|
-| F-01, F-02 | «Casuale» salvato per id di playlist (normali e smart), tre modalità, solo su questo dispositivo, voce cancellata con la playlist | D-? «Casuale salvato», D-? «dettagli» |
-| F-03 | Spunte + pulsante «Aggiungi a N playlist»; righe già piene spuntate e bloccate | D-? «scelta multipla» |
-| F-04 | `pickPlaylist` → lista; vale in ogni ingresso «Aggiungi alla playlist» | D-? «scelta multipla» |
-| F-05 | Etichetta `addto:<id>,<id>,…` | D-? «download in più playlist» |
-| F-06 | Il campo filtra; riga «Crea «<testo>»» finché nessun nome è identico; crea e spunta, il foglio resta aperto | D-? «campo in alto» |
-| F-07 | La ricerca vale solo in modalità «aggiungi»; «Nuova playlist» invariato | D-? «campo in alto» |
-| F-08 | Righe online nella pagina della playlist intelligente come le pagine genere; semi dalla playlist + controllo di artista, album, durata; interruttore per playlist acceso di base, salvato nelle impostazioni | D-? «brani che non hai», «interruttore e dettagli», «dove si salva» |
+| F-01, F-02 | «Casuale» salvato per id di playlist (normali e smart), tre modalità, solo su questo dispositivo, voce cancellata con la playlist | D-749, D-750 |
+| F-03 | Spunte + pulsante «Aggiungi a N playlist»; righe già piene spuntate e bloccate | D-751 |
+| F-04 | `pickPlaylist` → lista; vale in ogni ingresso «Aggiungi alla playlist» | D-751 |
+| F-05 | Etichetta `addto:<id>,<id>,…` | D-753 |
+| F-06 | Il campo filtra; riga «Crea «<testo>»» finché nessun nome è identico; crea e spunta, il foglio resta aperto | D-752 |
+| F-07 | La ricerca vale solo in modalità «aggiungi»; «Nuova playlist» invariato | D-752 |
+| F-08 | Righe online nella pagina della playlist intelligente come le pagine genere; semi dalla playlist + controllo di artista, album, durata; interruttore per playlist acceso di base, salvato nelle impostazioni | D-756, D-757, D-758 |
 
 Obiettivo: comportamento chiesto dall'utente con la modifica più piccola; nessuna riscrittura (audacia: ritocchi mirati).
 
@@ -95,7 +95,7 @@ che non si chiude al tocco; campo in alto che filtra.
 ## Direzione
 Stile: quello già approvato nel refactor «desktop-e-coerenza» (token in `lib/ui/theme/tokens.dart`, D-723..D-732); nessuna direzione nuova.
 
-- **Foglio «Aggiungi alla playlist»**: variante A, `docs/mockups/playlist-aggiungi-e-casuale/variante-a.html` (approvata il 28/11, D-? «mockup»).
+- **Foglio «Aggiungi alla playlist»**: variante A, `docs/mockups/playlist-aggiungi-e-casuale/variante-a.html` (approvata il 28/11, D-755).
   Stati: (b) appena aperto con 2 scelte e 1 bloccata, (c) «rock» filtrato con «Crea «rock»», (d) nessuna corrispondenza con suggerimento vuoto;
   desktop come dialogo di 480 px. Componenti di casa: `ListTile` di oggi a 64 px, `Checkbox` del tema, `FilledButton` a tutta larghezza.
 - **Righe suggerite nella playlist intelligente**: nessun mockup nuovo; la specifica visiva è la pagina genere di oggi

@@ -6,8 +6,7 @@ già fanno le pagine genere; un interruttore per playlist (acceso di base) li to
 o anno per candidato (nessuna richiesta di rete in più).
 
 ## Riferimenti
-Refactor `../refactor/playlist-aggiungi-e-casuale/analisi.md` (F-08, «Direzione», «Rete»). Decisioni del 28/11 «brani che non hai»,
-«interruttore e dettagli», «dove si salva l'interruttore»; D-380 (mix delle pagine genere), D-437, D-468 («Non mi piace»).
+Refactor `../refactor/playlist-aggiungi-e-casuale/analisi.md` (F-08, «Direzione», «Rete»). Decisioni D-756, D-757, D-758; D-380 (mix delle pagine genere), D-437, D-468 («Non mi piace»).
 Architettura: `../architettura/riproduzione-e-coda.md` («Shuffle+ e simili»). Specifica visiva: pagina genere di oggi
 (`lib/ui/screens/search/genre_screen.dart`), nessun mockup nuovo.
 Codice: `genreMix`, `genreMixOf`, `interleave`, `GenreMixOff` (`lib/services/shuffle_plus/genre_mix.dart`), `genreMixProvider`
@@ -48,8 +47,7 @@ Codice: `genreMix`, `genreMixOf`, `interleave`, `GenreMixOff` (`lib/services/shu
     `../mockups/playlist-aggiungi-e-casuale/variante-a.html` (stati b, c, d, dialogo desktop), Casuale di una playlist dopo riavvio, playlist
     intelligente con righe suggerite; 2) Mi A3 via `~/.claude/scripts/device.sh` (volume 0, mai toccare i file musicali): stessi flussi più un
     brano da Cerca in due playlist in modalità dispositivo; 3) `../architettura/riproduzione-e-coda.md` (Casuale salvato per playlist, mix delle
-    playlist intelligenti) e `../architettura/ui-e-design.md` (foglio a scelta multipla); indice per area di `../decisioni.md` con le decisioni
-    del 28/11; 4) cartella del refactor archiviata in `../storico/refactor/playlist-aggiungi-e-casuale/` (anche i mockup) e riga in `../decisioni.md`
+    playlist intelligenti) e `../architettura/ui-e-design.md` (foglio a scelta multipla); indice per area di `../decisioni.md` con D-749..D-758; 4) cartella del refactor archiviata in `../storico/refactor/playlist-aggiungi-e-casuale/` (anche i mockup) e riga in `../decisioni.md`
     che chiude il refactor.
   - Comando mirato: il comando delle metriche in `analisi.md` («Rete», «Metriche di chiusura»)
   - Fatto quando: esito delle prove scritto qui sotto; test mirati verdi; `flutter analyze` pulito.

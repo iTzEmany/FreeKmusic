@@ -6,8 +6,7 @@ più playlist con un'unica azione; il campo in alto del foglio filtra le playlis
 
 ## Riferimenti
 Refactor `../refactor/playlist-aggiungi-e-casuale/analisi.md` (F-03..F-07, «Rete»). Mockup **variante A**:
-`../mockups/playlist-aggiungi-e-casuale/variante-a.html` (stati b, c, d e dialogo desktop). Decisioni del 28/11 «scelta multipla», «campo in alto»,
-«download in più playlist», «mockup», «Intoccabili»; D-405, D-411 (foglio unico).
+`../mockups/playlist-aggiungi-e-casuale/variante-a.html` (stati b, c, d e dialogo desktop). Decisioni D-751, D-752, D-753, D-755, D-754 (intoccabili); D-405, D-411 (foglio unico).
 Codice: `lib/ui/widgets/playlist_sheet.dart`, `lib/ui/screens/playlists/playlist_picker.dart`, `playlist_dialogs.dart` (`addedToPlaylistText`,
 `showAddToPlaylistSheet`), `lib/ui/widgets/track_actions.dart` (:149-162, :841-857), `online_album_screen.dart`, `suggested_info.dart`,
 `bulk_actions.dart`, `album_card.dart`, `album_detail_screen.dart`, `create_flows.dart`; `lib/providers/pending_playlist_adds.dart`,
