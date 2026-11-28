@@ -1,3 +1,6 @@
+import 'package:codecore/l10n/l10n_ext.dart';
+import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
+import 'package:codecore/ui/widgets/shuffle_plus_text.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:codecore/providers/jam_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
@@ -343,4 +346,30 @@ void main() {
     expect(find.byType(SnackBar), findsNothing);
     await h.dispose(tester);
   });
+
+  // The full player and the desktop bar use the same button (the bar: size 20, no dot).
+  for (final (name, button) in [
+    ('the full player button', const ShuffleModeButton()),
+    ('the desktop bar button', const ShuffleModeButton(size: 20, dot: false)),
+  ]) {
+    testWidgets('$name on a 6-track library queue: full cycle, no notice', (tester) async {
+      final h = await Harness.create(tester, tracks: 6);
+      final all = await localIds(tester, h);
+      final c = await startWith(tester, h, button, all);
+      expect(await cycle(tester, c, 3), full);
+      expect(find.byType(SnackBar), findsNothing);
+      await h.dispose(tester);
+    });
+
+    testWidgets('$name on a 4-track queue: shuffle, off with the notice, shuffle', (tester) async {
+      final h = await Harness.create(tester, tracks: 6);
+      final all = await localIds(tester, h);
+      final c = await startWith(tester, h, button, all.take(4).toList());
+      expect(await cycle(tester, c, 2), [ShuffleMode.shuffle, ShuffleMode.off]);
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.textContaining(shufflePlusBlockText(
+        tester.element(find.byType(Scaffold)).l10n, ShufflePlusBlock.shortList)), findsOneWidget);
+      await h.dispose(tester);
+    });
+  }
 }

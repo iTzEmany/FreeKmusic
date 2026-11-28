@@ -1,7 +1,10 @@
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/services/jam/jam_models.dart';
 import 'package:codecore/services/karaoke_video/karaoke_video.dart';
-import 'package:codecore/services/online/youtube_service.dart' show YtException;
+import 'package:codecore/services/online/karaoke_filter.dart';
+import 'package:codecore/services/online/merge_results.dart';
+import 'package:codecore/services/online/query_match.dart' show MediaKind;
+import 'package:codecore/services/online/youtube_service.dart' show YtException, YtResult;
 import 'package:flutter_test/flutter_test.dart';
 
 Track track(String path, String title) => Track(
@@ -25,6 +28,10 @@ Track track(String path, String title) => Track(
   kind: 0,
   addedAt: 1,
   playCount: 0,
+);
+
+JamItem item(String title, {String? ref, String? videoId = 'abc'}) => JamItem(
+  id: 1, ownerDeviceId: 'd', title: title, ext: 'm4a', ref: ref, videoId: videoId,
 );
 
 void main() {
@@ -67,9 +74,6 @@ void main() {
   });
 
   group('jamKaraokeVideoId', () {
-    JamItem item(String title, {String? ref, String? videoId = 'abc'}) => JamItem(
-      id: 1, ownerDeviceId: 'd', title: title, ext: 'm4a', ref: ref, videoId: videoId,
-    );
     test('a streamed YouTube karaoke item gives its id', () {
       expect(jamKaraokeVideoId(item('Hello Karaoke', ref: 'yt:youtube:abc')), 'abc');
     });
@@ -79,5 +83,42 @@ void main() {
     test('a library item never has a video (D-636)', () {
       expect(jamKaraokeVideoId(item('Hello Karaoke', ref: '42')), isNull);
     });
+  });
+
+  // The three karaoke rules of today side by side: the player (isKaraokeVideo), the Jam
+  // (jamKaraokeVideoId) and the search filter (karaokeResults). The filter alone also
+  // drops reactions, covers and lives; the other two only look for the word.
+  group('the three rules on the same titles', () {
+    for (final (title, player, jam, filter) in [
+      ('Hello (Karaoke Version)', true, true, true),
+      ('HELLO KARAOKE', true, true, true),
+      ('hello karaoke', true, true, true),
+      ('Hello Karaokes', true, true, true),
+      ('Hello - Karaoke Version - Instrumental', true, true, true),
+      ('Hello (Instrumental)', false, false, false),
+      ('Hello', false, false, false),
+      ('Hello (Karaoké)', false, false, false), // an accent is not the word
+      ('KARAOKÉ Hello', false, false, false),
+      ('Hello KARAOKE reaction', true, true, false),
+      ('Hello karaoke reactions', true, true, false),
+      ('Hello - karaoke cover', true, true, false),
+      ('Hello (Live) karaoke', true, true, false),
+      ('Hello [Cover] karaoke', true, true, false),
+      ('Hello - live karaoke', true, true, false),
+      ('Live Forever (Karaoke Version)', true, true, true),
+    ]) {
+      test('«$title»: player $player, Jam $jam, filter $filter', () {
+        expect(isKaraokeVideo(track('online:youtube:abc', title)), player);
+        expect(jamKaraokeVideoId(item(title, ref: 'yt:youtube:abc')), jam ? 'abc' : isNull);
+        final r = SmartResult(
+          primary: YtResult(id: 'abc', title: title, channel: 'Someone', duration: null),
+          sources: {MediaKind.ytVideo},
+          alternatives: const [],
+          confidence: 0.5,
+          hasVideo: false,
+        );
+        expect(karaokeResults([r]).length, filter ? 1 : 0);
+      });
+    }
   });
 }

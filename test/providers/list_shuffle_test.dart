@@ -277,6 +277,78 @@ void main() {
       await lists.playAll(tracks, listKey: 'k');
       expect(handler.shuffleEnabled, isFalse);
     });
+
+    // The «Casuale» of any list (not the library, not a playlist): the cycle of today.
+    Future<List<ShuffleMode>> table(PlayerController c, Object key, int taps, {List<int>? ids}) async {
+      final out = <ShuffleMode>[];
+      for (var i = 0; i < taps; i++) {
+        await c.cycleListShuffle(key, ids: ids);
+        out.add(modes[key]!);
+      }
+      return out;
+    }
+
+    test('table, list playing: off → Casuale → Casuale+ → off, the real queue follows each step', () async {
+      plus = false;
+      await lists.playAll(tracks, listKey: 'k');
+      await pumpEventQueue();
+      final seen = <(ShuffleMode, bool, bool)>[];
+      for (var i = 0; i < 3; i++) {
+        await lists.cycleListShuffle('k');
+        seen.add((modes['k']!, handler.shuffleEnabled, plus));
+      }
+      expect(seen, [
+        (ShuffleMode.shuffle, true, false),
+        (ShuffleMode.plus, true, true),
+        (ShuffleMode.off, false, false),
+      ]);
+    });
+
+    test('table, Shuffle+ blocked: off → Casuale → off with the reason, playing or not', () async {
+      final blocked = PlayerController(
+        handler,
+        null,
+        shufflePlus: () => plus,
+        setShufflePlus: (on) => plus = on,
+        listMode: (k) => modes[k] ?? ShuffleMode.off,
+        setListMode: (k, m) => modes[k] = m,
+        plusBlock: (_) async => ShufflePlusBlock.shortList,
+        random: _LastPick(),
+      );
+      plus = false;
+      // Not playing: only the stored mode moves, the reason comes with the step to off.
+      expect(await blocked.cycleListShuffle('n'), isNull);
+      expect(modes['n'], ShuffleMode.shuffle);
+      expect(await blocked.cycleListShuffle('n'), ShufflePlusBlock.shortList);
+      expect(modes['n'], ShuffleMode.off);
+      expect(await blocked.cycleListShuffle('n'), isNull);
+      expect(modes['n'], ShuffleMode.shuffle);
+      // Playing: the real queue goes the same way.
+      await blocked.playAll(tracks, listKey: 'p');
+      await pumpEventQueue();
+      expect(await blocked.cycleListShuffle('p'), isNull);
+      expect((modes['p'], handler.shuffleEnabled), (ShuffleMode.shuffle, true));
+      expect(await blocked.cycleListShuffle('p'), ShufflePlusBlock.shortList);
+      expect((modes['p'], handler.shuffleEnabled, plus), (ShuffleMode.off, false, false));
+    });
+
+    test('table, not playing and allowed: off → Casuale → Casuale+ → off, in a row', () async {
+      expect(await table(lists, 'z', 4), [ShuffleMode.shuffle, ShuffleMode.plus, ShuffleMode.off, ShuffleMode.shuffle]);
+    });
+
+    test('an online list (no Casuale+): off → Casuale → off, on the playing queue too', () async {
+      plus = false;
+      expect(await lists.cycleListShuffle('o', plus: false), isNull);
+      expect(modes['o'], ShuffleMode.shuffle);
+      expect(await lists.cycleListShuffle('o', plus: false), isNull);
+      expect(modes['o'], ShuffleMode.off);
+      await lists.playAll(tracks, listKey: 'o');
+      await pumpEventQueue();
+      await lists.cycleListShuffle('o', plus: false);
+      expect((modes['o'], handler.shuffleEnabled), (ShuffleMode.shuffle, true));
+      await lists.cycleListShuffle('o', plus: false);
+      expect((modes['o'], handler.shuffleEnabled), (ShuffleMode.off, false));
+    });
   });
 
   test('a replayed suggestion is logged once', () async {
