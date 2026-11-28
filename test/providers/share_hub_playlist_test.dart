@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/database_providers.dart';
+import 'package:codecore/providers/library_providers.dart' show coversDirProvider;
 import 'package:codecore/providers/settings_providers.dart';
 import 'package:codecore/providers/share_hub.dart';
 import 'package:codecore/providers/share_providers.dart' show lanClientProvider;
@@ -22,6 +23,8 @@ import 'package:codecore/services/share/offers.dart';
 import 'package:codecore/services/share/playlist_parts.dart';
 import 'package:codecore/services/share/received_playlist.dart';
 import 'package:codecore/services/stream/stream_key.dart' show streamResultOf;
+import 'package:codecore/services/share/discovery.dart' show Peer;
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -35,6 +38,18 @@ OfferRef st(String key) => (item: null, stream: key);
 class _NoNetClient extends LanClient {
   @override
   Future<void> offerAction(String host, int port, String offerId, String action, String token, {int? tlsPort, String? pin}) async {}
+}
+
+/// An old receiver: a part with nothing it can read (no files, no streams[]) is a 400.
+class _OldReceiverClient extends LanClient {
+  final sentParts = <int>[];
+
+  @override
+  Future<void> sendOffer(String host, int port, Map<String, Object?> payload, {int? tlsPort, String? pin}) async {
+    final part = (payload['playlist']! as Map)['part']! as int;
+    if ((payload['items']! as List).isEmpty && !payload.containsKey('streams')) throw const LanException(LanError.failed);
+    sentParts.add(part);
+  }
 }
 
 IncomingOffer _offer(String id, {List<StreamOffer> streams = const [], OfferPlaylist? playlist}) => IncomingOffer(
@@ -233,6 +248,27 @@ void main() {
         downloadIndexProvider.overrideWith((ref) => DownloadIndex(File('${tmp.path}/idx.json'))),
       ]);
       addTearDown(c.dispose);
+    });
+
+    test('sender: a part refused with 400 (shadow rows only, old receiver) does not stop the next parts; it counts as unsupported', () async {
+      final client = _OldReceiverClient();
+      final c2 = ProviderContainer(overrides: [
+        settingsStoreProvider.overrideWithValue(SettingsStore(await SharedPreferences.getInstance())),
+        databaseProvider.overrideWithValue(db),
+        lanClientProvider.overrideWithValue(client),
+        coversDirProvider.overrideWithValue(Directory.systemTemp),
+      ]);
+      addTearDown(c2.dispose);
+      final rows = <Track>[];
+      for (var i = 0; i < 501; i++) {
+        final id = await tracks.ensureStreamRow(streamResultOf(ykey(i), title: 'T$i', artist: 'A', album: '', durationMs: 1000));
+        if (i == 500) await (db.update(db.tracks)..where((t) => t.id.equals(id))).write(const TracksCompanion(saved: Value(true)));
+        rows.add(await (db.select(db.tracks)..where((t) => t.id.equals(id))).getSingle());
+      }
+      final out = await c2.read(shareHubProvider.notifier).sendOffer(
+          const Peer(id: 'p', name: 'P', host: '127.0.0.1', port: 9, platform: 'linux'), rows, playlistName: 'Mix');
+      expect(client.sentParts, [2]);
+      expect((out.status, out.sent, out.unsupported, out.total), (SendStatus.sent, 1, 500, 501));
     });
 
     test('shadow stream without a valid playlist is never saved to the library', () async {

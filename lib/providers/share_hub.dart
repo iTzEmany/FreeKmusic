@@ -486,13 +486,13 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     if (service == null || node == null || node.port == null) return SendOutcome.unreachable(tracks.length);
     final built = await buildShareEntriesCounted(ref, tracks, withShadow: playlistName != null);
     final entries = built.entries;
-    var sent = 0;
+    var sent = 0, refused = 0;
     SendOutcome outcome(SendStatus s) => SendOutcome(
       s,
       total: tracks.length,
       sent: sent,
       missing: built.missing,
-      unsupported: built.unsupported,
+      unsupported: built.unsupported + refused,
       shadow: built.shadow,
     );
     if (entries.isEmpty) return outcome(SendStatus.nothingToSend);
@@ -507,18 +507,28 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
         entries: parts[i],
         playlist: name == null ? null : (key: key, name: name, part: i + 1, parts: parts.length),
       );
+      final payload = service.offerPayload(offer, node.port!, tlsPort: node.tlsPort);
       try {
         await ref
             .read(lanClientProvider)
             .sendOffer(
               peer.host,
               peer.port,
-              service.offerPayload(offer, node.port!, tlsPort: node.tlsPort),
+              payload,
               tlsPort: peer.tlsPort,
               pin: _pinOf(peer.id),
             );
         sent += parts[i].length;
       } on LanException catch (e) {
+        // An older receiver answers 400 to a part of only unsaved rows (nothing it can read): the part is
+        // unsupported there, the next ones may still go.
+        if (e.error == LanError.failed && (payload['items'] as List).isEmpty && !payload.containsKey('streams')) {
+          AppLog.w('send offer to ${peer.name}: part ${i + 1} refused (shadow rows only)', e);
+          offer.status = OfferStatus.failed;
+          refused += parts[i].length;
+          service.notify();
+          continue;
+        }
         AppLog.w('send offer to ${peer.name} failed', e);
         offer.status = OfferStatus.failed;
         state = state.copyWith(error: e.error);
@@ -528,7 +538,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       }
     }
     _publish();
-    return outcome(sent > 0 ? SendStatus.sent : SendStatus.unreachable);
+    return outcome(sent > 0 || refused > 0 ? SendStatus.sent : SendStatus.unreachable);
   }
 
   Future<void> cancelOutgoing(OutgoingOffer offer, Peer? peer) async {

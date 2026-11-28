@@ -185,6 +185,41 @@ void main() {
         expect(seen.single.streams.single.shadow, true);
       });
 
+      test('shadow rows: a key also in streams[] is deduped, uncited rows are dropped, items+streams+shadow stay within 500', () async {
+        String k(int i) => 'youtube:${i.toString().padLeft(11, 'a')}';
+        Map<String, Object?> row(String key) => {'key': key, 'title': 't'};
+        final r = await post('/', {
+          ...offerBody(items: []),
+          'streams': [row(k(1))],
+          'playlist': {
+            ...pl,
+            'order': [{'stream': k(1)}, {'stream': k(2)}],
+            'shadow': [row(k(1)), row(k(2)), row(k(3))],
+          },
+        });
+        expect(r.statusCode, 202);
+        expect(seen.single.playlist!.shadow.map((s) => s.key), [k(2)]);
+        expect(seen.single.streams.map((s) => (s.key, s.shadow)), [(k(1), false), (k(2), true)]);
+        ip = '192.168.1.61';
+        final none = await post('/', {
+          ...offerBody(id: 'o2'),
+          'playlist': {...pl, 'order': [{'item': 1}], 'shadow': [row(k(3))]},
+        });
+        expect(none.statusCode, 202);
+        expect(seen.last.playlist!.shadow, isEmpty);
+        ip = '192.168.1.62';
+        final over = await post('/', {
+          ...offerBody(id: 'o3', items: []),
+          'streams': [row(k(900))],
+          'playlist': {
+            ...pl,
+            'order': [for (var i = 0; i < 500; i++) {'stream': k(i)}],
+            'shadow': [for (var i = 0; i < 700; i++) row(k(i))],
+          },
+        });
+        expect(over.statusCode, 400);
+      });
+
       test('splitParts cuts in runs of 500, in order', () {
         final parts = splitParts([for (var i = 0; i < 1200; i++) i]);
         expect(parts.map((e) => e.length), [500, 500, 200]);

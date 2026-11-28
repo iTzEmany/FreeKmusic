@@ -201,12 +201,13 @@ class OfferPlaylist {
     if (part is! int || parts is! int || parts < 1 || parts > 1000 || part < 1 || part > parts) return null;
     if (order is! List || order.length > maxOfferItems) return null;
     final rawShadow = raw['shadow'];
-    final seen = {...streamKeys};
-    final shadow = <StreamOffer>[
+    final known = {...streamKeys};
+    final candidates = <String, StreamOffer>{
       if (rawShadow is List)
         for (final r in rawShadow.take(maxOfferItems))
-          if (StreamOffer.tryParse(r, shadow: true) case final s? when seen.add(s.key)) s,
-    ];
+          if (StreamOffer.tryParse(r, shadow: true) case final s? when !known.contains(s.key)) s.key: s,
+    };
+    final seen = {...known, ...candidates.keys};
     final refs = <OfferRef>[];
     for (final e in order) {
       if (e is! Map) continue;
@@ -217,6 +218,9 @@ class OfferPlaylist {
         refs.add((item: null, stream: stream));
       }
     }
+    // Only the shadow rows the order cites are kept.
+    final cited = {for (final r in refs) ?r.stream};
+    final shadow = [for (final s in candidates.values) if (cited.contains(s.key)) s];
     return OfferPlaylist(key: key, name: clean, part: part, parts: parts, order: refs, shadow: shadow);
   }
 }
@@ -538,6 +542,7 @@ class OfferService {
       );
       // Shadow rows exist only inside a valid playlist (D-761); the receiver sees them with the other streams.
       final shadow = playlist?.shadow ?? const <StreamOffer>[];
+      if (rawItems.length + streams.length + shadow.length > maxOfferItems) return Response(400, body: 'bad request');
       if (rawItems.isEmpty && streams.isEmpty && shadow.isEmpty) return Response(400, body: 'bad request');
       if (incoming.containsKey(offerId)) {
         return Response(409, body: 'duplicate');
