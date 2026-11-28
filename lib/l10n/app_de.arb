@@ -4277,5 +4277,57 @@
   "closeToTrayHint": "Das Schließen des Fensters lässt die Musik im Hintergrund weiterspielen, mit dem Menü im Infobereich. Unter Linux aus: GNOME zeigt den Infobereich nur mit der AppIndicator-Erweiterung.",
   "closeToTrayUnavailable": "Dieser Desktop hat keinen Infobereich: das Fenster wird immer geschlossen.",
   "dropHint": "Zum Abspielen loslassen",
-  "dropRejected": "Nur Audiodateien ablegen, keine Ordner"
+  "dropRejected": "Nur Audiodateien ablegen, keine Ordner",
+  "offerNothingToSend": "Keiner dieser Titel kann gesendet werden",
+  "offerPartialMissing": "{sent} von {total} Titeln an {name} gesendet: {n} Dateien fehlen",
+  "@offerPartialMissing": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialUnsupported": "{sent} von {total} Titeln an {name} gesendet: {n} Streams außer YouTube, nicht sendbar",
+  "@offerPartialUnsupported": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialShadow": "{sent} von {total} Titeln an {name} gesendet: {n} auf diesem Gerät nicht verfügbar",
+  "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

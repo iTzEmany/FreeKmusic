@@ -5006,5 +5006,57 @@
   "closeToTrayHint": "Chiudere la finestra lascia la musica in sottofondo, con il menu nella barra di sistema. Spento su Linux: GNOME mostra la barra solo con l'estensione AppIndicator.",
   "closeToTrayUnavailable": "Questo desktop non ha una barra di sistema: la finestra si chiude sempre.",
   "dropHint": "Rilascia per ascoltare",
-  "dropRejected": "Trascina solo file audio, non cartelle"
+  "dropRejected": "Trascina solo file audio, non cartelle",
+  "offerNothingToSend": "Nessuno di questi brani si può inviare",
+  "offerPartialMissing": "Inviati {sent} brani su {total} a {name}: {n} file mancanti",
+  "@offerPartialMissing": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialUnsupported": "Inviati {sent} brani su {total} a {name}: {n} streaming non YouTube, non inviabili",
+  "@offerPartialUnsupported": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialShadow": "Inviati {sent} brani su {total} a {name}: {n} non disponibili su questo dispositivo",
+  "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

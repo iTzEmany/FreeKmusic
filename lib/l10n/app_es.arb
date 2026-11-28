@@ -4277,5 +4277,57 @@
   "closeToTrayHint": "Cerrar la ventana deja la música sonando de fondo, con el menú en la bandeja del sistema. Desactivado en Linux: GNOME muestra la bandeja solo con la extensión AppIndicator.",
   "closeToTrayUnavailable": "Este escritorio no tiene bandeja del sistema: la ventana siempre se cierra.",
   "dropHint": "Suelta para escuchar",
-  "dropRejected": "Suelta solo archivos de audio, no carpetas"
+  "dropRejected": "Suelta solo archivos de audio, no carpetas",
+  "offerNothingToSend": "Ninguna de estas canciones se puede enviar",
+  "offerPartialMissing": "Enviadas {sent} de {total} canciones a {name}: {n} archivos no encontrados",
+  "@offerPartialMissing": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialUnsupported": "Enviadas {sent} de {total} canciones a {name}: {n} streams que no son de YouTube, no se pueden enviar",
+  "@offerPartialUnsupported": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialShadow": "Enviadas {sent} de {total} canciones a {name}: {n} no disponibles en este dispositivo",
+  "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

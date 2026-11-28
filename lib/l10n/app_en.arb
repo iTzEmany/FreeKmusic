@@ -4277,5 +4277,57 @@
   "closeToTrayHint": "Closing the window keeps the music playing in the background, with its menu in the system tray. Off on Linux: GNOME shows the tray only with the AppIndicator extension.",
   "closeToTrayUnavailable": "This desktop has no system tray: the window always closes.",
   "dropHint": "Drop to listen",
-  "dropRejected": "Drop audio files only, not folders"
+  "dropRejected": "Drop audio files only, not folders",
+  "offerNothingToSend": "None of these tracks can be sent",
+  "offerPartialMissing": "Sent {sent} of {total} tracks to {name}: {n} files missing",
+  "@offerPartialMissing": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialUnsupported": "Sent {sent} of {total} tracks to {name}: {n} non-YouTube streams, cannot be sent",
+  "@offerPartialUnsupported": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "offerPartialShadow": "Sent {sent} of {total} tracks to {name}: {n} not available on this device",
+  "@offerPartialShadow": {
+    "placeholders": {
+      "sent": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "n": {
+        "type": "int"
+      }
+    }
+  }
 }

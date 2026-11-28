@@ -13650,6 +13650,30 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Trascina solo file audio, non cartelle'**
   String get dropRejected;
+
+  /// No description provided for @offerNothingToSend.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuno di questi brani si può inviare'**
+  String get offerNothingToSend;
+
+  /// No description provided for @offerPartialMissing.
+  ///
+  /// In it, this message translates to:
+  /// **'Inviati {sent} brani su {total} a {name}: {n} file mancanti'**
+  String offerPartialMissing(int sent, int total, String name, int n);
+
+  /// No description provided for @offerPartialUnsupported.
+  ///
+  /// In it, this message translates to:
+  /// **'Inviati {sent} brani su {total} a {name}: {n} streaming non YouTube, non inviabili'**
+  String offerPartialUnsupported(int sent, int total, String name, int n);
+
+  /// No description provided for @offerPartialShadow.
+  ///
+  /// In it, this message translates to:
+  /// **'Inviati {sent} brani su {total} a {name}: {n} non disponibili su questo dispositivo'**
+  String offerPartialShadow(int sent, int total, String name, int n);
 }
 
 class _AppLocalizationsDelegate

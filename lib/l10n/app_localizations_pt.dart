@@ -8748,4 +8748,22 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dropRejected => 'Solte apenas arquivos de áudio, não pastas';
+
+  @override
+  String get offerNothingToSend => 'Nenhuma destas músicas pode ser enviada';
+
+  @override
+  String offerPartialMissing(int sent, int total, String name, int n) {
+    return 'Enviadas $sent de $total músicas para $name: $n arquivos em falta';
+  }
+
+  @override
+  String offerPartialUnsupported(int sent, int total, String name, int n) {
+    return 'Enviadas $sent de $total músicas para $name: $n streams que não são do YouTube, não podem ser enviados';
+  }
+
+  @override
+  String offerPartialShadow(int sent, int total, String name, int n) {
+    return 'Enviadas $sent de $total músicas para $name: $n não disponíveis neste dispositivo';
+  }
 }

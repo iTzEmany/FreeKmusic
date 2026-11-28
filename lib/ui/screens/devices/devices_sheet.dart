@@ -93,9 +93,9 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
     }
     final List<Track> tracks = await ref.read(trackOpsProvider).byIds(ids);
     if (tracks.isEmpty) return;
-    final ok = await _hub.sendOffer(peer, tracks);
+    final out = await _hub.sendOffer(peer, tracks);
     if (!mounted) return;
-    showMsg(context, ok ? l.offerSent(peer.name) : l.shareErrUnreachable);
+    showMsg(context, out.message(l, peer.name));
     nav.maybePop();
   }
 

@@ -8774,4 +8774,22 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dropRejected => 'Nur Audiodateien ablegen, keine Ordner';
+
+  @override
+  String get offerNothingToSend => 'Keiner dieser Titel kann gesendet werden';
+
+  @override
+  String offerPartialMissing(int sent, int total, String name, int n) {
+    return '$sent von $total Titeln an $name gesendet: $n Dateien fehlen';
+  }
+
+  @override
+  String offerPartialUnsupported(int sent, int total, String name, int n) {
+    return '$sent von $total Titeln an $name gesendet: $n Streams außer YouTube, nicht sendbar';
+  }
+
+  @override
+  String offerPartialShadow(int sent, int total, String name, int n) {
+    return '$sent von $total Titeln an $name gesendet: $n auf diesem Gerät nicht verfügbar';
+  }
 }

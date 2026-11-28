@@ -8809,4 +8809,22 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dropRejected =>
       'Déposez uniquement des fichiers audio, pas des dossiers';
+
+  @override
+  String get offerNothingToSend => 'Aucun de ces titres ne peut être envoyé';
+
+  @override
+  String offerPartialMissing(int sent, int total, String name, int n) {
+    return '$sent titres sur $total envoyés à $name : $n fichiers manquants';
+  }
+
+  @override
+  String offerPartialUnsupported(int sent, int total, String name, int n) {
+    return '$sent titres sur $total envoyés à $name : $n flux non YouTube, non envoyables';
+  }
+
+  @override
+  String offerPartialShadow(int sent, int total, String name, int n) {
+    return '$sent titres sur $total envoyés à $name : $n non disponibles sur cet appareil';
+  }
 }
