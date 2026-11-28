@@ -126,6 +126,7 @@ class StreamOffer {
   final TrackMeta? meta;
 
   /// Not saved on the sender (a shadow row of a playlist, D-761): the receiver keeps it only inside the playlist.
+  /// Never on the wire: shadow rows travel in `playlist.shadow`.
   final bool shadow;
 
   Map<String, Object?> toJson() => {
@@ -135,11 +136,10 @@ class StreamOffer {
         'album': album,
         'durationMs': durationMs,
         if (meta != null) 'meta': meta!.toJson(),
-        if (shadow) 'shadow': true,
       };
 
   /// Strict parsing of untrusted input; null for anything odd.
-  static StreamOffer? tryParse(Object? raw) {
+  static StreamOffer? tryParse(Object? raw, {bool shadow = false}) {
     if (raw is! Map) return null;
     final key = raw['key'], title = raw['title'], dur = raw['durationMs'];
     if (key is! String || title is! String || title.isEmpty || !isStreamKey(key)) return null;
@@ -151,7 +151,7 @@ class StreamOffer {
       album: clip(raw['album']),
       durationMs: dur is int && dur >= 0 && dur <= _maxStreamMs ? dur : 0,
       meta: TrackMeta.tryParse(raw['meta']),
-      shadow: raw['shadow'] == true,
+      shadow: shadow,
     );
   }
 }
@@ -163,14 +163,18 @@ final _invisible = RegExp('[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E
 typedef OfferRef = ({int? item, String? stream});
 
 /// The playlist an offer comes from (D-760): optional `playlist` field, which older versions never read.
-/// Wire: `{"key": "<token>", "name": "...", "part": 1, "parts": 1, "order": [{"item": 12}, {"stream": "youtube:abc"}]}`.
+/// Wire: `{"key": "token", "name": "...", "part": 1, "parts": 1, "order": [{"item": 12}, {"stream": "youtube:abc"}],
+/// "shadow": [<stream offer>, ...]}`; `shadow` (unsaved rows, D-761) only when not empty, so older versions never see them.
 /// A playlist over [maxOfferItems] travels as `parts` offers with the same `key` (D-762).
 class OfferPlaylist {
-  const OfferPlaylist({required this.key, required this.name, this.part = 1, this.parts = 1, required this.order});
+  const OfferPlaylist({required this.key, required this.name, this.part = 1, this.parts = 1, required this.order, this.shadow = const []});
 
   final String key, name;
   final int part, parts;
   final List<OfferRef> order;
+
+  /// Stream rows not saved on the sender; the order may cite them like the offer's `streams`.
+  final List<StreamOffer> shadow;
 
   Map<String, Object?> toJson() => {
         'key': key,
@@ -181,10 +185,12 @@ class OfferPlaylist {
           for (final r in order)
             if (r.item != null) {'item': r.item} else {'stream': r.stream},
         ],
+        if (shadow.isNotEmpty) 'shadow': [for (final s in shadow) s.toJson()],
       };
 
   /// Strict parsing of untrusted input: null for anything odd (the offer then stays a plain one).
-  /// The order may only cite ids of [itemIds] and keys of [streamKeys].
+  /// The order may cite ids of [itemIds] and keys of [streamKeys] or of the shadow list; any other element
+  /// (unknown type, missing target) is skipped, so a newer sender can add kinds.
   static OfferPlaylist? tryParse(Object? raw, {required Set<int> itemIds, required Set<String> streamKeys}) {
     if (raw is! Map) return null;
     final key = raw['key'], name = raw['name'], part = raw['part'], parts = raw['parts'], order = raw['order'];
@@ -194,19 +200,24 @@ class OfferPlaylist {
     if (clean.isEmpty) return null;
     if (part is! int || parts is! int || parts < 1 || parts > 1000 || part < 1 || part > parts) return null;
     if (order is! List || order.length > maxOfferItems) return null;
+    final rawShadow = raw['shadow'];
+    final seen = {...streamKeys};
+    final shadow = <StreamOffer>[
+      if (rawShadow is List)
+        for (final r in rawShadow.take(maxOfferItems))
+          if (StreamOffer.tryParse(r, shadow: true) case final s? when seen.add(s.key)) s,
+    ];
     final refs = <OfferRef>[];
     for (final e in order) {
-      if (e is! Map) return null;
+      if (e is! Map) continue;
       final item = e['item'], stream = e['stream'];
       if (item is int && stream == null && itemIds.contains(item)) {
         refs.add((item: item, stream: null));
-      } else if (stream is String && item == null && streamKeys.contains(stream)) {
+      } else if (stream is String && item == null && seen.contains(stream)) {
         refs.add((item: null, stream: stream));
-      } else {
-        return null;
       }
     }
-    return OfferPlaylist(key: key, name: clean, part: part, parts: parts, order: refs);
+    return OfferPlaylist(key: key, name: clean, part: part, parts: parts, order: refs, shadow: shadow);
   }
 }
 
@@ -371,6 +382,18 @@ class OfferService {
                 for (final e in byId.values)
                   if (e.streamKey != null) (item: null, stream: e.streamKey) else (item: e.id, stream: null),
               ],
+              shadow: [
+                for (final e in byId.values)
+                  if (e.shadow && e.streamKey != null)
+                    StreamOffer(
+                        key: e.streamKey!,
+                        title: e.title,
+                        artist: e.artist,
+                        album: e.album,
+                        durationMs: e.durationMs,
+                        meta: e.meta,
+                        shadow: true),
+              ],
             ),
       createdAt: _now(),
     );
@@ -401,10 +424,10 @@ class OfferService {
               ).toJson(),
         ],
         // Optional: an older receiver ignores it and sees only the files.
-        if (o.entries.values.any((e) => e.streamKey != null))
+        if (o.entries.values.any((e) => e.streamKey != null && !e.shadow))
           'streams': [
             for (final e in o.entries.values)
-              if (e.streamKey != null)
+              if (e.streamKey != null && !e.shadow)
                 StreamOffer(
                   key: e.streamKey!,
                   title: e.title,
@@ -412,7 +435,6 @@ class OfferService {
                   album: e.album,
                   durationMs: e.durationMs,
                   meta: e.meta,
-                  shadow: e.shadow,
                 ).toJson(),
           ],
         // Optional too: an older receiver sees only loose tracks.
@@ -479,12 +501,11 @@ class OfferService {
       final tlsRaw = body['tlsPort'];
       // Optional and lenient: a bad entry is skipped, an absent list is no streams.
       final rawStreams = body['streams'];
-      final allStreams = <StreamOffer>[
+      final streams = <StreamOffer>[
         if (rawStreams is List)
           for (final raw in rawStreams.take(maxOfferItems))
             ?StreamOffer.tryParse(raw),
       ];
-      var streams = allStreams;
       final tlsPort = tlsRaw is int && tlsRaw > 0 && tlsRaw < 65536 ? tlsRaw : null;
       if (offerId is! String ||
           fromId is! String ||
@@ -498,7 +519,6 @@ class OfferService {
           token.length > 64 ||
           port < 1 ||
           port > 65535 ||
-          (rawItems.isEmpty && streams.isEmpty) ||
           rawItems.length + streams.length > maxOfferItems) {
         return Response(400, body: 'bad request');
       }
@@ -516,11 +536,9 @@ class OfferService {
         itemIds: {for (final i in items) i.id},
         streamKeys: {for (final s in streams) s.key},
       );
-      // A shadow row lives only inside a playlist (D-761): without a valid one it is not offered at all.
-      if (playlist == null) {
-        streams = [for (final s in allStreams) if (!s.shadow) s];
-        if (rawItems.isEmpty && streams.isEmpty) return Response(400, body: 'bad request');
-      }
+      // Shadow rows exist only inside a valid playlist (D-761); the receiver sees them with the other streams.
+      final shadow = playlist?.shadow ?? const <StreamOffer>[];
+      if (rawItems.isEmpty && streams.isEmpty && shadow.isEmpty) return Response(400, body: 'bad request');
       if (incoming.containsKey(offerId)) {
         return Response(409, body: 'duplicate');
       }
@@ -537,7 +555,7 @@ class OfferService {
         callerFingerprint: callerFingerprint(r),
         token: token,
         items: items,
-        streams: streams,
+        streams: [...streams, ...shadow],
         playlist: playlist,
         receivedAt: _now(),
       );

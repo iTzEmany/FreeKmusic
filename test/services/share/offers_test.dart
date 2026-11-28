@@ -122,8 +122,7 @@ void main() {
       };
       Map<String, Object?> body(Object? playlist) => {
             ...offerBody(),
-            'streams': [{'key': 'youtube:abcdefghijk', 'title': 'Live', 'shadow': true}],
-            'playlist': ?playlist,
+            'playlist': playlist is Map ? {...playlist, 'shadow': [{'key': 'youtube:abcdefghijk', 'title': 'Live'}]} : playlist,
           };
 
       test('a valid playlist is read with its order and the shadow mark', () async {
@@ -145,10 +144,6 @@ void main() {
           {...pl, 'part': 0},
           {...pl, 'parts': 'x'},
           {...pl, 'order': 'x'},
-          {...pl, 'order': [{'item': 99}]},
-          {...pl, 'order': [{'stream': 'youtube:bbbbbbbbbbb'}]},
-          {...pl, 'order': [{'item': 1, 'stream': 'youtube:abcdefghijk'}]},
-          {...pl, 'order': [5]},
         ];
         for (var i = 0; i < bad.length; i++) {
           ip = '192.168.1.${100 + i}'; // the flood limits are per address and per pending offer
@@ -158,6 +153,36 @@ void main() {
         }
         expect(seen.length, bad.length);
         expect(seen.every((o) => o.playlist == null), true);
+      });
+
+      test('unknown order elements and dangling refs are skipped, the playlist stays', () async {
+        final r = await post('/', body({
+          ...pl,
+          'order': [
+            {'item': 99},
+            {'stream': 'youtube:bbbbbbbbbbb'},
+            {'item': 1, 'stream': 'youtube:abcdefghijk'},
+            5,
+            {'future': 1},
+            {'item': 1},
+          ],
+        }));
+        expect(r.statusCode, 202);
+        expect(seen.single.playlist!.order, [(item: 1, stream: null)]);
+      });
+
+      test('a malformed shadow entry is skipped; a stream-only playlist of shadow rows is valid', () async {
+        final r = await post('/', {
+          ...offerBody(items: []),
+          'playlist': {
+            ...pl,
+            'order': [{'stream': 'youtube:abcdefghijk'}],
+            'shadow': [{'key': 'nope', 'title': 'x'}, 5, {'key': 'youtube:abcdefghijk', 'title': 'Live'}],
+          },
+        });
+        expect(r.statusCode, 202);
+        expect(seen.single.playlist!.shadow.map((s) => s.key), ['youtube:abcdefghijk']);
+        expect(seen.single.streams.single.shadow, true);
       });
 
       test('splitParts cuts in runs of 500, in order', () {
@@ -179,13 +204,19 @@ void main() {
         expect(payload['playlist'], {
           'key': 'k9', 'name': 'Mix', 'part': 1, 'parts': 1,
           'order': [{'stream': 'youtube:abcdefghijk'}, {'item': 1}],
+          'shadow': [
+            {'key': 'youtube:abcdefghijk', 'title': 'Live', 'artist': null, 'album': null, 'durationMs': 0},
+          ],
         });
-        expect(((payload['streams']! as List).single as Map)['shadow'], true);
+        expect(payload.containsKey('streams'), false);
+        expect((payload['playlist']! as Map)['shadow'], [
+          {'key': 'youtube:abcdefghijk', 'title': 'Live', 'artist': null, 'album': null, 'durationMs': 0},
+        ]);
         expect((await post('/', payload)).statusCode, 202);
         expect(seen.single.playlist!.order.length, 2);
       });
 
-      test('tryParse boundaries: parts 1000/1001, key 64/65, order 500/501, name 200/201, shadow only when true', () {
+      test('tryParse boundaries: parts 1000/1001, key 64/65, order 500/501, name 200/201, shadow flag never read from streams[]', () {
         Map<String, Object?> raw({String key = 'k', int parts = 1, int refs = 1, String name = 'n'}) => {
               'key': key, 'name': name, 'part': 1, 'parts': parts,
               'order': [for (var i = 0; i < refs; i++) {'item': i}],
@@ -200,10 +231,7 @@ void main() {
         expect(parse(raw(refs: 501)), isNull);
         expect(parse(raw(name: 'n' * 200)), isNotNull);
         expect(parse(raw(name: 'n' * 201)), isNull);
-        for (final v in [false, 'yes', 1, null]) {
-          expect(StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 't', 'shadow': v})!.shadow, false, reason: '$v');
-        }
-        expect(StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 't', 'shadow': true})!.shadow, true);
+        expect(StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 't', 'shadow': true})!.shadow, false);
       });
 
       test('invisible and bidi characters are stripped from the name; a name of only those is no playlist', () {
@@ -213,22 +241,17 @@ void main() {
         expect(parse('\u200B\u200B'), isNull);
       });
 
-      test('shadow streams without a valid playlist are dropped; only shadow and no files is refused', () async {
+      test('a "shadow": true in streams[] is ignored; shadow rows without a valid playlist do not exist', () async {
         final r = await post('/', {
           ...body({...pl, 'part': 9}),
-          'streams': [
-            {'key': 'youtube:abcdefghijk', 'title': 'Live', 'shadow': true},
-            {'key': 'youtube:bbbbbbbbbbb', 'title': 'Saved'},
-          ],
+          'streams': [{'key': 'youtube:bbbbbbbbbbb', 'title': 'Saved', 'shadow': true}],
         });
         expect(r.statusCode, 202);
-        expect(seen.single.streams.map((s) => s.key), ['youtube:bbbbbbbbbbb']);
+        expect(seen.single.playlist, isNull);
+        expect(seen.single.streams.map((s) => (s.key, s.shadow)), [('youtube:bbbbbbbbbbb', false)]);
         ip = '192.168.1.60';
-        final only = await post('/', {
-          ...offerBody(id: 'o2', items: []),
-          'streams': [{'key': 'youtube:abcdefghijk', 'title': 'Live', 'shadow': true}],
-        });
-        expect(only.statusCode, 400);
+        final none = await post('/', {...offerBody(id: 'o2', items: []), 'playlist': {...pl, 'part': 9, 'shadow': [{'key': 'youtube:abcdefghijk', 'title': 'L'}]}});
+        expect(none.statusCode, 400);
       });
 
       test('over the limits, only the next part of a group already being received gets in', () async {
