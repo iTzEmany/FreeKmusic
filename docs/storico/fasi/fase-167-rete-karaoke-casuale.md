@@ -13,7 +13,7 @@ Codice: `playFromSearch` (`lib/providers/player_providers.dart:491-549`), `Simil
 `PlaybackPersistence` (`lib/services/**/playback_persistence.dart:64-69, 140-150`).
 
 ## Task
-- [ ] 167.1 Caratterizzazione della sessione dei brani simili e del karaoke
+- [x] 167.1 Caratterizzazione della sessione dei brani simili e del karaoke
   - File: `test/providers/play_from_search_test.dart`, `test/services/online/karaoke_filter_test.dart`,
     `test/services/karaoke_video/karaoke_video_test.dart`, `test/services/online/query_cleaner_test.dart`.
   - Passi: 1) brano non karaoke dalla Ricerca: id del seme, gruppo, id passati a `_seen`, al filtro «non mi piace» e al registro dei suggeriti;
@@ -23,7 +23,7 @@ Codice: `playFromSearch` (`lib/providers/player_providers.dart:491-549`), `Simil
     Solo ciò che non è già coperto. Tutti verdi sul codice di oggi.
   - Comando mirato: `flutter test test/providers/play_from_search_test.dart test/services/online/karaoke_filter_test.dart test/services/karaoke_video/karaoke_video_test.dart test/services/online/query_cleaner_test.dart`
   - Fatto quando: i test nuovi passano senza toccare `lib/`.
-- [ ] 167.2 Caratterizzazione del giro del casuale e della coda salvata
+- [x] 167.2 Caratterizzazione del giro del casuale e della coda salvata
   - File: `test/providers/list_shuffle_test.dart`, `test/ui/shuffle_button_test.dart`, `test/services/audio/playback_persistence_test.dart`.
   - Passi: 1) tabella del giro per una lista qualsiasi (non `libraryListKey`): spento → Casuale → Casuale+ → spento; con Casuale+ bloccato
     spento → Casuale → spento; 2) `cycleShuffle` e `toggleShuffle` su una coda non della libreria (pulsante del player intero e barra desktop)
@@ -36,3 +36,7 @@ Codice: `playFromSearch` (`lib/providers/player_providers.dart:491-549`), `Simil
 Niente.
 
 ## Note di deviazione
+
+- **167.1** Test nuovi in `play_from_search_test` (seme e filtri della sessione online; 429 al primo riempimento), `karaoke_video_test` (tabella dei titoli), `query_cleaner_test` (`karaokeLyricsQuery`); `karaoke_filter_test` già copriva. Le tre regole «è karaoke» differiscono solo su titoli con «reaction(s)», «cover», «live» accanto a «karaoke»: `isKaraokeVideo` e `jamKaraokeVideoId` dicono sì, il filtro di `karaokeResults` scarta. «Karaoké» con l'accento: no per tutte e tre.
+- **167.2** Giro del casuale con una chiave che non è né playlist né `libraryListKey` (in riproduzione, non in riproduzione, Casuale+ bloccato, lista online); pulsante del player intero e della barra desktop (stesso widget); andata e ritorno della coda salvata (con il casuale acceso si salva l'ordine mescolato).
+- Review saltata: solo test di caratterizzazione, verdi sul codice di oggi; `lib/` non toccata.
