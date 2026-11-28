@@ -78,6 +78,8 @@ void main() {
   int? failOnCall;
   var echoSeed = false;
   var registering = 0, maxRegistering = 0;
+  RadioSeed? original;
+  final swapped = <String>[];
 
   // The radio: `pageSize` songs per page, ids r<call>_<n>, endless.
   Future<RadioPage> radio(String id, {String? continuation}) async {
@@ -197,6 +199,8 @@ void main() {
     failOnCall = null;
     echoSeed = false;
     registering = maxRegistering = 0;
+    original = RadioSeed.online('orig', 'Hello');
+    swapped.clear();
     player = PlayerController(
       handler,
       null,
@@ -214,6 +218,11 @@ void main() {
         fills++;
         if (seed.title == 'TA') await holdFill?.future;
         return fillFor(seed);
+      },
+      karaokeOriginal: (r) async => original,
+      karaokeSwap: (r) async {
+        swapped.add(r.id);
+        return r.id == 'r1_1' ? null : _r('k${r.id}');
       },
       similarNow: () => now,
       similarSchedule: (d, f) {
@@ -599,5 +608,36 @@ void main() {
     radioError = null;
     expect(await player.playFromSearch(online: _r('y')), isFalse);
     expect(asked.length, 1);
+  });
+
+  test('karaoke pick: the radio of the original, the queue holds the karaoke of each similar song', () async {
+    final k = YtResult(
+      id: 'kx',
+      title: 'Sing King - Adele - Hello (Karaoke Version)',
+      channel: 'Sing King',
+      duration: const Duration(seconds: 200),
+    );
+    expect(await player.playFromSearch(online: k), isTrue);
+    expect(asked, [('orig', null)]);
+    expect([for (final i in handler.queueIds) online.entryOf(i)?.result.id], ['kx', 'kr1_0', 'kr1_2']);
+    expect(swapped, ['r1_0', 'r1_1', 'r1_2']); // r1_1 had no karaoke: dropped
+    expect(player.similarTitle.value, 'Hello');
+  });
+
+  test('karaoke pick whose original is not found: only the pick plays, no session', () async {
+    original = null;
+    final k = YtResult(id: 'kx', title: 'Hello (Karaoke Version)', channel: 'C', duration: null);
+    expect(await player.playFromSearch(online: k), isFalse);
+    expect(fills, 0);
+    expect(asked, isEmpty);
+    expect(handler.queueIds.length, 1);
+    expect(player.similarTitle.value, isNull);
+  });
+
+  test('not karaoke: as before, the swap is never called', () async {
+    expect(await player.playFromSearch(online: _r('x')), isTrue);
+    expect(asked, [('x', null)]);
+    expect(swapped, isEmpty);
+    expect([for (final i in handler.queueIds) online.entryOf(i)?.result.id], ['x', 'r1_0', 'r1_1', 'r1_2']);
   });
 }

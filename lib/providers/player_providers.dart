@@ -18,6 +18,8 @@ import '../services/audio/play_queue.dart';
 import '../services/stream/stream_preparer.dart' show StreamPhase;
 import '../services/radio/radio_station.dart';
 import '../services/audio/playback_persistence.dart';
+import '../services/online/karaoke_filter.dart' show isKaraokeTitle;
+import '../services/online/source_cooldown.dart' show SourceCooldown;
 import '../services/online/youtube_service.dart';
 import 'youtube_providers.dart' show downloadIndexProvider;
 import 'database_providers.dart';
@@ -25,6 +27,7 @@ import '../services/jam/jam_models.dart' show JamAddResult;
 import 'jam_providers.dart' show jamProvider;
 import 'queue_tracks.dart';
 import 'settings_providers.dart';
+import 'smart_search_providers.dart' show sourceCooldownProvider;
 import '../services/shuffle_plus/plus_allowed.dart';
 import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/similar_queue.dart';
@@ -35,6 +38,8 @@ import 'shuffle_plus_providers.dart'
         libraryMatchIdProvider,
         listKeyOf,
         listShuffleProvider,
+        karaokeOriginalProvider,
+        karaokeSwapProvider,
         similarFillProvider;
 import 'suggestion_log_provider.dart';
 
@@ -111,6 +116,9 @@ class PlayerController {
     this.setListMode,
     this.onSuggested,
     this.similarFill,
+    this.karaokeOriginal,
+    this.karaokeSwap,
+    this.karaokeCooldown,
     this.libraryMatchIdOf,
     this.similarNow,
     this.similarSchedule,
@@ -168,6 +176,14 @@ class PlayerController {
   /// The radio of [RadioSeed] for the songs similar to a Search pick; null
   /// when the source is off (Jam, metered or no network, no yt-dlp, 429).
   final Future<RadioFill?> Function(RadioSeed seed)? similarFill;
+
+  /// For a karaoke pick: the original song as the seed of the radio (null:
+  /// not found, no session), and the karaoke video of each similar song (null:
+  /// none, the song is dropped). [karaokeCooldown] pauses the video source on
+  /// a 429 of the swap.
+  final Future<RadioSeed?> Function(YtResult karaoke)? karaokeOriginal;
+  final Future<YtResult?> Function(YtResult similar)? karaokeSwap;
+  final SourceCooldown? karaokeCooldown;
 
   /// The title of the song whose similar songs keep filling the queue; null
   /// when no such session runs.
@@ -510,11 +526,26 @@ class PlayerController {
       ),
     );
     final epoch = _epoch; // after _start, which ended the old session
-    final seed = track != null
+    final karaoke = online != null &&
+        online.source == MediaSource.youtube &&
+        isKaraokeTitle(online.title) &&
+        karaokeOriginal != null &&
+        karaokeSwap != null;
+    var seed = track != null
         ? RadioSeed(track)
         : RadioSeed.online(online!.id, online.title);
     _setSimilar(seed.title, loading: true);
     try {
+      if (karaoke) {
+        final original = await karaokeOriginal!(online);
+        if (epoch != _epoch) return null;
+        if (original == null) {
+          _setSimilar(null);
+          return false;
+        }
+        seed = original;
+        _setSimilar(seed.title, loading: true);
+      }
       final fill = await similarFill?.call(seed);
       if (epoch != _epoch) return null;
       if (fill == null || inJam) {
@@ -535,6 +566,8 @@ class PlayerController {
         },
         blocked: () => inJam,
         retryAfter: similarRetryAfter,
+        swap: karaoke ? karaokeSwap : null,
+        cooldown: karaokeCooldown,
         now: similarNow,
         schedule: similarSchedule,
       );
@@ -824,6 +857,9 @@ final playerControllerProvider = Provider<PlayerController>((ref) {
     onSuggested: (r, seed) =>
         ref.read(suggestionLogProvider).addSuggestion(r, seed),
     similarFill: ref.read(similarFillProvider),
+    karaokeOriginal: ref.read(karaokeOriginalProvider),
+    karaokeSwap: ref.read(karaokeSwapProvider),
+    karaokeCooldown: ref.read(sourceCooldownProvider),
     libraryMatchIdOf: ref.read(libraryMatchIdProvider),
     libraryIdOf: (r) async {
       final path = await (await ref.read(downloadIndexProvider.future))

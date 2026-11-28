@@ -72,6 +72,7 @@ Regole del blocco:
 ### Simili e radio
 
 - `SimilarQueue`: blocco da 10, riempie quando scende a 5, nuovo tentativo dopo 1 min. Il seme viene da Search (D-467).
+- Sessione karaoke (fase 168, D-765/D-766): `playFromSearch` su un brano online YouTube con «karaoke» nel titolo (`isKaraokeTitle`) usa `karaokeOriginal` (`karaoke_session.dart`: `karaokeLyricsQuery`, ricerca su YouTube Music, `decide()`; non trovato → nessuna sessione, `false`) come seme della radio, e `SimilarQueue(swap: karaokeSwap)`: ogni simile diventa il suo karaoke (ricerca intelligente `videoOnly` «artista titolo karaoke», `karaokeResults`, primo che `decide()` accetta; altrimenti scartato). Ritmo delle ricerche: primo gruppo da 3 (poi `block`), al massimo 2× ricerche per gruppo, cache di 10 min del motore; un 429 da `swap` ferma la fonte video (`SourceCooldown`) e `RadioGate`. Un brano non karaoke non chiama mai `swap`.
 - `RadioFill` passa da `RadioGate`: `minGap` 1 min, pausa 15 min dopo un 429.
 - `SuggestionPool`, `SuggestionGate`, `SuggestionLog` e `DislikeStore` (`dislikes.json`) filtrano e ricordano i suggerimenti.
 
