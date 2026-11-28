@@ -2,6 +2,9 @@ import 'karaoke_channels.dart';
 import 'merge_results.dart';
 
 final _isKaraoke = RegExp('karaoke', caseSensitive: false);
+
+/// The one «is karaoke» rule on a title: it contains the word «karaoke», any case (D-765).
+bool isKaraokeTitle(String title) => _isKaraoke.hasMatch(title);
 final _reaction = RegExp(r'\breactions?\b', caseSensitive: false);
 
 /// «cover» / «live» only as a tag: in brackets, or as a whole segment after a
@@ -17,7 +20,7 @@ final _tagged = RegExp(
 List<SmartResult> karaokeResults(List<SmartResult> results) {
   final kept = [
     for (final r in results)
-      if (_isKaraoke.hasMatch(r.primary.title) &&
+      if (isKaraokeTitle(r.primary.title) &&
           !_reaction.hasMatch(r.primary.title) &&
           !_tagged.hasMatch(r.primary.title))
         r,
