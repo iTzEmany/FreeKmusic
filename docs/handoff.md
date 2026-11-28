@@ -24,7 +24,7 @@ Altri obiettivi possibili:
 ## Da sapere
 - Refactor «karaoke-casuale»: analisi, scelte, direzione e rete in `refactor/karaoke-casuale/analisi.md`; nessun mockup (D-771); la fase 169 e la 162 toccano entrambe `ListShuffle` (vedi la nota nella 169).
 - Refactor «invia-playlist-completa»: analisi, scelte, direzione e rete in `refactor/invia-playlist-completa/analisi.md`; nessun mockup (D-764); le fasi 165-166 non dipendono dalle 162-164.
-- Refactor «playlist-aggiungi-e-casuale»: analisi, scelte, direzione e rete in `refactor/playlist-aggiungi-e-casuale/analisi.md`; mockup approvato (variante A) in `mockups/playlist-aggiungi-e-casuale/variante-a.html` (la variante B è scartata, resta per confronto); D-749..D-758.
+- Refactor «playlist-aggiungi-e-casuale»: analisi, scelte, direzione e rete in `storico/refactor/playlist-aggiungi-e-casuale/analisi.md`; mockup approvato (variante A) in `storico/refactor/playlist-aggiungi-e-casuale/mockup/variante-a.html` (la variante B è scartata, resta per confronto); D-749..D-758.
 - Fasi del refactor e note di deviazione: `storico/fasi/fase-150-*.md` … `fase-161-*.md`; decisioni D-714..D-748.
 - Avvii di prova su Linux: sempre Xvfb, HOME finto **vuoto e nuovo**, `FREEKMUSIC_NON_UNIQUE=1` (istanza unica dalla 158); vedi `.claude/obiettivo.md`.
 - Pacchetti desktop: window_manager 0.6, tray_manager 0.8.3 su `nativeapi` (FFI con hook di build: in CI servono `libgtk-3-dev libx11-dev libxi-dev`), desktop_drop 0.8 (D-747).

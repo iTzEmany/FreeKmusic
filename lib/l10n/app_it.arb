@@ -5041,5 +5041,6 @@
       }
     }
   },
-  "playlistAddFailed": "Non sono riuscito ad aggiungere i brani a una playlist"
+  "playlistAddFailed": "Non sono riuscito ad aggiungere i brani a una playlist",
+  "smartMixSwitch": "Aggiungi brani simili che non hai"
 }

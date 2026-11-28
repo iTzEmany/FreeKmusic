@@ -20,7 +20,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 
 - **Refactor «karaoke-casuale»** (28/11, analisi in `refactor/karaoke-casuale/analisi.md`): fasi 167-169 in [`fasi/`](fasi/README.md) — dopo un video karaoke la coda si riempie solo di karaoke; «Casuale su tutto» mai spento.
 - **Refactor «invia-playlist-completa»** (28/11, analisi in `refactor/invia-playlist-completa/analisi.md`): fasi 165-166 in [`fasi/`](fasi/README.md) — «Invia a un dispositivo» manda tutti i brani della playlist, e sul ricevente arriva la playlist (nome, ordine, righe ombra, oltre 500 brani).
-- **Refactor «playlist-aggiungi-e-casuale»** (28/11, analisi in `refactor/playlist-aggiungi-e-casuale/analisi.md`): fasi 162-164 in [`fasi/`](fasi/README.md) — Casuale salvato per playlist, aggiunta a più playlist con ricerca, brani simili nelle playlist intelligenti.
+- **Refactor «playlist-aggiungi-e-casuale»** (28/11, analisi in `storico/refactor/playlist-aggiungi-e-casuale/analisi.md`): fasi 162-164 in [`fasi/`](fasi/README.md) — Casuale salvato per playlist, aggiunta a più playlist con ricerca, brani simili nelle playlist intelligenti.
 - **Grande revisione** (22/11, D-662..D-699, analisi in [`storico/refactor/grande-revisione/analisi.md`](storico/refactor/grande-revisione/analisi.md), rete di test in [`rete.md`](storico/refactor/grande-revisione/rete.md)): fasi 135-147 in [`fasi/`](fasi/README.md), una per riga:
   - ~~Fase 135 «riproduzione affidabile»~~ fatta (#210): [`storico/fasi/fase-135-riproduzione-affidabile.md`](storico/fasi/fase-135-riproduzione-affidabile.md)
   - ~~Fase 136 «arricchimento unico»~~ fatta (#212): [`storico/fasi/fase-136-arricchimento-unico.md`](storico/fasi/fase-136-arricchimento-unico.md)
@@ -40,6 +40,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 Rinvii di codice delle review e delle schegge, per area; ogni voce rimanda alla fase di origine in `storico/`. Le prove su telefono sono nella fase 147, «Tocca a te».
 
 ### Riproduzione e coda
+- **Mix senza risultati muto** (28 nov, fase 164): pagina genere e playlist intelligente, se nessun seme si risolve su YouTube Music o le radio non danno nulla il mix finisce con `off == null`: niente righe, niente scritta, niente log. Proposta: `GenreMixOff.empty` con una scritta «nessun brano simile trovato» (6 lingue) e un `AppLog.i`; aggiornare il test «a radio that fails ends with… off null».
 - **Riquadro Radio del Riprendi**: se la stazione suona già il tocco la riavvia (`playStations`); Android Auto mette il contesto a null (`codecore_audio_handler.dart:525,531`), quindi radio e album avviati dall'auto compaiono come «Brano» ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
 - **Griglia del Riprendi a 3 colonne**: la soglia è sul blocco (560 dp), su desktop serve una finestra di circa 1324 dp: rivedere la soglia o documentarla ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).
 - **Riquadro Daylist** visibile per 90 giorni anche quando la daylist non può partire (`daylist_providers.dart:374`, ritorno silenzioso): nasconderlo o avvisare ([fase 142](storico/fasi/fase-142-riprendi-a-griglia.md)).

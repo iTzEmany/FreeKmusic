@@ -4498,5 +4498,6 @@
       }
     }
   },
-  "playlistAddFailed": "Não foi possível adicionar as faixas a uma playlist"
+  "playlistAddFailed": "Não foi possível adicionar as faixas a uma playlist",
+  "smartMixSwitch": "Adicionar músicas parecidas que você não tem"
 }

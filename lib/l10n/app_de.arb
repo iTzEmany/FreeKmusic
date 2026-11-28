@@ -4312,5 +4312,6 @@
       }
     }
   },
-  "playlistAddFailed": "Titel konnten nicht zu einer Playlist hinzugefügt werden"
+  "playlistAddFailed": "Titel konnten nicht zu einer Playlist hinzugefügt werden",
+  "smartMixSwitch": "Ähnliche Songs hinzufügen, die du nicht hast"
 }
