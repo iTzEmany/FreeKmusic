@@ -17,14 +17,14 @@ ricerca karaoke di oggi (`online_results.dart:241-250`, `smart_search.dart:125-1
 `SeedResolver.resolve` (`seed_resolver.dart:23-47`), `decide()` (`track_matcher.dart`); `SourceCooldown` (`source_cooldown.dart`).
 
 ## Task
-- [ ] 168.1 Una sola regola «è karaoke» sul titolo
+- [x] 168.1 Una sola regola «è karaoke» sul titolo
   - File: `lib/services/online/karaoke_filter.dart` (o `karaoke_video.dart`) con il predicato, `karaoke_video.dart` (`isKaraokeVideo`,
     `jamKaraokeVideoId`), `karaoke_filter.dart` (regex di :4), test del predicato.
   - Passi: 1) un predicato sul titolo che riproduce l'esito della tabella della 167.1 (se le tre regole di oggi differiscono su un titolo,
     tenere quella di `isKaraokeVideo` e scriverlo nelle note di deviazione); 2) le tre copie lo usano.
   - Comando mirato: `flutter test test/services/online test/services/karaoke_video`
   - Fatto quando: `grep -rn "contains('karaoke')" lib/` dà un solo risultato; i test della 167.1 verdi senza modifiche.
-- [ ] 168.2 Sostituzione facoltativa nella sessione dei simili (non ancora collegata)
+- [x] 168.2 Sostituzione facoltativa nella sessione dei simili (non ancora collegata)
   - File: `similar_queue.dart`, nuovo `test/services/shuffle_plus/similar_queue_swap_test.dart`, `test/providers/play_from_search_test.dart`
     (`sessionFor` :113-120 con `swap` facoltativo).
   - Passi: 1) parametro `Future<YtResult?> Function(YtResult)? swap`; in `_take` la sostituzione avviene prima di `_seen`, `fill.filter.allows`,
@@ -34,7 +34,7 @@ ricerca karaoke di oggi (`online_results.dart:241-250`, `smart_search.dart:125-1
     sostituito ovunque a valle, gruppo da 3, tetto, 429, `swap == null` identico a oggi.
   - Comando mirato: `flutter test test/services/shuffle_plus test/providers/play_from_search_test.dart`
   - Fatto quando: test nuovi verdi; i test della 167.1 verdi senza modifiche.
-- [ ] 168.3 Karaoke collegato in `playFromSearch`
+- [x] 168.3 Karaoke collegato in `playFromSearch`
   - File: `player_providers.dart` (`PlayerController`: due funzioni iniettate, es. `karaokeOriginal: Future<RadioSeed?> Function(YtResult)` e
     `karaokeSwap: Future<YtResult?> Function(YtResult)`), `shuffle_plus_providers.dart` (implementazioni accanto a `similarFill`), il provider
     che costruisce `PlayerController`, `test/providers/play_from_search_test.dart`.
@@ -52,3 +52,7 @@ ricerca karaoke di oggi (`online_results.dart:241-250`, `smart_search.dart:125-1
 Niente. A fine fase la prova sul telefono la fa l'agente via `~/.claude/scripts/device.sh`, a volume 0: dal filtro Karaoke avviare un karaoke noto (es. «Sing King - Adele - Hello (Karaoke Version)») e controllare che la coda si riempia di karaoke di canzoni simili.
 
 ## Note di deviazione
+
+- **168.1** `isKaraokeTitle(String)` in `karaoke_filter.dart` (parola «karaoke», maiuscole ignorate), usata da `isKaraokeVideo`, `jamKaraokeVideoId`, `karaokeResults` (che tiene le sue esclusioni «reaction», «cover», «live») e dalla query di `online_results.dart`. Nessun esito cambiato rispetto alla tabella della 167.1.
+- **168.2** Parametri nuovi di `SimilarQueue`: `swap`, `cooldown` (per far scattare la pausa della fonte video su un 429), `swapTimeout` (45 s). Con `swap` il gruppo chiede al massimo il doppio dei brani e si ferma a quelli voluti. Primo gruppo da 3 solo all'avvio. Un 429 nei gruppi successivi mette in pausa la fonte senza chiudere la sessione (come gli altri 429). Dalla review e dalla scheggia: niente doppioni dopo la sostituzione (seme, già visti, suggeriti di recente); pausa anche dopo un gruppo corto o un errore della sostituzione; timeout.
+- **168.3** `karaoke_session.dart` (`karaokeOriginalSeed`, `karaokeVideoFor`) con ricerca iniettata; `decide()` accettato solo con esito sicuro, l'artista viene dal titolo del karaoke (un karaoke con lo stesso titolo e un altro artista è scartato). Le ricerche karaoke non interrompono il motore, così finiscono nella cache di 10 minuti; effetto: partono anche le righe artista e album della ricerca. Un brano normale con «karaoke» nel titolo (es. «Karaoke» di Drake) prende la strada karaoke e, senza originale, suona da solo (come deciso, D-765).
