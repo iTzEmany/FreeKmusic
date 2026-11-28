@@ -4277,5 +4277,40 @@
   "closeToTrayHint": "Cerrar la ventana deja la música sonando de fondo, con el menú en la bandeja del sistema. Desactivado en Linux: GNOME muestra la bandeja solo con la extensión AppIndicator.",
   "closeToTrayUnavailable": "Este escritorio no tiene bandeja del sistema: la ventana siempre se cierra.",
   "dropHint": "Suelta para escuchar",
-  "dropRejected": "Suelta solo archivos de audio, no carpetas"
+  "dropRejected": "Suelta solo archivos de audio, no carpetas",
+  "playlistSearchOrCreate": "Busca o crea una lista",
+  "playlistCreateNamed": "Crear «{name}»",
+  "@playlistCreateNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addToNPlaylists": "{n, plural, one{Añadir a 1 lista} other{Añadir a {n} listas}}",
+  "@addToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "alreadyPresent": "Ya está",
+  "addedToNPlaylists": "{n, plural, one{Añadido a 1 lista} other{Añadido a {n} listas}}",
+  "@addedToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noPlaylistNamed": "Ninguna lista llamada «{name}»",
+  "@noPlaylistNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddFailed": "No se pudieron añadir las canciones a una lista"
 }

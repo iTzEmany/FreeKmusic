@@ -336,6 +336,8 @@ void main() {
       await tester.tap(find.text('Aggiungi a playlist…'));
       await _settle(tester);
       await tester.tap(find.text('Notte'));
+      await tester.pump();
+      await tester.tap(find.text('Aggiungi a 1 playlist'));
       await _settle(tester);
       final ids = (await tester.runAsync(() => PlaylistRepository(h.db).watchTracks(id).first))!;
       expect([for (final t in ids) t.id], [1]);
@@ -350,7 +352,9 @@ void main() {
       await _settle(tester);
       await tester.enterText(find.byType(TextField), 'Nuova');
       await tester.pump();
-      await tester.tap(find.text('Crea'));
+      await tester.tap(find.text('Crea «Nuova»'));
+      await tester.pump();
+      await tester.tap(find.text('Aggiungi a 1 playlist'));
       await _settle(tester);
       final made = (await tester.runAsync(() => h.db.select(h.db.playlists).get()))!.single;
       expect(made.name, 'Nuova');

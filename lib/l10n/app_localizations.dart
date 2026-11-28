@@ -13650,6 +13650,48 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Trascina solo file audio, non cartelle'**
   String get dropRejected;
+
+  /// No description provided for @playlistSearchOrCreate.
+  ///
+  /// In it, this message translates to:
+  /// **'Cerca o crea una playlist'**
+  String get playlistSearchOrCreate;
+
+  /// No description provided for @playlistCreateNamed.
+  ///
+  /// In it, this message translates to:
+  /// **'Crea «{name}»'**
+  String playlistCreateNamed(String name);
+
+  /// No description provided for @addToNPlaylists.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{Aggiungi a 1 playlist} other{Aggiungi a {n} playlist}}'**
+  String addToNPlaylists(int n);
+
+  /// No description provided for @alreadyPresent.
+  ///
+  /// In it, this message translates to:
+  /// **'Già presente'**
+  String get alreadyPresent;
+
+  /// No description provided for @addedToNPlaylists.
+  ///
+  /// In it, this message translates to:
+  /// **'{n, plural, one{Aggiunto a 1 playlist} other{Aggiunto a {n} playlist}}'**
+  String addedToNPlaylists(int n);
+
+  /// No description provided for @noPlaylistNamed.
+  ///
+  /// In it, this message translates to:
+  /// **'Nessuna playlist chiamata «{name}»'**
+  String noPlaylistNamed(String name);
+
+  /// No description provided for @playlistAddFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Non sono riuscito ad aggiungere i brani a una playlist'**
+  String get playlistAddFailed;
 }
 
 class _AppLocalizationsDelegate

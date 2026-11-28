@@ -92,18 +92,18 @@ class OnlineAlbumScreen extends ConsumerWidget {
 
   Future<void> _addToPlaylist(BuildContext context, WidgetRef ref, List<YtResult> songs) async {
     final picked = await pickPlaylist(context, ref);
-    if (picked == null || !context.mounted) return;
+    if (picked.isEmpty || !context.mounted) return;
     final adder = ref.read(libraryAdderProvider);
     final l = context.l10n;
-    final done = [for (final r in songs) await adder.add(r, tag: addToPlaylistTag(picked.id))];
+    final done = [for (final r in songs) await adder.add(r, tag: addToPlaylistTag([for (final p in picked) p.id]))];
     if (!context.mounted) return;
     showMsg(
       context,
       done.contains(null)
           ? l.libraryAddFailed
           : done.contains(false)
-          ? l.suggestionAddWhenDownloaded(picked.name)
-          : l.addedToPlaylistMany(done.length, picked.name),
+          ? pickedAddedText(l, picked, now: false)
+          : pickedAddedText(l, picked, now: true, count: done.length),
     );
   }
 

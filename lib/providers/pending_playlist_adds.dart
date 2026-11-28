@@ -10,14 +10,19 @@ import 'player_providers.dart';
 import 'youtube_providers.dart';
 
 const _prefix = 'addto:';
+final _id = RegExp(r'^[1-9][0-9]*$');
 
-/// The download tag that asks for the song to join [playlistId] once it is a
-/// library track.
-String addToPlaylistTag(int playlistId) => '$_prefix$playlistId';
+/// The download tag that asks for the song to join every playlist in
+/// [playlistIds] once it is a library track (`addto:3,7`).
+String addToPlaylistTag(List<int> playlistIds) => '$_prefix${playlistIds.join(',')}';
 
-int? parseAddToPlaylistTag(String? tag) {
-  if (tag == null || !tag.startsWith(_prefix)) return null;
-  return int.tryParse(tag.substring(_prefix.length));
+/// The playlists of an `addto:` tag; empty for any other tag or a malformed one.
+List<int> parseAddToPlaylistTag(String? tag) {
+  if (tag == null || !tag.startsWith(_prefix)) return const [];
+  final parts = tag.substring(_prefix.length).split(',');
+  // Only positive decimal ids; a tag with anything else is not ours.
+  if (!parts.every(_id.hasMatch)) return const [];
+  return {for (final s in parts) int.parse(s)}.toList();
 }
 
 /// Puts a downloaded suggestion into the playlist it was asked for.
@@ -40,16 +45,22 @@ class PendingPlaylistAdds {
   late final StreamSubscription<DownloadItem> _sub;
 
   Future<void> _onSettled(DownloadItem item) async {
-    final playlistId = parseAddToPlaylistTag(item.tag);
+    final playlists = parseAddToPlaylistTag(item.tag);
     final path = item.path;
     if (item.status != DownloadStatus.done || path == null) return;
-    if (playlistId == null && replaceStream == null) return;
+    if (playlists.isEmpty && replaceStream == null) return;
     try {
       final id = await trackIdForPath(path);
       if (id == null) return;
       // The queue must play the file now, not the stream address (it expires).
       replaceStream?.call(item.result, id);
-      if (playlistId != null) await addTracks(playlistId, [id]);
+      for (final p in playlists) {
+        try {
+          await addTracks(p, [id]);
+        } on Object catch (e, st) {
+          AppLog.w('add to playlist $p after download failed', e, st);
+        }
+      }
     } on Object catch (e, st) {
       AppLog.w('add to playlist after download failed', e, st);
     }

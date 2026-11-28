@@ -131,6 +131,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('P1'));
     await tester.pump();
+    await tester.tap(find.byType(FilledButton));
+    await tester.pump();
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 300)));
     await tester.pump(const Duration(milliseconds: 600));
     expect(downloads.adds, isEmpty);
@@ -183,6 +185,8 @@ void main() {
     await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
     await tester.pumpAndSettle();
     await tester.tap(find.text('P1'));
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
     expect(downloads.adds.map((e) => e.split(':').first), ['a addto', 'b addto']);
 

@@ -4277,5 +4277,40 @@
   "closeToTrayHint": "Closing the window keeps the music playing in the background, with its menu in the system tray. Off on Linux: GNOME shows the tray only with the AppIndicator extension.",
   "closeToTrayUnavailable": "This desktop has no system tray: the window always closes.",
   "dropHint": "Drop to listen",
-  "dropRejected": "Drop audio files only, not folders"
+  "dropRejected": "Drop audio files only, not folders",
+  "playlistSearchOrCreate": "Search or create a playlist",
+  "playlistCreateNamed": "Create “{name}”",
+  "@playlistCreateNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addToNPlaylists": "{n, plural, one{Add to 1 playlist} other{Add to {n} playlists}}",
+  "@addToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "alreadyPresent": "Already there",
+  "addedToNPlaylists": "{n, plural, one{Added to 1 playlist} other{Added to {n} playlists}}",
+  "@addedToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noPlaylistNamed": "No playlist called “{name}”",
+  "@noPlaylistNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddFailed": "Could not add the tracks to a playlist"
 }
