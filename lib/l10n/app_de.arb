@@ -4277,5 +4277,39 @@
   "closeToTrayHint": "Das Schließen des Fensters lässt die Musik im Hintergrund weiterspielen, mit dem Menü im Infobereich. Unter Linux aus: GNOME zeigt den Infobereich nur mit der AppIndicator-Erweiterung.",
   "closeToTrayUnavailable": "Dieser Desktop hat keinen Infobereich: das Fenster wird immer geschlossen.",
   "dropHint": "Zum Abspielen loslassen",
-  "dropRejected": "Nur Audiodateien ablegen, keine Ordner"
+  "dropRejected": "Nur Audiodateien ablegen, keine Ordner",
+  "playlistSearchOrCreate": "Playlist suchen oder erstellen",
+  "playlistCreateNamed": "„{name}“ erstellen",
+  "@playlistCreateNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addToNPlaylists": "{n, plural, one{Zu 1 Playlist hinzufügen} other{Zu {n} Playlists hinzufügen}}",
+  "@addToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "alreadyPresent": "Schon enthalten",
+  "addedToNPlaylists": "{n, plural, one{Zu 1 Playlist hinzugefügt} other{Zu {n} Playlists hinzugefügt}}",
+  "@addedToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noPlaylistNamed": "Keine Playlist namens „{name}“",
+  "@noPlaylistNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }
