@@ -30,7 +30,7 @@ import 'online_providers.dart';
 import 'yt_dlp_update_providers.dart' show locateYtDlp, ytDlpUpdateProvider;
 import 'ytm_catalog_providers.dart' show ytmCatalogProvider;
 import 'settings_providers.dart';
-import 'pending_playlist_adds.dart' show parseAddToPlaylistTag;
+import 'pending_playlist_adds.dart' show addToPlaylistTag, parseAddToPlaylistTag;
 import 'stream_providers.dart' show streamPromoterProvider;
 
 /// The videos of a pasted playlist or channel address, read once per address.
@@ -311,18 +311,33 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       unawaited(_joinPlaylist(r, parseAddToPlaylistTag(tag)));
       return false;
     }
+    if (_mergeIntoQueued(r, tag)) return false; // one job, both playlists
     // The same song already queued or downloading: never a second job (it would write the file back later).
     if (tag == null && _queue.items.any((e) => e.result.indexKey == r.indexKey && _isActive(e.status))) return false;
     final moving = _promoting[r.indexKey];
     if (moving != null) {
-      // Double tap while it is moving: its playlists still count once the first move has promoted it.
-      // shortcut: if the first move queued a download instead, these playlists are lost; fix with a queue tag update.
-      if (await moving) await _joinPlaylist(r, parseAddToPlaylistTag(tag));
+      // Double tap while it is moving: its playlists still count, as a join or on the queued job.
+      if (await moving) {
+        await _joinPlaylist(r, parseAddToPlaylistTag(tag));
+      } else {
+        _mergeIntoQueued(r, tag);
+      }
       return false;
     }
     final run = _promoteOrQueue(r, tag);
     _promoting[r.indexKey] = run;
     return run.whenComplete(() => _promoting.remove(r.indexKey));
+  }
+
+  /// An `addto:` [tag] on a song already queued adds its playlists to that job instead of a second one.
+  bool _mergeIntoQueued(YtResult r, String? tag) {
+    final ids = parseAddToPlaylistTag(tag);
+    if (ids.isEmpty) return false;
+    return _queue.mergeTag(r.indexKey, (old) {
+      final have = parseAddToPlaylistTag(old);
+      if (old != null && have.isEmpty) return null; // an import tag stays
+      return addToPlaylistTag({...have, ...ids}.toList());
+    });
   }
 
   final _promoting = <String, Future<bool>>{};
@@ -359,7 +374,11 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
       final id = path == null ? null : await ref.read(trackRepositoryProvider).idForPath(path);
       if (id != null) {
         for (final p in playlistIds) {
-          await ref.read(playlistRepositoryProvider).addTracks(p, [id]);
+          try {
+            await ref.read(playlistRepositoryProvider).addTracks(p, [id]);
+          } on Object catch (e, st) {
+            AppLog.w('add to playlist $p after promotion failed for ${r.indexKey}', e, st);
+          }
         }
       }
     } on Object catch (e, st) {

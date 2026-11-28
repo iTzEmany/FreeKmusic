@@ -10,6 +10,7 @@ import 'player_providers.dart';
 import 'youtube_providers.dart';
 
 const _prefix = 'addto:';
+final _id = RegExp(r'^[1-9][0-9]*$');
 
 /// The download tag that asks for the song to join every playlist in
 /// [playlistIds] once it is a library track (`addto:3,7`).
@@ -18,8 +19,10 @@ String addToPlaylistTag(List<int> playlistIds) => '$_prefix${playlistIds.join(',
 /// The playlists of an `addto:` tag; empty for any other tag or a malformed one.
 List<int> parseAddToPlaylistTag(String? tag) {
   if (tag == null || !tag.startsWith(_prefix)) return const [];
-  final ids = tag.substring(_prefix.length).split(',').map(int.tryParse).toList();
-  return ids.isEmpty || ids.contains(null) ? const [] : ids.cast<int>();
+  final parts = tag.substring(_prefix.length).split(',');
+  // Only positive decimal ids; a tag with anything else is not ours.
+  if (!parts.every(_id.hasMatch)) return const [];
+  return {for (final s in parts) int.parse(s)}.toList();
 }
 
 /// Puts a downloaded suggestion into the playlist it was asked for.
@@ -52,7 +55,11 @@ class PendingPlaylistAdds {
       // The queue must play the file now, not the stream address (it expires).
       replaceStream?.call(item.result, id);
       for (final p in playlists) {
-        await addTracks(p, [id]);
+        try {
+          await addTracks(p, [id]);
+        } on Object catch (e, st) {
+          AppLog.w('add to playlist $p after download failed', e, st);
+        }
       }
     } on Object catch (e, st) {
       AppLog.w('add to playlist after download failed', e, st);

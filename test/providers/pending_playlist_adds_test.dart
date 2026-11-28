@@ -67,6 +67,28 @@ void main() {
     expect(added, ['5:[42]']);
   });
 
+  test('only positive decimal ids are valid, duplicates collapse', () {
+    for (final t in ['addto:-1', 'addto: 3', 'addto:+5', 'addto:0x10', 'addto:0', 'addto:3,', 'addto:1.5']) {
+      expect(parseAddToPlaylistTag(t), isEmpty, reason: t);
+    }
+    expect(parseAddToPlaylistTag('addto:3,3,7'), [3, 7]);
+  });
+
+  test('a playlist that fails does not block the others', () async {
+    final got = <int>[];
+    PendingPlaylistAdds(
+      settled: settled.stream,
+      trackIdForPath: (_) async => 42,
+      addTracks: (pl, ids) async {
+        if (pl == 3) throw StateError('locked');
+        got.add(pl);
+      },
+    );
+    settled.add(_item(DownloadStatus.done, tag: 'addto:3,7', path: '/m/b.m4a'));
+    await pumpEventQueue();
+    expect(got, [7]);
+  });
+
   test('a failed download adds nothing', () async {
     settled.add(_item(DownloadStatus.failed, tag: addToPlaylistTag([7])));
     await pumpEventQueue();
