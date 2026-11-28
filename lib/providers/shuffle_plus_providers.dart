@@ -15,6 +15,7 @@ import '../services/library/rules/rule_parser.dart' show parseRules;
 import '../services/online/merge_results.dart' show libraryMatchOf;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
+import '../services/shuffle_plus/karaoke_session.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/genre_mix.dart';
 import '../services/shuffle_plus/radio_fill.dart';
@@ -32,6 +33,8 @@ import 'dislike_store_provider.dart';
 import 'suggestion_log_provider.dart';
 import 'player_providers.dart';
 import 'settings_providers.dart';
+import 'smart_search_providers.dart' show smartSearchEngineProvider;
+import 'ytm_catalog_providers.dart' show ytmLanguageProvider;
 import 'stream_providers.dart';
 import 'youtube_providers.dart';
 
@@ -367,6 +370,23 @@ final similarFillProvider =
         );
       };
     });
+
+KaraokeSearch _karaokeSearch(Ref ref) => karaokeSearchOn(
+  ref.read(smartSearchEngineProvider),
+  ref.read(ytmLanguageProvider),
+);
+
+/// The original song of a karaoke pick, as the seed of its radio (D-766).
+final karaokeOriginalProvider = Provider<Future<RadioSeed?> Function(YtResult)>(
+  (ref) =>
+      (r) => karaokeOriginalSeed(r, _karaokeSearch(ref)),
+);
+
+/// The karaoke video of a similar song (D-766).
+final karaokeSwapProvider = Provider<Future<YtResult?> Function(YtResult)>(
+  (ref) =>
+      (r) => karaokeVideoFor(r, _karaokeSearch(ref)),
+);
 
 /// The online songs of a genre page (D-356): the library songs of the genre
 /// seed the radios, as in Shuffle+, with the same limits (Jam, metered network,

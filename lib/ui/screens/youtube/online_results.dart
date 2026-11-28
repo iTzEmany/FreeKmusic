@@ -244,7 +244,7 @@ class _OnlineResultsState extends ConsumerState<OnlineResults> {
     final karaoke = _filter == SourceFilter.karaoke;
     final q = _baseQuery;
     return (
-      query: karaoke && !q.toLowerCase().contains('karaoke') ? '$q karaoke' : q,
+      query: karaoke && !isKaraokeTitle(q) ? '$q karaoke' : q,
       refresh: refresh,
       serial: ++_serial,
       videoOnly: karaoke,
