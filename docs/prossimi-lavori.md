@@ -18,6 +18,7 @@ Solo ciò che è ancora aperto, per area (le stesse di [`architettura/`](archite
 
 - **Feature «Video karaoke, aggiornamento dall'app, rilascio 1.6.3»** (kickoff del 18/11): fasi 131–133 in [`fasi/`](fasi/README.md), specifica in [`storico/feature/feature-karaoke-video-e-aggiornamenti.md`](storico/feature/feature-karaoke-video-e-aggiornamenti.md), mockup in [`storico/feature/mockup-karaoke-video-e-aggiornamenti.html`](storico/feature/mockup-karaoke-video-e-aggiornamenti.html), decisioni D-631..D-651.
 
+- **Refactor «karaoke-casuale»** (28/11, analisi in `refactor/karaoke-casuale/analisi.md`): fasi 167-169 in [`fasi/`](fasi/README.md) — dopo un video karaoke la coda si riempie solo di karaoke; «Casuale su tutto» mai spento.
 - **Refactor «invia-playlist-completa»** (28/11, analisi in `refactor/invia-playlist-completa/analisi.md`): fasi 165-166 in [`fasi/`](fasi/README.md) — «Invia a un dispositivo» manda tutti i brani della playlist, e sul ricevente arriva la playlist (nome, ordine, righe ombra, oltre 500 brani).
 - **Refactor «playlist-aggiungi-e-casuale»** (28/11, analisi in `refactor/playlist-aggiungi-e-casuale/analisi.md`): fasi 162-164 in [`fasi/`](fasi/README.md) — Casuale salvato per playlist, aggiunta a più playlist con ricerca, brani simili nelle playlist intelligenti.
 - **Grande revisione** (22/11, D-662..D-699, analisi in [`storico/refactor/grande-revisione/analisi.md`](storico/refactor/grande-revisione/analisi.md), rete di test in [`rete.md`](storico/refactor/grande-revisione/rete.md)): fasi 135-147 in [`fasi/`](fasi/README.md), una per riga:
