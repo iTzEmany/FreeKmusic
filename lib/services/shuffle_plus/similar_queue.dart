@@ -3,9 +3,11 @@ import 'dart:async';
 import '../../core/app_log.dart';
 import '../audio/codecore_audio_handler.dart';
 import '../audio/online_entries.dart' show isOnlineId;
+import '../online/query_match.dart' show MediaKind;
+import '../online/source_cooldown.dart';
 import '../online/youtube_service.dart';
 import 'radio_fill.dart';
-import 'suggestion_pool.dart' show suggestionArtistKey;
+import 'suggestion_pool.dart' show SuggestionCandidate, suggestionArtistKey;
 
 /// Songs similar to the one picked in Search, added at the end of the queue
 /// after it: a first block, then another whenever few songs are left after
@@ -25,6 +27,8 @@ class SimilarQueue {
     this.block = 10,
     this.low = 5,
     this.retryAfter = const Duration(minutes: 1),
+    this.swap,
+    this.cooldown,
     DateTime Function()? now,
     Timer Function(Duration, void Function())? schedule,
   }) : _now = now ?? DateTime.now,
@@ -49,6 +53,15 @@ class SimilarQueue {
   /// which another block is asked.
   final int block, low;
 
+  /// Optional replacement of a suggestion before anything else looks at it
+  /// (karaoke: the song becomes its karaoke video); null discards the song.
+  /// A 429 from it pauses the video source through [cooldown].
+  final Future<YtResult?> Function(YtResult r)? swap;
+  final SourceCooldown? cooldown;
+
+  /// Songs of the first group when [swap] is set (it discards some).
+  static const swapFirstBlock = 3;
+
   /// Wait after a failed request, so an error never makes a tight loop.
   final Duration retryAfter;
   final DateTime Function() _now;
@@ -67,7 +80,7 @@ class SimilarQueue {
   /// starts only then (an empty first block ends the session).
   Future<bool> start() async {
     if (seedVideoId != null) _seen.add(seedVideoId!);
-    final n = await _take(block);
+    final n = await _take(swap == null ? block : swapFirstBlock);
     if (_closed) return false;
     if (n == 0) {
       close();
@@ -77,7 +90,7 @@ class SimilarQueue {
       ..add(handler.queueChanges.listen((_) => _check()))
       ..add(handler.currentTrackStream.listen((_) => _check()));
     // A failure inside the first block holds the next request back.
-    final at = n < block ? _next() : null;
+    final at = n < (swap == null ? block : swapFirstBlock) ? _next() : null;
     at != null ? _wait(at) : _check();
     return true;
   }
@@ -140,11 +153,16 @@ class SimilarQueue {
     _busy = true;
     var added = 0;
     try {
-      await for (final c in fill.take(
-        want,
+      // With [swap] up to 2 × [want] songs are tried: the cap on swap calls.
+      await for (final c0 in fill.take(
+        swap == null ? want : 2 * want,
         inQueue: _seen.contains,
         cancelled: () => _closed,
       )) {
+        final r = await _swapped(c0.result);
+        if (_closed) break;
+        if (r == null) continue;
+        final c = SuggestionCandidate(r, c0.seedTitle, c0.kind);
         final id = await register(c.result, c.seedTitle);
         if (_closed) break;
         if (_gone()) {
@@ -158,7 +176,7 @@ class SimilarQueue {
             !fill.filter.allows(
               c.result.id,
               suggestionArtistKey(c.result),
-              fill.pool.positionsOf(c.result.id),
+              fill.pool.positionsOf(c0.result.id),
             )) {
           handler.online?.forget(id);
           continue;
@@ -170,6 +188,7 @@ class SimilarQueue {
         // Logged once queued; a library track is no suggestion to remember.
         if (isOnlineId(id)) onSuggested(c.result, c.seedTitle);
         added++;
+        if (added >= want) break;
       }
     } on YtException catch (e, st) {
       AppLog.w('similar queue stopped', e, st);
@@ -183,5 +202,25 @@ class SimilarQueue {
     }
     if (!_closed && _gone()) close();
     return added;
+  }
+
+  /// [original] swapped; null when [swap] discards it or fails (a 429
+  /// is rethrown after pausing the video source).
+  Future<YtResult?> _swapped(YtResult original) async {
+    final f = swap;
+    if (f == null) return original;
+    try {
+      return await f(original);
+    } on YtException catch (e) {
+      if (e.kind != YtErrorKind.rateLimited) {
+        AppLog.w('similar swap failed', e);
+        return null;
+      }
+      cooldown?.trip(MediaKind.ytVideo);
+      rethrow;
+    } on Object catch (e, st) {
+      AppLog.w('similar swap failed', e, st);
+      return null;
+    }
   }
 }

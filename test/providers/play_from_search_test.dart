@@ -119,6 +119,7 @@ void main() {
     int low = 2,
     Duration retryAfter = const Duration(minutes: 1),
     Future<void>? Function()? hold,
+    Future<YtResult?> Function(YtResult)? swap,
   }) => SimilarQueue(
     handler: handler,
     fill: fillFor(RadioSeed.online(videoId, 'Seed')),
@@ -136,6 +137,7 @@ void main() {
     block: block,
     low: low,
     retryAfter: retryAfter,
+    swap: swap,
     now: () => now,
     schedule: (d, f) {
       final t = _FakeTimer(d, f);
