@@ -14,6 +14,19 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+class _Slow extends YtDlpUpdater {
+  _Slow(this.gate, {this.fail = false}) : super(dio: Dio(), binDir: '/nowhere');
+  final Completer<void> gate;
+  final bool fail;
+  @override
+  Future<String> update({void Function(double)? onProgress}) async {
+    await gate.future;
+    onProgress?.call(0.5);
+    if (fail) throw const YtDlpUpdateException(YtDlpUpdateError.network);
+    return '2026.11.01';
+  }
+}
+
 class _Updater extends YtDlpUpdater {
   _Updater({this.fail}) : super(dio: Dio(), binDir: '/nowhere');
   final YtDlpUpdateError? fail;
@@ -28,6 +41,17 @@ class _Updater extends YtDlpUpdater {
 
 void main() {
   final now = DateTime(2026, 11, 11);
+
+  for (final fail in [false, true]) {
+    test('the provider disposed during the download is left alone (fail: $fail)', () async {
+      final c = ProviderContainer();
+      final gate = Completer<void>();
+      final run = c.read(ytDlpUpdateProvider.notifier).run(updater: _Slow(gate, fail: fail));
+      c.dispose();
+      gate.complete();
+      await run; // used to throw UnmountedRefException on the state write
+    });
+  }
 
   test('impossible dates in a version are left alone', () {
     expect(ytDlpNeedsDownload('2026.00.01', now), isFalse);
