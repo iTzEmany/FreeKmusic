@@ -203,6 +203,8 @@ void main() {
     await tester.tap(find.byTooltip('Aggiungi a playlist…'));
     await settle(tester);
     await tester.tap(find.text('Mix'));
+    await tester.pump();
+    await tester.tap(find.text('Aggiungi a 1 playlist'));
     await settle(tester);
     final inPlaylist = (await tester.runAsync(() => (h.db.select(h.db.playlistTracks)
           ..where((t) => t.playlistId.equals(id))

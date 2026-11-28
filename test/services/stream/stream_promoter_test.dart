@@ -472,7 +472,7 @@ void main() {
 
     test('moves the file (no download) and the row joins the playlist', () async {
       final (c, pl) = await setup(promoter);
-      c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag(pl));
+      c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag([pl]));
       await Future<void>.delayed(const Duration(milliseconds: 300));
       expect(c.read(downloadsProvider), isEmpty);
       final rows = await (db.select(db.playlistTracks)..where((t) => t.playlistId.equals(pl))).get();
@@ -482,9 +482,9 @@ void main() {
     test('without a cached file it downloads with the tag', () async {
       cache.forget(_key);
       final (c, pl) = await setup(promoter);
-      c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag(pl));
+      c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag([pl]));
       await Future<void>.delayed(const Duration(milliseconds: 300));
-      expect(c.read(downloadsProvider).single.tag, addToPlaylistTag(pl));
+      expect(c.read(downloadsProvider).single.tag, addToPlaylistTag([pl]));
     });
   });
 }

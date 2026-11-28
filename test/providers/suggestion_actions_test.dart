@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:codecore/providers/pending_playlist_adds.dart';
 import 'package:codecore/providers/suggestion_actions.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/online/youtube_service.dart';
@@ -87,8 +86,8 @@ void main() {
   });
 
   test('add to playlist downloads with the playlist in the tag', () async {
-    expect(await actions.addToPlaylist(id, 5), isFalse);
-    expect(downloads, [('v1', addToPlaylistTag(5))]);
+    expect(await actions.addToPlaylist(id, [5, 6]), isFalse);
+    expect(downloads, [('v1', 'addto:5,6')]);
     expect(log.latest('v1')?.outcome, SuggestionOutcome.downloaded);
   });
 

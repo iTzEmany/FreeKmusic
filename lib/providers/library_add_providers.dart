@@ -76,19 +76,21 @@ class LibraryAdder {
     final idx = await _ref.read(downloadIndexProvider.future);
     // A file is already there: the download path joins the playlist without a second copy.
     if (await idx.containsOnDisk(r.id, source: r.source)) return _ref.read(downloadsProvider.notifier).add(r, tag: tag);
-    final playlist = parseAddToPlaylistTag(tag);
+    final playlists = parseAddToPlaylistTag(tag);
     final saved = _ref.read(savedStreamKeysProvider).value;
-    if (playlist == null && (saved?.contains(r.indexKey) ?? false)) return true;
+    if (playlists.isEmpty && (saved?.contains(r.indexKey) ?? false)) return true;
     final id = await saveNow(r);
     if (id == null) return null;
-    if (playlist != null) {
+    var failed = false;
+    for (final playlist in playlists) {
       try {
         await _ref.read(playlistRepositoryProvider).addStreamTracks(playlist, [id]);
       } on Object catch (e, st) {
+        failed = true; // the other playlists still get the song
         AppLog.w('library add: could not put $id in playlist $playlist', e, st);
-        return null;
       }
     }
+    if (failed) return null;
     return true;
   }
 }

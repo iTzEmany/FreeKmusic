@@ -8776,6 +8776,48 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dropRejected => 'Nur Audiodateien ablegen, keine Ordner';
 
   @override
+  String get playlistSearchOrCreate => 'Playlist suchen oder erstellen';
+
+  @override
+  String playlistCreateNamed(String name) {
+    return '„$name“ erstellen';
+  }
+
+  @override
+  String addToNPlaylists(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Zu $n Playlists hinzufügen',
+      one: 'Zu 1 Playlist hinzufügen',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get alreadyPresent => 'Schon enthalten';
+
+  @override
+  String addedToNPlaylists(int n) {
+    String _temp0 = intl.Intl.pluralLogic(
+      n,
+      locale: localeName,
+      other: 'Zu $n Playlists hinzugefügt',
+      one: 'Zu 1 Playlist hinzugefügt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String noPlaylistNamed(String name) {
+    return 'Keine Playlist namens „$name“';
+  }
+
+  @override
+  String get playlistAddFailed =>
+      'Titel konnten nicht zu einer Playlist hinzugefügt werden';
+
+  @override
   String get offerNothingToSend => 'Keiner dieser Titel kann gesendet werden';
 
   @override

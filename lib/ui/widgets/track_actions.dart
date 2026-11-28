@@ -148,14 +148,10 @@ List<TrackActionGroup> onlineTrackActions(
         ),
       TrackAction(CatalogAction.playlist.icon, CatalogAction.playlist.label(l), () async {
         final picked = await pickPlaylist(outer, ref);
-        if (picked == null) return;
-        final now = await actions.addToPlaylist(track.id, picked.id);
+        if (picked.isEmpty) return;
+        final now = await actions.addToPlaylist(track.id, [for (final p in picked) p.id]);
         if (now != null) {
-          snack(
-            now
-                ? l.addedToPlaylist(picked.name)
-                : l.suggestionAddWhenDownloaded(picked.name),
-          );
+          snack(pickedAddedText(l, picked, now: now));
         } else if (outer.mounted) {
           snack(l.libraryAddFailed);
         }
@@ -840,19 +836,12 @@ List<TrackAction> onlineResultActions(
     }),
     TrackAction(CatalogAction.playlist.icon, CatalogAction.playlist.label(l), () async {
       final picked = await pickPlaylist(outer, ref);
-      if (picked == null || !outer.mounted) return;
+      if (picked.isEmpty || !outer.mounted) return;
       final now = await ref
           .read(libraryAdderProvider)
-          .add(r, tag: addToPlaylistTag(picked.id));
+          .add(r, tag: addToPlaylistTag([for (final p in picked) p.id]));
       if (outer.mounted) {
-        showMsg(
-          outer,
-          now == null
-              ? l.libraryAddFailed
-              : now
-              ? l.addedToPlaylist(picked.name)
-              : l.suggestionAddWhenDownloaded(picked.name),
-        );
+        showMsg(outer, now == null ? l.libraryAddFailed : pickedAddedText(l, picked, now: now));
       }
     }),
     TrackAction(

@@ -4499,6 +4499,41 @@
   "closeToTrayUnavailable": "Ce bureau n’a pas de zone de notification : la fenêtre se ferme toujours.",
   "dropHint": "Déposez pour écouter",
   "dropRejected": "Déposez uniquement des fichiers audio, pas des dossiers",
+  "playlistSearchOrCreate": "Chercher ou créer une playlist",
+  "playlistCreateNamed": "Créer « {name} »",
+  "@playlistCreateNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addToNPlaylists": "{n, plural, one{Ajouter à 1 playlist} other{Ajouter à {n} playlists}}",
+  "@addToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "alreadyPresent": "Déjà présent",
+  "addedToNPlaylists": "{n, plural, one{Ajouté à 1 playlist} other{Ajouté à {n} playlists}}",
+  "@addedToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noPlaylistNamed": "Aucune playlist nommée « {name} »",
+  "@noPlaylistNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddFailed": "Impossible d’ajouter les titres à une playlist",
   "offerNothingToSend": "Aucun de ces titres ne peut être envoyé",
   "offerPartialMissing": "{sent, plural, one{1 titre envoyé} other{{sent} titres envoyés}} sur {total} à {name} : {n, plural, one{1 fichier manquant} other{{n} fichiers manquants}}",
   "@offerPartialMissing": {

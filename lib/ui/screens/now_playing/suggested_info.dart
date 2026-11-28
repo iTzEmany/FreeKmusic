@@ -109,18 +109,10 @@ class SuggestedInfo extends ConsumerWidget {
                   label: CatalogAction.playlist.label(l),
                   onPressed: () async {
                     final picked = await pickPlaylist(context, ref);
-                    if (picked == null || !context.mounted) return;
-                    final now = await actions.addToPlaylist(
-                      track.id,
-                      picked.id,
-                    );
+                    if (picked.isEmpty || !context.mounted) return;
+                    final now = await actions.addToPlaylist(track.id, [for (final p in picked) p.id]);
                     if (now != null && context.mounted) {
-                      showMsg(
-                        context,
-                        now
-                            ? l.addedToPlaylist(picked.name)
-                            : l.suggestionAddWhenDownloaded(picked.name),
-                      );
+                      showMsg(context, pickedAddedText(l, picked, now: now));
                     }
                   },
                 ),

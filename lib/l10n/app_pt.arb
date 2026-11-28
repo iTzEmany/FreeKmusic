@@ -4464,6 +4464,41 @@
   "closeToTrayUnavailable": "Este ambiente não tem bandeja do sistema: a janela sempre fecha.",
   "dropHint": "Solte para ouvir",
   "dropRejected": "Solte apenas arquivos de áudio, não pastas",
+  "playlistSearchOrCreate": "Procurar ou criar uma playlist",
+  "playlistCreateNamed": "Criar «{name}»",
+  "@playlistCreateNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addToNPlaylists": "{n, plural, one{Adicionar a 1 playlist} other{Adicionar a {n} playlists}}",
+  "@addToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "alreadyPresent": "Já está",
+  "addedToNPlaylists": "{n, plural, one{Adicionado a 1 playlist} other{Adicionado a {n} playlists}}",
+  "@addedToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noPlaylistNamed": "Nenhuma playlist chamada «{name}»",
+  "@noPlaylistNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddFailed": "Não foi possível adicionar as faixas a uma playlist",
   "offerNothingToSend": "Nenhuma destas músicas pode ser enviada",
   "offerPartialMissing": "{sent, plural, one{Enviada 1 música} other{Enviadas {sent} músicas}} de {total} para {name}: {n, plural, one{1 arquivo em falta} other{{n} arquivos em falta}}",
   "@offerPartialMissing": {
