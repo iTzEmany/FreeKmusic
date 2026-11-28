@@ -76,6 +76,7 @@ void main() {
   var closed = 0;
   var autoAdvance = false;
   int? failOnCall;
+  var echoSeed = false;
   var registering = 0, maxRegistering = 0;
 
   // The radio: `pageSize` songs per page, ids r<call>_<n>, endless.
@@ -88,6 +89,7 @@ void main() {
     final c = asked.length;
     return RadioPage([
       RadioItem(_r(id), RadioKind.song, isSeed: true),
+      if (echoSeed) RadioItem(_r(id), RadioKind.song),
       for (var n = 0; n < pageSize; n++)
         RadioItem(_r('r${c}_$n'), RadioKind.song),
     ], continuation: 'more');
@@ -191,6 +193,7 @@ void main() {
     closed = 0;
     autoAdvance = false;
     failOnCall = null;
+    echoSeed = false;
     registering = maxRegistering = 0;
     player = PlayerController(
       handler,
@@ -569,5 +572,30 @@ void main() {
     expect(asked.length, 2); // low is huge, yet nothing more is asked now
     expect(timers.single.delay, RadioGate.minGap);
     s.close();
+  });
+
+  test('a pick: the seed id is asked, never queued again, and the blocked track stays out', () async {
+    echoSeed = true;
+    dislikeGate.store.blockTrack(const DislikedTrack(videoId: 'r1_1', title: 'T', artist: ''));
+    expect(await player.playFromSearch(online: _r('x')), isTrue);
+    expect(asked, [('x', null)]);
+    expect([for (final i in handler.queueIds) online.entryOf(i)?.result.id], ['x', 'r1_0', 'r1_2']);
+    expect(suggested, ['r1_0/Tx', 'r1_2/Tx']);
+    final e = online.entryOf(handler.queueIds[1])!;
+    expect((e.seedTitle, e.suggested), ('Tx', true));
+  });
+
+  test('a 429 on the first fill: the pick plays alone, the source pauses, no session or wait', () async {
+    radioError = const YtException(YtErrorKind.rateLimited);
+    expect(await player.playFromSearch(online: _r('x')), isFalse);
+    expect(handler.queueIds.length, 1);
+    expect(player.similarTitle.value, isNull);
+    expect(gate.rateLimited, isTrue);
+    expect(gate.pausedUntil, now.add(RadioGate.pause));
+    expect(timers, isEmpty);
+    // Inside the pause a new pick asks nothing.
+    radioError = null;
+    expect(await player.playFromSearch(online: _r('y')), isFalse);
+    expect(asked.length, 1);
   });
 }

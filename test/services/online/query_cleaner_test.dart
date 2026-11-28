@@ -253,6 +253,18 @@ void main() {
         expect((q.artist, q.title), (artist, song));
       });
     }
+    for (final (title, channel, artist, song) in [
+      ('Artista - Brano (Karaoke Version)', 'Some Channel', 'Artista', 'Brano'),
+      ('Brano (Karaoke Version)', 'Some Channel', '', 'Brano'),
+      ('Artista - Brano [Karaoke Version]', 'Some Channel', 'Artista', 'Brano'),
+      ('Brano [Karaoke]', '', '', 'Brano'),
+      ('Artista - Brano (Instrumental)', 'Some Channel', 'Artista', 'Brano'),
+    ]) {
+      test('today\'s split: «$title»', () {
+        final q = karaokeLyricsQuery(title, channel);
+        expect((q.artist, q.title), (artist, song));
+      });
+    }
     test('a tail «- Karaoke Version» and «with lyrics» go too', () {
       final q = karaokeLyricsQuery('KaraFun Karaoke - Adele - Hello - Karaoke Version with lyrics', 'KaraFun Karaoke');
       expect((q.artist, q.title), ('Adele', 'Hello'));
