@@ -6,7 +6,9 @@ import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
-import 'package:codecore/providers/shuffle_plus_providers.dart' show ShuffleMode, listKeyOf;
+import 'package:codecore/data/settings/settings_store.dart';
+import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart' show ShuffleMode, listKeyOf, listShuffleProvider;
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
@@ -16,6 +18,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../support/fake_backend.dart';
 
@@ -282,5 +285,28 @@ void main() {
     log.addSuggestion(r, 'Seed');
     log.addSuggestion(r, 'Seed');
     expect(log.length, 1);
+  });
+
+  test('a list\'s «Casuale» lives in memory by listKeyOf and writes nothing to the settings', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final c = ProviderContainer(overrides: [
+      settingsStoreProvider.overrideWithValue(SettingsStore(prefs)),
+    ]);
+    addTearDown(c.dispose);
+    final key = listKeyOf([1, 2, 3]);
+    expect(listKeyOf([1, 2, 3]), key);
+    expect(listKeyOf([3, 2, 1]), isNot(key));
+    expect(c.read(listShuffleProvider(key)), ShuffleMode.off);
+    c.read(listShuffleProvider(key).notifier).set(ShuffleMode.plus);
+    expect(c.read(listShuffleProvider(listKeyOf([1, 2, 3]))), ShuffleMode.plus);
+    expect(c.read(listShuffleProvider(listKeyOf([3, 2, 1]))), ShuffleMode.off);
+    await pumpEventQueue();
+    expect(prefs.getKeys(), isEmpty);
+    final other = ProviderContainer(overrides: [
+      settingsStoreProvider.overrideWithValue(SettingsStore(prefs)),
+    ]);
+    addTearDown(other.dispose);
+    expect(other.read(listShuffleProvider(key)), ShuffleMode.off, reason: 'not saved');
   });
 }

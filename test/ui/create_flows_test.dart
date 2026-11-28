@@ -151,6 +151,15 @@ void main() {
       await h.dispose(tester);
     });
 
+    testWidgets('typing in the new-playlist field does not filter the list', (tester) async {
+      final (h, _) = await openAdd(tester);
+      expect(find.text('Rock'), findsOneWidget);
+      await tester.enterText(find.byType(TextField), 'zzz');
+      await tester.pump();
+      expect(find.text('Rock'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
     testWidgets('Crea makes a new playlist holding the track; smart playlists are not listed', (tester) async {
       final (h, tracks) = await openAdd(tester);
       await h.db.into(h.db.smartPlaylists).insert(
