@@ -301,24 +301,31 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   /// True when the song joined the library at once (no download started).
   Future<bool> add(YtResult r, {String? tag}) async {
     // Imports (any tag but addto:) always download.
-    if (tag != null && parseAddToPlaylistTag(tag) == null) {
+    if (tag != null && parseAddToPlaylistTag(tag).isEmpty) {
       _queue.add(r, tag: tag);
       return false;
     }
     final idx = ref.read(downloadIndexProvider).value;
     if (idx != null && await idx.containsOnDisk(r.id, source: r.source)) {
       // Already a library file: never a second copy (`Title (2).m4a`).
-      final playlist = parseAddToPlaylistTag(tag);
-      if (playlist != null) unawaited(_joinPlaylist(r, playlist));
+      unawaited(_joinPlaylist(r, parseAddToPlaylistTag(tag)));
       return false;
     }
     // The same song already queued or downloading: never a second job (it would write the file back later).
     if (tag == null && _queue.items.any((e) => e.result.indexKey == r.indexKey && _isActive(e.status))) return false;
-    if (!_promoting.add(r.indexKey)) return false; // double tap while it is moving
-    return _promoteOrQueue(r, tag).whenComplete(() => _promoting.remove(r.indexKey));
+    final moving = _promoting[r.indexKey];
+    if (moving != null) {
+      // Double tap while it is moving: its playlists still count once the first move has promoted it.
+      // shortcut: if the first move queued a download instead, these playlists are lost; fix with a queue tag update.
+      if (await moving) await _joinPlaylist(r, parseAddToPlaylistTag(tag));
+      return false;
+    }
+    final run = _promoteOrQueue(r, tag);
+    _promoting[r.indexKey] = run;
+    return run.whenComplete(() => _promoting.remove(r.indexKey));
   }
 
-  final _promoting = <String>{};
+  final _promoting = <String, Future<bool>>{};
 
   static bool _isActive(DownloadStatus s) =>
       s == DownloadStatus.queued || s == DownloadStatus.downloading || s == DownloadStatus.waitingRetry;
@@ -345,12 +352,16 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   }
 
   /// A promoted song is a library track already: the playlist of an `addto:` tag takes it now.
-  Future<void> _joinPlaylist(YtResult r, int? playlistId) async {
-    if (playlistId == null) return;
+  Future<void> _joinPlaylist(YtResult r, List<int> playlistIds) async {
+    if (playlistIds.isEmpty) return;
     try {
       final path = await (await ref.read(downloadIndexProvider.future)).existingPathFor(r.id, source: r.source);
       final id = path == null ? null : await ref.read(trackRepositoryProvider).idForPath(path);
-      if (id != null) await ref.read(playlistRepositoryProvider).addTracks(playlistId, [id]);
+      if (id != null) {
+        for (final p in playlistIds) {
+          await ref.read(playlistRepositoryProvider).addTracks(p, [id]);
+        }
+      }
     } on Object catch (e, st) {
       AppLog.w('add to playlist after promotion failed for ${r.indexKey}', e, st);
     }

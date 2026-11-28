@@ -114,11 +114,12 @@ void main() {
     final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
         path: file.path, title: 'Song', albumKey: 'k', format: 'm4a', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
     final playlistId = await PlaylistRepository(db).create('P');
-    c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag(playlistId));
+    final second = await PlaylistRepository(db).create('Q');
+    c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag([playlistId, second]));
     await Future<void>.delayed(const Duration(milliseconds: 200));
     expect(promoter.calls, 0);
     expect(c.read(downloadsProvider), isEmpty);
-    expect(await PlaylistRepository(db).containing([trackId]), {playlistId});
+    expect(await PlaylistRepository(db).containing([trackId]), {playlistId, second});
   });
 
   test('add returns false for a video already in the library', () async {

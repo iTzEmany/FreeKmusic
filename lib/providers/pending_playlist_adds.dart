@@ -11,13 +11,15 @@ import 'youtube_providers.dart';
 
 const _prefix = 'addto:';
 
-/// The download tag that asks for the song to join [playlistId] once it is a
-/// library track.
-String addToPlaylistTag(int playlistId) => '$_prefix$playlistId';
+/// The download tag that asks for the song to join every playlist in
+/// [playlistIds] once it is a library track (`addto:3,7`).
+String addToPlaylistTag(List<int> playlistIds) => '$_prefix${playlistIds.join(',')}';
 
-int? parseAddToPlaylistTag(String? tag) {
-  if (tag == null || !tag.startsWith(_prefix)) return null;
-  return int.tryParse(tag.substring(_prefix.length));
+/// The playlists of an `addto:` tag; empty for any other tag or a malformed one.
+List<int> parseAddToPlaylistTag(String? tag) {
+  if (tag == null || !tag.startsWith(_prefix)) return const [];
+  final ids = tag.substring(_prefix.length).split(',').map(int.tryParse).toList();
+  return ids.isEmpty || ids.contains(null) ? const [] : ids.cast<int>();
 }
 
 /// Puts a downloaded suggestion into the playlist it was asked for.
@@ -40,16 +42,18 @@ class PendingPlaylistAdds {
   late final StreamSubscription<DownloadItem> _sub;
 
   Future<void> _onSettled(DownloadItem item) async {
-    final playlistId = parseAddToPlaylistTag(item.tag);
+    final playlists = parseAddToPlaylistTag(item.tag);
     final path = item.path;
     if (item.status != DownloadStatus.done || path == null) return;
-    if (playlistId == null && replaceStream == null) return;
+    if (playlists.isEmpty && replaceStream == null) return;
     try {
       final id = await trackIdForPath(path);
       if (id == null) return;
       // The queue must play the file now, not the stream address (it expires).
       replaceStream?.call(item.result, id);
-      if (playlistId != null) await addTracks(playlistId, [id]);
+      for (final p in playlists) {
+        await addTracks(p, [id]);
+      }
     } on Object catch (e, st) {
       AppLog.w('add to playlist after download failed', e, st);
     }
