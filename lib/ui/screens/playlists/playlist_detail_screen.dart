@@ -13,7 +13,7 @@ import '../../../providers/player_providers.dart';
 import '../../../providers/playlist_ops.dart';
 import '../../../providers/selection_providers.dart';
 import '../../../providers/settings_providers.dart';
-import '../../../providers/shuffle_plus_providers.dart' show listKeyOf;
+import '../../../providers/shuffle_plus_providers.dart' show PlaylistShuffleKey;
 import '../../../services/share/share_fragment.dart' show SharedKind;
 import '../../shell/shell_nav.dart';
 import '../../theme/app_theme.dart';
@@ -142,7 +142,10 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
         if (!ok) return;
         await ops.delete(id);
         ref.read(settingsProvider.notifier).update(
-          (s) => s.copyWith(playlistSorts: {...s.playlistSorts}..remove('$id')),
+          (s) => s.copyWith(
+            playlistSorts: {...s.playlistSorts}..remove('$id'),
+            playlistShuffles: {...s.playlistShuffles}..remove('$id'),
+          ),
         );
         if (mounted) Navigator.of(context).pop();
     }
@@ -377,7 +380,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
 
     // One key for the pill and Play: they must be the same list (D-534).
 
-    final shuffleKey = listKeyOf([for (final t in tracks) t.id]);
+    final shuffleKey = PlaylistShuffleKey(id);
 
     return SelectionScope(
       listKey: key,

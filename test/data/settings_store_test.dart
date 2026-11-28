@@ -189,6 +189,29 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().playlistSorts, isEmpty);
   });
+  test('each playlist keeps its Casuale mode, smart ones apart; a damaged value is no entry', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().playlistShuffles, isEmpty);
+    await store.writeSettings(
+      store.readSettings().copyWith(
+        playlistShuffles: {'12': 'plus', 'smart:12': 'shuffle'},
+      ),
+    );
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistShuffles, {'12': 'plus', 'smart:12': 'shuffle'});
+    SharedPreferences.setMockInitialValues({
+      'playlistShuffles': '{"1":"plus","2":"loud","3":5}',
+    });
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistShuffles, {'1': 'plus'});
+    SharedPreferences.setMockInitialValues({'playlistShuffles': '{broken'});
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistShuffles, isEmpty);
+    SharedPreferences.setMockInitialValues({'playlistShuffles': 5});
+    store = await SettingsStore.open();
+    expect(store.readSettings().playlistShuffles, isEmpty);
+  });
   test('sort keys of the wrong type (a tampered backup) read as the defaults, without throwing', () async {
     SharedPreferences.setMockInitialValues({
       'playlistSorts': 5,

@@ -67,6 +67,7 @@ class AppSettings {
     this.librarySort = 'recent',
     this.librarySortAscending,
     this.playlistSorts = const {},
+    this.playlistShuffles = const {},
     this.libraryGrid,
     this.libraryDensity = 1,
     this.recentSearches = const [],
@@ -163,6 +164,9 @@ class AppSettings {
   /// Each playlist's own order, by playlist id: «criterion:asc|desc» (D-424).
   /// A missing id means the personal order.
   final Map<String, String> playlistSorts;
+
+  /// The «Casuale» mode of each playlist (`off|shuffle|plus`): key `'<id>'`, or `'smart:<id>'` for a smart one.
+  final Map<String, String> playlistShuffles;
 
   /// Library as a grid (true) or a list (false); null = never chosen, the
   /// screen picks by width. Stays on this device, out of backups (D-739).
@@ -291,6 +295,7 @@ class AppSettings {
     String? librarySort,
     bool? librarySortAscending,
     Map<String, String>? playlistSorts,
+    Map<String, String>? playlistShuffles,
     bool? libraryGrid,
     int? libraryDensity,
     List<String>? recentSearches,
@@ -358,6 +363,7 @@ class AppSettings {
     librarySort: librarySort ?? this.librarySort,
     librarySortAscending: librarySortAscending ?? this.librarySortAscending,
     playlistSorts: playlistSorts ?? this.playlistSorts,
+    playlistShuffles: playlistShuffles ?? this.playlistShuffles,
     libraryGrid: libraryGrid ?? this.libraryGrid,
     libraryDensity: libraryDensity ?? this.libraryDensity,
     recentSearches: recentSearches ?? this.recentSearches,
@@ -494,6 +500,29 @@ class SettingsStore {
     await _prefs.setBool(storageModeD665Key, true);
   }
 
+  Map<String, String> _readPlaylistShuffles() {
+    final raw = _prefs.get('playlistShuffles');
+    if (raw == null) return const {};
+    if (raw is! String) {
+      AppLog.w('playlistShuffles has type ${raw.runtimeType}, back to off');
+      return const {};
+    }
+    try {
+      final m = jsonDecode(raw);
+      if (m is Map) {
+        // A damaged value is no entry (off).
+        return {
+          for (final e in m.entries)
+            if (const {'off', 'shuffle', 'plus'}.contains(e.value))
+              '${e.key}': '${e.value}',
+        };
+      }
+    } on FormatException catch (e) {
+      AppLog.w('playlistShuffles unreadable, back to off', e);
+    }
+    return const {};
+  }
+
   Map<String, String> _readPlaylistSorts() {
     final raw = _prefs.get('playlistSorts');
     if (raw == null) return const {};
@@ -550,6 +579,7 @@ class SettingsStore {
     librarySort: _prefs.getString('librarySort') ?? 'recent',
     librarySortAscending: _readSortAscending(),
     playlistSorts: _readPlaylistSorts(),
+    playlistShuffles: _readPlaylistShuffles(),
     // Older versions always saved the key, so only a saved choice counts.
     libraryGrid: _prefs.getBool('libraryGridChosen') == true ? _prefs.getBool('libraryGrid') : null,
     libraryDensity: (_prefs.getInt('libraryDensity') ?? 1).clamp(0, 2),
@@ -666,6 +696,7 @@ class SettingsStore {
       await _prefs.setBool('librarySortAscending', asc);
     }
     await _prefs.setString('playlistSorts', jsonEncode(s.playlistSorts));
+    await _prefs.setString('playlistShuffles', jsonEncode(s.playlistShuffles));
     final grid = s.libraryGrid;
     if (grid != null) {
       await _prefs.setBool('libraryGrid', grid);
