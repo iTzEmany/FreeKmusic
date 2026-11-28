@@ -18,13 +18,13 @@ Codice: `ShuffleHero` (`lib/ui/**/home_blocks.dart:60-88`), `ShuffleModeButton`/
 `PlaybackPersistence` (:64-69, 140-150), MPRIS (`mpris_controls.dart:198`), `setShuffleMode` del handler (`codecore_audio_handler.dart:2143`).
 
 ## Task
-- [ ] 169.1 Una sola funzione decide il modo successivo
+- [x] 169.1 Una sola funzione decide il modo successivo
   - File: nuovo `lib/services/shuffle_plus/next_shuffle_mode.dart` (`nextShuffleMode(current, {required bool plusAllowed, required bool neverOff})`),
     `player_providers.dart` (`_cycleList`, `_cycleShuffle`, ramo di `toggleShuffle`), test a tabella nuovo.
   - Passi: 1) funzione pura; 2) i due cicli la usano con `neverOff: false`; nessun cambio di comportamento.
   - Comando mirato: `~/.claude/scripts/isolate.sh flutter test test/providers/list_shuffle_test.dart test/ui/shuffle_button_test.dart test/services/shuffle_plus`
   - Fatto quando: i test della 167.2 verdi senza modifiche; nessuna transizione di `ShuffleMode` fuori da `nextShuffleMode` in `player_providers.dart`.
-- [ ] 169.2 Blocco sulla Home e sulla sua coda
+- [x] 169.2 Blocco sulla Home e sulla sua coda
   - File: `player_providers.dart` (coda bloccata = `isPlayingList(libraryListKey)`; `cycleShuffle`, `cycleListShuffle(libraryListKey)` e
     `toggleShuffle` passano `neverOff: true` e non spengono mai), `shuffle_plus_providers.dart` (`ListShuffle`: predefinito Casuale per
     `libraryListKey`, uno spento salvato si legge come Casuale), `shuffle_button.dart` (con blocco attivo l'avviso di Casuale+ bloccato esce a
@@ -35,7 +35,7 @@ Codice: `ShuffleHero` (`lib/ui/**/home_blocks.dart:60-88`), `ShuffleModeButton`/
     `libraryListKey` che si aspettano spento.
   - Comando mirato: `~/.claude/scripts/isolate.sh flutter test test/providers/list_shuffle_test.dart test/ui/shuffle_button_test.dart test/ui/home_screen_test.dart test/ui/talkback_labels_test.dart`
   - Fatto quando: test verdi; i test della 167.2 sulle altre liste verdi senza modifiche.
-- [ ] 169.3 MPRIS segue il blocco
+- [x] 169.3 MPRIS segue il blocco
   - File: `mpris_controls.dart` (il setter `Shuffle` chiama `PlayerController` invece di `_h.setShuffleMode`, e ripubblica lo stato se lo
     spegnimento è rifiutato), il punto che costruisce `MprisControls`, test a livello di `PlayerController` in `list_shuffle_test.dart`
     (`mpris_controls_test.dart` salta senza bus D-Bus).
@@ -43,7 +43,7 @@ Codice: `ShuffleHero` (`lib/ui/**/home_blocks.dart:60-88`), `ShuffleModeButton`/
     2) test dei due casi.
   - Comando mirato: `~/.claude/scripts/isolate.sh flutter test test/providers/list_shuffle_test.dart test/services/audio/mpris_controls_test.dart`
   - Fatto quando: test verdi; `grep -n "setShuffleMode" lib/services/**/mpris_controls.dart` vuoto.
-- [ ] 169.4 Il blocco sopravvive al riavvio
+- [x] 169.4 Il blocco sopravvive al riavvio
   - File: `playback_persistence.dart` (preferenza stringa con la chiave della lista accanto a `lastContextKind`, scritta solo per
     `libraryListKey`, cancellata per ogni altra coda; ripristino), `player_providers.dart` (`_listKey`/`_listKeySource` ripristinati), la
     scorciatoia di `shuffle_plus_providers.dart:455-459` (togliere o aggiornare il commento), `playback_persistence_test.dart`, `list_shuffle_test.dart`.
@@ -51,7 +51,7 @@ Codice: `ShuffleHero` (`lib/ui/**/home_blocks.dart:60-88`), `ShuffleModeButton`/
     coda della Home il pulsante del player non spegne; la coda ripristinata di un'altra lista sì.
   - Comando mirato: `~/.claude/scripts/isolate.sh flutter test test/services/audio/playback_persistence_test.dart test/providers/list_shuffle_test.dart`
   - Fatto quando: test verdi; `flutter analyze` pulito.
-- [ ] 169.5 Documenti e chiusura del refactor
+- [x] 169.5 Documenti e chiusura del refactor
   - File: `../architettura/riproduzione-e-coda.md` («Shuffle e ripetizione»: giro unico, blocco della Home, MPRIS, chiave salvata),
     `../prossimi-lavori.md`, `../handoff.md`.
   - Passi: aggiornare i documenti; confrontare i criteri di «Rete» dell'analisi (comandi mirati verdi, una sola funzione del giro, una sola regola
@@ -63,3 +63,7 @@ Codice: `ShuffleHero` (`lib/ui/**/home_blocks.dart:60-88`), `ShuffleModeButton`/
 Niente. A fine fase la prova sul telefono la fa l'agente via `~/.claude/scripts/device.sh`, a volume 0: «Casuale su tutto» dalla Home, il pulsante del player non spegne il casuale; riavvio dell'app e stessa prova.
 
 ## Note di deviazione
+
+- **169.2** Il blocco vale finché la coda è quella della Home: regge a «Riprendi», alla fine della Jam da ospite e ai brani rimossi (le sorgenti restano un sottoinsieme di quelle salvate). Una richiesta di spegnere (pulsante, MPRIS) non cambia nulla, tranne Casuale+ → Casuale. L'avviso «Casuale+ non disponibile» si ripete a ogni tocco solo sul pulsante della Home.
+- **169.3** `MprisControls` riceve un callback `setShuffle` (default: l'handler) e ripubblica lo stato vero dopo ogni richiesta. La ripubblicazione richiede un bus D-Bus e non ha test (salta senza bus).
+- **169.4** `lastListKey` accanto a `lastContextKind`, letto a ogni salvataggio, escluso da «Unisci» del backup; un valore non testuale viene ignorato. Al ripristino si applica solo `libraryListKey` e solo se la coda ripristinata è quella salvata.

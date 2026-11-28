@@ -219,7 +219,8 @@ Future<void> main(List<String> args) async {
   if (kPerfProbe) PerfProbe.mark('audioService', sinceMain);
   // Linux: the track and the media keys in the desktop (MPRIS). A failure is
   // logged and the app runs without.
-  if (Platform.isLinux) unawaited(MprisControls().attach(handler));
+  final mpris = Platform.isLinux ? MprisControls() : null;
+  if (mpris != null) unawaited(mpris.attach(handler));
   // Windows: the same through SMTC.
   if (Platform.isWindows) unawaited(SmtcControls().attach(handler));
 
@@ -335,6 +336,7 @@ Future<void> main(List<String> args) async {
   );
   // A queued online entry downloaded meanwhile plays its library file (D-81).
   handler.libraryIdOf = container.read(playerControllerProvider).libraryIdOf;
+  mpris?.setShuffle = container.read(playerControllerProvider).setShuffleFromSystem;
   // A saved stream the video of which vanished from YouTube gets its replacement (R-242).
   handler.onStreamGone = (t) => unawaited(container.read(vanishedTracksProvider).handle(t));
   // The karaoke video holds the audio's start, so it is plugged in from the beginning (D-647).
@@ -360,6 +362,7 @@ Future<void> main(List<String> args) async {
         applyPlus: (on) => container
             .read(settingsProvider.notifier)
             .update((c) => c.copyWith(shufflePlus: on)),
+        applyListKey: container.read(playerControllerProvider).restoreListKey,
       );
     } on Object catch (e, st) {
       AppLog.w('restore playback failed', e, st);

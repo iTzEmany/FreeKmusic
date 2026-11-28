@@ -978,6 +978,7 @@ void main() {
         'compactMode': true,
         'playlistSorts': '{"3":"title"}',
         'lastQueueIds': ['7'],
+        'lastListKey': 'library',
         'deviceName': 'Other phone',
         'trustedDevices': '[1]',
         'jamLatencyMs': 120,
@@ -1029,6 +1030,7 @@ void main() {
         'playlistShuffles': '{"1":"plus"}',
         'smartMixOff': ['1'],
         'lastQueueIds': ['1'],
+        'lastListKey': 'mine',
         'customThemes': themesJson([('t2', 'Local', '/x/y.jpg')]),
       });
       prefs = await SharedPreferences.getInstance();
@@ -1054,6 +1056,7 @@ void main() {
       expect(prefs.getString('playlistShuffles'), '{"1":"plus"}');
       expect(prefs.getStringList('smartMixOff'), ['1']);
       expect(prefs.getStringList('lastQueueIds'), ['1']);
+      expect(prefs.getString('lastListKey'), 'mine');
     });
 
     test('themes are united by id and the backup wins on the same id; the picture lands in themeDir', () async {
