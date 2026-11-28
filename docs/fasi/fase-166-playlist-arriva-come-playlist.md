@@ -14,7 +14,7 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
 (`lib/ui/screens/share/incoming_offer_dialog.dart`, `incoming_offer_tile.dart`); `DevicesSheet` (passa nome e ordine della playlist).
 
 ## Task
-- [ ] 166.1 Campo `playlist` nell'offerta (mittente) e parse tollerante (ricevente)
+- [x] 166.1 Campo `playlist` nell'offerta (mittente) e parse tollerante (ricevente)
   - File: `offers.dart` (classe `OfferPlaylist {key, name, part, parts, order}`; `order` = lista di `{item: id}` o `{stream: key}`; `StreamOffer` con
     `shadow` facoltativo; `IncomingOffer.playlist`), `share_providers.dart` (`buildShareEntries(…, withShadow: true)` fa passare le righe ombra YouTube
     marcate), `share_hub.dart` (`sendOffer(peer, tracks, {playlistName})`), `devices_sheet.dart` e `playlist_detail_screen.dart` (passano il nome), test in
@@ -24,7 +24,7 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
     senza playlist ha esattamente i campi di oggi.
   - Comando mirato: `flutter test test/services/share/offers_test.dart test/services/share/meta_travel_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; i test della 165.1 verdi senza modifiche.
-- [ ] 166.2 Il ricevente crea la playlist
+- [x] 166.2 Il ricevente crea la playlist
   - File: `share_hub.dart` (`accept`: a fine ricezione, se `o.playlist` c'è, costruisce gli id nell'ordine: file ricevuti dal loro percorso → riga,
     streaming salvati dalla chiave → riga, righe ombra con `ensureStreamRow`, brani già presenti con `PlaylistSyncRepository.resolver()`; poi
     `createWith` con il nome libero e `addStreamTracks` per le righe ombra; elementi non arrivati saltati), eventuale helper puro del nome libero
@@ -35,7 +35,7 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
     occupato → «Nome (2)», poi «Nome (3)»; 4) un file non arrivato non blocca la playlist; 5) offerta senza playlist: nessuna playlist creata (come oggi).
   - Comando mirato: `flutter test <test nuovo> test/ui/incoming_offer_test.dart test/services/share/received_meta_test.dart` (più `flutter analyze`)
   - Fatto quando: i cinque casi coperti da test verdi.
-- [ ] 166.3 Oltre 500 brani: parti raggruppate
+- [x] 166.3 Oltre 500 brani: parti raggruppate
   - File: `share_hub.dart` (mittente: parti da 500 con la stessa `key`, inviate in ordine; esito sommato; ricevente: chiede conferma solo per la parte 1;
     le parti successive dello stesso mittente — stesso `fromId`, stesso indirizzo e, se firmate, stessa impronta — entro `offerTtl` sono accettate da sole,
     ognuna dopo che la precedente ha scritto la sua parte; rifiutata o scaduta la prima, rifiutate le altre), `offers.dart` se serve un indice per `key`,

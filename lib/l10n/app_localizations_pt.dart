@@ -8867,6 +8867,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String incomingPlaylist(String name) {
-    return 'Playlist «$name»';
+    return 'A playlist «$name»';
   }
 }
