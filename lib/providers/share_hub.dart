@@ -18,6 +18,8 @@ import '../services/share/discovery.dart';
 import '../services/share/lan_client.dart';
 import '../l10n/app_localizations.dart';
 import '../services/share/offers.dart';
+import '../services/share/playlist_parts.dart';
+import '../services/share/received_playlist.dart';
 import '../services/share/received_meta.dart';
 import '../services/share/pairing.dart';
 import '../services/share/pairing_client.dart';
@@ -103,6 +105,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
   int _users = 0;
   bool _starting = false;
   final _cancels = <String, CancelToken>{};
+  late final _parts = PlaylistParts(accept: accept, decline: decline);
   final _newIncoming = StreamController<IncomingOffer>.broadcast();
   final _notified = <String>{}; // offers currently shown as notifications
 
@@ -336,11 +339,15 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
               deviceId: await store.deviceId(),
               deviceName: ref.read(deviceNameProvider),
             )
+            ..acceptsPart = ((id, host, fp, key, part, parts) => _parts.accepts(id, host, fp, key, part, parts))
+            ..onCancelled = ((o) => _parts.firstDone(o, ok: false))
             ..onIncoming = (o) {
               final fp = o.callerFingerprint;
               final trusted = ref.read(trustedDevicesProvider);
               o.trusted = fp != null && trusted.matches(o.fromId, fp);
               _publish();
+              // The next part of a big playlist already confirmed: no question.
+              if (_parts.handle(o)) return;
               // A trusted device with «accept automatically» needs no question.
               if (o.trusted && trusted.byId(o.fromId)!.autoAccept) {
                 unawaited(accept(o));
@@ -456,6 +463,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
     await _discovery?.dispose();
     await _node?.stop();
     _service?.dispose();
+    _parts.dispose();
     _jam?.dispose();
     _jam = null;
     _discovery = null;
@@ -469,46 +477,68 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
   // ---- sending -------------------------------------------------------------
 
   /// Sends an offer (metadata only) to [peer]; the outcome says what travelled and what was dropped.
-  Future<SendOutcome> sendOffer(Peer peer, List<Track> tracks) async {
+  /// With [playlistName] [tracks] are a playlist in order: it arrives as a playlist (D-760), shadow rows
+  /// included (D-761), and over 500 tracks as several offers with the same key (D-762).
+  Future<SendOutcome> sendOffer(Peer peer, List<Track> tracks, {String? playlistName}) async {
     await _ensureRunning();
     final service = _service;
     final node = _node;
     if (service == null || node == null || node.port == null) return SendOutcome.unreachable(tracks.length);
-    final built = await buildShareEntriesCounted(ref, tracks);
+    final built = await buildShareEntriesCounted(ref, tracks, withShadow: playlistName != null);
     final entries = built.entries;
+    var sent = 0, refused = 0;
     SendOutcome outcome(SendStatus s) => SendOutcome(
       s,
       total: tracks.length,
-      sent: s == SendStatus.sent ? entries.length : 0,
+      sent: sent,
       missing: built.missing,
-      unsupported: built.unsupported,
+      unsupported: built.unsupported + refused,
       shadow: built.shadow,
     );
     if (entries.isEmpty) return outcome(SendStatus.nothingToSend);
-    final offer = service.createOutgoing(
-      toId: peer.id,
-      toName: peer.name,
-      entries: entries,
-    );
-    try {
-      await ref
-          .read(lanClientProvider)
-          .sendOffer(
-            peer.host,
-            peer.port,
-            service.offerPayload(offer, node.port!, tlsPort: node.tlsPort),
-            tlsPort: peer.tlsPort,
-            pin: _pinOf(peer.id),
-          );
-      _publish();
-      return outcome(SendStatus.sent);
-    } on LanException catch (e) {
-      AppLog.w('send offer to ${peer.name} failed', e);
-      offer.status = OfferStatus.failed;
-      state = state.copyWith(error: e.error);
-      service.notify();
-      return outcome(SendStatus.unreachable);
+    final parts = playlistName == null ? [entries] : splitParts(entries);
+    // The receiver refuses a longer name (and then the offer would arrive as loose tracks).
+    final name = playlistName != null && playlistName.length > 200 ? playlistName.substring(0, 200) : playlistName;
+    final key = newToken();
+    for (var i = 0; i < parts.length; i++) {
+      final offer = service.createOutgoing(
+        toId: peer.id,
+        toName: peer.name,
+        entries: parts[i],
+        playlist: name == null ? null : (key: key, name: name, part: i + 1, parts: parts.length),
+      );
+      final payload = service.offerPayload(offer, node.port!, tlsPort: node.tlsPort);
+      try {
+        await ref
+            .read(lanClientProvider)
+            .sendOffer(
+              peer.host,
+              peer.port,
+              payload,
+              tlsPort: peer.tlsPort,
+              pin: _pinOf(peer.id),
+            );
+        sent += parts[i].length;
+      } on LanException catch (e) {
+        // An older receiver answers 400 to a part of only unsaved rows (nothing it can read): the part is
+        // unsupported there, the next ones may still go.
+        if (e.error == LanError.failed && (payload['items'] as List).isEmpty && !payload.containsKey('streams')) {
+          AppLog.w('send offer to ${peer.name}: part ${i + 1} refused (shadow rows only)', e);
+          offer.status = OfferStatus.failed;
+          refused += parts[i].length;
+          service.notify();
+          continue;
+        }
+        AppLog.w('send offer to ${peer.name} failed', e);
+        offer.status = OfferStatus.failed;
+        state = state.copyWith(error: e.error);
+        service.notify();
+        // The parts already out stay: the receiver gets them as a shorter playlist.
+        break;
+      }
     }
+    _publish();
+    return outcome(sent > 0 || refused > 0 ? SendStatus.sent : SendStatus.unreachable);
   }
 
   Future<void> cancelOutgoing(OutgoingOffer offer, Peer? peer) async {
@@ -538,6 +568,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
 
   Future<void> decline(IncomingOffer o) async {
     o.status = OfferStatus.declined;
+    _parts.firstDone(o, ok: false);
     _service?.notify();
     try {
       await ref
@@ -567,13 +598,16 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       o.status = OfferStatus.failed;
       state = state.copyWith(error: e.error);
       _service?.notify();
+      _parts.firstDone(o, ok: false);
       return;
     }
     o.status = OfferStatus.accepted;
+    _parts.answered(o);
     _service?.notify();
     final cancel = _cancels[o.offerId] = CancelToken();
     final saved = <String>[];
     final savedItems = <String, OfferItem>{};
+    var reached = false;
     try {
       // Only files need a folder: an offer of streams alone saves rows.
       final base = o.items.isEmpty
@@ -629,15 +663,37 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
           if (row != null) afterReceive(ref.read, row.id);
         }
       }
-      if (o.streams.isNotEmpty && !cancel.isCancelled) {
+      final pl = o.playlist;
+      // Shadow rows live only in the playlist (D-761): they are not saved to the library.
+      final saveable = [for (final s in o.streams) if (!s.shadow) s];
+      if (saveable.isNotEmpty && !cancel.isCancelled) {
         final index = await ref.read(downloadIndexProvider.future);
         await saveReceivedStreams(
           ref.read(trackRepositoryProvider),
-          o.streams,
+          saveable,
           hasFile: (r) => index.contains(r.id, source: r.source),
           credits: ref.read(creditsRepositoryProvider),
         );
       }
+      if (pl != null && !cancel.isCancelled) {
+        try {
+          final id = await writeReceivedPlaylist(
+            playlist: pl,
+            items: o.items,
+            streams: o.streams,
+            pathOfItem: {for (final e in savedItems.entries) e.value.id: e.key},
+            tracks: ref.read(trackRepositoryProvider),
+            playlists: ref.read(playlistRepositoryProvider),
+            resolver: await PlaylistSyncRepository(ref.read(databaseProvider)).resolver(),
+            credits: ref.read(creditsRepositoryProvider),
+            appendTo: _parts.playlistFor(o),
+          );
+          if (id != null) _parts.wrote(o, id);
+        } on Object catch (e, st) {
+          AppLog.w('received playlist not written', e, st);
+        }
+      }
+      reached = !cancel.isCancelled;
       o.status = o.received == o.items.length
           ? OfferStatus.done
           : OfferStatus.failed;
@@ -660,6 +716,7 @@ class ShareHubNotifier extends Notifier<ShareHubState> {
       state = state.copyWith(error: e.error);
     } finally {
       _cancels.remove(o.offerId);
+      _parts.firstDone(o, ok: reached);
       _service?.notify();
     }
   }

@@ -13728,6 +13728,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'{sent, plural, one{Inviato 1 brano} other{Inviati {sent} brani}} su {total} a {name}: {n, plural, one{1 non si può inviare} other{{n} non si possono inviare}}'**
   String offerPartialMixed(int sent, int total, String name, int n);
+
+  /// No description provided for @incomingPlaylist.
+  ///
+  /// In it, this message translates to:
+  /// **'Playlist «{name}»'**
+  String incomingPlaylist(String name);
 }
 
 class _AppLocalizationsDelegate

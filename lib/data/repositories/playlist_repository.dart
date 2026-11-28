@@ -360,6 +360,23 @@ class PlaylistRepository {
     return all.any((p) => p.name.trim().toLowerCase() == want);
   }
 
+  /// [base], or «base (2)», «base (3)»… when taken: never an existing playlist.
+  Future<String> freeName(String base) async {
+    var name = base, n = 1;
+    while (await nameTaken(name)) {
+      name = '$base (${++n})';
+    }
+    return name;
+  }
+
+  /// A new playlist called [base] (or the next free «base (2)»…) holding [trackIds] in order, music and shadow
+  /// rows alike, in one transaction: a failure leaves no empty playlist.
+  Future<int> createWithStreams(String base, List<int> trackIds) => _db.transaction(() async {
+    final id = await create(await freeName(base));
+    await addStreamTracks(id, trackIds);
+    return id;
+  });
+
   Future<void> _renumber(int playlistId) async {
     final rows = await (_db.select(_db.playlistTracks)
           ..where((t) => t.playlistId.equals(playlistId))

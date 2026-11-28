@@ -37,11 +37,19 @@ class IncomingOfferTile extends ConsumerWidget {
                 ),
               ],
             )
-          : Text(
-              pending
-                  ? l.incomingBody(offer.items.length, mb)
-                  : offerStatusLabel(l, offer.status),
-            ),
+          : pending && offer.playlist != null
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l.incomingPlaylist(offer.playlist!.name)),
+                    Text(l.incomingBody(offer.items.length, mb)),
+                  ],
+                )
+              : Text(
+                  pending
+                      ? l.incomingBody(offer.items.length, mb)
+                      : offerStatusLabel(l, offer.status),
+                ),
       trailing: pending
           ? Wrap(
               children: [

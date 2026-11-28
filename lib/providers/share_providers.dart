@@ -82,11 +82,12 @@ class ShareEntries {
 }
 
 /// Tracks -> shareable entries (paths stay on this side of the connection).
-Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks) async =>
-    (await buildShareEntriesCounted(ref, tracks)).entries;
+Future<List<ShareEntry>> buildShareEntries(Ref ref, List<Track> tracks, {bool withShadow = false}) async =>
+    (await buildShareEntriesCounted(ref, tracks, withShadow: withShadow)).entries;
 
-/// Like [buildShareEntries], also counting the dropped tracks by reason.
-Future<ShareEntries> buildShareEntriesCounted(Ref ref, List<Track> tracks) async {
+/// Like [buildShareEntries], also counting the dropped tracks by reason. With [withShadow] (a playlist travels,
+/// D-761) the YouTube shadow rows go too, marked `shadow`.
+Future<ShareEntries> buildShareEntriesCounted(Ref ref, List<Track> tracks, {bool withShadow = false}) async {
   final dir = ref.read(coversDirProvider);
   String? coverPath(Track t) {
     final k = t.coverKey;
@@ -110,7 +111,8 @@ Future<ShareEntries> buildShareEntriesCounted(Ref ref, List<Track> tracks) async
       missing++;
       continue;
     }
-    if (t.kind == kStreamKind && !t.saved) {
+    final isShadow = t.kind == kStreamKind && !t.saved;
+    if (isShadow && !(withShadow && streamKey != null && streamKey.startsWith('youtube:'))) {
       shadow++;
       continue;
     }
@@ -123,6 +125,7 @@ Future<ShareEntries> buildShareEntriesCounted(Ref ref, List<Track> tracks) async
       id: t.id,
       path: streamKey == null ? t.path : '',
       streamKey: streamKey,
+      shadow: isShadow,
       title: t.title,
       artist: t.artist,
       album: t.album,

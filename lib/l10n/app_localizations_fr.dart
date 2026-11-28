@@ -8926,4 +8926,9 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0 sur $total à $name : $_temp1';
   }
+
+  @override
+  String incomingPlaylist(String name) {
+    return 'Playlist « $name »';
+  }
 }

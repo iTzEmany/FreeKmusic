@@ -8880,4 +8880,9 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0 de $total a $name: $_temp1';
   }
+
+  @override
+  String incomingPlaylist(String name) {
+    return 'Lista «$name»';
+  }
 }

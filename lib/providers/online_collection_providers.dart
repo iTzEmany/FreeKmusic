@@ -373,10 +373,7 @@ Future<({String name, String? uuid})?> saveToLibrary(WidgetRef ref, String title
   final tracks = ref.read(trackRepositoryProvider);
   final base = title.trim().isEmpty ? fallback : title.trim();
   return ref.read(databaseProvider).transaction(() async {
-    var name = base, n = 1;
-    while (await playlists.nameTaken(name)) {
-      name = '$base (${++n})';
-    }
+    final name = await playlists.freeName(base);
     final id = await playlists.create(name);
     final ids = <int>[
       for (final m in ready)

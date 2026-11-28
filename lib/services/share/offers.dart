@@ -23,6 +23,10 @@ const _audioExts = {
 const maxOfferItems = 500;
 const offerTtl = Duration(minutes: 10);
 
+/// [all] cut in runs of [size] (a playlist over the limit travels as several offers, D-762).
+List<List<T>> splitParts<T>(List<T> all, [int size = maxOfferItems]) =>
+    [for (var i = 0; i < all.length; i += size) all.sublist(i, min(i + size, all.length))];
+
 /// True for addresses that can only live on a local network (never the
 /// public Internet): RFC1918, link-local and (optionally) loopback.
 bool isLocalNetworkAddress(String address, {bool allowLoopback = false}) {
@@ -114,12 +118,16 @@ class OfferItem {
 const _maxStreamMs = 24 * 3600 * 1000;
 
 class StreamOffer {
-  const StreamOffer({required this.key, required this.title, this.artist, this.album, this.durationMs = 0, this.meta});
+  const StreamOffer({required this.key, required this.title, this.artist, this.album, this.durationMs = 0, this.meta, this.shadow = false});
 
   final String key, title;
   final String? artist, album;
   final int durationMs;
   final TrackMeta? meta;
+
+  /// Not saved on the sender (a shadow row of a playlist, D-761): the receiver keeps it only inside the playlist.
+  /// Never on the wire: shadow rows travel in `playlist.shadow`.
+  final bool shadow;
 
   Map<String, Object?> toJson() => {
         'key': key,
@@ -131,7 +139,7 @@ class StreamOffer {
       };
 
   /// Strict parsing of untrusted input; null for anything odd.
-  static StreamOffer? tryParse(Object? raw) {
+  static StreamOffer? tryParse(Object? raw, {bool shadow = false}) {
     if (raw is! Map) return null;
     final key = raw['key'], title = raw['title'], dur = raw['durationMs'];
     if (key is! String || title is! String || title.isEmpty || !isStreamKey(key)) return null;
@@ -143,7 +151,77 @@ class StreamOffer {
       album: clip(raw['album']),
       durationMs: dur is int && dur >= 0 && dur <= _maxStreamMs ? dur : 0,
       meta: TrackMeta.tryParse(raw['meta']),
+      shadow: shadow,
     );
+  }
+}
+
+/// Control, zero-width and bidi-override characters: never part of a name shown to the user.
+final _invisible = RegExp('[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]');
+
+/// One element of the playlist order: a file of `items` (by id) or a stream of `streams` (by key).
+typedef OfferRef = ({int? item, String? stream});
+
+/// The playlist an offer comes from (D-760): optional `playlist` field, which older versions never read.
+/// Wire: `{"key": "token", "name": "...", "part": 1, "parts": 1, "order": [{"item": 12}, {"stream": "youtube:abc"}],
+/// "shadow": [<stream offer>, ...]}`; `shadow` (unsaved rows, D-761) only when not empty, so older versions never see them.
+/// A playlist over [maxOfferItems] travels as `parts` offers with the same `key` (D-762).
+class OfferPlaylist {
+  const OfferPlaylist({required this.key, required this.name, this.part = 1, this.parts = 1, required this.order, this.shadow = const []});
+
+  final String key, name;
+  final int part, parts;
+  final List<OfferRef> order;
+
+  /// Stream rows not saved on the sender; the order may cite them like the offer's `streams`.
+  final List<StreamOffer> shadow;
+
+  Map<String, Object?> toJson() => {
+        'key': key,
+        'name': name,
+        'part': part,
+        'parts': parts,
+        'order': [
+          for (final r in order)
+            if (r.item != null) {'item': r.item} else {'stream': r.stream},
+        ],
+        if (shadow.isNotEmpty) 'shadow': [for (final s in shadow) s.toJson()],
+      };
+
+  /// Strict parsing of untrusted input: null for anything odd (the offer then stays a plain one).
+  /// The order may cite ids of [itemIds] and keys of [streamKeys] or of the shadow list; any other element
+  /// (unknown type, missing target) is skipped, so a newer sender can add kinds.
+  static OfferPlaylist? tryParse(Object? raw, {required Set<int> itemIds, required Set<String> streamKeys}) {
+    if (raw is! Map) return null;
+    final key = raw['key'], name = raw['name'], part = raw['part'], parts = raw['parts'], order = raw['order'];
+    if (key is! String || key.isEmpty || key.length > 64) return null;
+    if (name is! String || name.length > 200) return null;
+    final clean = name.replaceAll(_invisible, '').trim();
+    if (clean.isEmpty) return null;
+    if (part is! int || parts is! int || parts < 1 || parts > 1000 || part < 1 || part > parts) return null;
+    if (order is! List || order.length > maxOfferItems) return null;
+    final rawShadow = raw['shadow'];
+    final known = {...streamKeys};
+    final candidates = <String, StreamOffer>{
+      if (rawShadow is List)
+        for (final r in rawShadow.take(maxOfferItems))
+          if (StreamOffer.tryParse(r, shadow: true) case final s? when !known.contains(s.key)) s.key: s,
+    };
+    final seen = {...known, ...candidates.keys};
+    final refs = <OfferRef>[];
+    for (final e in order) {
+      if (e is! Map) continue;
+      final item = e['item'], stream = e['stream'];
+      if (item is int && stream == null && itemIds.contains(item)) {
+        refs.add((item: item, stream: null));
+      } else if (stream is String && item == null && seen.contains(stream)) {
+        refs.add((item: null, stream: stream));
+      }
+    }
+    // Only the shadow rows the order cites are kept.
+    final cited = {for (final r in refs) ?r.stream};
+    final shadow = [for (final s in candidates.values) if (cited.contains(s.key)) s];
+    return OfferPlaylist(key: key, name: clean, part: part, parts: parts, order: refs, shadow: shadow);
   }
 }
 
@@ -161,6 +239,7 @@ class IncomingOffer {
     required this.token,
     required this.items,
     this.streams = const [],
+    this.playlist,
     DateTime? receivedAt,
   }) : receivedAt = receivedAt ?? DateTime.now();
 
@@ -180,6 +259,9 @@ class IncomingOffer {
 
   /// Saved streams of the offer: no file, so they are not in [items] nor in [received].
   final List<StreamOffer> streams;
+
+  /// The playlist this offer (or one part of it) comes from; null for a plain offer.
+  final OfferPlaylist? playlist;
   final DateTime receivedAt;
   OfferStatus status = OfferStatus.pending;
   int received = 0; // files already stored
@@ -194,12 +276,18 @@ class OutgoingOffer {
     required this.toName,
     required this.token,
     required this.entries,
+    this.playlist,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   final String offerId, toId, toName, token;
   final Map<int, ShareEntry> entries;
+  final OfferPlaylist? playlist;
   final DateTime createdAt;
+
+  /// Last sign of life of this offer or of another part of its playlist: expiry counts from here, so a slow
+  /// first part does not expire the parts waiting behind it (D-762).
+  late DateTime touched = createdAt;
   OfferStatus status = OfferStatus.pending;
 
   bool get open =>
@@ -230,6 +318,12 @@ class OfferService {
   final _changes = StreamController<void>.broadcast();
   final _recent = <String, List<DateTime>>{}; // ip -> offer timestamps
 
+  /// Asked only when the limits are hit: is this the next part of a playlist already being received (D-762)?
+  bool Function(String fromId, String host, String? fingerprint, String key, int part, int parts)? acceptsPart;
+
+  /// The sender withdrew a pending offer.
+  void Function(IncomingOffer offer)? onCancelled;
+
   /// Fired when a new valid offer arrives (the UI asks the user).
   void Function(IncomingOffer offer)? onIncoming;
 
@@ -238,6 +332,14 @@ class OfferService {
   bool get hasOpenOutgoing {
     expire();
     return outgoing.values.any((o) => o.open);
+  }
+
+  /// Marks [o] and the other parts of its playlist as alive now.
+  void _touch(OutgoingOffer o) {
+    final now = _now(), key = o.playlist?.key;
+    for (final x in outgoing.values) {
+      if (identical(x, o) || (key != null && x.playlist?.key == key)) x.touched = now;
+    }
   }
 
   void notify() {
@@ -249,7 +351,7 @@ class OfferService {
   void expire() {
     final limit = _now().subtract(offerTtl);
     for (final o in outgoing.values) {
-      if (o.open && o.createdAt.isBefore(limit)) o.status = OfferStatus.expired;
+      if (o.open && o.touched.isBefore(limit)) o.status = OfferStatus.expired;
     }
     for (final o in incoming.values) {
       if (o.status == OfferStatus.pending && o.receivedAt.isBefore(limit)) {
@@ -264,13 +366,39 @@ class OfferService {
     required String toId,
     required String toName,
     required List<ShareEntry> entries,
+    ({String key, String name, int part, int parts})? playlist,
   }) {
+    final byId = {for (final e in entries) e.id: e};
     final offer = OutgoingOffer(
       offerId: newToken(),
       toId: toId,
       toName: toName,
       token: newToken(),
-      entries: {for (final e in entries) e.id: e},
+      entries: byId,
+      playlist: playlist == null
+          ? null
+          : OfferPlaylist(
+              key: playlist.key,
+              name: playlist.name,
+              part: playlist.part,
+              parts: playlist.parts,
+              order: [
+                for (final e in byId.values)
+                  if (e.streamKey != null) (item: null, stream: e.streamKey) else (item: e.id, stream: null),
+              ],
+              shadow: [
+                for (final e in byId.values)
+                  if (e.shadow && e.streamKey != null)
+                    StreamOffer(
+                        key: e.streamKey!,
+                        title: e.title,
+                        artist: e.artist,
+                        album: e.album,
+                        durationMs: e.durationMs,
+                        meta: e.meta,
+                        shadow: true),
+              ],
+            ),
       createdAt: _now(),
     );
     outgoing[offer.offerId] = offer;
@@ -300,10 +428,10 @@ class OfferService {
               ).toJson(),
         ],
         // Optional: an older receiver ignores it and sees only the files.
-        if (o.entries.values.any((e) => e.streamKey != null))
+        if (o.entries.values.any((e) => e.streamKey != null && !e.shadow))
           'streams': [
             for (final e in o.entries.values)
-              if (e.streamKey != null)
+              if (e.streamKey != null && !e.shadow)
                 StreamOffer(
                   key: e.streamKey!,
                   title: e.title,
@@ -313,6 +441,8 @@ class OfferService {
                   meta: e.meta,
                 ).toJson(),
           ],
+        // Optional too: an older receiver sees only loose tracks.
+        if (o.playlist != null) 'playlist': o.playlist!.toJson(),
       };
 
   // ---- HTTP ----------------------------------------------------------------
@@ -348,15 +478,26 @@ class OfferService {
       times.removeWhere((t) => t.isBefore(cutoff));
       final pending =
           incoming.values.where((o) => o.status == OfferStatus.pending).length;
-      if (times.length >= maxOffersPerMinute || pending >= maxPendingIncoming) {
-        return Response(429, body: 'too many offers');
-      }
+      final limited = times.length >= maxOffersPerMinute || pending >= maxPendingIncoming;
       Object? body;
+      // Over the limits only the next part of a playlist already being received gets in (D-762).
+      var exempt = false;
       try {
         body = jsonDecode(await r.readAsString());
+        final b = body;
+        final pl = b is Map ? b['playlist'] : null;
+        if (limited && b is Map && pl is Map) {
+          final fromId = b['fromId'], key = pl['key'], part = pl['part'], parts = pl['parts'];
+          exempt = fromId is String &&
+              key is String &&
+              part is int &&
+              parts is int &&
+              (acceptsPart?.call(fromId, ip, callerFingerprint(r), key, part, parts) ?? false);
+        }
       } on FormatException {
-        return Response(400, body: 'bad json');
+        return limited ? Response(429, body: 'too many offers') : Response(400, body: 'bad json');
       }
+      if (limited && !exempt) return Response(429, body: 'too many offers');
       if (body is! Map) return Response(400, body: 'bad request');
       final offerId = body['offerId'], fromId = body['fromId'];
       final fromName = body['fromName'], port = body['port'];
@@ -382,7 +523,6 @@ class OfferService {
           token.length > 64 ||
           port < 1 ||
           port > 65535 ||
-          (rawItems.isEmpty && streams.isEmpty) ||
           rawItems.length + streams.length > maxOfferItems) {
         return Response(400, body: 'bad request');
       }
@@ -394,10 +534,20 @@ class OfferService {
       if (items.length != rawItems.length) {
         return Response(400, body: 'invalid items');
       }
+      // Optional and lenient: a bad field is no playlist, the offer stays valid.
+      final playlist = OfferPlaylist.tryParse(
+        body['playlist'],
+        itemIds: {for (final i in items) i.id},
+        streamKeys: {for (final s in streams) s.key},
+      );
+      // Shadow rows exist only inside a valid playlist (D-761); the receiver sees them with the other streams.
+      final shadow = playlist?.shadow ?? const <StreamOffer>[];
+      if (rawItems.length + streams.length + shadow.length > maxOfferItems) return Response(400, body: 'bad request');
+      if (rawItems.isEmpty && streams.isEmpty && shadow.isEmpty) return Response(400, body: 'bad request');
       if (incoming.containsKey(offerId)) {
         return Response(409, body: 'duplicate');
       }
-      times.add(_now());
+      if (!exempt) times.add(_now());
       final offer = IncomingOffer(
         offerId: offerId,
         fromId: fromId,
@@ -410,7 +560,8 @@ class OfferService {
         callerFingerprint: callerFingerprint(r),
         token: token,
         items: items,
-        streams: streams,
+        streams: [...streams, ...shadow],
+        playlist: playlist,
         receivedAt: _now(),
       );
       incoming[offerId] = offer;
@@ -429,7 +580,10 @@ class OfferService {
       if (!_tokenOk(o.token, r.headers['x-token'])) {
         return Response(401, body: 'unauthorized');
       }
-      if (o.status == OfferStatus.pending) o.status = OfferStatus.cancelled;
+      if (o.status == OfferStatus.pending) {
+        o.status = OfferStatus.cancelled;
+        onCancelled?.call(o);
+      }
       notify();
       return Response.ok('ok');
     });
@@ -449,6 +603,7 @@ class OfferService {
         return Response(409, body: 'not pending');
       }
       o.status = OfferStatus.accepted;
+      _touch(o);
       notify();
       return Response.ok('ok');
     });
@@ -465,6 +620,7 @@ class OfferService {
       final o = authorised(r, id);
       if (o == null) return Response(401, body: 'unauthorized');
       if (o.status == OfferStatus.accepted) o.status = OfferStatus.done;
+      _touch(o);
       notify();
       return Response.ok('ok');
     });
@@ -477,6 +633,7 @@ class OfferService {
       if (o.status != OfferStatus.accepted) {
         return Response.forbidden('offer not accepted');
       }
+      _touch(o);
       final itemId = int.tryParse(n);
       final cover = itemId == null ? null : o.entries[itemId]?.coverPath;
       if (cover == null) return Response.notFound('not found');
@@ -496,6 +653,7 @@ class OfferService {
       if (o.status != OfferStatus.accepted) {
         return Response.forbidden('offer not accepted');
       }
+      _touch(o);
       final itemId = int.tryParse(n);
       final entry = itemId == null ? null : o.entries[itemId];
       if (entry == null) return Response.notFound('not found');

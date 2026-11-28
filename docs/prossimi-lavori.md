@@ -70,6 +70,8 @@ Rinvii di codice delle review e delle schegge, per area; ogni voce rimanda alla 
 - Negli asset solo i `*.md` di versione. (fase 149, review di architettura)
 
 ### Sync, backup e Jam
+- **Prove sul Redmi ancora da fare** per le fasi 166 (playlist come playlist), 168 (coda karaoke dai brani simili) e 169 («Casuale su tutto» mai spento).
+- **Dialogo delle parti**: mostra solo il numero della parte, non il totale dei brani della playlist.
 - **Parità al millisecondo**: due modifiche della stessa playlist con lo stesso `updatedAt` su due dispositivi non convergono (1 caso su 300 nel fuzz a passo 0): spareggio deterministico, per esempio l'uuid del dispositivo ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
 - **`GET /sync/collections`** rimanda ogni volta gli ultimi 20000 ascolti e tutti i tombstone (13 MB in circa 2 s): un `since` futuro richiede di tornare a un POST, perché la firma non copre la query ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
 - **`hasFile`** viene dall'indice dei download in memoria; i cuori su brani che qui sono file non viaggiano. Annullare un cuore messo per sbaglio lascia un tombstone `favoriteStream` datato adesso (caso accettato) ([fase 146](storico/fasi/fase-146-sincronizzazione-dispositivi.md)).
@@ -93,6 +95,16 @@ Ancora aperte (verificate nel codice il 24/11):
 - **Test deboli**: `create_flows_test.dart:~53` (flag `autofocus`, basta il focus effettivo).
 
 Già fatte (nominale): test `node` del Worker in CI e test di contratto dei limiti (144), `CcDims.sheetMaxWidth`, `ShrinkingHeader` senza `ClipRect`, `LogEntryCard.onHow` `required`, doppia barra su desktop (`AlphaScroller` con `scrollbars: false`), focus di «Cerca» sul clic della barra laterale su desktop, `albumBrowseId` conservato in `mergeStreamRow`, `PlayContextKind.fromIndex`, chiavi `importDownloadToo.*` fuori da backup e sync, `autofocus` del foglio `jam_remote_sheets`, `cc.bg` delle testate elencate in 141, `LibraryAdder.add` con `tag`.
+
+## Dalla revisione di architettura delle fasi 162-169 (28/11)
+- **Un solo «Home bloccata»**: il controllo «il casuale della Home non si spegne» è scritto in 6 punti (`player_providers.dart`, `shuffle_plus_providers.dart`, `shuffle_button.dart`); un `homeLocked()` sul PlayerController li sostituisce.
+- **Pulizia delle impostazioni alla cancellazione di una playlist** nei `PlaylistOps.delete`/`deleteSmart`, non nell'interfaccia con chiavi scritte a mano (`playlist_detail_screen.dart`, `smart_playlist_screen.dart`, che ripetono `PlaylistShuffleKey.storeKey`).
+- **Parti delle playlist grandi**: `PlaylistParts` dipende da 7 chiamate di `ShareHub` e 2 agganci di `OfferService`; meglio che `OfferService` emetta i cambi di stato e il tracker si iscriva (una chiamata dimenticata su un percorso nuovo blocca un trasferimento).
+- **Esenzione dai limiti** in `offers.dart`: legge i campi della playlist a mano, prima della validazione del corpo; un'offerta esente con playlist poi rifiutata entra come offerta normale fuori dai limiti (rischio basso, solo dallo stesso mittente). Usare `OfferPlaylist.tryParse`.
+- **Pausa 429 del karaoke**: i tre campi `cooldown` (`similar_queue.dart`, `player_providers.dart`) sembrano doppi rispetto a quella di `SmartSearch`; verificare che un 429 della ricerca solo video passi da `_fail`, poi toglierli (insieme a «Budget e pausa 429»).
+- **PlayerController** (1100 righe, ~25 callback iniettati, 3 nuovi per il karaoke): raccogliere quelli del karaoke in un oggetto `KaraokeRadio`; i rami `swap == null` di `SimilarQueue` come piccola strategia.
+- **Liste miste**: `smart_playlist_screen.dart` importa gli helper da `search/genre_screen.dart`; spostarli in `ui/widgets/mix_list.dart`.
+- **Righe ombra create in due modi**: `received_playlist.dart` e `backup_merge.dart` divergono sul caso episodio; `saveToLibrary` ripete `createWithStreams` a mano. Codice morto: il parametro `ref` inutilizzato di `pickPlaylist` (`playlist_picker.dart`).
 
 ## Libreria e dati
 - **Database più nuovo dell'app** (6 nov, fase 88): se si installa sopra un APK più vecchio, drift chiama `onUpgrade(from > to)`, salta le migrazioni e abbassa `user_version`; al prossimo aggiornamento le migrazioni ripartono su colonne già presenti e l'app va in crash. Rimedio: una guardia `from > to` in `onUpgrade`/`beforeOpen` di `app_database.dart`, con un messaggio chiaro. Il ripristino è già protetto (88.5b).

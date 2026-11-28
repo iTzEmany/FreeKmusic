@@ -17,6 +17,7 @@ import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/karaoke_session.dart';
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
+import '../services/shuffle_plus/shuffle_mode.dart';
 import '../services/shuffle_plus/genre_mix.dart';
 import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/radio_gate.dart';
@@ -39,6 +40,7 @@ import 'stream_providers.dart';
 import 'youtube_providers.dart';
 
 export '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
+export '../services/shuffle_plus/shuffle_mode.dart' show ShuffleMode;
 export 'seed_resolver_provider.dart' show seedIndexProvider;
 export 'suggestion_log_provider.dart' show suggestionLogProvider;
 
@@ -483,9 +485,6 @@ final shufflePlusNoticesProvider = StreamProvider<ShufflePlusNotice>((
   final c = await ref.watch(shufflePlusProvider.future);
   if (c != null) yield* c.notices;
 });
-
-/// What the three-state shuffle button shows.
-enum ShuffleMode { off, shuffle, plus }
 
 final shuffleModeProvider = Provider<ShuffleMode>((ref) {
   final on = ref.watch(shuffleProvider).value ?? false;

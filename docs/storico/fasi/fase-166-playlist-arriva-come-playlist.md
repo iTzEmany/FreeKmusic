@@ -14,7 +14,7 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
 (`lib/ui/screens/share/incoming_offer_dialog.dart`, `incoming_offer_tile.dart`); `DevicesSheet` (passa nome e ordine della playlist).
 
 ## Task
-- [ ] 166.1 Campo `playlist` nell'offerta (mittente) e parse tollerante (ricevente)
+- [x] 166.1 Campo `playlist` nell'offerta (mittente) e parse tollerante (ricevente)
   - File: `offers.dart` (classe `OfferPlaylist {key, name, part, parts, order}`; `order` = lista di `{item: id}` o `{stream: key}`; `StreamOffer` con
     `shadow` facoltativo; `IncomingOffer.playlist`), `share_providers.dart` (`buildShareEntries(…, withShadow: true)` fa passare le righe ombra YouTube
     marcate), `share_hub.dart` (`sendOffer(peer, tracks, {playlistName})`), `devices_sheet.dart` e `playlist_detail_screen.dart` (passano il nome), test in
@@ -24,7 +24,7 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
     senza playlist ha esattamente i campi di oggi.
   - Comando mirato: `flutter test test/services/share/offers_test.dart test/services/share/meta_travel_test.dart` (più `flutter analyze`)
   - Fatto quando: test verdi; i test della 165.1 verdi senza modifiche.
-- [ ] 166.2 Il ricevente crea la playlist
+- [x] 166.2 Il ricevente crea la playlist
   - File: `share_hub.dart` (`accept`: a fine ricezione, se `o.playlist` c'è, costruisce gli id nell'ordine: file ricevuti dal loro percorso → riga,
     streaming salvati dalla chiave → riga, righe ombra con `ensureStreamRow`, brani già presenti con `PlaylistSyncRepository.resolver()`; poi
     `createWith` con il nome libero e `addStreamTracks` per le righe ombra; elementi non arrivati saltati), eventuale helper puro del nome libero
@@ -35,7 +35,7 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
     occupato → «Nome (2)», poi «Nome (3)»; 4) un file non arrivato non blocca la playlist; 5) offerta senza playlist: nessuna playlist creata (come oggi).
   - Comando mirato: `flutter test <test nuovo> test/ui/incoming_offer_test.dart test/services/share/received_meta_test.dart` (più `flutter analyze`)
   - Fatto quando: i cinque casi coperti da test verdi.
-- [ ] 166.3 Oltre 500 brani: parti raggruppate
+- [x] 166.3 Oltre 500 brani: parti raggruppate
   - File: `share_hub.dart` (mittente: parti da 500 con la stessa `key`, inviate in ordine; esito sommato; ricevente: chiede conferma solo per la parte 1;
     le parti successive dello stesso mittente — stesso `fromId`, stesso indirizzo e, se firmate, stessa impronta — entro `offerTtl` sono accettate da sole,
     ognuna dopo che la precedente ha scritto la sua parte; rifiutata o scaduta la prima, rifiutate le altre), `offers.dart` se serve un indice per `key`,
@@ -44,7 +44,7 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
     indirizzo con la stessa `key` non viene accettata da sola; 4) prima parte rifiutata → nessuna playlist, altre parti rifiutate.
   - Comando mirato: `flutter test <test della 166.2> test/services/share/offers_test.dart` (più `flutter analyze`)
   - Fatto quando: i quattro casi coperti da test verdi.
-- [ ] 166.4 Prova a due telefoni (Mi A3 e Redmi, volume 0, poi ripulire tutto)
+- [x] 166.4 Prova a due telefoni (Mi A3 e Redmi, volume 0, poi ripulire tutto)
   - Passi: 1) playlist mista (file, streaming salvati, righe ombra) inviata dal Mi A3 al Redmi: playlist creata, ordine giusto, righe ombra non in libreria,
     messaggio con il conteggio; 2) stesso nome già presente → «Nome (2)»; 3) una playlist da oltre 500 brani (anche solo streaming): una conferma sola,
     playlist completa; 4) album e brano singolo come prima.
@@ -54,3 +54,9 @@ Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:
 Niente (la prova a due telefoni la fa l'agente via adb).
 
 ## Note di deviazione
+
+- **166.1** Campo `playlist` facoltativo nell'offerta: `{"key","name","part","parts","order":[{"item":id}|{"stream":key}]}`, `"shadow": true` dentro `streams[]` solo per le righe non salvate. Parse tollerante: campo rovinato (tipi, nome vuoto o oltre 200, key oltre 64, parte fuori da 1..parts, order oltre 500 o con riferimenti fuori dall'offerta) → playlist ignorata, offerta valida; senza playlist valida le righe ombra sono scartate (400 se restano solo quelle). Il mittente taglia il nome a 200; il ricevente toglie caratteri di controllo, invisibili e bidi.
+- **166.2** `writeReceivedPlaylist`: per ogni elemento percorso del file, poi riga per chiave, poi `resolver.resolve(titolo, artista, durata)`; la riga ombra si crea solo se non c'è altro. Creazione e brani in una transazione (`createWithStreams`), nome libero «Nome (2)» (`PlaylistRepository.freeName`, riusato da `saveToLibrary`).
+- **166.3** Gruppo delle parti per key + mittente (id, indirizzo, impronta). Si accetta da sola solo la parte successiva, entro `parts` e con lo stesso `parts` della prima; una parte 1 ripetuta chiede come offerta normale. Il timer limita solo l'attesa della risposta alla parte 1; poi il gruppo vive finché arrivano parti e scade `offerTtl` dopo l'ultima attività (anche la scadenza del mittente conta dall'ultima attività del gruppo, non dalla creazione). Le parti di un gruppo accettato sono esenti dai limiti 5 al minuto e 5 in attesa; un'eccezione in una parte è registrata e le successive proseguono; il mittente conta come inviati solo i brani delle parti consegnate. `/cancel` della parte 1 chiude il gruppo.
+- **Formato cambiato dopo la revisione di architettura**: le righe ombra non stanno più in `streams[]` (niente `"shadow": true`) ma in `playlist.shadow` (`[<voce stream>]`, max 500); un elemento di `order` ignoto o con riferimento assente si salta invece di scartare la playlist; offerta di sole righe ombra valida.
+- **166.4** Telefono non disponibile (Redmi bloccato, nessun file del PIN; Mi A3 occupato da un'altra chat): prova fatta fra due istanze Linux sotto Xvfb sulla rete vera. Esito: riga «Playlist «Prova invio»» nel dialogo; rifiuto → niente; accetto → 8 file e playlist nell'ordine del mittente, streaming salvato `saved=1`, riga ombra `saved=0`; secondo invio → «Prova invio (2)»; 1200 righe in tre parti (500+500+200) → una sola domanda e una playlist di 1200 in ordine; parte 3 da un altro mittente con la stessa key → chiede. Input ostili sull'endpoint (campo rovinato in 20 modi, nome di 201, order oltre 500, corpo non JSON fino a 20 MB, annidamento profondo): offerta valida senza playlist o 400, nessun crash. Non provati: invio oltre 500 dall'interfaccia (parti mandate da script), percorso firmato HTTPS, scadenza di 10 minuti, telefono Android (in «Tocca a te»). Osservazioni rimaste: il dialogo di una parte mostra solo il conteggio della parte, non il totale; il corpo dell'offerta è letto in memoria senza limite (già così prima).

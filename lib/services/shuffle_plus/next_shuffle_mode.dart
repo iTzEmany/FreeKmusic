@@ -1,4 +1,4 @@
-import '../../providers/shuffle_plus_providers.dart' show ShuffleMode;
+import 'shuffle_mode.dart';
 
 /// The one rule of the shuffle cycle: off → shuffle → Shuffle+ → off.
 /// [plusAllowed] false skips Shuffle+. [neverOff] (the Home queue's lock) turns

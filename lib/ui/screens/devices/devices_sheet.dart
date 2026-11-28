@@ -26,12 +26,15 @@ import '../../widgets/show_msg.dart';
 
 /// «Dispositivi»: the active Jam and the nearby devices, with [Jam] / [Invia].
 class DevicesSheet extends ConsumerStatefulWidget {
-  const DevicesSheet({super.key, this.trackIds});
+  const DevicesSheet({super.key, this.trackIds, this.playlistName});
 
   /// Tracks preselected by the caller (track or album menu); null = ask.
   final List<int>? trackIds;
 
-  static Future<void> show(BuildContext context, {List<int>? trackIds}) =>
+  /// Set when [trackIds] are a playlist, in its order: it arrives as a playlist (D-760).
+  final String? playlistName;
+
+  static Future<void> show(BuildContext context, {List<int>? trackIds, String? playlistName}) =>
       showCcSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -39,7 +42,7 @@ class DevicesSheet extends ConsumerStatefulWidget {
           constraints: BoxConstraints(
             maxHeight: MediaQuery.sizeOf(context).height * 0.85,
           ),
-          child: DevicesSheet(trackIds: trackIds),
+          child: DevicesSheet(trackIds: trackIds, playlistName: playlistName),
         ),
       );
 
@@ -93,7 +96,7 @@ class _DevicesSheetState extends ConsumerState<DevicesSheet> {
     }
     final List<Track> tracks = await ref.read(trackOpsProvider).byIds(ids);
     if (tracks.isEmpty) return;
-    final out = await _hub.sendOffer(peer, tracks);
+    final out = await _hub.sendOffer(peer, tracks, playlistName: widget.playlistName);
     if (!mounted) return;
     showMsg(context, out.message(l, peer.name));
     nav.maybePop();
