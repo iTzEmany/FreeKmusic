@@ -7,7 +7,7 @@ partiti e perché gli altri no. Nessun cambio di protocollo in questa fase. Prim
 Fuori: la playlist creata sul ricevente, le righe ombra e le parti oltre 500 (fase 166).
 
 ## Riferimenti
-Refactor `../refactor/invia-playlist-completa/analisi.md` (F-01, F-03, F-06, «Scelte», «Rete»). Decisioni del 28/11 dopo D-758 (invio di tutti i
+Refactor `../refactor/invia-playlist-completa/analisi.md` (F-01, F-03, F-06, «Scelte», «Rete»). Decisioni D-759 e D-763 (invio di tutti i
 brani, intoccabili). Architettura: `../architettura/sync-backup-jam.md`.
 Codice: `playlist_detail_screen.dart:113-114` (filtro `kind != kStreamKind`); `DevicesSheet._send` (`lib/ui/screens/devices/devices_sheet.dart:85-100`);
 `SendTab._sendTo` (`lib/ui/screens/share/send_tab.dart:65-81`); `ShareHubNotifier.sendOffer` (`lib/providers/share_hub.dart:472-502`) e

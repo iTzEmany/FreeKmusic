@@ -6,7 +6,7 @@ ombra, solo nella playlist) e anche quando i brani sono più di 500. Le versioni
 Fuori: sync delle playlist fra fidati, invio di album e singolo brano, schema del DB (intoccabili).
 
 ## Riferimenti
-Refactor `../refactor/invia-playlist-completa/analisi.md` (F-02, F-04, F-05, «Direzione», «Rete»). Decisioni del 28/11 dopo D-758 (playlist come playlist,
+Refactor `../refactor/invia-playlist-completa/analisi.md` (F-02, F-04, F-05, «Direzione», «Rete»). Decisioni D-760..D-764 (playlist come playlist,
 righe ombra, oltre 500, intoccabili, niente mockup). D-524 (righe ombra nelle playlist), D-674. Architettura: `../architettura/sync-backup-jam.md` (regola 6).
 Codice: `OfferService.offerPayload` e `POST /` (`lib/services/share/offers.dart:281-316`, :350-400), `StreamOffer` (:116-148), `IncomingOffer` (:152);
 `ShareHubNotifier.sendOffer` (:472) e `accept` (`lib/providers/share_hub.dart:542-650`); `buildShareEntries`; `PlaylistSyncRepository.resolver()`;

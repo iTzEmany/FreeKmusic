@@ -59,7 +59,7 @@ il filtro: la playlist non arriva come playlist (F-04) e le grandi falliscono co
 
 ## Scelte
 Diagnosi confermata dall'utente. Affrontati tutti: F-01, F-03, F-06 (piccoli, inclusi d'ufficio), F-02, F-04, F-05 (scelte dell'utente).
-Nessuno rinviato o scartato. Decisioni: le sei righe del 28/11 in `../../decisioni.md` dopo D-758 (invio di tutti i brani, playlist come
+Nessuno rinviato o scartato. Decisioni: D-759..D-764 in `../../decisioni.md` (invio di tutti i brani, playlist come
 playlist, righe ombra, oltre 500, intoccabili, niente mockup).
 
 Intoccabili: schema del DB (v24); limite di 500 elementi per offerta sul ricevente; sync delle playlist fra fidati; invio di album e singolo
