@@ -285,4 +285,46 @@ void main() {
       expect(backend.playing, isFalse);
     },
   );
+
+  test('the queue, shuffle, context kind and name go to the preferences and come back (any context)', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final ids = [
+      for (var i = 0; i < 3; i++)
+        await db.into(db.tracks).insert(TracksCompanion.insert(
+            path: '/m/$i.mp3', title: 'S$i', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: i)),
+    ];
+    for (final (kind, name) in [
+      (PlayContextKind.playlist, 'Mix'),
+      (PlayContextKind.search, null),
+      (PlayContextKind.radio, 'Rock'),
+    ]) {
+      for (final shuffle in [true, false]) {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final store = SettingsStore(prefs);
+        CodecoreAudioHandler open() =>
+            CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db), onError: (_) {});
+        final first = open();
+        addTearDown(first.dispose);
+        first.setPlayContext(kind.index, name);
+        await first.restore(ids, 1, Duration.zero);
+        first.setShuffleAndRepeat(shuffle: shuffle, repeat: PlayRepeat.all);
+        await PlaybackPersistence(first, store).flush();
+        expect(prefs.getStringList('lastQueueIds'), [for (final i in first.queueIds) '$i']); // the shuffled order is saved
+        expect(prefs.getBool('shuffle'), shuffle);
+        expect(prefs.getInt('lastContextKind'), kind.index);
+        expect(prefs.getString('lastContextName'), name);
+
+        final second = open();
+        addTearDown(second.dispose);
+        await PlaybackPersistence(second, store).restore();
+        expect(second.queueIds, first.queueIds, reason: '$kind $shuffle');
+        expect(second.shuffleEnabled, shuffle, reason: '$kind $shuffle');
+        expect(second.repeatMode, PlayRepeat.all);
+        expect(playContextOf(second)?.kind, kind);
+        expect(playContextOf(second)?.name, name);
+      }
+    }
+  });
 }
