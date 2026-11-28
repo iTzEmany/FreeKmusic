@@ -123,7 +123,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 ### Impostazioni
 
 - `SettingsStore` avvolge `SharedPreferences`; `AppSettings` è immutabile con `copyWith`. `settingsProvider` scrive con debounce di 400 ms; `karaokeOn` si scrive subito (D-664).
-- Chiavi di sessione (`PlaybackPersistence`): `lastQueueIds`, `lastContextKind`, `lastContextName`, `lastQueueUser`, `lastIndex`, `lastPositionMs`. Altre: `volume`, `shuffle`, `repeat`, `transition`, `crossfadeSeconds`, `playbackSpeed`, `streamCacheMb`, `playlistSorts`, `playlistShuffles`, `trustedDevices`, `recordHistory`, ...
+- Chiavi di sessione (`PlaybackPersistence`): `lastQueueIds`, `lastContextKind`, `lastContextName`, `lastQueueUser`, `lastIndex`, `lastPositionMs`. Altre: `volume`, `shuffle`, `repeat`, `transition`, `crossfadeSeconds`, `playbackSpeed`, `streamCacheMb`, `playlistSorts`, `playlistShuffles`, `smartMixOff` (id delle playlist intelligenti col mix di brani simili spento; fuori da «Unisci» e dalla sync), `trustedDevices`, `recordHistory`, ...
 - Di partenza `autoEnrich`, `autoLyrics`, `autoCuriosities`, `creditsDetails` sono veri (D-561); le preferenze già salvate non cambiano. L'onboarding non si salta; all'avvio, se la tabella `folders` è vuota, `ensureDefaultFolder` aggiunge la cartella predefinita (`resolveDefaultFolders`) e la scansiona (D-562).
 - Libreria (fase 156): `libraryGrid` è nullabile (null = mai scelto: griglia sul desktop largo, lista sul telefono) e `libraryDensity` è 0, 1 o 2 (S, M, L). Entrambe stanno in `kDeviceBoundKeys`: restano su questo dispositivo, fuori da backup e sync (D-739).
 - Fuori da `AppSettings`: `releases*`, `radioDataNoticeSeen`, `radioRefreshedAt`, `genreRereadAfter/Done`.
@@ -146,7 +146,7 @@ Tutto ciò che sta su disco: database drift/SQLite, scansione delle cartelle, ta
 - `stageFullRestore` estrae in `<appSupport>/restore` solo db, settings, dislikes, copertine; il marcatore `ready` è l'ultimo; protetto dal path traversal.
 - `applyPendingRestore` gira all'avvio **prima** di aprire il DB: rinomina il DB attuale in `*.before-restore`, applica le impostazioni, fonde le copertine (i file esistenti vincono). Se fallisce, l'originale resta.
 - `mergeBackup` («Unisci»): solo dati utente (`mergeUserData`). `TrackResolver` ritrova i brani per percorso relativo, poi metadati, poi sha256; se resta ambiguo dà null.
-- «Sostituisci tutto» solo se `sameDevice`. I vecchi backup restano ripristinabili: i campi mancanti valgono vuoto. Il ripristino azzera `playlistSorts` e `playlistShuffles`.
+- «Sostituisci tutto» solo se `sameDevice`. I vecchi backup restano ripristinabili: i campi mancanti valgono vuoto. Il ripristino azzera `playlistSorts`, `playlistShuffles` e `smartMixOff`.
 - Legate al dispositivo (mai nel backup): `deviceId`, `deviceName`, `trustedDevices`, chiavi Jam, `enrichMarkKey`, `recogPassAfter/Done`, `genreRereadAfter/Done`.
 
 ### Cache e pulizia
