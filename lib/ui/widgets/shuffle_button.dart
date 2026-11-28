@@ -44,8 +44,14 @@ Future<void> _cycleWithNotice(
   final block = listKey == null
       ? await c.cycleShuffle(ids: list)
       : await c.cycleListShuffle(listKey, ids: list, plus: plus);
-  if (block == null || _explained || !context.mounted) return;
+  // The Home's list stays on shuffle: the reason shows at every tap (D-768).
+  // Only the Home's own controls (not another playlist's, D-770).
+  final locked =
+      listKey == libraryListKey ||
+      (listKey == null && c.isPlayingList(libraryListKey));
+  if (block == null || (_explained && !locked) || !context.mounted) return;
   _explained = true;
+  if (locked) messenger.hideCurrentSnackBar();
   messenger.showSnackBar(
     SnackBar(
       content: CcSnackContent(shufflePlusBlockText(l, block), CcTiming.msg),

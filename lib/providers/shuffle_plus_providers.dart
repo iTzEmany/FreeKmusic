@@ -520,6 +520,8 @@ class ListShuffle extends Notifier<ShuffleMode> {
   @override
   ShuffleMode build() {
     final k = key;
+    // The Home's list is never off (D-767): shuffle until the user picks Shuffle+.
+    if (k == libraryListKey) return ShuffleMode.shuffle;
     if (k is! PlaylistShuffleKey) return ShuffleMode.off;
     final saved = ref.watch(
       settingsProvider.select((s) => s.playlistShuffles[k.storeKey]),
@@ -528,6 +530,7 @@ class ListShuffle extends Notifier<ShuffleMode> {
   }
 
   void set(ShuffleMode m) {
+    if (key == libraryListKey && m == ShuffleMode.off) m = ShuffleMode.shuffle;
     state = m;
     final k = key;
     if (k is! PlaylistShuffleKey) return;
@@ -552,11 +555,7 @@ int listKeyOf(List<int> ids) => Object.hashAll(ids);
 /// The key of the whole library's list (Home, «Riproduci tutta la libreria»).
 const libraryListKey = 'library';
 
-/// Is the list [key] the one playing now?
-// shortcut: after a restart the playing list is not recognised (source and key
-// are not persisted), and the whole library played from «Tutti i brani», a row
-// tap or Android Auto is not seen by Home's [libraryListKey]; upgrade: persist
-// the source ids and the key.
+/// Is the list [key] the one playing now? (The Home's key survives a restart, D-767.)
 final listPlayingProvider = Provider.autoDispose.family<bool, Object>((
   ref,
   key,

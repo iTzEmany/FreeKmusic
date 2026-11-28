@@ -5,6 +5,7 @@ import 'package:codecore/ui/screens/activity/activity_log_screen.dart';
 import 'package:codecore/ui/theme/tokens.dart';
 import 'package:codecore/ui/widgets/page_frame.dart';
 import 'package:codecore/ui/widgets/play_buttons.dart';
+import 'package:codecore/ui/widgets/shuffle_button.dart' show ShufflePill;
 import 'package:codecore/ui/widgets/shelf_scroller.dart';
 import 'package:codecore/ui/screens/home/home_blocks.dart' show ShortcutsRow;
 import 'package:codecore/ui/screens/home/home_row.dart';
@@ -130,6 +131,7 @@ void main() {
       reason: 'the library is not playing: only its own mode changes (D-534)',
     );
     expect(h.handler.queueIds, isEmpty, reason: 'nothing starts');
+    expect(find.textContaining('almeno 5 brani'), findsOneWidget, reason: 'the reason shows');
     final c = ProviderScope.containerOf(
       tester.element(find.byType(HomeScreen)),
     );
@@ -140,8 +142,35 @@ void main() {
     // Now the library plays: the button changes the real queue.
     await tester.tap(find.byIcon(Icons.shuffle_rounded));
     await _settle(tester);
-    // 4 tracks are too few for Shuffle+: shuffle goes straight to off.
-    expect(h.handler.shuffleEnabled, isFalse);
+    // 4 tracks are too few for Shuffle+: the Home's list stays on shuffle (D-767).
+    expect(h.handler.shuffleEnabled, isTrue);
+    expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.shuffle);
+    await h.dispose(tester);
+  });
+
+  testWidgets('the Shuffle+ reason shows at every tap on the Home, not on another list (D-768, D-770)', (
+    tester,
+  ) async {
+    final h = await openHome(tester); // 4 tracks: Shuffle+ is out
+    final reason = find.textContaining('almeno 5 brani');
+    final messenger = ScaffoldMessenger.of(tester.element(find.byType(HomeScreen)));
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.byIcon(Icons.shuffle_rounded));
+      await _settle(tester);
+      expect(reason, findsOneWidget, reason: 'tap $i');
+      messenger.hideCurrentSnackBar();
+      await _settle(tester);
+      expect(reason, findsNothing);
+    }
+    // The library plays now; another list's pill keeps the once-per-session rule.
+    await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    await _settle(tester);
+    await h.pump(tester, const Scaffold(body: ShufflePill(ids: [1, 2, 3])));
+    await tester.tap(find.byType(ShufflePill)); // shuffle
+    await _settle(tester);
+    await tester.tap(find.byType(ShufflePill)); // off, with a reason already given
+    await _settle(tester);
+    expect(reason, findsNothing);
     await h.dispose(tester);
   });
 
@@ -157,10 +186,9 @@ void main() {
       final c = ProviderScope.containerOf(
         tester.element(find.byType(HomeScreen)),
       );
-      for (var i = 0; i < 2; i++) {
-        await tester.tap(find.byIcon(Icons.shuffle_rounded));
-        await _settle(tester);
-      }
+      // The Home's list starts on shuffle: one tap reaches Shuffle+.
+      await tester.tap(find.byIcon(Icons.shuffle_rounded));
+      await _settle(tester);
       expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.plus);
       await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await _settle(tester);
@@ -196,15 +224,14 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('Play starts the library in order with shuffle off', (
+  testWidgets('Play starts the library on shuffle (D-767)', (
     tester,
   ) async {
     final h = await openHome(tester);
     await tester.tap(find.byIcon(Icons.play_arrow_rounded));
     await _settle(tester);
-    expect(h.handler.shuffleEnabled, isFalse);
+    expect(h.handler.shuffleEnabled, isTrue);
     expect(h.handler.queueIds, hasLength(4));
-    expect(h.handler.currentIndex, 0);
     await h.dispose(tester);
   });
 

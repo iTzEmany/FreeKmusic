@@ -28,6 +28,7 @@ import 'jam_providers.dart' show jamProvider;
 import 'queue_tracks.dart';
 import 'settings_providers.dart';
 import 'smart_search_providers.dart' show sourceCooldownProvider;
+import '../services/shuffle_plus/next_shuffle_mode.dart';
 import '../services/shuffle_plus/plus_allowed.dart';
 import '../services/shuffle_plus/radio_fill.dart';
 import '../services/shuffle_plus/similar_queue.dart';
@@ -35,6 +36,7 @@ import '../services/shuffle_plus/suggestion_pool.dart' show RadioSeed;
 import 'shuffle_plus_providers.dart'
     show
         ShuffleMode,
+        libraryListKey,
         libraryMatchIdProvider,
         listKeyOf,
         listShuffleProvider,
@@ -124,7 +126,10 @@ class PlayerController {
     this.similarSchedule,
     this.similarRetryAfter = const Duration(minutes: 1),
     Random? random,
-  }) : _random = random ?? Random();
+  }) : _random = random ?? Random() {
+    _persistence?.listKey = () =>
+        isPlayingList(libraryListKey) ? libraryListKey : null;
+  }
 
   final Random _random;
 
@@ -160,12 +165,27 @@ class PlayerController {
   Object? _listKey;
   List<int>? _listKeySource;
 
+  /// The saved queue of the Home's list is back: its lock with it (D-767).
+  /// Only for the queue that was restored: [ids] must still be the source (the
+  /// user may have started another one while it loaded).
+  void restoreListKey(String key, List<int> ids) {
+    if (key != libraryListKey || !listEquals(_handler.sourceIds, ids)) return;
+    _listKey = key;
+    _listKeySource = _handler.sourceIds;
+  }
+
   /// Is the list [key] the one playing? A key is the page's own (a Play that
   /// passed it, also a row tap of a playlist page) or the hash of the list's
   /// ids ([listKeyOf]), so a row tap of the other pages counts too (D-534).
   bool isPlayingList(Object key) {
     final src = _handler.sourceIds;
     if (src == null) return false;
+    // The Home's lock survives what only shrinks or reorders its queue (a track
+    // removed, the queue given back after a Jam): the same logical queue.
+    if (key == libraryListKey && _listKey == key) {
+      final base = _listKeySource?.toSet() ?? const <int>{};
+      return src.every(base.contains);
+    }
     return (_listKey == key && listEquals(src, _listKeySource)) ||
         listKeyOf(src) == key;
   }
@@ -402,7 +422,12 @@ class PlayerController {
           context: _context,
         );
       } else {
-        await _start(ids, 0, _context);
+        await _start(
+          ids,
+          0,
+          _context,
+          listKey: isPlayingList(libraryListKey) ? libraryListKey : null,
+        );
       }
     } on Object catch (e, st) {
       AppLog.w('last queue not resumed', e, st);
@@ -652,10 +677,26 @@ class PlayerController {
   }
 
   /// The shuffle button of a list: on or off, never starts playback.
-  Future<void> toggleShuffle() {
-    final on = !_handler.shuffleEnabled;
-    if (!on) setShufflePlus?.call(false);
-    return setShuffle(on);
+  /// The system's Shuffle property (MPRIS): the buttons' rule, so a turn-off
+  /// on the Home queue is refused (D-767).
+  Future<void> setShuffleFromSystem(bool on) async {
+    if (on != _handler.shuffleEnabled) await toggleShuffle();
+  }
+
+  /// Never off on the Home queue (D-767): a turn-off request keeps Shuffle.
+  Future<void> toggleShuffle() async {
+    final cur = _realMode;
+    final next = nextShuffleMode(
+      cur,
+      plusAllowed: false,
+      neverOff: isPlayingList(libraryListKey),
+    );
+    if (next == ShuffleMode.off || cur == ShuffleMode.plus) {
+      setShufflePlus?.call(false);
+    }
+    if ((next == ShuffleMode.off) != (cur == ShuffleMode.off)) {
+      await setShuffle(next != ShuffleMode.off);
+    }
   }
 
   /// The «Casuale» control of the list page [key] (D-534): the list playing
@@ -688,6 +729,7 @@ class PlayerController {
     List<int>? ids,
     bool plus,
   ) async {
+    final locked = key == libraryListKey;
     if (isPlayingList(key)) {
       ShufflePlusBlock? block;
       if (plus) {
@@ -699,15 +741,14 @@ class PlayerController {
       return block;
     }
     final mode = listMode?.call(key) ?? ShuffleMode.off;
-    ShufflePlusBlock? block;
-    final next = switch (mode) {
-      ShuffleMode.off => ShuffleMode.shuffle,
-      ShuffleMode.shuffle when plus =>
-        (block = await plusBlock?.call(ids)) == null
-            ? ShuffleMode.plus
-            : ShuffleMode.off,
-      _ => ShuffleMode.off,
-    };
+    final block = mode == ShuffleMode.shuffle && plus
+        ? await plusBlock?.call(ids)
+        : null;
+    final next = nextShuffleMode(
+      mode,
+      plusAllowed: plus && block == null,
+      neverOff: locked,
+    );
     setListMode?.call(key, next);
     return block;
   }
@@ -730,19 +771,17 @@ class PlayerController {
   Future<void> _cycle = Future<void>.value();
 
   Future<ShufflePlusBlock?> _cycleShuffle(List<int>? ids) async {
-    final plus = shufflePlus?.call() ?? false;
-    if (!_handler.shuffleEnabled) {
-      setShufflePlus?.call(false);
-      await setShuffle(true);
-      return null;
+    final cur = _realMode;
+    final block = cur == ShuffleMode.shuffle ? await plusBlock?.call(ids) : null;
+    final next = nextShuffleMode(
+      cur,
+      plusAllowed: block == null,
+      neverOff: isPlayingList(libraryListKey),
+    );
+    setShufflePlus?.call(next == ShuffleMode.plus);
+    if ((next == ShuffleMode.off) != (cur == ShuffleMode.off)) {
+      await setShuffle(next != ShuffleMode.off);
     }
-    final block = plus ? null : await plusBlock?.call(ids);
-    if (!plus && block == null) {
-      setShufflePlus?.call(true);
-      return null;
-    }
-    setShufflePlus?.call(false);
-    await setShuffle(false);
     return block; // null when a stored plus goes off: no skip
   }
 

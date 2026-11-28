@@ -425,6 +425,7 @@ class SavedPlayback {
     this.repeat = PlayRepeat.off,
     this.contextKind,
     this.contextName,
+    this.listKey,
     this.userAhead = 0,
   });
 
@@ -435,6 +436,10 @@ class SavedPlayback {
   /// null in what older versions saved.
   final int? contextKind;
   final String? contextName;
+
+  /// The key of the list that started the queue, kept only for the Home's
+  /// «Casuale su tutto» (its lock outlives a restart, D-767).
+  final String? listKey;
 
   /// Entries of the user block after the current one (absent in older saves = 0).
   final int userAhead;
@@ -1051,6 +1056,8 @@ class SettingsStore {
       repeat: repeat,
       contextKind: _prefs.getInt('lastContextKind'),
       contextName: _prefs.getString('lastContextName'),
+      // Not a string (a hand-edited file): no key, the queue still comes back.
+      listKey: _prefs.get('lastListKey') is String ? _prefs.getString('lastListKey') : null,
       userAhead: _prefs.getInt('lastQueueUser') ?? 0,
     );
   }
@@ -1072,6 +1079,10 @@ class SettingsStore {
     await (name == null
         ? _prefs.remove('lastContextName')
         : _prefs.setString('lastContextName', name));
+    final key = s.listKey;
+    await (key == null
+        ? _prefs.remove('lastListKey')
+        : _prefs.setString('lastListKey', key));
   }
 
   /// The queue and shuffle mode a restart in the middle of a Jam must find (D-341);

@@ -17,13 +17,16 @@ const _player = 'org.mpris.MediaPlayer2.Player';
 /// commands back to it.
 class MprisControls implements SystemMediaControls {
   DBusClient? _client;
+
+  /// What the Shuffle property does (the player's rule, so it can be refused).
+  Future<void> Function(bool on)? setShuffle;
   final _subs = <StreamSubscription<Object?>>[];
 
   @override
   Future<void> attach(CodecoreAudioHandler handler) async {
     try {
       final client = DBusClient.session();
-      final obj = _Object(handler);
+      final obj = _Object(handler, (on) => setShuffle?.call(on) ?? Future.value());
       await client.registerObject(obj);
       await client.requestName('org.mpris.MediaPlayer2.freekmusic');
       _client = client;
@@ -52,9 +55,10 @@ class MprisControls implements SystemMediaControls {
 }
 
 class _Object extends DBusObject {
-  _Object(this._h) : super(DBusObjectPath('/org/mpris/MediaPlayer2'));
+  _Object(this._h, this._setShuffle) : super(DBusObjectPath('/org/mpris/MediaPlayer2'));
 
   final CodecoreAudioHandler _h;
+  final Future<void> Function(bool on) _setShuffle;
   MediaItem? _item;
   bool _playing = false;
   bool _hasTrack = false;
@@ -195,7 +199,10 @@ class _Object extends DBusObject {
       case ('Volume', DBusDouble(:final value)):
         _h.requestVolume(value.isNaN ? 0 : value.clamp(0.0, 1.0));
       case ('Shuffle', DBusBoolean(:final value)):
-        await _h.setShuffleMode(value ? AudioServiceShuffleMode.all : AudioServiceShuffleMode.none);
+        await _setShuffle(value);
+        // A refused turn-off leaves the client with its own value: say what is.
+        _shuffle = _h.shuffleEnabled;
+        unawaited(emitPropertiesChanged(_player, changedProperties: {'Shuffle': DBusBoolean(_shuffle)}));
       case ('LoopStatus', DBusString(:final value)):
         final r = mprisRepeatFromLoop(value);
         if (r == null) return DBusMethodErrorResponse.invalidArgs();

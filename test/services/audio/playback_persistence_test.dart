@@ -327,4 +327,31 @@ void main() {
       }
     }
   });
+
+  test('a lastListKey that is not a string is ignored and the queue still comes back', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
+    final id = await db.into(db.tracks).insert(TracksCompanion.insert(
+        path: '/m/0.mp3', title: 'S0', albumKey: 'k', format: 'mp3', sizeBytes: 1, mtimeMs: 1, addedAt: 0));
+    SharedPreferences.setMockInitialValues({'lastQueueIds': ['$id'], 'lastListKey': 5});
+    final store = SettingsStore(await SharedPreferences.getInstance());
+    expect(store.readPlayback().listKey, isNull);
+    final h = CodecoreAudioHandler(FakeBackend(), PlayQueue(), TrackRepository(db), onError: (_) {});
+    addTearDown(h.dispose);
+    String? back;
+    await PlaybackPersistence(h, store).restore(applyListKey: (k, ids) => back = k);
+    expect(h.queueIds, [id]);
+    expect(back, isNull);
+  });
+
+  test('the store round trip of lastListKey, with and without a key', () async {
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+    final store = SettingsStore(prefs);
+    await store.writePlayback(const SavedPlayback(listKey: 'library'));
+    expect(store.readPlayback().listKey, 'library');
+    await store.writePlayback(const SavedPlayback());
+    expect(store.readPlayback().listKey, isNull);
+    expect(prefs.containsKey('lastListKey'), isFalse);
+  });
 }

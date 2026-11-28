@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:audio_service/audio_service.dart';
 import 'package:codecore/data/db/app_database.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/services/audio/codecore_audio_handler.dart';
@@ -47,7 +48,10 @@ void main() {
     }
     final handler = CodecoreAudioHandler(FakeBackend(), PlayQueue(), repo, onError: (_) {});
     addTearDown(handler.dispose);
-    final controls = MprisControls();
+    final controls = MprisControls()
+      ..setShuffle = (on) => handler.setShuffleMode(
+        on ? AudioServiceShuffleMode.all : AudioServiceShuffleMode.none,
+      );
     await controls.attach(handler);
     addTearDown(controls.dispose);
 
