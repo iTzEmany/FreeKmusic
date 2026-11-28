@@ -130,6 +130,7 @@ void main() {
       reason: 'the library is not playing: only its own mode changes (D-534)',
     );
     expect(h.handler.queueIds, isEmpty, reason: 'nothing starts');
+    expect(find.textContaining('almeno 5 brani'), findsOneWidget, reason: 'the reason shows');
     final c = ProviderScope.containerOf(
       tester.element(find.byType(HomeScreen)),
     );
@@ -140,8 +141,9 @@ void main() {
     // Now the library plays: the button changes the real queue.
     await tester.tap(find.byIcon(Icons.shuffle_rounded));
     await _settle(tester);
-    // 4 tracks are too few for Shuffle+: shuffle goes straight to off.
-    expect(h.handler.shuffleEnabled, isFalse);
+    // 4 tracks are too few for Shuffle+: the Home's list stays on shuffle (D-767).
+    expect(h.handler.shuffleEnabled, isTrue);
+    expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.shuffle);
     await h.dispose(tester);
   });
 
@@ -157,10 +159,9 @@ void main() {
       final c = ProviderScope.containerOf(
         tester.element(find.byType(HomeScreen)),
       );
-      for (var i = 0; i < 2; i++) {
-        await tester.tap(find.byIcon(Icons.shuffle_rounded));
-        await _settle(tester);
-      }
+      // The Home's list starts on shuffle: one tap reaches Shuffle+.
+      await tester.tap(find.byIcon(Icons.shuffle_rounded));
+      await _settle(tester);
       expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.plus);
       await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await _settle(tester);
@@ -196,15 +197,14 @@ void main() {
     await h.dispose(tester);
   });
 
-  testWidgets('Play starts the library in order with shuffle off', (
+  testWidgets('Play starts the library on shuffle (D-767)', (
     tester,
   ) async {
     final h = await openHome(tester);
     await tester.tap(find.byIcon(Icons.play_arrow_rounded));
     await _settle(tester);
-    expect(h.handler.shuffleEnabled, isFalse);
+    expect(h.handler.shuffleEnabled, isTrue);
     expect(h.handler.queueIds, hasLength(4));
-    expect(h.handler.currentIndex, 0);
     await h.dispose(tester);
   });
 

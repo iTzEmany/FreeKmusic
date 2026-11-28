@@ -8,7 +8,7 @@ import 'package:codecore/providers/database_providers.dart';
 import 'package:codecore/providers/player_providers.dart';
 import 'package:codecore/data/settings/settings_store.dart';
 import 'package:codecore/providers/settings_providers.dart';
-import 'package:codecore/providers/shuffle_plus_providers.dart' show ShuffleMode, listKeyOf, listShuffleProvider;
+import 'package:codecore/providers/shuffle_plus_providers.dart' show ShuffleMode, libraryListKey, listKeyOf, listShuffleProvider;
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
@@ -380,5 +380,103 @@ void main() {
     ]);
     addTearDown(other.dispose);
     expect(other.read(listShuffleProvider(key)), ShuffleMode.off, reason: 'not saved');
+  });
+
+  group('the Home\'s list is never off (D-767)', () {
+    late PlayerController home;
+    ShufflePlusBlock? block;
+    setUp(() {
+      block = null;
+      plus = false;
+      home = PlayerController(
+        handler,
+        null,
+        shufflePlus: () => plus,
+        setShufflePlus: (on) => plus = on,
+        // The provider's default: the Home's list starts on shuffle.
+        listMode: (k) => k == libraryListKey ? ShuffleMode.shuffle : ShuffleMode.off,
+        setListMode: (k, m) {},
+        plusBlock: (_) async => block,
+        random: _LastPick(),
+      );
+    });
+
+    test('Play starts on shuffle; the player button goes Casuale <-> Casuale+', () async {
+      await home.playAll(tracks, listKey: libraryListKey);
+      await pumpEventQueue();
+      expect(handler.shuffleEnabled, isTrue);
+      expect(await home.cycleShuffle(), isNull);
+      expect((handler.shuffleEnabled, plus), (true, true));
+      expect(await home.cycleShuffle(), isNull);
+      expect((handler.shuffleEnabled, plus), (true, false));
+    });
+
+    test('Shuffle+ blocked: stays on Casuale and the reason comes at every tap', () async {
+      await home.playAll(tracks, listKey: libraryListKey);
+      await pumpEventQueue();
+      block = ShufflePlusBlock.jam;
+      for (var i = 0; i < 2; i++) {
+        expect(await home.cycleShuffle(), ShufflePlusBlock.jam);
+        expect((handler.shuffleEnabled, plus), (true, false));
+        expect(await home.cycleListShuffle(libraryListKey), ShufflePlusBlock.jam);
+        expect(handler.shuffleEnabled, isTrue);
+      }
+    });
+
+    test('not playing: the list cycles Casuale <-> Casuale+ and never off', () async {
+      final modes = <ShuffleMode>[];
+      final c = PlayerController(
+        handler,
+        null,
+        shufflePlus: () => plus,
+        setShufflePlus: (on) => plus = on,
+        listMode: (k) => modes.isEmpty ? ShuffleMode.shuffle : modes.last,
+        setListMode: (k, m) => modes.add(m),
+      );
+      await c.cycleListShuffle(libraryListKey);
+      await c.cycleListShuffle(libraryListKey);
+      expect(modes, [ShuffleMode.plus, ShuffleMode.shuffle]);
+    });
+
+    test('MPRIS Shuffle=false is refused on the Home queue, works on another one', () async {
+      await home.playAll(tracks, listKey: libraryListKey);
+      await pumpEventQueue();
+      await home.setShuffleFromSystem(false);
+      expect(handler.shuffleEnabled, isTrue);
+      await home.setShuffleFromSystem(true);
+      expect(handler.shuffleEnabled, isTrue);
+
+      await home.playAll(tracks, listKey: 'k'); // a new queue removes the lock
+      await pumpEventQueue();
+      await home.setShuffleFromSystem(true);
+      plus = true;
+      await home.setShuffleFromSystem(false);
+      expect((handler.shuffleEnabled, plus), (false, false));
+      await home.setShuffleFromSystem(true);
+      expect(handler.shuffleEnabled, isTrue);
+    });
+
+    test('the lock follows the restored key, not another restored queue', () async {
+      handler.setShuffleAndRepeat(shuffle: true, repeat: PlayRepeat.off);
+      await handler.restore([for (final t in tracks) t.id], 0, Duration.zero);
+      expect(home.isPlayingList(libraryListKey), isFalse);
+      await home.setShuffleFromSystem(false);
+      expect(handler.shuffleEnabled, isFalse, reason: 'another list restored: not locked');
+
+      handler.setShuffleAndRepeat(shuffle: true, repeat: PlayRepeat.off);
+      home.restoreListKey(libraryListKey);
+      expect(home.isPlayingList(libraryListKey), isTrue);
+      await home.setShuffleFromSystem(false);
+      expect(handler.shuffleEnabled, isTrue);
+    });
+
+    test('the Home\'s mode in ListShuffle: Casuale by default, off reads as Casuale', () {
+      final c = ProviderContainer();
+      addTearDown(c.dispose);
+      expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.shuffle);
+      c.read(listShuffleProvider(libraryListKey).notifier).set(ShuffleMode.off);
+      expect(c.read(listShuffleProvider(libraryListKey)), ShuffleMode.shuffle);
+      expect(c.read(listShuffleProvider(listKeyOf([1]))), ShuffleMode.off);
+    });
   });
 }

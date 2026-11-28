@@ -46,11 +46,18 @@ class PlaybackPersistence {
   Duration _position = Duration.zero;
   bool _held = false;
 
+  /// The list key to save with the queue (only the Home's lock has one), read
+  /// at every save so a queue that replaced it clears it.
+  String? Function()? listKey;
+
   /// Restores the saved queue paused at the saved position. A copy kept aside
   /// by a Jam left open (D-341) comes back instead: its Shuffle+ flag goes to
   /// [applyPlus], and the copy is deleted only once all that is done (or failed:
   /// no loop on a bad copy).
-  Future<void> restore({void Function(bool plus)? applyPlus}) async {
+  Future<void> restore({
+    void Function(bool plus)? applyPlus,
+    void Function(String listKey)? applyListKey,
+  }) async {
     final s = _store.readPlayback();
     ({SavedPlayback queue, bool plus})? aside;
     try {
@@ -69,6 +76,8 @@ class PlaybackPersistence {
         _handler.setPlayContext(s.contextKind, s.contextName);
         await _handler.restore(q.queueIds, q.index, Duration(milliseconds: q.positionMs),
             userAhead: q.userAhead);
+        final key = s.listKey;
+        if (key != null) applyListKey?.call(key);
         if (aside != null) {
           _position = Duration(milliseconds: q.positionMs);
           await flush(); // the disk follows the queue now back
@@ -149,6 +158,7 @@ class PlaybackPersistence {
         repeat: _handler.repeatMode,
         contextKind: _handler.playContext?.kind,
         contextName: _handler.playContext?.name,
+        listKey: listKey?.call(),
         userAhead: q.userAhead,
       ));
     } on Object catch (e, st) {
