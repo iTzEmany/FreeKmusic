@@ -51,6 +51,7 @@ void main() {
   testWidgets('pickPlaylist returns the ticked playlists without writing', (tester) async {
     List<PickedPlaylist>? got;
     final h = await open(tester, (c, ref) async => got = await pickPlaylist(c, ref));
+    expect(find.text('Aggiungi a playlist…'), findsOneWidget);
     await tester.tap(find.text('Rock'));
     await tester.tap(find.text('Jazz'));
     await tester.pump();

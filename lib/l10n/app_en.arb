@@ -4311,5 +4311,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "playlistAddFailed": "Could not add the tracks to a playlist"
 }

@@ -8847,4 +8847,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String noPlaylistNamed(String name) {
     return 'Aucune playlist nommée « $name »';
   }
+
+  @override
+  String get playlistAddFailed =>
+      'Impossible d’ajouter les titres à une playlist';
 }

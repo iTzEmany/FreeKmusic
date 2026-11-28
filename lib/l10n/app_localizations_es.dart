@@ -8802,4 +8802,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String noPlaylistNamed(String name) {
     return 'Ninguna lista llamada «$name»';
   }
+
+  @override
+  String get playlistAddFailed =>
+      'No se pudieron añadir las canciones a una lista';
 }

@@ -8748,4 +8748,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String noPlaylistNamed(String name) {
     return 'No playlist called “$name”';
   }
+
+  @override
+  String get playlistAddFailed => 'Could not add the tracks to a playlist';
 }

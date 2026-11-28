@@ -4497,5 +4497,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "playlistAddFailed": "Não foi possível adicionar as faixas a uma playlist"
 }

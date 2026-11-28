@@ -5040,5 +5040,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "playlistAddFailed": "Non sono riuscito ad aggiungere i brani a una playlist"
 }

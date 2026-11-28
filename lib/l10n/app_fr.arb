@@ -4532,5 +4532,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "playlistAddFailed": "Impossible d’ajouter les titres à une playlist"
 }

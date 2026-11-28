@@ -4311,5 +4311,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "playlistAddFailed": "No se pudieron añadir las canciones a una lista"
 }

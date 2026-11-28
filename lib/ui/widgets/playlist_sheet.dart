@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/app_log.dart';
 import '../../core/text_utils.dart';
 import '../../data/db/app_database.dart';
 import '../../data/repositories/playlist_repository.dart' show PlaylistSummary;
@@ -112,29 +113,43 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
     });
   });
 
-  Future<void> _confirm(List<PlaylistSummary> lists, Set<int> locked) => _run(() async {
-    final names = {for (final p in lists) p.playlist.id: p.playlist.name};
-    final picked = [
-      for (final id in _ticked)
-        if (!locked.contains(id) && names[id] != null) (id: id, name: names[id]!),
-    ];
+  /// The ticked playlists that exist and are not locked: what the button counts and what is written.
+  List<PickedPlaylist> _pickedNow(List<PlaylistSummary> lists, Set<int> locked) => [
+    for (final p in lists)
+      if (_ticked.contains(p.playlist.id) && !locked.contains(p.playlist.id)) (id: p.playlist.id, name: p.playlist.name),
+  ];
+
+  Future<void> _confirm(List<PickedPlaylist> picked) => _run(() async {
     final tracks = widget.tracks;
     if (tracks == null) return _done(PlaylistSheetResult.playlists(picked));
     final ops = ref.read(playlistOpsProvider);
     final ids = [for (final t in tracks) t.id];
+    final done = <PickedPlaylist>[];
     final added = <int>[];
+    var failed = false;
     for (final p in picked) {
-      added.add(await ops.addTracks(p.id, ids));
+      try {
+        added.add(await ops.addTracks(p.id, ids));
+        done.add(p);
+      } on Object catch (e, st) {
+        AppLog.w('add to playlist ${p.id} failed', e, st);
+        failed = true;
+      }
     }
     final outer = widget.outer;
-    if (mounted) _done(PlaylistSheetResult.playlists(picked));
+    if (mounted) done.isEmpty ? Navigator.of(context).pop() : _done(PlaylistSheetResult.playlists(done));
     if (!outer.mounted) return;
     final l = outer.l10n;
+    final changed = added.where((n) => n > 0).length;
     showMsg(
       outer,
-      picked.length == 1
-          ? addedToPlaylistText(l, total: tracks.length, added: added.first, name: picked.first.name)
-          : l.addedToNPlaylists(picked.length),
+      failed
+          ? l.playlistAddFailed
+          : done.length == 1
+          ? addedToPlaylistText(l, total: tracks.length, added: added.first, name: done.first.name)
+          : changed == 0
+          ? l.allAlreadyInPlaylist(done.first.name)
+          : l.addedToNPlaylists(changed),
     );
   });
 
@@ -158,7 +173,8 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
     final lists = ticking ? filterByText(ordered, text, (p) => [p.playlist.name]) : ordered;
     final canCreate = text.isNotEmpty;
     final identical = all.any((p) => p.playlist.name.toLowerCase() == text.toLowerCase());
-    final count = _ticked.difference(contains).length;
+    final pickedNow = _pickedNow(all, contains);
+    final count = pickedNow.length;
     // In the wide desktop dialog the sheet is as tall as its content; on a phone it fills.
     final dialog = ccSheetIsDialog(context);
     final theme = Theme.of(context);
@@ -167,7 +183,7 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
       scopesRoute: true,
       explicitChildNodes: true,
       namesRoute: true,
-      label: adding ? l.addToPlaylist : l.newPlaylist,
+      label: ticking ? l.addToPlaylist : l.newPlaylist,
       child: Column(
         mainAxisSize: dialog ? MainAxisSize.min : MainAxisSize.max,
         children: [
@@ -184,7 +200,7 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
                   child: Semantics(
                     header: true,
                     child: Text(
-                      adding ? l.addToPlaylist : l.newPlaylist,
+                      ticking ? l.addToPlaylist : l.newPlaylist,
                       style: theme.textTheme.titleMedium,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -302,7 +318,7 @@ class _PlaylistSheetState extends ConsumerState<_PlaylistSheet> {
                 width: double.infinity,
                 child: FilledButton(
                   style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                  onPressed: count > 0 && !_busy ? () => _confirm(all, contains) : null,
+                  onPressed: count > 0 && !_busy ? () => _confirm(pickedNow) : null,
                   child: Text(l.addToNPlaylists(count)),
                 ),
               ),

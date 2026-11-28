@@ -13686,6 +13686,12 @@ abstract class AppLocalizations {
   /// In it, this message translates to:
   /// **'Nessuna playlist chiamata «{name}»'**
   String noPlaylistNamed(String name);
+
+  /// No description provided for @playlistAddFailed.
+  ///
+  /// In it, this message translates to:
+  /// **'Non sono riuscito ad aggiungere i brani a una playlist'**
+  String get playlistAddFailed;
 }
 
 class _AppLocalizationsDelegate
