@@ -1,6 +1,8 @@
 import 'package:codecore/services/online/merge_results.dart';
 import 'package:codecore/services/online/query_match.dart' show MediaKind;
+import 'package:codecore/services/online/smart_search.dart';
 import 'package:codecore/services/online/youtube_service.dart';
+import 'package:codecore/services/online/ytm_catalog.dart';
 import 'package:codecore/services/shuffle_plus/karaoke_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -109,4 +111,110 @@ void main() {
       isNull,
     );
   });
+
+  test(
+    'swap: the artist of the karaoke title decides between same-title karaokes',
+    () async {
+      final similar = _y('s1', 'Hello', 'Adele', artists: ['Adele']);
+      final found = await karaokeVideoFor(
+        similar,
+        searching([
+          _y('v1', 'Lionel Richie - Hello (Karaoke Version)', 'Sing King'),
+          _y('v2', 'Adele - Hello (Karaoke Version)', 'Sing King'),
+        ]),
+      );
+      expect(found?.id, 'v2');
+    },
+  );
+
+  test('swap: a plain video of the song is not a karaoke', () async {
+    final similar = _y('s1', 'Hello', 'Adele', artists: ['Adele']);
+    expect(
+      await karaokeVideoFor(
+        similar,
+        searching([_y('v1', 'Adele - Hello', 'Adele')]),
+      ),
+      isNull,
+    );
+  });
+
+  test('swap: a karaoke of a very different length is refused', () async {
+    final similar = _y('s1', 'Hello', 'Adele', artists: ['Adele'], secs: 295);
+    expect(
+      await karaokeVideoFor(
+        similar,
+        searching([
+          _y('v1', 'Adele - Hello (Karaoke Version)', 'Sing King', secs: 30),
+        ]),
+      ),
+      isNull,
+    );
+  });
+
+  test(
+    'original: a title that is only «karaoke» has nothing to search',
+    () async {
+      expect(
+        await karaokeOriginalSeed(
+          _y('d', 'Karaoke', 'Drake'),
+          searching([_y('o', 'Karaoke', 'Drake')]),
+        ),
+        isNull,
+      );
+      expect(queries, isEmpty);
+    },
+  );
+
+  test('original: a very different length is refused', () async {
+    final seed = await karaokeOriginalSeed(
+      _y(
+        'k1',
+        'Sing King - Adele - Hello (Karaoke Version)',
+        'Sing King',
+        secs: 295,
+      ),
+      searching([
+        _y('o1', 'Hello', 'Adele', artists: ['Adele'], secs: 20),
+      ]),
+    );
+    expect(seed, isNull);
+  });
+
+  test(
+    'karaokeSearchOn: a second identical search is served by the engine cache',
+    () async {
+      final yt = _CountingYoutube();
+      final engine = SmartSearch(
+        youtube: yt,
+        catalog: _NoCatalog(),
+        cap: const Duration(milliseconds: 20),
+      );
+      final search = karaokeSearchOn(engine, 'en');
+      final first = await search('adele hello karaoke', videoOnly: true);
+      expect(first, isNotEmpty);
+      await pumpEventQueue(times: 50);
+      await search('adele hello karaoke', videoOnly: true);
+      expect(yt.calls, 1);
+    },
+  );
+}
+
+class _CountingYoutube implements YoutubeService {
+  var calls = 0;
+
+  @override
+  Future<List<YtResult>> search(String query) async {
+    calls++;
+    return [_y('v1', 'Adele - Hello (Karaoke Version)', 'Sing King')];
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('$invocation');
+}
+
+class _NoCatalog implements YtmCatalog {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw UnimplementedError('$invocation');
 }

@@ -12,7 +12,6 @@ import '../services/online/merge_results.dart' show libraryMatchOf;
 import '../services/online/youtube_service.dart' show YtResult;
 import '../services/online/ytm_radio_service.dart';
 import '../services/shuffle_plus/karaoke_session.dart';
-import '../services/online/youtube_service.dart' show YtException, YtErrorKind;
 import '../services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import '../services/shuffle_plus/genre_mix.dart';
 import '../services/shuffle_plus/radio_fill.dart';
@@ -367,27 +366,21 @@ final similarFillProvider =
       };
     });
 
-/// The smart search of the karaoke queue: the engine keeps the 10-minute copy
-/// of recent searches. The first state with every source answered; a 429 of
-/// all of them is thrown.
-KaraokeSearch _karaokeSearch(Ref ref) => (query, {bool videoOnly = false}) async {
-  final engine = ref.read(smartSearchEngineProvider);
-  final s = await engine
-      .run(query, ref.read(ytmLanguageProvider), videoOnly: videoOnly)
-      .firstWhere((s) => !s.loading);
-  final e = s.error;
-  if (e is YtException && e.kind == YtErrorKind.rateLimited) throw e;
-  return [...s.best, ...s.others];
-};
+KaraokeSearch _karaokeSearch(Ref ref) => karaokeSearchOn(
+  ref.read(smartSearchEngineProvider),
+  ref.read(ytmLanguageProvider),
+);
 
 /// The original song of a karaoke pick, as the seed of its radio (D-766).
 final karaokeOriginalProvider = Provider<Future<RadioSeed?> Function(YtResult)>(
-  (ref) => (r) => karaokeOriginalSeed(r, _karaokeSearch(ref)),
+  (ref) =>
+      (r) => karaokeOriginalSeed(r, _karaokeSearch(ref)),
 );
 
 /// The karaoke video of a similar song (D-766).
 final karaokeSwapProvider = Provider<Future<YtResult?> Function(YtResult)>(
-  (ref) => (r) => karaokeVideoFor(r, _karaokeSearch(ref)),
+  (ref) =>
+      (r) => karaokeVideoFor(r, _karaokeSearch(ref)),
 );
 
 /// The online songs of a genre page (D-356): the library songs of the genre

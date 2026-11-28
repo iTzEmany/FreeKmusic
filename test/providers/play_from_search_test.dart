@@ -13,6 +13,8 @@ import 'package:codecore/services/audio/codecore_audio_handler.dart';
 import 'package:codecore/services/audio/online_entries.dart';
 import 'package:codecore/services/audio/play_queue.dart';
 import 'package:codecore/services/online/download_index.dart';
+import 'package:codecore/services/online/query_match.dart' show MediaKind;
+import 'package:codecore/services/online/source_cooldown.dart';
 import 'package:codecore/services/online/youtube_service.dart';
 import 'package:codecore/services/online/ytm_radio_parser.dart';
 import 'package:codecore/services/radio/radio_station.dart';
@@ -79,6 +81,9 @@ void main() {
   var echoSeed = false;
   var registering = 0, maxRegistering = 0;
   RadioSeed? original;
+  Object? swapError;
+  Completer<void>? holdOriginal;
+  late SourceCooldown cooldown;
   final swapped = <String>[];
 
   // The radio: `pageSize` songs per page, ids r<call>_<n>, endless.
@@ -200,6 +205,9 @@ void main() {
     echoSeed = false;
     registering = maxRegistering = 0;
     original = RadioSeed.online('orig', 'Hello');
+    swapError = null;
+    holdOriginal = null;
+    cooldown = SourceCooldown(now: () => now);
     swapped.clear();
     player = PlayerController(
       handler,
@@ -219,9 +227,14 @@ void main() {
         if (seed.title == 'TA') await holdFill?.future;
         return fillFor(seed);
       },
-      karaokeOriginal: (r) async => original,
+      karaokeOriginal: (r) async {
+        await holdOriginal?.future;
+        return original;
+      },
+      karaokeCooldown: cooldown,
       karaokeSwap: (r) async {
         swapped.add(r.id);
+        if (swapError != null) throw swapError!;
         return r.id == 'r1_1' ? null : _r('k${r.id}');
       },
       similarNow: () => now,
@@ -587,10 +600,15 @@ void main() {
 
   test('a pick: the seed id is asked, never queued again, and the blocked track stays out', () async {
     echoSeed = true;
-    dislikeGate.store.blockTrack(const DislikedTrack(videoId: 'r1_1', title: 'T', artist: ''));
+    dislikeGate.store.blockTrack(
+      const DislikedTrack(videoId: 'r1_1', title: 'T', artist: ''),
+    );
     expect(await player.playFromSearch(online: _r('x')), isTrue);
     expect(asked, [('x', null)]);
-    expect([for (final i in handler.queueIds) online.entryOf(i)?.result.id], ['x', 'r1_0', 'r1_2']);
+    expect(
+      [for (final i in handler.queueIds) online.entryOf(i)?.result.id],
+      ['x', 'r1_0', 'r1_2'],
+    );
     expect(suggested, ['r1_0/Tx', 'r1_2/Tx']);
     final e = online.entryOf(handler.queueIds[1])!;
     expect((e.seedTitle, e.suggested), ('Tx', true));
@@ -619,25 +637,88 @@ void main() {
     );
     expect(await player.playFromSearch(online: k), isTrue);
     expect(asked, [('orig', null)]);
-    expect([for (final i in handler.queueIds) online.entryOf(i)?.result.id], ['kx', 'kr1_0', 'kr1_2']);
+    expect(
+      [for (final i in handler.queueIds) online.entryOf(i)?.result.id],
+      ['kx', 'kr1_0', 'kr1_2'],
+    );
     expect(swapped, ['r1_0', 'r1_1', 'r1_2']); // r1_1 had no karaoke: dropped
     expect(player.similarTitle.value, 'Hello');
   });
 
-  test('karaoke pick whose original is not found: only the pick plays, no session', () async {
-    original = null;
-    final k = YtResult(id: 'kx', title: 'Hello (Karaoke Version)', channel: 'C', duration: null);
-    expect(await player.playFromSearch(online: k), isFalse);
-    expect(fills, 0);
-    expect(asked, isEmpty);
-    expect(handler.queueIds.length, 1);
-    expect(player.similarTitle.value, isNull);
-  });
+  test(
+    'karaoke pick whose original is not found: only the pick plays, no session',
+    () async {
+      original = null;
+      final k = YtResult(
+        id: 'kx',
+        title: 'Hello (Karaoke Version)',
+        channel: 'C',
+        duration: null,
+      );
+      expect(await player.playFromSearch(online: k), isFalse);
+      expect(fills, 0);
+      expect(asked, isEmpty);
+      expect(handler.queueIds.length, 1);
+      expect(player.similarTitle.value, isNull);
+    },
+  );
 
   test('not karaoke: as before, the swap is never called', () async {
     expect(await player.playFromSearch(online: _r('x')), isTrue);
     expect(asked, [('x', null)]);
     expect(swapped, isEmpty);
-    expect([for (final i in handler.queueIds) online.entryOf(i)?.result.id], ['x', 'r1_0', 'r1_1', 'r1_2']);
+    expect(
+      [for (final i in handler.queueIds) online.entryOf(i)?.result.id],
+      ['x', 'r1_0', 'r1_1', 'r1_2'],
+    );
+  });
+
+  test('karaoke pick: a 429 of the swap pauses the video source through the controller cooldown', () async {
+    swapError = const YtException(YtErrorKind.rateLimited);
+    final k = YtResult(
+      id: 'kx',
+      title: 'Hello (Karaoke Version)',
+      channel: 'C',
+      duration: null,
+    );
+    expect(await player.playFromSearch(online: k), isFalse);
+    expect(cooldown.isPaused(MediaKind.ytVideo), isTrue);
+    expect(gate.rateLimited, isTrue);
+  });
+
+  test(
+    'a SoundCloud pick titled karaoke is no karaoke pick: its own radio',
+    () async {
+      final k = YtResult(
+        id: 'sc1',
+        title: 'Hello (Karaoke Version)',
+        channel: 'C',
+        duration: null,
+        source: MediaSource.soundcloud,
+      );
+      expect(await player.playFromSearch(online: k), isTrue);
+      expect(asked, [('sc1', null)]);
+      expect(swapped, isEmpty);
+    },
+  );
+
+  test('another pick while the original is being looked up: the old one tells nobody and adds nothing', () async {
+    holdOriginal = Completer<void>();
+    final k = YtResult(
+      id: 'kx',
+      title: 'Hello (Karaoke Version)',
+      channel: 'C',
+      duration: null,
+    );
+    final first = player.playFromSearch(online: k);
+    await pumpEventQueue();
+    expect(await player.playFromSearch(online: _r('y')), isTrue);
+    holdOriginal!.complete();
+    expect(await first, isNull);
+    expect(
+      [for (final i in handler.queueIds) online.entryOf(i)?.result.id],
+      ['y', 'r1_0', 'r1_1', 'r1_2'],
+    );
+    expect(player.similarTitle.value, 'Ty');
   });
 }

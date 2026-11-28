@@ -29,6 +29,7 @@ class SimilarQueue {
     this.retryAfter = const Duration(minutes: 1),
     this.swap,
     this.cooldown,
+    this.swapTimeout = const Duration(seconds: 45),
     DateTime Function()? now,
     Timer Function(Duration, void Function())? schedule,
   }) : _now = now ?? DateTime.now,
@@ -58,6 +59,9 @@ class SimilarQueue {
   /// A 429 from it pauses the video source through [cooldown].
   final Future<YtResult?> Function(YtResult r)? swap;
   final SourceCooldown? cooldown;
+
+  /// A swap that takes longer is a discarded song.
+  final Duration swapTimeout;
 
   /// Songs of the first group when [swap] is set (it discards some).
   static const swapFirstBlock = 3;
@@ -162,6 +166,13 @@ class SimilarQueue {
         final r = await _swapped(c0.result);
         if (_closed) break;
         if (r == null) continue;
+        // The swapped video may be the seed, a song already queued or one suggested lately.
+        if (swap != null &&
+            (r.id == seedVideoId ||
+                _seen.contains(r.id) ||
+                fill.log.recentlySuggested(r.id))) {
+          continue;
+        }
         final c = SuggestionCandidate(r, c0.seedTitle, c0.kind);
         final id = await register(c.result, c.seedTitle);
         if (_closed) break;
@@ -200,6 +211,10 @@ class SimilarQueue {
     } finally {
       _busy = false;
     }
+    // A short swap group holds the next one back, so queue events do not re-run its searches.
+    if (swap != null && added < want && !_closed) {
+      _backoff = _now().add(retryAfter);
+    }
     if (!_closed && _gone()) close();
     return added;
   }
@@ -210,16 +225,18 @@ class SimilarQueue {
     final f = swap;
     if (f == null) return original;
     try {
-      return await f(original);
+      return await f(original).timeout(swapTimeout);
     } on YtException catch (e) {
       if (e.kind != YtErrorKind.rateLimited) {
         AppLog.w('similar swap failed', e);
+        _backoff = _now().add(retryAfter);
         return null;
       }
       cooldown?.trip(MediaKind.ytVideo);
       rethrow;
     } on Object catch (e, st) {
       AppLog.w('similar swap failed', e, st);
+      _backoff = _now().add(retryAfter);
       return null;
     }
   }

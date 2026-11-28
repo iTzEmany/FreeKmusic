@@ -14,11 +14,12 @@ import 'package:codecore/services/online/ytm_radio_parser.dart';
 import 'package:codecore/services/shuffle_plus/radio_fill.dart';
 import 'package:codecore/services/shuffle_plus/radio_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_index.dart';
+import 'package:codecore/services/shuffle_plus/suggestion_gate.dart';
 import 'package:codecore/services/shuffle_plus/seed_resolver.dart';
 import 'package:codecore/services/shuffle_plus/similar_queue.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_log.dart';
 import 'package:codecore/services/shuffle_plus/suggestion_pool.dart'
-    show RadioSeed;
+    show RadioSeed, suggestionArtistKey;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as p;
@@ -42,6 +43,7 @@ void main() {
   late CodecoreAudioHandler handler;
   late RadioGate gate;
   late SourceCooldown cooldown;
+  late SuggestionLog log;
   late DateTime now;
   final registered = <String>[], suggested = <String>[];
   var closed = 0;
@@ -56,6 +58,8 @@ void main() {
   SimilarQueue session(
     int seedId, {
     Future<YtResult?> Function(YtResult)? swap,
+    SuggestionGate? filter,
+    Duration swapTimeout = const Duration(seconds: 45),
   }) => SimilarQueue(
     handler: handler,
     fill: RadioFill(
@@ -69,11 +73,8 @@ void main() {
         searchSongs: (q) async => const [],
       ),
       radioPage: radio,
-      log: SuggestionLog(
-        file: () async => File(p.join(dir.path, 'l.json')),
-        writeDelay: const Duration(days: 1),
-      ),
-      filter: testGate(),
+      log: log,
+      filter: filter ?? testGate(),
       gate: gate,
       inLibrary: (_) => false,
     ),
@@ -87,6 +88,7 @@ void main() {
     onClosed: () => closed++,
     blocked: () => false,
     swap: swap,
+    swapTimeout: swapTimeout,
     cooldown: cooldown,
     now: () => now,
     schedule: (d, f) => Timer(const Duration(days: 1), f),
@@ -108,6 +110,10 @@ void main() {
     now = DateTime(2026, 11, 8);
     gate = RadioGate(now: () => now);
     cooldown = SourceCooldown(now: () => now);
+    log = SuggestionLog(
+      file: () async => File(p.join(dir.path, 'l.json')),
+      writeDelay: const Duration(days: 1),
+    );
     registered.clear();
     suggested.clear();
     closed = 0;
@@ -221,4 +227,125 @@ void main() {
       s.close();
     },
   );
+
+  List<String?> queued() => [
+    for (final i in handler.queueIds) online.entryOf(i)?.result.id,
+  ];
+
+  test('swap to one video for every song: queued once', () async {
+    final s = session(await seed(), swap: (r) async => _r('same'));
+    expect(await s.start(), isTrue);
+    expect(queued(), ['s', 'same']);
+    s.close();
+  });
+
+  test('swap to the seed video: skipped', () async {
+    final s = session(
+      await seed(),
+      swap: (r) async => r.id == 'r0' ? _r('s') : r,
+    );
+    expect(await s.start(), isTrue);
+    expect(queued(), ['s', 'r1', 'r2', 'r3']);
+    s.close();
+  });
+
+  test('swap to a video suggested lately: skipped', () async {
+    log.addSuggestion(_r('kr0'), 'old');
+    final s = session(await seed(), swap: (r) async => _r('k${r.id}'));
+    expect(await s.start(), isTrue);
+    expect(queued(), ['s', 'kr1', 'kr2', 'kr3']);
+    s.close();
+  });
+
+  test('a disliked swapped video is not queued and is forgotten', () async {
+    final s = session(
+      await seed(),
+      swap: (r) async => _r('k${r.id}'),
+      filter: testGate(tracks: ['kr0']),
+    );
+    expect(await s.start(), isTrue);
+    expect(queued(), ['s', 'kr1', 'kr2', 'kr3']);
+    expect(suggested, isNot(contains('kr0')));
+    s.close();
+  });
+
+  test(
+    'the artist of the swapped result counts, not the original one',
+    () async {
+      final blocked = suggestionArtistKey(_r('kr0'));
+      final s = session(
+        await seed(),
+        swap: (r) async => r.id == 'r0' ? _r('kr0') : _r('x${r.id}'),
+        filter: testGate(artists: [blocked]),
+      );
+      expect(await s.start(), isTrue);
+      expect(queued(), ['s', 'xr1', 'xr2', 'xr3']);
+      s.close();
+    },
+  );
+
+  test('close() during a swap: nothing is registered or queued', () async {
+    final gate = Completer<void>();
+    final s = session(
+      await seed(),
+      swap: (r) async {
+        await gate.future;
+        return r;
+      },
+    );
+    final started = s.start();
+    await pumpEventQueue();
+    s.close();
+    gate.complete();
+    expect(await started, isFalse);
+    expect(registered, isEmpty);
+    expect(queued(), ['s']);
+  });
+
+  test('a swap that hangs is a discarded song after the timeout', () async {
+    var n = 0;
+    final s = session(
+      await seed(),
+      swapTimeout: const Duration(milliseconds: 20),
+      swap: (r) => ++n == 1 ? Completer<YtResult?>().future : Future.value(r),
+    );
+    expect(await s.start(), isTrue);
+    expect(registered, ['r1', 'r2', 'r3']);
+    s.close();
+  });
+
+  test(
+    'a short group holds the next request back: queue events run no more swaps',
+    () async {
+      var calls = 0;
+      final s = session(
+        await seed(),
+        swap: (r) async {
+          calls++;
+          return calls == 1 ? r : null;
+        },
+      );
+      expect(await s.start(), isTrue);
+      expect(calls, 6);
+      for (var i = 0; i < 3; i++) {
+        await handler.skipToQueueItem(0);
+        await pumpEventQueue();
+      }
+      expect(calls, 6);
+      s.close();
+    },
+  );
+
+  test('swap errors: that song is dropped and the next group waits', () async {
+    var calls = 0;
+    final s = session(
+      await seed(),
+      swap: (r) async {
+        calls++;
+        throw StateError('boom');
+      },
+    );
+    expect(await s.start(), isFalse);
+    expect(calls, 6);
+  });
 }

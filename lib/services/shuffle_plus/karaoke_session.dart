@@ -1,8 +1,12 @@
+import 'dart:async';
+
+import '../../core/artist_key.dart';
 import '../../core/import_row.dart';
 import '../import/track_matcher.dart';
 import '../online/karaoke_filter.dart';
 import '../online/merge_results.dart' show SmartResult;
 import '../online/query_cleaner.dart';
+import '../online/smart_search.dart';
 import '../online/youtube_service.dart';
 import 'suggestion_pool.dart' show RadioSeed;
 
@@ -13,7 +17,7 @@ typedef KaraokeSearch = Future<List<SmartResult>> Function(
 });
 
 bool _accepted(ImportRow row, YtResult c) =>
-    decide(row, [c]).kind != MatchKind.notFound;
+    decide(row, [c]).kind == MatchKind.sure;
 
 /// The song a karaoke pick is a backing track of, as the seed of the radio:
 /// the karaoke title cleaned, searched on YouTube Music (never a karaoke row)
@@ -70,11 +74,45 @@ Future<YtResult?> karaokeVideoFor(
       channel: c.channel,
       duration: c.duration,
       thumbnailUrl: c.thumbnailUrl,
-      artists: c.artists,
+      artists: q.artist.isNotEmpty ? [q.artist] : c.artists,
       source: c.source,
       webpageUrl: c.webpageUrl,
     );
+    // A different artist in the title is another song: the score alone can let it through.
+    if (artist.isNotEmpty &&
+        q.artist.isNotEmpty &&
+        artistKey(q.artist) != artistKey(artist)) {
+      continue;
+    }
     if (_accepted(row, cleaned)) return c;
   }
   return null;
 }
+
+/// [engine] as a [KaraokeSearch]: the first state with every source answered.
+/// The search is not cancelled then: it stores itself in the engine's 10-minute
+/// cache only when it has run to the end.
+KaraokeSearch karaokeSearchOn(SmartSearch engine, String hl) =>
+    (query, {bool videoOnly = false}) {
+      final done = Completer<List<SmartResult>>();
+      engine
+          .run(query, hl, videoOnly: videoOnly)
+          .listen(
+            (s) {
+              if (s.loading || done.isCompleted) return;
+              final e = s.error;
+              if (e is YtException && e.kind == YtErrorKind.rateLimited) {
+                done.completeError(e);
+              } else {
+                done.complete([...s.best, ...s.others]);
+              }
+            },
+            onError: (Object e, StackTrace st) {
+              if (!done.isCompleted) done.completeError(e, st);
+            },
+            onDone: () {
+              if (!done.isCompleted) done.complete(const []);
+            },
+          );
+      return done.future;
+    };
