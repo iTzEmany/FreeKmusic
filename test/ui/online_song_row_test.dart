@@ -402,6 +402,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('P1'));
+    await tester.pump();
+    await tester.tap(find.byType(FilledButton));
     await tester.pumpAndSettle();
     expect(downloads.adds.length, 2);
     expect(downloads.adds.last, startsWith('addto:'));

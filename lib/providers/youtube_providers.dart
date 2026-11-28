@@ -30,7 +30,7 @@ import 'online_providers.dart';
 import 'yt_dlp_update_providers.dart' show locateYtDlp, ytDlpUpdateProvider;
 import 'ytm_catalog_providers.dart' show ytmCatalogProvider;
 import 'settings_providers.dart';
-import 'pending_playlist_adds.dart' show parseAddToPlaylistTag;
+import 'pending_playlist_adds.dart' show addToPlaylistTag, parseAddToPlaylistTag;
 import 'stream_providers.dart' show streamPromoterProvider;
 
 /// The videos of a pasted playlist or channel address, read once per address.
@@ -301,24 +301,46 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   /// True when the song joined the library at once (no download started).
   Future<bool> add(YtResult r, {String? tag}) async {
     // Imports (any tag but addto:) always download.
-    if (tag != null && parseAddToPlaylistTag(tag) == null) {
+    if (tag != null && parseAddToPlaylistTag(tag).isEmpty) {
       _queue.add(r, tag: tag);
       return false;
     }
     final idx = ref.read(downloadIndexProvider).value;
     if (idx != null && await idx.containsOnDisk(r.id, source: r.source)) {
       // Already a library file: never a second copy (`Title (2).m4a`).
-      final playlist = parseAddToPlaylistTag(tag);
-      if (playlist != null) unawaited(_joinPlaylist(r, playlist));
+      unawaited(_joinPlaylist(r, parseAddToPlaylistTag(tag)));
       return false;
     }
+    if (_mergeIntoQueued(r, tag)) return false; // one job, both playlists
     // The same song already queued or downloading: never a second job (it would write the file back later).
     if (tag == null && _queue.items.any((e) => e.result.indexKey == r.indexKey && _isActive(e.status))) return false;
-    if (!_promoting.add(r.indexKey)) return false; // double tap while it is moving
-    return _promoteOrQueue(r, tag).whenComplete(() => _promoting.remove(r.indexKey));
+    final moving = _promoting[r.indexKey];
+    if (moving != null) {
+      // Double tap while it is moving: its playlists still count, as a join or on the queued job.
+      if (await moving) {
+        await _joinPlaylist(r, parseAddToPlaylistTag(tag));
+      } else {
+        _mergeIntoQueued(r, tag);
+      }
+      return false;
+    }
+    final run = _promoteOrQueue(r, tag);
+    _promoting[r.indexKey] = run;
+    return run.whenComplete(() => _promoting.remove(r.indexKey));
   }
 
-  final _promoting = <String>{};
+  /// An `addto:` [tag] on a song already queued adds its playlists to that job instead of a second one.
+  bool _mergeIntoQueued(YtResult r, String? tag) {
+    final ids = parseAddToPlaylistTag(tag);
+    if (ids.isEmpty) return false;
+    return _queue.mergeTag(r.indexKey, (old) {
+      final have = parseAddToPlaylistTag(old);
+      if (old != null && have.isEmpty) return null; // an import tag stays
+      return addToPlaylistTag({...have, ...ids}.toList());
+    });
+  }
+
+  final _promoting = <String, Future<bool>>{};
 
   static bool _isActive(DownloadStatus s) =>
       s == DownloadStatus.queued || s == DownloadStatus.downloading || s == DownloadStatus.waitingRetry;
@@ -345,12 +367,20 @@ class DownloadsNotifier extends Notifier<List<DownloadItem>> {
   }
 
   /// A promoted song is a library track already: the playlist of an `addto:` tag takes it now.
-  Future<void> _joinPlaylist(YtResult r, int? playlistId) async {
-    if (playlistId == null) return;
+  Future<void> _joinPlaylist(YtResult r, List<int> playlistIds) async {
+    if (playlistIds.isEmpty) return;
     try {
       final path = await (await ref.read(downloadIndexProvider.future)).existingPathFor(r.id, source: r.source);
       final id = path == null ? null : await ref.read(trackRepositoryProvider).idForPath(path);
-      if (id != null) await ref.read(playlistRepositoryProvider).addTracks(playlistId, [id]);
+      if (id != null) {
+        for (final p in playlistIds) {
+          try {
+            await ref.read(playlistRepositoryProvider).addTracks(p, [id]);
+          } on Object catch (e, st) {
+            AppLog.w('add to playlist $p after promotion failed for ${r.indexKey}', e, st);
+          }
+        }
+      }
     } on Object catch (e, st) {
       AppLog.w('add to playlist after promotion failed for ${r.indexKey}', e, st);
     }

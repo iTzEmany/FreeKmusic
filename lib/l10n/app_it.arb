@@ -5006,5 +5006,40 @@
   "closeToTrayHint": "Chiudere la finestra lascia la musica in sottofondo, con il menu nella barra di sistema. Spento su Linux: GNOME mostra la barra solo con l'estensione AppIndicator.",
   "closeToTrayUnavailable": "Questo desktop non ha una barra di sistema: la finestra si chiude sempre.",
   "dropHint": "Rilascia per ascoltare",
-  "dropRejected": "Trascina solo file audio, non cartelle"
+  "dropRejected": "Trascina solo file audio, non cartelle",
+  "playlistSearchOrCreate": "Cerca o crea una playlist",
+  "playlistCreateNamed": "Crea «{name}»",
+  "@playlistCreateNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "addToNPlaylists": "{n, plural, one{Aggiungi a 1 playlist} other{Aggiungi a {n} playlist}}",
+  "@addToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "alreadyPresent": "Già presente",
+  "addedToNPlaylists": "{n, plural, one{Aggiunto a 1 playlist} other{Aggiunto a {n} playlist}}",
+  "@addedToNPlaylists": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "noPlaylistNamed": "Nessuna playlist chiamata «{name}»",
+  "@noPlaylistNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "playlistAddFailed": "Non sono riuscito ad aggiungere i brani a una playlist"
 }

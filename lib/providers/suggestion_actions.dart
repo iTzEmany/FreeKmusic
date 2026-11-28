@@ -74,13 +74,13 @@ class SuggestionActions {
     return download(r);
   }
 
-  /// Downloads it and adds it to [playlistId] when the file is ready (at once
+  /// Downloads it and adds it to every playlist of [playlistIds] when the file is ready (at once
   /// if cached). Null: no such entry; true: added at once.
-  Future<bool?> addToPlaylist(int id, int playlistId) async {
+  Future<bool?> addToPlaylist(int id, List<int> playlistIds) async {
     final r = online?[id]?.result;
     if (r == null) return null;
     log.setOutcome(r.id, SuggestionOutcome.downloaded);
-    return download(r, tag: addToPlaylistTag(playlistId));
+    return download(r, tag: addToPlaylistTag(playlistIds));
   }
 
   /// «Non mi piace» on the queue entry [queueId]: see [dislikeResult].

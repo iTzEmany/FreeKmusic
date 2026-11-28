@@ -36,12 +36,13 @@ class _Settings extends SettingsNotifier {
 class _Promoter implements StreamPromoter {
   int calls = 0;
   bool result = true;
+  Completer<bool>? gate; // holds the promotion until the test releases it
   Object? error;
   @override
   Future<bool> promote(YtResult r) async {
     calls++;
     if (error != null) throw error!;
-    return result;
+    return gate != null ? gate!.future : result;
   }
   @override
   dynamic noSuchMethod(Invocation i) => throw UnimplementedError();
@@ -114,11 +115,62 @@ void main() {
     final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
         path: file.path, title: 'Song', albumKey: 'k', format: 'm4a', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
     final playlistId = await PlaylistRepository(db).create('P');
-    c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag(playlistId));
+    final second = await PlaylistRepository(db).create('Q');
+    c.read(downloadsProvider.notifier).add(_r, tag: addToPlaylistTag([playlistId, second]));
     await Future<void>.delayed(const Duration(milliseconds: 200));
     expect(promoter.calls, 0);
     expect(c.read(downloadsProvider), isEmpty);
-    expect(await PlaylistRepository(db).containing([trackId]), {playlistId});
+    expect(await PlaylistRepository(db).containing([trackId]), {playlistId, second});
+  });
+
+  group('double tap with different playlists', () {
+    Future<(int, int, int)> setup() async {
+      final file = File('${dir.path}/song.m4a')..writeAsStringSync('x');
+      final trackId = await db.into(db.tracks).insert(TracksCompanion.insert(
+          path: file.path, title: 'Song', albumKey: 'k', format: 'm4a', sizeBytes: 1, mtimeMs: 1, addedAt: 1));
+      final repo = PlaylistRepository(db);
+      return (trackId, await repo.create('P'), await repo.create('Q'));
+    }
+
+    test('while it is promoting: both playlists get the song', () async {
+      final (trackId, p, q) = await setup();
+      promoter.gate = Completer<bool>();
+      final n = c.read(downloadsProvider.notifier);
+      final first = n.add(_r, tag: addToPlaylistTag([p]));
+      final second = n.add(_r, tag: addToPlaylistTag([q]));
+      await pumpEventQueue();
+      await index.add(_r.id, '${dir.path}/song.m4a'); // what the promotion leaves behind
+      promoter.gate!.complete(true);
+      expect(await first, isTrue);
+      expect(await second, isFalse);
+      expect(await PlaylistRepository(db).containing([trackId]), {p, q});
+      expect(promoter.calls, 1);
+    });
+
+    test('while it is promoting and a download is queued instead: one job with both playlists', () async {
+      final (_, p, q) = await setup();
+      promoter.gate = Completer<bool>();
+      final n = c.read(downloadsProvider.notifier);
+      final first = n.add(_r, tag: addToPlaylistTag([p]));
+      final second = n.add(_r, tag: addToPlaylistTag([q]));
+      await pumpEventQueue();
+      promoter.gate!.complete(false);
+      await Future.wait([first, second]);
+      final items = c.read(downloadsProvider);
+      expect(items, hasLength(1));
+      expect(parseAddToPlaylistTag(items.single.tag), [p, q]);
+    });
+
+    test('after a download was queued: still one job with both playlists', () async {
+      final (_, p, q) = await setup();
+      promoter.result = false;
+      final n = c.read(downloadsProvider.notifier);
+      await n.add(_r, tag: addToPlaylistTag([p]));
+      await n.add(_r, tag: addToPlaylistTag([q, p]));
+      final items = c.read(downloadsProvider);
+      expect(items, hasLength(1));
+      expect(parseAddToPlaylistTag(items.single.tag), [p, q]);
+    });
   });
 
   test('add returns false for a video already in the library', () async {

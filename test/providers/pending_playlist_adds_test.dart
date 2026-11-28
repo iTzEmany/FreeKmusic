@@ -41,15 +41,23 @@ void main() {
   });
 
   test('a download that finished joins the playlist in its tag', () async {
-    settled.add(_item(DownloadStatus.done, tag: addToPlaylistTag(7), path: '/m/a.m4a'));
+    settled.add(_item(DownloadStatus.done, tag: addToPlaylistTag([7]), path: '/m/a.m4a'));
     await pumpEventQueue();
     expect(added, ['7:[42]']);
   });
 
+  test('a download with two playlists joins both', () async {
+    settled.add(_item(DownloadStatus.done, tag: addToPlaylistTag([3, 7]), path: '/m/a.m4a'));
+    await pumpEventQueue();
+    expect(added, ['3:[42]', '7:[42]']);
+  });
+
   test('addto:5 parses to playlist 5; addto:, addto:x and foo add nothing', () async {
-    expect(parseAddToPlaylistTag('addto:5'), 5);
-    for (final t in ['addto:', 'addto:x', 'foo', null]) {
-      expect(parseAddToPlaylistTag(t), isNull, reason: '$t');
+    expect(parseAddToPlaylistTag('addto:5'), [5]);
+    expect(parseAddToPlaylistTag('addto:3,7'), [3, 7]);
+    expect(addToPlaylistTag([3, 7]), 'addto:3,7');
+    for (final t in ['addto:', 'addto:x', 'addto:3,x', 'foo', null]) {
+      expect(parseAddToPlaylistTag(t), isEmpty, reason: '$t');
     }
     settled.add(_item(DownloadStatus.done, tag: 'addto:5', path: '/m/a.m4a'));
     for (final t in ['addto:', 'addto:x', 'foo']) {
@@ -59,8 +67,30 @@ void main() {
     expect(added, ['5:[42]']);
   });
 
+  test('only positive decimal ids are valid, duplicates collapse', () {
+    for (final t in ['addto:-1', 'addto: 3', 'addto:+5', 'addto:0x10', 'addto:0', 'addto:3,', 'addto:1.5']) {
+      expect(parseAddToPlaylistTag(t), isEmpty, reason: t);
+    }
+    expect(parseAddToPlaylistTag('addto:3,3,7'), [3, 7]);
+  });
+
+  test('a playlist that fails does not block the others', () async {
+    final got = <int>[];
+    PendingPlaylistAdds(
+      settled: settled.stream,
+      trackIdForPath: (_) async => 42,
+      addTracks: (pl, ids) async {
+        if (pl == 3) throw StateError('locked');
+        got.add(pl);
+      },
+    );
+    settled.add(_item(DownloadStatus.done, tag: 'addto:3,7', path: '/m/b.m4a'));
+    await pumpEventQueue();
+    expect(got, [7]);
+  });
+
   test('a failed download adds nothing', () async {
-    settled.add(_item(DownloadStatus.failed, tag: addToPlaylistTag(7)));
+    settled.add(_item(DownloadStatus.failed, tag: addToPlaylistTag([7])));
     await pumpEventQueue();
     expect(added, isEmpty);
   });
@@ -77,7 +107,7 @@ void main() {
     await pumpEventQueue();
     expect(replaced, ['v1:42']);
     expect(added, isEmpty);
-    settled.add(_item(DownloadStatus.done, tag: addToPlaylistTag(7), path: '/m/a.m4a'));
+    settled.add(_item(DownloadStatus.done, tag: addToPlaylistTag([7]), path: '/m/a.m4a'));
     await pumpEventQueue();
     expect(replaced, ['v1:42', 'v1:42']);
     expect(added, ['7:[42]']);
@@ -133,7 +163,7 @@ void main() {
     test('streaming mode saves a row, starts no job and joins the playlist of an addto: tag at once', () async {
       final c = await container(StorageMode.stream);
       final pid = await c.read(playlistRepositoryProvider).create('P');
-      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(pid)), isTrue);
+      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag([pid])), isTrue);
       expect(queue.added, isEmpty);
       final rows = await savedRows();
       expect(rows, hasLength(1));
@@ -142,7 +172,7 @@ void main() {
 
     test('device mode saves the row, then downloads it keeping the addto: tag (D-695)', () async {
       final c = await container(StorageMode.device);
-      await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(1));
+      await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag([1]));
       expect(queue.added, ['v1:addto:1']);
       expect(await savedRows(), hasLength(1));
       expect(await c.read(libraryAdderProvider).saveNow(_song), isNull, reason: 'device mode saves nothing before the download');
@@ -213,7 +243,7 @@ void main() {
       await index.add('v1', file.path);
       queue = _Queue();
       c = await container(StorageMode.device);
-      await c.read(libraryAdderProvider).download(_song, tag: addToPlaylistTag(3));
+      await c.read(libraryAdderProvider).download(_song, tag: addToPlaylistTag([3]));
       expect(await savedRows(), isEmpty);
       expect(queue.added, ['v1:addto:3']);
     });
@@ -222,7 +252,7 @@ void main() {
       final file = File('${dir.path}/a.m4a')..writeAsStringSync('x');
       await index.add('v1', file.path);
       var c = await container(StorageMode.stream);
-      await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(3));
+      await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag([3]));
       expect(queue.added, ['v1:addto:3']);
       expect(await savedRows(), isEmpty);
       // A saved row and a playlist: the song still joins the playlist (no early «already there»).
@@ -235,7 +265,7 @@ void main() {
       await c.read(libraryAdderProvider).add(_song);
       await c.read(savedStreamKeysProvider.future);
       await Future<void>.delayed(Duration.zero);
-      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(pid)), isTrue);
+      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag([pid])), isTrue);
       expect((await c.read(playlistRepositoryProvider).watchTracks(pid).first), hasLength(1));
       expect(await savedRows(), hasLength(1));
     });
@@ -248,7 +278,7 @@ void main() {
 
     test('a failed put in the playlist is reported (null)', () async {
       final c = await container(StorageMode.stream, playlists: (db) => _FailingPlaylists(db));
-      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag(1)), isNull);
+      expect(await c.read(libraryAdderProvider).add(_song, tag: addToPlaylistTag([1])), isNull);
       expect(queue.added, isEmpty);
     });
   });

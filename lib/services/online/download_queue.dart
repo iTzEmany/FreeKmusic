@@ -52,6 +52,7 @@ class DownloadItem {
           double? progress,
           YtErrorKind? error,
           String? path,
+          String? tag,
           int? attempt,
           Duration? retryDelay}) =>
       DownloadItem(
@@ -61,7 +62,7 @@ class DownloadItem {
         progress: progress ?? this.progress,
         error: error ?? this.error,
         path: path ?? this.path,
-        tag: tag,
+        tag: tag ?? this.tag,
         attempt: attempt ?? this.attempt,
         retryDelay: retryDelay ?? this.retryDelay,
       );
@@ -125,6 +126,22 @@ class DownloadQueue {
     _items.add(DownloadItem(id: _nextId++, result: r, tag: tag));
     _emit();
     _pump();
+  }
+
+  /// Rewrites the tag of the live item of [indexKey] with [merge]'s answer (null refuses); false when
+  /// there is no such item or it refused.
+  bool mergeTag(String indexKey, String? Function(String? tag) merge) {
+    final i = _items.indexWhere((e) =>
+        e.result.indexKey == indexKey &&
+        (e.status == DownloadStatus.queued ||
+            e.status == DownloadStatus.downloading ||
+            e.status == DownloadStatus.waitingRetry));
+    if (i < 0) return false;
+    final tag = merge(_items[i].tag);
+    if (tag == null) return false;
+    _items[i] = _items[i].copyWith(tag: tag);
+    _emit();
+    return true;
   }
 
   void cancel(int id) {
