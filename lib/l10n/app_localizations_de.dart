@@ -8890,4 +8890,9 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0 von $total an $name gesendet: $_temp1';
   }
+
+  @override
+  String incomingPlaylist(String name) {
+    return 'Playlist „$name“';
+  }
 }

@@ -20,7 +20,7 @@ class FakeHub extends ShareHubNotifier {
   @override
   Future<void> leave() async {}
   @override
-  Future<SendOutcome> sendOffer(Peer peer, List<Track> tracks) async {
+  Future<SendOutcome> sendOffer(Peer peer, List<Track> tracks, {String? playlistName}) async {
     sentTracks = tracks;
     return outcome;
   }

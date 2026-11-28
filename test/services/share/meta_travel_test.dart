@@ -138,6 +138,8 @@ void main() {
       },
     );
     final o2 = await accepted([entry(2)]);
+    // Without a playlist the offer has exactly the fields of before (D-760).
+    expect(sender.offerPayload(o2, 1).keys.toSet(), {'offerId', 'fromId', 'fromName', 'port', 'token', 'items'});
     final plain = (sender.offerPayload(o2, 1)['items'] as List).single as Map;
     expect(plain.keys.toSet(), {
       'id',

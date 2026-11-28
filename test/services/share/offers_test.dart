@@ -115,6 +115,77 @@ void main() {
       expect((await post('/', {...body(maxOfferItems - 1, 2), 'offerId': 'o2'})).statusCode, 400);
     });
 
+    group('playlist field (D-760)', () {
+      const pl = {
+        'key': 'k1', 'name': 'Mix', 'part': 1, 'parts': 1,
+        'order': [{'stream': 'youtube:abcdefghijk'}, {'item': 1}],
+      };
+      Map<String, Object?> body(Object? playlist) => {
+            ...offerBody(),
+            'streams': [{'key': 'youtube:abcdefghijk', 'title': 'Live', 'shadow': true}],
+            'playlist': ?playlist,
+          };
+
+      test('a valid playlist is read with its order and the shadow mark', () async {
+        expect((await post('/', body(pl))).statusCode, 202);
+        final p = seen.single.playlist!;
+        expect((p.key, p.name, p.part, p.parts), ('k1', 'Mix', 1, 1));
+        expect(p.order, [(item: null, stream: 'youtube:abcdefghijk'), (item: 1, stream: null)]);
+        expect(seen.single.streams.single.shadow, true);
+      });
+
+      test('a missing or damaged field is no playlist and the offer stays valid', () async {
+        final bad = <Object?>[
+          null,
+          5,
+          {...pl, 'name': 'x' * 201},
+          {...pl, 'name': ''},
+          {...pl, 'key': 7},
+          {...pl, 'part': 2},
+          {...pl, 'part': 0},
+          {...pl, 'parts': 'x'},
+          {...pl, 'order': 'x'},
+          {...pl, 'order': [{'item': 99}]},
+          {...pl, 'order': [{'stream': 'youtube:bbbbbbbbbbb'}]},
+          {...pl, 'order': [{'item': 1, 'stream': 'youtube:abcdefghijk'}]},
+          {...pl, 'order': [5]},
+        ];
+        for (var i = 0; i < bad.length; i++) {
+          ip = '192.168.1.${100 + i}'; // the flood limits are per address and per pending offer
+          final r = await post('/', {...body(bad[i]), 'offerId': 'o$i'});
+          expect(r.statusCode, 202, reason: '${bad[i]}');
+          seen.last.status = OfferStatus.cancelled;
+        }
+        expect(seen.length, bad.length);
+        expect(seen.every((o) => o.playlist == null), true);
+      });
+
+      test('splitParts cuts in runs of 500, in order', () {
+        final parts = splitParts([for (var i = 0; i < 1200; i++) i]);
+        expect(parts.map((e) => e.length), [500, 500, 200]);
+        expect(parts.expand((e) => e).toList(), [for (var i = 0; i < 1200; i++) i]);
+      });
+
+      test('createOutgoing -> offerPayload -> POST round trip; no playlist, no field', () async {
+        const e1 = ShareEntry(id: 1, path: '/a.mp3', title: 'One', sizeBytes: 1, durationMs: 0, ext: 'mp3');
+        const e2 = ShareEntry(
+            id: 2, path: '', streamKey: 'youtube:abcdefghijk', title: 'Live', sizeBytes: 0, durationMs: 0, ext: '', shadow: true);
+        final sender = OfferService(deviceId: 'dev-a', deviceName: 'A');
+        final plain = sender.offerPayload(sender.createOutgoing(toId: 'b', toName: 'B', entries: [e1, e2]), 4000);
+        expect(plain.containsKey('playlist'), false);
+        final offer = sender.createOutgoing(
+            toId: 'b', toName: 'B', entries: [e2, e1], playlist: (key: 'k9', name: 'Mix', part: 1, parts: 1));
+        final payload = jsonDecode(jsonEncode(sender.offerPayload(offer, 4000))) as Map<String, Object?>;
+        expect(payload['playlist'], {
+          'key': 'k9', 'name': 'Mix', 'part': 1, 'parts': 1,
+          'order': [{'stream': 'youtube:abcdefghijk'}, {'item': 1}],
+        });
+        expect(((payload['streams']! as List).single as Map)['shadow'], true);
+        expect((await post('/', payload)).statusCode, 202);
+        expect(seen.single.playlist!.order.length, 2);
+      });
+    });
+
     test('StreamOffer.tryParse clips text, keeps a sane duration only', () {
       final o = StreamOffer.tryParse({'key': 'youtube:abcdefghijk', 'title': 'x' * 500, 'artist': 'a' * 500, 'durationMs': 3600000})!;
       expect((o.title.length, o.artist!.length, o.durationMs), (200, 200, 3600000));

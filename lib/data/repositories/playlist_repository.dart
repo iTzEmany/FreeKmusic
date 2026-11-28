@@ -360,6 +360,15 @@ class PlaylistRepository {
     return all.any((p) => p.name.trim().toLowerCase() == want);
   }
 
+  /// [base], or «base (2)», «base (3)»… when taken: never an existing playlist.
+  Future<String> freeName(String base) async {
+    var name = base, n = 1;
+    while (await nameTaken(name)) {
+      name = '$base (${++n})';
+    }
+    return name;
+  }
+
   Future<void> _renumber(int playlistId) async {
     final rows = await (_db.select(_db.playlistTracks)
           ..where((t) => t.playlistId.equals(playlistId))

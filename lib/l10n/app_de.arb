@@ -4382,5 +4382,13 @@
         "type": "int"
       }
     }
+  },
+  "incomingPlaylist": "Playlist „{name}“",
+  "@incomingPlaylist": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   }
 }

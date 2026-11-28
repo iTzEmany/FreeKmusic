@@ -8864,4 +8864,9 @@ class AppLocalizationsPt extends AppLocalizations {
     );
     return '$_temp0 de $total para $name: $_temp1';
   }
+
+  @override
+  String incomingPlaylist(String name) {
+    return 'Playlist «$name»';
+  }
 }

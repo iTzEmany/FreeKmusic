@@ -23,6 +23,7 @@ class IncomingOfferDialog extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (offer.playlist != null) Text(l.incomingPlaylist(offer.playlist!.name)),
           if (offer.items.isNotEmpty) Text(l.incomingBody(offer.items.length, mb)),
           if (offer.streams.isNotEmpty) Text(l.incomingStreams(offer.streams.length)),
           const SizedBox(height: 8),

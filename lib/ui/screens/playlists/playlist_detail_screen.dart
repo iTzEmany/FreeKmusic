@@ -110,7 +110,7 @@ class _PlaylistDetailScreenState extends ConsumerState<PlaylistDetailScreen> {
       case _PlaylistAction.clearCover:
         await ops.setCover(id, null);
       case _PlaylistAction.sendToDevice:
-        DevicesSheet.show(context, trackIds: [for (final t in tracks) t.id]);
+        DevicesSheet.show(context, trackIds: [for (final t in tracks) t.id], playlistName: _name);
       case _PlaylistAction.export:
         await exportPlaylistFlow(
           context,

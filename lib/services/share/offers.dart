@@ -23,6 +23,10 @@ const _audioExts = {
 const maxOfferItems = 500;
 const offerTtl = Duration(minutes: 10);
 
+/// [all] cut in runs of [size] (a playlist over the limit travels as several offers, D-762).
+List<List<T>> splitParts<T>(List<T> all, [int size = maxOfferItems]) =>
+    [for (var i = 0; i < all.length; i += size) all.sublist(i, min(i + size, all.length))];
+
 /// True for addresses that can only live on a local network (never the
 /// public Internet): RFC1918, link-local and (optionally) loopback.
 bool isLocalNetworkAddress(String address, {bool allowLoopback = false}) {
@@ -114,12 +118,15 @@ class OfferItem {
 const _maxStreamMs = 24 * 3600 * 1000;
 
 class StreamOffer {
-  const StreamOffer({required this.key, required this.title, this.artist, this.album, this.durationMs = 0, this.meta});
+  const StreamOffer({required this.key, required this.title, this.artist, this.album, this.durationMs = 0, this.meta, this.shadow = false});
 
   final String key, title;
   final String? artist, album;
   final int durationMs;
   final TrackMeta? meta;
+
+  /// Not saved on the sender (a shadow row of a playlist, D-761): the receiver keeps it only inside the playlist.
+  final bool shadow;
 
   Map<String, Object?> toJson() => {
         'key': key,
@@ -128,6 +135,7 @@ class StreamOffer {
         'album': album,
         'durationMs': durationMs,
         if (meta != null) 'meta': meta!.toJson(),
+        if (shadow) 'shadow': true,
       };
 
   /// Strict parsing of untrusted input; null for anything odd.
@@ -143,7 +151,57 @@ class StreamOffer {
       album: clip(raw['album']),
       durationMs: dur is int && dur >= 0 && dur <= _maxStreamMs ? dur : 0,
       meta: TrackMeta.tryParse(raw['meta']),
+      shadow: raw['shadow'] == true,
     );
+  }
+}
+
+/// One element of the playlist order: a file of `items` (by id) or a stream of `streams` (by key).
+typedef OfferRef = ({int? item, String? stream});
+
+/// The playlist an offer comes from (D-760): optional `playlist` field, which older versions never read.
+/// Wire: `{"key": "<token>", "name": "...", "part": 1, "parts": 1, "order": [{"item": 12}, {"stream": "youtube:abc"}]}`.
+/// A playlist over [maxOfferItems] travels as `parts` offers with the same `key` (D-762).
+class OfferPlaylist {
+  const OfferPlaylist({required this.key, required this.name, this.part = 1, this.parts = 1, required this.order});
+
+  final String key, name;
+  final int part, parts;
+  final List<OfferRef> order;
+
+  Map<String, Object?> toJson() => {
+        'key': key,
+        'name': name,
+        'part': part,
+        'parts': parts,
+        'order': [
+          for (final r in order)
+            if (r.item != null) {'item': r.item} else {'stream': r.stream},
+        ],
+      };
+
+  /// Strict parsing of untrusted input: null for anything odd (the offer then stays a plain one).
+  /// The order may only cite ids of [itemIds] and keys of [streamKeys].
+  static OfferPlaylist? tryParse(Object? raw, {required Set<int> itemIds, required Set<String> streamKeys}) {
+    if (raw is! Map) return null;
+    final key = raw['key'], name = raw['name'], part = raw['part'], parts = raw['parts'], order = raw['order'];
+    if (key is! String || key.isEmpty || key.length > 64) return null;
+    if (name is! String || name.trim().isEmpty || name.length > 200) return null;
+    if (part is! int || parts is! int || parts < 1 || parts > 1000 || part < 1 || part > parts) return null;
+    if (order is! List || order.length > maxOfferItems) return null;
+    final refs = <OfferRef>[];
+    for (final e in order) {
+      if (e is! Map) return null;
+      final item = e['item'], stream = e['stream'];
+      if (item is int && stream == null && itemIds.contains(item)) {
+        refs.add((item: item, stream: null));
+      } else if (stream is String && item == null && streamKeys.contains(stream)) {
+        refs.add((item: null, stream: stream));
+      } else {
+        return null;
+      }
+    }
+    return OfferPlaylist(key: key, name: name, part: part, parts: parts, order: refs);
   }
 }
 
@@ -161,6 +219,7 @@ class IncomingOffer {
     required this.token,
     required this.items,
     this.streams = const [],
+    this.playlist,
     DateTime? receivedAt,
   }) : receivedAt = receivedAt ?? DateTime.now();
 
@@ -180,6 +239,9 @@ class IncomingOffer {
 
   /// Saved streams of the offer: no file, so they are not in [items] nor in [received].
   final List<StreamOffer> streams;
+
+  /// The playlist this offer (or one part of it) comes from; null for a plain offer.
+  final OfferPlaylist? playlist;
   final DateTime receivedAt;
   OfferStatus status = OfferStatus.pending;
   int received = 0; // files already stored
@@ -194,11 +256,13 @@ class OutgoingOffer {
     required this.toName,
     required this.token,
     required this.entries,
+    this.playlist,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
 
   final String offerId, toId, toName, token;
   final Map<int, ShareEntry> entries;
+  final OfferPlaylist? playlist;
   final DateTime createdAt;
   OfferStatus status = OfferStatus.pending;
 
@@ -264,13 +328,27 @@ class OfferService {
     required String toId,
     required String toName,
     required List<ShareEntry> entries,
+    ({String key, String name, int part, int parts})? playlist,
   }) {
+    final byId = {for (final e in entries) e.id: e};
     final offer = OutgoingOffer(
       offerId: newToken(),
       toId: toId,
       toName: toName,
       token: newToken(),
-      entries: {for (final e in entries) e.id: e},
+      entries: byId,
+      playlist: playlist == null
+          ? null
+          : OfferPlaylist(
+              key: playlist.key,
+              name: playlist.name,
+              part: playlist.part,
+              parts: playlist.parts,
+              order: [
+                for (final e in byId.values)
+                  if (e.streamKey != null) (item: null, stream: e.streamKey) else (item: e.id, stream: null),
+              ],
+            ),
       createdAt: _now(),
     );
     outgoing[offer.offerId] = offer;
@@ -311,8 +389,11 @@ class OfferService {
                   album: e.album,
                   durationMs: e.durationMs,
                   meta: e.meta,
+                  shadow: e.shadow,
                 ).toJson(),
           ],
+        // Optional too: an older receiver sees only loose tracks.
+        if (o.playlist != null) 'playlist': o.playlist!.toJson(),
       };
 
   // ---- HTTP ----------------------------------------------------------------
@@ -394,6 +475,12 @@ class OfferService {
       if (items.length != rawItems.length) {
         return Response(400, body: 'invalid items');
       }
+      // Optional and lenient: a bad field is no playlist, the offer stays valid.
+      final playlist = OfferPlaylist.tryParse(
+        body['playlist'],
+        itemIds: {for (final i in items) i.id},
+        streamKeys: {for (final s in streams) s.key},
+      );
       if (incoming.containsKey(offerId)) {
         return Response(409, body: 'duplicate');
       }
@@ -411,6 +498,7 @@ class OfferService {
         token: token,
         items: items,
         streams: streams,
+        playlist: playlist,
         receivedAt: _now(),
       );
       incoming[offerId] = offer;

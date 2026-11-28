@@ -24,6 +24,7 @@ class ShareEntry {
     this.coverPath,
     this.meta,
     this.streamKey,
+    this.shadow = false,
   });
 
   final int id;
@@ -38,6 +39,9 @@ class ShareEntry {
 
   /// `<source>:<id>` of a saved stream: there is no file, only the key and metadata travel (D-674).
   final String? streamKey;
+
+  /// A stream that is not saved here (shadow row of a playlist, D-761); travels only with the playlist.
+  final bool shadow;
 
   Map<String, Object?> toManifestJson() => {
         'id': id,
