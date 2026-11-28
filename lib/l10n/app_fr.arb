@@ -4533,5 +4533,6 @@
       }
     }
   },
-  "playlistAddFailed": "Impossible d’ajouter les titres à une playlist"
+  "playlistAddFailed": "Impossible d’ajouter les titres à une playlist",
+  "smartMixSwitch": "Ajouter des titres similaires que vous n’avez pas"
 }

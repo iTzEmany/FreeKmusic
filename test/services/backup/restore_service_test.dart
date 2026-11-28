@@ -1027,6 +1027,7 @@ void main() {
         'jamLatencyMs': 40,
         'playlistSorts': '{"1":"mine"}',
         'playlistShuffles': '{"1":"plus"}',
+        'smartMixOff': ['1'],
         'lastQueueIds': ['1'],
         'customThemes': themesJson([('t2', 'Local', '/x/y.jpg')]),
       });
@@ -1051,6 +1052,7 @@ void main() {
       expect(prefs.getInt('jamLatencyMs'), 40);
       expect(prefs.getString('playlistSorts'), '{"1":"mine"}');
       expect(prefs.getString('playlistShuffles'), '{"1":"plus"}');
+      expect(prefs.getStringList('smartMixOff'), ['1']);
       expect(prefs.getStringList('lastQueueIds'), ['1']);
     });
 

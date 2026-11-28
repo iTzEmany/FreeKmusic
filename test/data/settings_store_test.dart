@@ -212,6 +212,20 @@ void main() {
     store = await SettingsStore.open();
     expect(store.readSettings().playlistShuffles, isEmpty);
   });
+  test('the smart mix switch is on unless the playlist id is saved; a damaged value is no entry', () async {
+    SharedPreferences.setMockInitialValues({});
+    var store = await SettingsStore.open();
+    expect(store.readSettings().smartMixOff, isEmpty);
+    await store.writeSettings(store.readSettings().copyWith(smartMixOff: {12, 3}));
+    store = await SettingsStore.open();
+    expect(store.readSettings().smartMixOff, {3, 12});
+    SharedPreferences.setMockInitialValues({'smartMixOff': ['1', 'x']});
+    store = await SettingsStore.open();
+    expect(store.readSettings().smartMixOff, {1});
+    SharedPreferences.setMockInitialValues({'smartMixOff': 5});
+    store = await SettingsStore.open();
+    expect(store.readSettings().smartMixOff, isEmpty);
+  });
   test('sort keys of the wrong type (a tampered backup) read as the defaults, without throwing', () async {
     SharedPreferences.setMockInitialValues({
       'playlistSorts': 5,
