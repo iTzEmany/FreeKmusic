@@ -1,5 +1,4 @@
 import 'package:codecore/l10n/l10n_ext.dart';
-import 'package:codecore/services/shuffle_plus/plus_allowed.dart' show ShufflePlusBlock;
 import 'package:codecore/ui/widgets/shuffle_plus_text.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:codecore/providers/jam_providers.dart';
