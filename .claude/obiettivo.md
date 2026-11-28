@@ -15,6 +15,7 @@
 | Livello | Comando | Stima |
 |---|---|---|
 | mirata | `flutter test <file…>` | 2m |
+| copertura (coverage: test mirati che scrivono lcov, per `~/.claude/scripts/risk-map.sh`; in prova dal 2026-11-27) | `flutter test --coverage --coverage-path build/coverage/lcov.info <file…>` → `build/coverage/lcov.info` | 3m |
 | statica veloce | `flutter analyze` | 2m |
 | codice generato | `dart run build_runner build --delete-conflicting-outputs` (solo tabelle drift) · `flutter gen-l10n` (ARB) | 4m · 1m |
 | suite completa (CI; in locale solo se chiesta) | `flutter test` | 6m |
@@ -27,7 +28,7 @@
 ## Pulizia (solo con `pulizia.sh via`)
 | Quando | Cosa |
 |---|---|
-| dopo ogni passo fuso | `scripts/pulizia-auto.sh` (cache di build sopra l'85 % di disco), poi: `build/app/outputs/apk`, `build/perf/*` già riportati in misure.md, log in scratchpad |
+| dopo ogni passo fuso | `scripts/pulizia-auto.sh` (cache di build sopra l'85 % di disco), poi: `build/coverage`, `build/app/outputs/apk`, `build/perf/*` già riportati in misure.md, log in scratchpad |
 | a fine fase | `build/linux` se la fase dopo non lo usa |
 | disco ≥ 90 % | `build/app/intermediates`, `build/test_cache`, `build/bench`, `build/perf_library` (la rifà `perf_device.py`), `.dart_tool/flutter_build` (6 GB, cache dei test e delle build, si rifà da sola) |
 | mai | `build/metadata_god` (Rust, lungo da rifare), `~/.pub-cache`, file musicali del telefono |
