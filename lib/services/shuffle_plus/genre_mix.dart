@@ -79,6 +79,7 @@ Stream<GenreMixState> genreMix({
   required RadioGate gate,
   required Future<bool Function(YtResult r)> Function() loadInLibrary,
   bool Function()? cancelled,
+  bool Function(SuggestionCandidate c)? accept,
   Random? random,
   SuggestionPool? pool,
 }) async* {
@@ -112,6 +113,7 @@ Stream<GenreMixState> genreMix({
       inQueue: (id) => found.any((s) => s.result.id == id),
       cancelled: cancelled,
       maxRequests: _maxRequests,
+      accept: accept,
     )) {
       found.add((result: c.result, seedTitle: c.seedTitle));
       yield GenreMixState(
@@ -146,6 +148,7 @@ Stream<GenreMixState> genreMixOf({
   required Future<GenreMixOff?> Function() offReason,
   required Future<LibraryIndex> Function() library,
   required bool Function() cancelled,
+  bool Function(SuggestionCandidate c)? accept,
 }) async* {
   final list = await tracks;
   if (list.length < genreMixEvery) return;
@@ -158,6 +161,7 @@ Stream<GenreMixState> genreMixOf({
     filter: filter,
     gate: gate,
     cancelled: cancelled,
+    accept: accept,
     offReason: offReason,
     loadInLibrary: () async =>
         inLibraryTest(hasDownload: index.contains, library: await library()),
