@@ -46,7 +46,7 @@ void main() {
         onPressed: () => Navigator.of(c).push(MaterialPageRoute<void>(builder: (_) => SmartPlaylistScreen(id: id))),
         child: const Text('open')))));
     final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
-    c.read(settingsProvider.notifier).update((s) => s.copyWith(playlistShuffles: {'$id': 'plus', 'smart:$id': 'shuffle'}));
+    c.read(settingsProvider.notifier).update((s) => s.copyWith(playlistShuffles: {'$id': 'plus', 'smart:$id': 'shuffle'}, smartMixOff: {id, id + 1}));
     await tester.tap(find.text('open'));
     await _settle(tester);
     await tester.tap(find.byTooltip('Altre azioni').first);
@@ -56,6 +56,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Elimina'));
     await _settle(tester);
     expect(c.read(settingsProvider).playlistShuffles, {'$id': 'plus'});
+    expect(c.read(settingsProvider).smartMixOff, {id + 1});
     await h.dispose(tester);
   });
 }

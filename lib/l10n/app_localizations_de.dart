@@ -8816,4 +8816,7 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get playlistAddFailed =>
       'Titel konnten nicht zu einer Playlist hinzugefügt werden';
+
+  @override
+  String get smartMixSwitch => 'Ähnliche Songs hinzufügen, die du nicht hast';
 }

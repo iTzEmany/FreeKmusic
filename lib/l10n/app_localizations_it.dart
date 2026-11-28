@@ -8779,4 +8779,7 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get playlistAddFailed =>
       'Non sono riuscito ad aggiungere i brani a una playlist';
+
+  @override
+  String get smartMixSwitch => 'Aggiungi brani simili che non hai';
 }

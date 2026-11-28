@@ -68,6 +68,7 @@ class AppSettings {
     this.librarySortAscending,
     this.playlistSorts = const {},
     this.playlistShuffles = const {},
+    this.smartMixOff = const {},
     this.libraryGrid,
     this.libraryDensity = 1,
     this.recentSearches = const [],
@@ -167,6 +168,9 @@ class AppSettings {
 
   /// The «Casuale» mode of each playlist (`off|shuffle|plus`): key `'<id>'`, or `'smart:<id>'` for a smart one.
   final Map<String, String> playlistShuffles;
+
+  /// Ids of the smart playlists whose «brani simili che non hai» mix is off (D-757); on by default.
+  final Set<int> smartMixOff;
 
   /// Library as a grid (true) or a list (false); null = never chosen, the
   /// screen picks by width. Stays on this device, out of backups (D-739).
@@ -296,6 +300,7 @@ class AppSettings {
     bool? librarySortAscending,
     Map<String, String>? playlistSorts,
     Map<String, String>? playlistShuffles,
+    Set<int>? smartMixOff,
     bool? libraryGrid,
     int? libraryDensity,
     List<String>? recentSearches,
@@ -364,6 +369,7 @@ class AppSettings {
     librarySortAscending: librarySortAscending ?? this.librarySortAscending,
     playlistSorts: playlistSorts ?? this.playlistSorts,
     playlistShuffles: playlistShuffles ?? this.playlistShuffles,
+    smartMixOff: smartMixOff ?? this.smartMixOff,
     libraryGrid: libraryGrid ?? this.libraryGrid,
     libraryDensity: libraryDensity ?? this.libraryDensity,
     recentSearches: recentSearches ?? this.recentSearches,
@@ -500,6 +506,12 @@ class SettingsStore {
     await _prefs.setBool(storageModeD665Key, true);
   }
 
+  Set<int> _readSmartMixOff() {
+    final raw = _prefs.get('smartMixOff');
+    if (raw is! List) return const {};
+    return {for (final v in raw) ?int.tryParse('$v')};
+  }
+
   Map<String, String> _readPlaylistShuffles() {
     final raw = _prefs.get('playlistShuffles');
     if (raw == null) return const {};
@@ -580,6 +592,7 @@ class SettingsStore {
     librarySortAscending: _readSortAscending(),
     playlistSorts: _readPlaylistSorts(),
     playlistShuffles: _readPlaylistShuffles(),
+    smartMixOff: _readSmartMixOff(),
     // Older versions always saved the key, so only a saved choice counts.
     libraryGrid: _prefs.getBool('libraryGridChosen') == true ? _prefs.getBool('libraryGrid') : null,
     libraryDensity: (_prefs.getInt('libraryDensity') ?? 1).clamp(0, 2),
@@ -697,6 +710,7 @@ class SettingsStore {
     }
     await _prefs.setString('playlistSorts', jsonEncode(s.playlistSorts));
     await _prefs.setString('playlistShuffles', jsonEncode(s.playlistShuffles));
+    await _prefs.setStringList('smartMixOff', [for (final i in s.smartMixOff.toList()..sort()) '$i']);
     final grid = s.libraryGrid;
     if (grid != null) {
       await _prefs.setBool('libraryGrid', grid);

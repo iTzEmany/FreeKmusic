@@ -98,6 +98,11 @@ void main() {
     expect(prefs.containsKey('playlistShuffles'), isFalse);
   });
 
+  test('a full restore of a backup without smartMixOff drops the device ones (their ids are other playlists)', () async {
+    final prefs = await restoreWith({'smartMixOff': ['2']}, _fixture);
+    expect(prefs.containsKey('smartMixOff'), isFalse);
+  });
+
   test('a full restore of a backup holding playlistSorts takes the backup ones', () async {
     final a = Archive();
     for (final f in ZipDecoder().decodeBytes(_fixture.readAsBytesSync()).files) {

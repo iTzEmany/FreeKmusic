@@ -5,6 +5,10 @@ import 'package:codecore/data/repositories/smart_playlist_repository.dart';
 import 'package:codecore/data/repositories/track_repository.dart';
 import 'package:codecore/ui/screens/library/library_screen.dart';
 import 'package:codecore/providers/filter_counts_providers.dart';
+import 'package:codecore/providers/settings_providers.dart';
+import 'package:codecore/providers/shuffle_plus_providers.dart';
+import 'package:codecore/services/shuffle_plus/genre_mix.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show ProviderScope;
 import 'package:codecore/services/library/rules/rule_ast.dart';
 import 'package:codecore/services/online/youtube_service.dart' show YtResult;
 import 'package:codecore/services/library/rules/rule_parser.dart';
@@ -76,6 +80,41 @@ void main() {
       await _settle(tester);
       expect(_row('Song 0'), findsOneWidget);
       expect(_row('Online one'), findsNothing);
+      await h.dispose(tester);
+    });
+
+    Future<int> mixPage(WidgetTester tester, {required bool off}) async {
+      h = await Harness.create(tester, tracks: 4, radio: true);
+      repo = SmartPlaylistRepository(h.db, TrackRepository(h.db));
+      final id = await make(tester, 'Mix', 'album:"Album 1"');
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const r = YtResult(id: 'a', title: 'Online a', channel: 'Chan', duration: Duration(minutes: 3), artists: ['Chan']);
+      await h.pump(tester, SmartPlaylistScreen(id: id), extraOverrides: [
+        smartMixProvider.overrideWith((ref, _) => Stream.value(const GenreMixState(suggested: [(result: r, seedTitle: 's')]))),
+      ]);
+      if (off) {
+        ProviderScope.containerOf(tester.element(find.byType(Scaffold).first))
+            .read(settingsProvider.notifier)
+            .update((s) => s.copyWith(smartMixOff: {id}));
+      }
+      await _settle(tester);
+      return id;
+    }
+
+    testWidgets('mix on: a suggested online song shows after the library tracks, as in a genre page', (tester) async {
+      await mixPage(tester, off: false);
+      expect(_row('Song 1'), findsOneWidget);
+      expect(find.text('Online a'), findsOneWidget);
+      expect(find.text('Suggerito'), findsOneWidget);
+      await h.dispose(tester);
+    });
+
+    testWidgets('mix off for this playlist: only library tracks, as before', (tester) async {
+      await mixPage(tester, off: true);
+      expect(_row('Song 1'), findsOneWidget);
+      expect(find.text('Online a'), findsNothing);
       await h.dispose(tester);
     });
 
@@ -404,6 +443,21 @@ void main() {
       await _settle(tester);
       final p = (await tester.runAsync(() => repo.get(id!)))!;
       expect((p.name, p.rules), ('Tutta', ''));
+      await h.dispose(tester);
+    });
+
+    testWidgets('«Aggiungi brani simili che non hai»: on by default, saved in smartMixOff with the playlist', (tester) async {
+      final id = await openEditor(tester, rules: 'album:"Album 1"');
+      final c = ProviderScope.containerOf(tester.element(find.byType(Scaffold).first));
+      final sw = find.widgetWithText(SwitchListTile, 'Aggiungi brani simili che non hai');
+      await tester.ensureVisible(sw);
+      expect(tester.widget<SwitchListTile>(sw).value, isTrue);
+      await tester.tap(sw);
+      await tester.pump();
+      expect(c.read(settingsProvider).smartMixOff, isEmpty, reason: 'only «Salva» writes it');
+      await tester.tap(saveButton());
+      await _settle(tester);
+      expect(c.read(settingsProvider).smartMixOff, {id});
       await h.dispose(tester);
     });
 

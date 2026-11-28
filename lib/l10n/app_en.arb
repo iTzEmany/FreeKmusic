@@ -4312,5 +4312,6 @@
       }
     }
   },
-  "playlistAddFailed": "Could not add the tracks to a playlist"
+  "playlistAddFailed": "Could not add the tracks to a playlist",
+  "smartMixSwitch": "Add similar songs you don’t have"
 }

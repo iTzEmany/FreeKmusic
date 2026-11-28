@@ -65,7 +65,8 @@ class PlaylistOps {
   Future<List<Track>> tracksOf(int playlistId) => _repo.watchTracks(playlistId).first;
 
   /// Creates a smart playlist, or edits [existingId]. A null [limit] clears it.
-  Future<void> saveSmart({
+  /// Returns the id of the saved playlist.
+  Future<int> saveSmart({
     int? existingId,
     required String name,
     required String rules,
@@ -74,10 +75,10 @@ class PlaylistOps {
   }) async {
     final repo = _ref.read(smartPlaylistRepositoryProvider);
     if (existingId == null) {
-      await repo.create(name: name, rules: rules, sort: sort, limit: limit);
-    } else {
-      await repo.update(existingId, name: name, rules: rules, sort: sort, limit: limit, clearLimit: limit == null);
+      return repo.create(name: name, rules: rules, sort: sort, limit: limit);
     }
+    await repo.update(existingId, name: name, rules: rules, sort: sort, limit: limit, clearLimit: limit == null);
+    return existingId;
   }
 
   Future<void> deleteSmart(int id) => _ref.read(smartPlaylistRepositoryProvider).delete(id);
